@@ -26,17 +26,33 @@ app.get('/api/menu', async (req, res) => {
     const { data: items } = await supabase.from('menu_items').select('*').eq('available', true);
     const { data: modifiers } = await supabase.from('menu_modifiers').select('*');
     
-    // Transform to expected format
-    const categories = {};
+    // Category metadata
+    const categoryMeta = {
+        coffee: { name: 'Coffee', icon: '☕' },
+        drinks: { name: 'Drinks', icon: '🧃' },
+        food: { name: 'Food', icon: '🍳' },
+        desserts: { name: 'Desserts', icon: '🍰' }
+    };
+    
+    // Group items by category
+    const grouped = {};
     (items || []).forEach(item => {
-        if (!categories[item.category]) categories[item.category] = [];
-        categories[item.category].push({
+        if (!grouped[item.category]) grouped[item.category] = [];
+        grouped[item.category].push({
             id: item.id,
             name: item.name,
             nameEs: item.name_es,
             price: parseFloat(item.price)
         });
     });
+    
+    // Transform to array format expected by POS
+    const categories = Object.keys(grouped).map(catId => ({
+        id: catId,
+        name: categoryMeta[catId]?.name || catId,
+        icon: categoryMeta[catId]?.icon || '📦',
+        items: grouped[catId]
+    }));
     
     const modifiersMap = {};
     (modifiers || []).forEach(m => {
