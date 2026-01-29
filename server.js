@@ -153,31 +153,111 @@ app.get('/api/orders', ensureAuthenticated, async (req, res) => {
 
 app.post('/api/orders', async (req, res) => {
     // Public/POS can create orders (Anon allowed)
-    // Get next order number from max existing
+    
+    // 1. Get next order number
     const { data: maxOrder } = await supabase
         .from('orders')
         .select('order_number')
         .order('order_number', { ascending: false })
         .limit(1);
-    
     const orderNum = (maxOrder?.[0]?.order_number || 0) + 1;
     
-    const newOrder = {
+    const orderData = {
         id: `ORD-${String(orderNum).padStart(4, '0')}`,
         order_number: orderNum,
         items: req.body.items,
         subtotal: req.body.subtotal,
         tax: req.body.tax || 0,
         discount: req.body.discount || 0,
+        // Ensure total includes delivery fee
         total: req.body.total,
         status: 'pending',
         payment_method: req.body.paymentMethod,
         customer_id: req.body.customerId,
         discount_code: req.body.discountCode,
-        notes: req.body.notes
+        notes: req.body.notes,
+        // Delivery Fields (Temporarily disabled - Schema mismatch)
+        // delivery_zone_id: req.body.deliveryZoneId || null,
+        // delivery_fee: req.body.deliveryFee || 0,
+        // delivery_address: req.body.deliveryAddress || null,
+        // Split Payment Defaults (Temporarily disabled - Schema mismatch)
+        // amount_paid: 0,
+        // amount_due: req.body.total
     };
+
+    // 2. Handle Split Payment / Rico Balance
+    if (req.body.paymentMethod === 'rico_balance' && req.body.customerId) {
+        const { data: customer } = await supabase
+            .from('customers')
+            .select('*')
+            .eq('id', req.body.customerId)
+            .single();
+
+        if (customer) {
+            const credit = parseFloat(customer.membership_credit) || 0;
+            const cash = parseFloat(customer.cash_balance) || 0;
+            const available = credit + cash;
+            const total = parseFloat(orderData.total);
+
+            let deductCredit = 0;
+            let deductCash = 0;
+            let paidAmount = 0;
+
+            if (available >= total) {
+                // Full Payment
+                paidAmount = total;
+                orderData.status = 'paid';
+                // orderData.amount_paid = total;
+                // orderData.amount_due = 0;
+
+                // Deduct logic
+                let remaining = total;
+                if (credit >= remaining) {
+                    deductCredit = remaining;
+                } else {
+                    deductCredit = credit;
+                    deductCash = remaining - credit;
+                }
+            } else {
+                // Partial Payment
+                paidAmount = available;
+                orderData.status = 'partial_paid'; // Custom status for Ticket
+                // orderData.amount_paid = paidAmount;
+                // orderData.amount_due = total - paidAmount;
+
+                // Deduct everything
+                deductCredit = credit;
+                deductCash = cash;
+            }
+
+            // Update Customer Balance
+            await supabase
+                .from('customers')
+                .update({
+                    membership_credit: credit - deductCredit,
+                    cash_balance: cash - deductCash
+                })
+                .eq('id', customer.id);
+            
+            // Log Balance History
+            if (paidAmount > 0) {
+                await supabase.from('balance_history').insert({
+                    customer_id: customer.id,
+                    type: 'payment',
+                    amount: -paidAmount,
+                    order_id: orderData.id
+                });
+            }
+        }
+    } else if (['cash', 'card'].includes(req.body.paymentMethod)) {
+         // Assume paid if cash/card? Usually cash is 'pending' until closed, 
+         // but for this logic we might want to track paid amount.
+         // If it's a simple order, we leave amount_paid 0 or full depending on workflow.
+         // Let's assume standard orders are "paid" upon completion, or "pending" payment.
+         // We'll leave defaults (amount_paid=0) for standard flows unless specified.
+    }
     
-    const { data, error } = await supabase.from('orders').insert(newOrder).select().single();
+    const { data, error } = await supabase.from('orders').insert(orderData).select().single();
     if (error) return res.status(500).json({ error: error.message });
     res.json(data);
 });
@@ -709,6 +789,168 @@ app.post('/api/discount-codes/:code/use', async (req, res) => {
     res.json({ success: true });
 });
 
+
+// === DELIVERY ZONES API ===
+app.get('/api/delivery-zones', async (req, res) => {
+    const { data } = await supabase
+        .from('delivery_zones')
+        .select('*')
+        .eq('active', true)
+        .order('fee');
+    res.json({ zones: data || [] });
+});
+
+app.post('/api/delivery-zones', requireAdmin, async (req, res) => {
+    const client = req.supabase || supabase;
+    const zone = {
+        name: req.body.name,
+        fee: req.body.fee,
+        active: req.body.active !== false
+    };
+    const { data, error } = await client.from('delivery_zones').insert(zone).select().single();
+    if (error) return res.status(500).json({ error: error.message });
+    res.json(data);
+});
+
+app.put('/api/delivery-zones/:id', requireAdmin, async (req, res) => {
+    const client = req.supabase || supabase;
+    const { data, error } = await client
+        .from('delivery_zones')
+        .update(req.body)
+        .eq('id', req.params.id)
+        .select()
+        .single();
+    if (error) return res.status(404).json({ error: 'Zone not found' });
+    res.json(data);
+});
+
+app.delete('/api/delivery-zones/:id', requireAdmin, async (req, res) => {
+    const client = req.supabase || supabase;
+    const { error } = await client.from('delivery_zones').delete().eq('id', req.params.id);
+    if (error) return res.status(404).json({ error: 'Zone not found' });
+    res.json({ success: true });
+});
+
+// === DRIVER API ===
+
+app.post('/api/driver/login', async (req, res) => {
+    const { pin } = req.body;
+    // Check employees for this PIN and role='driver'
+    const { data: employee } = await supabase
+        .from('employees')
+        .select('*')
+        .eq('pin', pin)
+        // .eq('role', 'driver') // Optional: enforce role?
+        .single();
+    
+    if (!employee) return res.status(401).json({ error: 'Invalid PIN' });
+    if (employee.role !== 'driver' && employee.role !== 'admin') {
+        return res.status(403).json({ error: 'Not a driver account' });
+    }
+    
+    res.json({ success: true, driver: employee });
+});
+
+app.get('/api/driver/orders', async (req, res) => {
+    const { driverId, mode } = req.query;
+
+    if (mode === 'available') {
+        const { data: orders, error } = await supabase
+            .from('orders')
+            .select(`
+                *,
+                customers (name, phone)
+            `)
+            .is('driver_id', null)
+            .neq('status', 'completed')
+            .eq('delivery_status', 'pending')
+            .not('delivery_address', 'is', null) // Ensure it is a delivery order
+            .order('created_at', { ascending: false });
+
+        if (error) return res.status(500).json({ error: error.message });
+        return res.json({ orders: orders || [] });
+    }
+
+    if (!driverId) return res.status(400).json({ error: 'Driver ID required' });
+
+    // Fetch orders assigned to this driver that are NOT completed
+    // OR orders that are completed today (optional, for history)
+    const { data: orders, error } = await supabase
+        .from('orders')
+        .select(`
+            *,
+            customers (name, phone)
+        `)
+        .eq('driver_id', driverId)
+        .neq('delivery_status', 'delivered') // Show active
+        .order('created_at', { ascending: true });
+        
+    if (error) return res.status(500).json({ error: error.message });
+    res.json({ orders });
+});
+
+app.post('/api/driver/orders/:id/claim', async (req, res) => {
+    const { driverId } = req.body;
+    if (!driverId) return res.status(400).json({ error: 'Driver ID required' });
+
+    // Atomic update: Only update if driver_id is NULL
+    const { data, error } = await supabase
+        .from('orders')
+        .update({ 
+            driver_id: driverId,
+            delivery_status: 'assigned'
+        })
+        .eq('id', req.params.id)
+        .is('driver_id', null)
+        .select()
+        .single();
+
+    if (error || !data) {
+        return res.status(409).json({ error: 'Order already claimed or unavailable' });
+    }
+
+    res.json({ success: true, order: data });
+});
+
+app.patch('/api/orders/:id/assign', ensureAuthenticated, async (req, res) => {
+    const { driverId } = req.body;
+    const client = req.supabase || supabase;
+    
+    const { data, error } = await client
+        .from('orders')
+        .update({ 
+            driver_id: driverId,
+            delivery_status: 'assigned'
+        })
+        .eq('id', req.params.id)
+        .select()
+        .single();
+
+    if (error) return res.status(500).json({ error: error.message });
+    res.json(data);
+});
+
+app.patch('/api/orders/:id/delivery-status', async (req, res) => {
+    const { status } = req.body; 
+    // status: 'out_for_delivery', 'delivered'
+    
+    const updates = { delivery_status: status };
+    if (status === 'delivered') {
+        updates.status = 'completed'; 
+        updates.completed_at = new Date().toISOString();
+    }
+
+    const { data, error } = await supabase
+        .from('orders')
+        .update(updates)
+        .eq('id', req.params.id)
+        .select()
+        .single();
+
+    if (error) return res.status(500).json({ error: error.message });
+    res.json(data);
+});
+
 // ============== ADMIN API ROUTES (Strictly Secured) ==============
 
 // ADMIN: Menu Management
@@ -1069,6 +1311,10 @@ app.post('/api/admin/go-live', requireAdmin, async (req, res) => {
 // Admin Panel
 app.get('/admin', (req, res) => {
     res.sendFile(path.join(__dirname, 'src', 'admin', 'admin.html'));
+});
+
+app.get('/driver', (req, res) => {
+    res.sendFile(path.join(__dirname, 'src', 'driver', 'dashboard.html'));
 });
 
 app.get('/order', (req, res) => {

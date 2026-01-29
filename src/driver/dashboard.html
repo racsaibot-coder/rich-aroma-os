@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Driver Dashboard | Rich Aroma</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #0f0d0b;
+            --card: #1a1714;
+            --text: #f5f0eb;
+            --muted: #8a8078;
+            --red: #ef4444;
+            --green: #22c55e;
+            --yellow: #fbbf24;
+            --blue: #3b82f6;
+            --caramel: #D4A574;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+        body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); padding-bottom: 2rem; }
+
+        /* Login Screen */
+        #login-view {
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 2rem;
+        }
+        .pin-display {
+            font-size: 2rem;
+            letter-spacing: 0.5rem;
+            margin-bottom: 2rem;
+            height: 3rem;
+        }
+        .keypad {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1rem;
+            width: 100%;
+            max-width: 300px;
+        }
+        .key {
+            background: var(--card);
+            border: 1px solid rgba(255,255,255,0.1);
+            color: var(--text);
+            padding: 1.5rem;
+            font-size: 1.5rem;
+            border-radius: 12px;
+            cursor: pointer;
+            touch-action: manipulation;
+        }
+        .key:active { background: var(--caramel); color: #000; }
+
+        /* Dashboard */
+        .header {
+            padding: 1rem;
+            background: rgba(26,23,20,0.9);
+            position: sticky;
+            top: 0;
+            z-index: 10;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+        .driver-info h1 { font-size: 1.2rem; }
+        .logout-btn { background: none; border: 1px solid var(--muted); color: var(--muted); padding: 0.3rem 0.8rem; border-radius: 6px; }
+
+        /* Tabs */
+        .tabs {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            background: var(--card);
+            padding: 0.5rem;
+            gap: 0.5rem;
+            position: sticky;
+            top: 60px; /* Adjust based on header height */
+            z-index: 9;
+        }
+        .tab {
+            padding: 0.8rem;
+            text-align: center;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            color: var(--muted);
+            border: 1px solid transparent;
+        }
+        .tab.active {
+            background: var(--caramel);
+            color: #000;
+        }
+
+        .orders-list { padding: 1rem; display: flex; flex-direction: column; gap: 1rem; }
+
+        .order-card {
+            background: var(--card);
+            border-radius: 12px;
+            padding: 1rem;
+            border: 2px solid transparent;
+        }
+
+        .status-header {
+            font-weight: 800;
+            text-transform: uppercase;
+            margin-bottom: 0.5rem;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        /* Status Colors */
+        .card-cash { border-color: var(--red); }
+        .card-cash .status-header { color: var(--red); }
+        
+        .card-prepaid { border-color: var(--green); }
+        .card-prepaid .status-header { color: var(--green); }
+        
+        .card-partial { border-color: var(--yellow); }
+        .card-partial .status-header { color: var(--yellow); }
+
+        .order-details { margin-bottom: 1rem; }
+        .address { font-size: 1.1rem; font-weight: 600; margin-bottom: 0.2rem; }
+        .customer-name { color: var(--muted); margin-bottom: 0.5rem; }
+        .money-row { display: flex; justify-content: space-between; font-size: 1.1rem; font-weight: 700; margin-top: 0.5rem; padding-top: 0.5rem; border-top: 1px solid rgba(255,255,255,0.1); }
+        
+        .actions {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.5rem;
+        }
+        .btn {
+            padding: 0.8rem;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 1rem;
+            cursor: pointer;
+            text-align: center;
+            text-decoration: none;
+        }
+        .btn-claim { background: var(--green); color: black; grid-column: span 2; }
+        .btn-map { background: var(--blue); color: white; grid-column: span 2; }
+        .btn-pickup { background: var(--caramel); color: black; }
+        .btn-complete { background: var(--green); color: black; }
+        
+        .hidden { display: none !important; }
+    </style>
+</head>
+<body>
+
+    <!-- LOGIN -->
+    <div id="login-view">
+        <div style="margin-bottom:1rem">🚗 Driver Login</div>
+        <div class="pin-display" id="pin-display"></div>
+        <div class="keypad">
+            <button class="key" onclick="enterPin(1)">1</button>
+            <button class="key" onclick="enterPin(2)">2</button>
+            <button class="key" onclick="enterPin(3)">3</button>
+            <button class="key" onclick="enterPin(4)">4</button>
+            <button class="key" onclick="enterPin(5)">5</button>
+            <button class="key" onclick="enterPin(6)">6</button>
+            <button class="key" onclick="enterPin(7)">7</button>
+            <button class="key" onclick="enterPin(8)">8</button>
+            <button class="key" onclick="enterPin(9)">9</button>
+            <button class="key" onclick="clearPin()">C</button>
+            <button class="key" onclick="enterPin(0)">0</button>
+            <button class="key" onclick="submitPin()">→</button>
+        </div>
+    </div>
+
+    <!-- DASHBOARD -->
+    <div id="dashboard-view" class="hidden">
+        <header class="header">
+            <div class="driver-info">
+                <div style="font-size:0.8rem; color:var(--muted)">Driver</div>
+                <h1 id="driver-name">Loading...</h1>
+            </div>
+            <button class="logout-btn" onclick="logout()">Logout</button>
+        </header>
+
+        <div class="tabs">
+            <div class="tab" id="tab-available" onclick="switchTab('available')">Available</div>
+            <div class="tab active" id="tab-mine" onclick="switchTab('mine')">My Orders</div>
+        </div>
+
+        <main class="orders-list" id="orders-list">
+            <!-- Orders injected here -->
+        </main>
+    </div>
+
+    <script>
+        let pin = '';
+        let driver = null;
+        let currentMode = 'mine'; // 'mine' or 'available'
+
+        // Init
+        const storedDriver = localStorage.getItem('driver_user');
+        if (storedDriver) {
+            driver = JSON.parse(storedDriver);
+            showDashboard();
+        }
+
+        // Login Logic
+        function enterPin(num) {
+            if (pin.length < 4) {
+                pin += num;
+                updatePinDisplay();
+            }
+        }
+
+        function clearPin() {
+            pin = '';
+            updatePinDisplay();
+        }
+
+        function updatePinDisplay() {
+            document.getElementById('pin-display').innerText = '•'.repeat(pin.length);
+        }
+
+        async function submitPin() {
+            if (pin.length < 4) return;
+            try {
+                const res = await fetch('/api/driver/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ pin })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    driver = data.driver;
+                    localStorage.setItem('driver_user', JSON.stringify(driver));
+                    showDashboard();
+                } else {
+                    alert('Invalid PIN');
+                    clearPin();
+                }
+            } catch (e) {
+                alert('Login Error');
+            }
+        }
+
+        function logout() {
+            localStorage.removeItem('driver_user');
+            location.reload();
+        }
+
+        function showDashboard() {
+            document.getElementById('login-view').classList.add('hidden');
+            document.getElementById('dashboard-view').classList.remove('hidden');
+            document.getElementById('driver-name').innerText = driver.name;
+            fetchOrders();
+            setInterval(fetchOrders, 15000); // Poll every 15s
+        }
+
+        function switchTab(mode) {
+            currentMode = mode;
+            // Update UI
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.getElementById(`tab-${mode}`).classList.add('active');
+            // Fetch
+            fetchOrders();
+        }
+
+        // Dashboard Logic
+        async function fetchOrders() {
+            try {
+                const url = `/api/driver/orders?driverId=${driver.id}&mode=${currentMode}`;
+                const res = await fetch(url);
+                const data = await res.json();
+                renderOrders(data.orders || []);
+            } catch (e) {
+                console.error("Fetch error", e);
+            }
+        }
+
+        function renderOrders(orders) {
+            const container = document.getElementById('orders-list');
+            
+            if (orders.length === 0) {
+                const emptyMsg = currentMode === 'available' 
+                    ? 'No orders available to claim.' 
+                    : 'No active orders assigned.';
+                container.innerHTML = `<div style="text-align:center; padding:2rem; color:var(--muted)">${emptyMsg}</div>`;
+                return;
+            }
+
+            container.innerHTML = orders.map(order => {
+                const isPaid = order.status === 'paid' || order.amount_due <= 0;
+                const isPartial = order.status === 'partial_paid';
+                
+                let cardClass = 'card-cash';
+                let statusText = '💸 CASH ORDER';
+                let collectText = `COLLECT: L${order.total}`;
+                
+                if (isPaid) {
+                    cardClass = 'card-prepaid';
+                    statusText = '✅ PREPAID';
+                    collectText = 'COLLECT: L0';
+                } else if (isPartial) {
+                    cardClass = 'card-partial';
+                    statusText = '⚠️ PARTIAL';
+                    collectText = `COLLECT: L${order.amount_due}`;
+                }
+
+                // Address Link
+                const address = order.delivery_address || order.customers?.address || 'No Address Provided';
+                const mapLink = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}`;
+
+                // Buttons Logic
+                let actionBtn = '';
+                
+                if (currentMode === 'available') {
+                    // Claim Mode
+                    actionBtn = `<button class="btn btn-claim" onclick="claimOrder('${order.id}')">✋ CLAIM ORDER</button>`;
+                    
+                    // Modify map button for available view? No, still useful.
+                } else {
+                    // Assigned Mode
+                    if (order.delivery_status === 'assigned' || order.delivery_status === 'pending') {
+                        actionBtn = `<button class="btn btn-pickup" onclick="updateStatus('${order.id}', 'out_for_delivery')">PICK UP 📦</button>`;
+                    } else if (order.delivery_status === 'out_for_delivery') {
+                        actionBtn = `<button class="btn btn-complete" onclick="updateStatus('${order.id}', 'delivered')">COMPLETE ✅</button>`;
+                    }
+                }
+
+                return `
+                    <div class="order-card ${cardClass}">
+                        <div class="status-header">
+                            <span>${statusText}</span>
+                            <span>#${order.order_number}</span>
+                        </div>
+                        <div class="order-details">
+                            <div class="address">${address}</div>
+                            <div class="customer-name">${order.customers?.name || 'Guest'} • ${order.customers?.phone || ''}</div>
+                            <div style="font-size:0.9rem; color:var(--muted)">
+                                ${order.delivery_status?.replace(/_/g, ' ').toUpperCase() || 'PENDING'}
+                                ${order.delivery_zone_id ? ' • ZONE ' + order.delivery_zone_id : ''}
+                            </div>
+                        </div>
+                        <div class="money-row">
+                            <span>${collectText}</span>
+                            ${order.delivery_fee > 0 ? `<span style="font-size:0.9rem; color:var(--muted)">Fee: L${order.delivery_fee}</span>` : ''}
+                        </div>
+                        <div class="actions" style="margin-top:1rem">
+                            <a href="${mapLink}" target="_blank" class="btn btn-map">MAP 🗺️</a>
+                            ${actionBtn}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        async function claimOrder(orderId) {
+             if (!confirm('Claim this order?')) return;
+             
+             try {
+                const res = await fetch(`/api/driver/orders/${orderId}/claim`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ driverId: driver.id })
+                });
+                
+                if (res.status === 409) {
+                    alert('Someone else claimed this order just now!');
+                    fetchOrders(); // Refresh
+                    return;
+                }
+                
+                const data = await res.json();
+                if (data.success) {
+                    // Switch to "My Orders"
+                    switchTab('mine');
+                } else {
+                    alert('Error claiming order');
+                }
+             } catch (e) {
+                 alert('Error claiming order');
+                 console.error(e);
+             }
+        }
+
+        async function updateStatus(orderId, status) {
+            if (!confirm(`Mark as ${status.replace(/_/g, ' ')}?`)) return;
+            
+            try {
+                await fetch(`/api/orders/${orderId}/delivery-status`, {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ status, driverId: driver.id })
+                });
+                fetchOrders();
+            } catch (e) {
+                alert('Error updating status');
+            }
+        }
+    </script>
+</body>
+</html>

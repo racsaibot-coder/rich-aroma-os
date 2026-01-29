@@ -112,6 +112,48 @@
             gap: 0.5rem;
         }
         .bump-btn:active { background: #16a34a; }
+        .assign-btn {
+            width: 100%;
+            padding: 1rem;
+            background: #2563eb;
+            border: none;
+            color: white;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            margin-bottom: 0.5rem;
+            border-radius: 8px;
+        }
+        .modal-overlay {
+            position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.8); z-index: 1000;
+            display: flex; align-items: center; justify-content: center;
+            backdrop-filter: blur(5px);
+            display: none;
+        }
+        .modal {
+            background: var(--card-bg); width: 90%; max-width: 400px;
+            border-radius: 16px; border: 1px solid rgba(255,255,255,0.1);
+            padding: 1.5rem;
+        }
+        .modal h2 { margin-bottom: 1rem; }
+        .driver-list { display: flex; flex-direction: column; gap: 0.5rem; max-height: 60vh; overflow-y: auto; }
+        .driver-btn {
+            padding: 1rem; background: rgba(255,255,255,0.05); border: none;
+            color: white; border-radius: 8px; text-align: left; font-size: 1rem;
+            display: flex; justify-content: space-between; align-items: center;
+            cursor: pointer;
+        }
+        .driver-btn:hover { background: var(--caramel); color: black; }
+        .close-modal {
+            margin-top: 1rem; width: 100%; padding: 0.8rem;
+            background: transparent; border: 1px solid var(--text-muted);
+            color: var(--text-muted); border-radius: 8px; cursor: pointer;
+        }
         .empty {
             text-align: center;
             padding: 4rem 2rem;
@@ -137,9 +179,53 @@
     </header>
     <div class="orders" id="orders"></div>
 
+    <!-- Modal -->
+    <div id="driverModal" class="modal-overlay">
+        <div class="modal">
+            <h2>🛵 Assign Driver</h2>
+            <div id="driverList" class="driver-list">Loading...</div>
+            <button class="close-modal" onclick="closeDriverModal()">Cancel</button>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script>
+        // Supabase Configuration
+        const supabaseUrl = 'https://zcqubacfcettwawcimsy.supabase.co';
+        const supabaseKey = 'sb_publishable_hRVyru_6sektmVGQyJFfwQ_4b2-7MKq';
+        const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
+
         let orders = [];
+        let drivers = [];
+        let selectedOrderId = null;
         const startTimes = {};
+
+        // Realtime Subscription
+        const channel = supabase
+            .channel('orders')
+            .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'orders' }, payload => {
+                console.log('New order!', payload);
+                // Optimistically add or reload
+                loadOrders();
+            })
+            .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'orders' }, payload => {
+                console.log('Order updated!', payload);
+                loadOrders();
+            })
+            .subscribe();
+
+        async function loadDrivers() {
+            try {
+                // Assuming we can fetch employees. If fails (401), list will be empty.
+                const res = await fetch('/api/employees');
+                const data = await res.json();
+                if (data.employees) {
+                    drivers = data.employees.filter(e => e.role === 'driver');
+                }
+            } catch (e) {
+                console.error("Failed to load drivers", e);
+            }
+        }
 
         async function loadOrders() {
             const res = await fetch('/api/orders');
@@ -158,15 +244,23 @@
             }
             
             container.innerHTML = orders.map(order => {
-                if (!startTimes[order.id]) startTimes[order.id] = new Date(order.createdAt);
+                if (!startTimes[order.id]) startTimes[order.id] = new Date(order.created_at || Date.now());
                 const elapsed = Math.floor((Date.now() - startTimes[order.id]) / 1000);
                 const mins = Math.floor(elapsed / 60);
                 const secs = elapsed % 60;
                 const isUrgent = mins >= 5;
+
+                // Driver status
+                let driverSection = '';
+                if (order.driver_id) {
+                    driverSection = `<div style="padding:0.5rem 1rem; color:var(--caramel); font-weight:600; font-size:0.9rem">🛵 Assigned: ${order.driver_id}</div>`;
+                } else {
+                    driverSection = `<div style="padding:0 1rem"><button class="assign-btn" onclick="openDriverModal('${order.id}')">🛵 ASSIGN DRIVER</button></div>`;
+                }
                 
                 return `<div class="order-card ${isUrgent ? 'urgent' : ''}">
                     <div class="order-header">
-                        <span class="order-num">${order.id}</span>
+                        <span class="order-num">#${order.order_number}</span>
                         <div class="order-time">
                             <span>⏱</span>
                             <span class="timer ${isUrgent ? 'urgent' : ''}">${mins}:${String(secs).padStart(2, '0')}</span>
@@ -175,7 +269,7 @@
                     <div class="order-items">
                         ${order.items.map(item => `
                             <div class="order-item">
-                                <span class="item-qty">${item.qty}</span>
+                                <span class="item-qty">${item.qty || 1}</span>
                                 <div class="item-details">
                                     <div class="item-name">${item.name}</div>
                                     ${item.mods && item.mods.length ? `<div class="item-mods">${item.mods.map(m => m.name).join(', ')}</div>` : ''}
@@ -183,6 +277,7 @@
                             </div>
                         `).join('')}
                     </div>
+                    ${driverSection}
                     <button class="bump-btn" onclick="bumpOrder('${order.id}')">✓ BUMP</button>
                 </div>`;
             }).join('');
@@ -198,8 +293,55 @@
             loadOrders();
         }
 
+        // Driver Modal Logic
+        function openDriverModal(orderId) {
+            selectedOrderId = orderId;
+            document.getElementById('driverModal').style.display = 'flex';
+            if (drivers.length === 0) loadDrivers();
+            renderDriverList();
+        }
+
+        function closeDriverModal() {
+            document.getElementById('driverModal').style.display = 'none';
+            selectedOrderId = null;
+        }
+
+        function renderDriverList() {
+            const list = document.getElementById('driverList');
+            if (drivers.length === 0) {
+                list.innerHTML = '<div style="color:var(--text-muted)">No active drivers found.</div>';
+                return;
+            }
+            list.innerHTML = drivers.map(d => `
+                <button class="driver-btn" onclick="assignDriver('${d.id}')">
+                    <span>${d.name}</span>
+                    <span>${d.active ? '🟢' : '⚪'}</span>
+                </button>
+            `).join('');
+        }
+
+        async function assignDriver(driverId) {
+            if(!selectedOrderId) return;
+            const btn = document.querySelector(`button[onclick="assignDriver('${driverId}')"]`);
+            if(btn) btn.innerHTML = 'Assigning...';
+            
+            try {
+                await fetch(`/api/orders/${selectedOrderId}/assign`, {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ driverId })
+                });
+                closeDriverModal();
+                loadOrders();
+            } catch (e) {
+                alert('Assignment failed');
+                console.error(e);
+            }
+        }
+
         loadOrders();
-        setInterval(loadOrders, 5000);
+        loadDrivers(); // Preload
+        // setInterval(loadOrders, 5000); // Removed in favor of Realtime
         setInterval(render, 1000);
     </script>
 </body>

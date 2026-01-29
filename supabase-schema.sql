@@ -97,6 +97,8 @@ CREATE TABLE orders (
     customer_id TEXT REFERENCES customers(id),
     discount_code TEXT,
     notes TEXT,
+    driver_id TEXT REFERENCES employees(id),
+    delivery_status TEXT DEFAULT 'pending', -- pending, assigned, out_for_delivery, delivered
     created_at TIMESTAMPTZ DEFAULT NOW(),
     completed_at TIMESTAMPTZ
 );

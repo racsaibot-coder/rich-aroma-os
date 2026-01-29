@@ -486,6 +486,9 @@
         <button class="nav-tab" data-section="rewards">
             <span class="icon">⭐</span> Rewards
         </button>
+        <button class="nav-tab" data-section="delivery">
+            <span class="icon">🛵</span> Delivery
+        </button>
         <button class="nav-tab" data-section="loyalty-design">
             <span class="icon">🎨</span> Loyalty Design
         </button>
@@ -591,6 +594,7 @@
                         <option value="drinks">🧃 Drinks</option>
                         <option value="food">🍳 Food</option>
                         <option value="desserts">🍰 Desserts</option>
+                        <option value="Specials">🌟 Specials</option>
                     </select>
                 </div>
                 <div class="table-wrapper">
@@ -824,7 +828,32 @@
                 </div>
             </div>
         </section>
-    </main>
+
+        <!-- DELIVERY ZONES SECTION -->
+        <section id="section-delivery" class="section">
+            <div class="section-header">
+                <h2>🛵 Delivery Zones</h2>
+                <button class="btn btn-primary" onclick="openDeliveryModal()">+ Add Zone</button>
+            </div>
+            
+            <div class="card">
+                <div class="table-wrapper">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Zone Name</th>
+                                <th>Delivery Fee</th>
+                                <th>Active</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="deliveryTableBody"></tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+        
+        <!-- LOYALTY DESIGN SECTION (placeholder if needed or if not present) -->
     
     <!-- MODALS -->
     
@@ -852,6 +881,7 @@
                         <option value="drinks">🧃 Drinks</option>
                         <option value="food">🍳 Food</option>
                         <option value="desserts">🍰 Desserts</option>
+                        <option value="Specials">🌟 Specials</option>
                     </select>
                 </div>
                 <div class="form-group">
@@ -1076,6 +1106,31 @@
             </div>
         </div>
     </div>
+
+    <!-- Delivery Zone Modal -->
+    <div class="modal-overlay" id="deliveryModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3 id="deliveryModalTitle">Add Delivery Zone</h3>
+                <button class="modal-close" onclick="closeModal('deliveryModal')">×</button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="deliveryZoneId">
+                <div class="form-group">
+                    <label>Zone Name</label>
+                    <input type="text" id="deliveryZoneName" placeholder="Neighborhood / Barrio">
+                </div>
+                <div class="form-group">
+                    <label>Delivery Fee (L)</label>
+                    <input type="number" id="deliveryZoneFee" placeholder="30" min="0" step="0.01">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-ghost" onclick="closeModal('deliveryModal')">Cancel</button>
+                <button class="btn btn-primary" onclick="saveDeliveryZone()">Save Zone</button>
+            </div>
+        </div>
+    </div>
     
     <!-- Toast -->
     <div class="toast" id="toast"></div>
@@ -1090,6 +1145,7 @@
         let challenges = [];
         let promoCodes = [];
         let rewards = [];
+        let deliveryZones = [];
 
         // === SYSTEM STATUS ===
         checkSystemStatus();
@@ -1162,6 +1218,7 @@
                 case 'challenges': loadChallenges(); break;
                 case 'promos': loadPromoCodes(); break;
                 case 'rewards': loadRewards(); break;
+                case 'delivery': loadDeliveryZones(); break;
                 case 'business': loadBusinessSettings(); break;
             }
         }
@@ -1229,7 +1286,7 @@
             const filter = document.getElementById('menuCategoryFilter').value;
             const filtered = filter ? menuItems.filter(i => i.category === filter) : menuItems;
             
-            const categoryIcons = { coffee: '☕', drinks: '🧃', food: '🍳', desserts: '🍰' };
+            const categoryIcons = { coffee: '☕', drinks: '🧃', food: '🍳', desserts: '🍰', Specials: '🌟' };
             
             document.getElementById('menuTableBody').innerHTML = filtered.map(item => `
                 <tr>
@@ -1845,6 +1902,101 @@
         
         async function saveRewardsSettings() {
             showToast('Rewards settings saved!');
+        }
+
+        // === DELIVERY ZONES ===
+        async function loadDeliveryZones() {
+            try {
+                const res = await fetch(`${API_BASE}/delivery-zones`);
+                const data = await res.json();
+                deliveryZones = data.zones || [];
+                renderDeliveryTable();
+            } catch (e) {
+                console.error('Failed to load delivery zones:', e);
+            }
+        }
+
+        function renderDeliveryTable() {
+            document.getElementById('deliveryTableBody').innerHTML = deliveryZones.map(zone => `
+                <tr>
+                    <td><strong>${zone.name}</strong></td>
+                    <td>L ${parseFloat(zone.fee).toFixed(2)}</td>
+                    <td>
+                        <label class="toggle">
+                            <input type="checkbox" ${zone.active ? 'checked' : ''} onchange="toggleDeliveryZone('${zone.id}', this.checked)">
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </td>
+                    <td>
+                        <div class="actions">
+                            <button class="action-btn edit" onclick="editDeliveryZone('${zone.id}')">✏️</button>
+                            <button class="action-btn delete" onclick="deleteDeliveryZone('${zone.id}')">🗑️</button>
+                        </div>
+                    </td>
+                </tr>
+            `).join('') || '<tr><td colspan="4" style="text-align:center; color:var(--text-muted)">No delivery zones configured</td></tr>';
+        }
+
+        function openDeliveryModal(zone = null) {
+            document.getElementById('deliveryModalTitle').textContent = zone ? 'Edit Delivery Zone' : 'Add Delivery Zone';
+            document.getElementById('deliveryZoneId').value = zone?.id || '';
+            document.getElementById('deliveryZoneName').value = zone?.name || '';
+            document.getElementById('deliveryZoneFee').value = zone?.fee || '';
+            openModal('deliveryModal');
+        }
+
+        function editDeliveryZone(id) {
+            const zone = deliveryZones.find(z => z.id == id);
+            if (zone) openDeliveryModal(zone);
+        }
+
+        async function saveDeliveryZone() {
+            const id = document.getElementById('deliveryZoneId').value;
+            const data = {
+                name: document.getElementById('deliveryZoneName').value,
+                fee: parseFloat(document.getElementById('deliveryZoneFee').value),
+                active: true
+            };
+            
+            try {
+                const url = id ? `${API_BASE}/delivery-zones/${id}` : `${API_BASE}/delivery-zones`;
+                const method = id ? 'PUT' : 'POST';
+                
+                await fetch(url, {
+                    method,
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+                
+                closeModal('deliveryModal');
+                showToast(id ? 'Zone updated!' : 'Zone added!');
+                loadDeliveryZones();
+            } catch (e) {
+                showToast('Failed to save zone', true);
+            }
+        }
+
+        async function toggleDeliveryZone(id, active) {
+            try {
+                await fetch(`${API_BASE}/delivery-zones/${id}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ active })
+                });
+            } catch (e) {
+                showToast('Failed to update zone', true);
+            }
+        }
+
+        async function deleteDeliveryZone(id) {
+            if (!confirm('Delete this zone?')) return;
+            try {
+                await fetch(`${API_BASE}/delivery-zones/${id}`, { method: 'DELETE' });
+                showToast('Zone deleted');
+                loadDeliveryZones();
+            } catch (e) {
+                showToast('Failed to delete zone', true);
+            }
         }
         
         // === INIT ===

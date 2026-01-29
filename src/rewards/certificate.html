@@ -134,6 +134,12 @@
             min-height: 60px;
             border-bottom: 3px solid #D4A574;
             padding: 0 40px 10px;
+            
+            /* Fixes for long names */
+            white-space: normal;
+            line-height: 1.1;
+            word-break: break-word;
+            text-align: center;
         }
         
         .reason {
@@ -240,8 +246,22 @@
         
         /* Print styles */
         @media print {
-            body { background: white; padding: 0; }
-            .certificate { box-shadow: none; }
+            @page { size: landscape; margin: 0; }
+            body { 
+                background: white; 
+                padding: 0; 
+                display: block; 
+                -webkit-print-color-adjust: exact; 
+                print-color-adjust: exact; 
+            }
+            .certificate { 
+                box-shadow: none; 
+                width: 100%;
+                height: 100vh;
+                border-radius: 0;
+                margin: 0;
+            }
+            .generator { display: none; }
         }
         
         /* Form for generating */
@@ -401,6 +421,24 @@
 
         // Generate initial code
         generateCode();
+
+        // Parse URL Params
+        window.addEventListener('DOMContentLoaded', () => {
+            const urlParams = new URLSearchParams(window.location.search);
+            if (urlParams.has('student')) {
+                document.getElementById('studentName').value = urlParams.get('student');
+            }
+            if (urlParams.has('teacher')) {
+                document.getElementById('teacherName').value = urlParams.get('teacher');
+            }
+            if (urlParams.has('school')) {
+                document.getElementById('schoolName').value = urlParams.get('school');
+            }
+            if (urlParams.has('reason')) {
+                document.getElementById('reason').value = urlParams.get('reason');
+            }
+            updateCertificate();
+        });
     </script>
 </body>
 </html>
