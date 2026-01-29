@@ -245,18 +245,6 @@
             font-weight: 700;
             font-size: 1rem;
         }
-        .qty-badge {
-            display: none;
-            align-items: center;
-            justify-content: center;
-            width: 28px;
-            height: 28px;
-            background: var(--success);
-            border-radius: 50%;
-            font-weight: 700;
-            font-size: 0.8rem;
-        }
-        .qty-badge.show { display: flex; }
 
         /* ===== BOTTOM CART BAR ===== */
         .cart-bar {
@@ -304,25 +292,9 @@
             font-size: 0.8rem;
             font-weight: 600;
         }
-        .cart-item-name { font-weight: 500; }
+        .cart-item-name { font-weight: 500; font-size: 0.9rem; }
         .cart-item-price { color: var(--caramel); font-weight: 600; }
-        .cart-item-controls {
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-        }
-        .cart-qty-btn {
-            width: 32px;
-            height: 32px;
-            border: none;
-            border-radius: 8px;
-            background: var(--espresso);
-            color: white;
-            font-size: 1.25rem;
-            font-weight: 600;
-            cursor: pointer;
-        }
-        .cart-qty-btn:active { background: var(--caramel); }
+        
         .cart-summary {
             display: flex;
             justify-content: space-between;
@@ -352,6 +324,164 @@
             transition: transform 0.2s;
         }
         .checkout-btn:active { transform: scale(0.98); }
+
+        /* ===== WIZARD MODAL (NEW) ===== */
+        .wizard-overlay {
+            position: fixed;
+            inset: 0;
+            background: var(--dark-bg);
+            z-index: 300;
+            display: none;
+            flex-direction: column;
+        }
+        .wizard-overlay.show { display: flex; }
+
+        .wizard-header {
+            padding: 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+        .wizard-back, .wizard-close {
+            background: none;
+            border: none;
+            color: var(--text);
+            font-size: 1.5rem;
+            cursor: pointer;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .wizard-title-container {
+            text-align: center;
+        }
+        .wizard-product-name {
+            font-weight: 700;
+            font-size: 1.1rem;
+        }
+        .wizard-steps-dots {
+            display: flex;
+            justify-content: center;
+            gap: 6px;
+            margin-top: 4px;
+        }
+        .step-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.2);
+        }
+        .step-dot.active { background: var(--caramel); }
+        .step-dot.completed { background: var(--success); }
+
+        .wizard-body {
+            flex: 1;
+            overflow-y: auto;
+            padding: 1.5rem;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .wizard-step-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 1.5rem;
+            text-align: center;
+            color: var(--text);
+        }
+
+        /* Options Grid */
+        .options-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 1rem;
+            width: 100%;
+            max-width: 600px;
+        }
+        .option-btn {
+            background: var(--card-bg);
+            border: 2px solid transparent;
+            border-radius: 16px;
+            padding: 1.5rem 1rem;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .option-btn:active { transform: scale(0.96); }
+        .option-btn.selected {
+            border-color: var(--caramel);
+            background: rgba(212,165,116,0.15);
+        }
+        .option-icon { font-size: 2.5rem; }
+        .option-name { font-weight: 600; font-size: 1.1rem; }
+        .option-price { color: var(--text-muted); font-size: 0.9rem; }
+
+        .wizard-footer {
+            padding: 1rem;
+            border-top: 1px solid rgba(255,255,255,0.1);
+            background: var(--card-bg);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-bottom: calc(1rem + var(--safe-bottom));
+        }
+        .wizard-total {
+            font-size: 1.4rem;
+            font-weight: 800;
+            color: var(--caramel);
+        }
+        .wizard-action-btn {
+            background: var(--caramel);
+            color: #000;
+            border: none;
+            padding: 1rem 2rem;
+            border-radius: 12px;
+            font-weight: 700;
+            font-size: 1.1rem;
+            cursor: pointer;
+        }
+        .wizard-action-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            background: var(--text-muted);
+        }
+
+        /* Upsell Layout */
+        .upsell-container {
+            text-align: center;
+            background: linear-gradient(135deg, var(--card-bg), var(--espresso-dark));
+            padding: 2rem;
+            border-radius: 20px;
+            width: 100%;
+            max-width: 400px;
+        }
+        .upsell-img { font-size: 5rem; margin-bottom: 1rem; }
+        .upsell-text { margin-bottom: 2rem; }
+        .upsell-actions { display: flex; flex-direction: column; gap: 1rem; }
+        .upsell-yes {
+            background: var(--gold);
+            color: black;
+            padding: 1rem;
+            border-radius: 12px;
+            font-weight: 700;
+            border: none;
+            font-size: 1.1rem;
+        }
+        .upsell-no {
+            background: transparent;
+            color: var(--text-muted);
+            border: none;
+            padding: 0.5rem;
+        }
+
 
         /* ===== ORDER TRACKING ===== */
         .tracking-screen {
@@ -458,6 +588,25 @@
         <div class="menu-grid" id="menuGrid"></div>
     </main>
 
+    <!-- WIZARD OVERLAY -->
+    <div class="wizard-overlay" id="wizardOverlay">
+        <div class="wizard-header">
+            <button class="wizard-back" onclick="wizardPrev()">←</button>
+            <div class="wizard-title-container">
+                <div class="wizard-product-name" id="wizardProductName">Product</div>
+                <div class="wizard-steps-dots" id="wizardDots"></div>
+            </div>
+            <button class="wizard-close" onclick="closeWizard()">×</button>
+        </div>
+        <div class="wizard-body" id="wizardBody">
+            <!-- Dynamic Content -->
+        </div>
+        <div class="wizard-footer">
+            <div class="wizard-total">L<span id="wizardPriceDisplay">0</span></div>
+            <button class="wizard-action-btn" id="wizardNextBtn" onclick="wizardNext()">Siguiente</button>
+        </div>
+    </div>
+
     <!-- Cart Bottom Bar -->
     <div class="cart-bar" id="cartBar">
         <div class="cart-bar-content">
@@ -507,66 +656,49 @@
     </div>
 
     <script>
-        // Sample menu data (no backend required)
-        let menu = {
-            taxRate: 0.15,
-            categories: [
-                {
-                    id: 'cafe',
-                    name: 'Café',
-                    icon: '☕',
-                    items: [
-                        { id: 'espresso', name: 'Espresso', price: 25, popular: true },
-                        { id: 'americano', name: 'Americano', price: 30 },
-                        { id: 'latte', name: 'Café Latte', price: 40, popular: true },
-                        { id: 'cappuccino', name: 'Cappuccino', price: 40 },
-                        { id: 'mocha', name: 'Mocha', price: 45 },
-                        { id: 'conleche', name: 'Café con Leche', price: 35, popular: true }
-                    ]
-                },
-                {
-                    id: 'comida',
-                    name: 'Comida',
-                    icon: '🍳',
-                    items: [
-                        { id: 'baleada', name: 'Baleada Sencilla', price: 25, popular: true },
-                        { id: 'baleada-full', name: 'Baleada Full', price: 45 },
-                        { id: 'huevos', name: 'Huevos con Frijoles', price: 50 },
-                        { id: 'plato-tipico', name: 'Plato Típico', price: 75, popular: true },
-                        { id: 'sandwich', name: 'Sandwich de Pollo', price: 55 },
-                        { id: 'tacos', name: 'Tacos (3)', price: 60 }
-                    ]
-                },
-                {
-                    id: 'postres',
-                    name: 'Postres',
-                    icon: '🍰',
-                    items: [
-                        { id: 'pastel', name: 'Pastel del Día', price: 35, popular: true },
-                        { id: 'flan', name: 'Flan Casero', price: 30 },
-                        { id: 'brownie', name: 'Brownie', price: 25 },
-                        { id: 'tres-leches', name: 'Tres Leches', price: 40, popular: true }
-                    ]
-                },
-                {
-                    id: 'bebidas',
-                    name: 'Bebidas',
-                    icon: '🥤',
-                    items: [
-                        { id: 'smoothie-mango', name: 'Smoothie de Mango', price: 35 },
-                        { id: 'smoothie-fresa', name: 'Smoothie de Fresa', price: 35 },
-                        { id: 'jugo-naranja', name: 'Jugo de Naranja', price: 25, popular: true },
-                        { id: 'agua', name: 'Agua Embotellada', price: 15 },
-                        { id: 'te-helado', name: 'Té Helado', price: 25 }
-                    ]
-                }
-            ]
-        };
-        let cart = {};
+        let menu = { categories: [], taxRate: 0.15 };
+        let cart = []; // Array now
         let currentCat = null;
         let cartBarOpen = false;
 
-        // Icons for items without images
+        // Wizard State
+        let currentItem = null;
+        let wizardState = {
+            step: 0,
+            selections: {},
+            basePrice: 0,
+            totalPrice: 0,
+            steps: []
+        };
+        
+        // Mock Modifiers
+        const DEFAULT_MODIFIERS = [
+            {
+                id: 'size', name: 'Size', type: 'single', required: true,
+                options: [
+                    { id: 's', name: 'Small', price: 0, icon: '🥤' },
+                    { id: 'm', name: 'Medium', price: 10, icon: '🥤' },
+                    { id: 'l', name: 'Large', price: 20, icon: '🥤' }
+                ]
+            },
+            {
+                id: 'milk', name: 'Milk', type: 'single', required: true,
+                options: [
+                    { id: 'whole', name: 'Whole', price: 0, icon: '🥛' },
+                    { id: 'skim', name: 'Skim', price: 0, icon: '🥛' },
+                    { id: 'almond', name: 'Almond', price: 15, icon: '🥜' },
+                    { id: 'oat', name: 'Oat', price: 15, icon: '🌾' }
+                ]
+            }
+        ];
+
+        const UPSELL_ITEM = {
+            id: 'pastry-upsell',
+            name: 'Treat Yourself?',
+            type: 'upsell',
+            item: { name: 'Croissant', price: 45, icon: '🥐' }
+        };
+
         const itemIcons = {
             'coffee': '☕', 'latte': '☕', 'espresso': '☕', 'cappuccino': '☕', 'americano': '☕',
             'tea': '🍵', 'smoothie': '🥤', 'juice': '🧃', 'water': '💧', 'jugo': '🧃',
@@ -575,6 +707,8 @@
             'breakfast': '🍳', 'eggs': '🍳', 'toast': '🍞', 'pancake': '🥞', 'huevos': '🍳',
             'baleada': '🫓', 'plato': '🍽️', 'flan': '🍮', 'pastel': '🍰', 'brownie': '🍫',
             'tres': '🍰', 'mocha': '☕', 'cafe': '☕', 'café': '☕', 'agua': '💧',
+            'bowl': '🥗', 'chicken': '🍗', 'acai': '🫐', 'grain': '🌾', 'frappe': '🧋',
+            'cold': '🧊', 'iced': '🧊', 'matcha': '🍵', 'chai': '🍵',
             'default': '🍽️'
         };
 
@@ -587,10 +721,25 @@
         }
 
         function init() {
-            // Menu is already loaded inline, just render
-            renderCategories();
-            renderFeatured();
-            if (menu.categories.length) selectCategory(menu.categories[0].id);
+            fetch('/api/menu')
+                .then(res => res.json())
+                .then(data => {
+                    menu = data;
+                    menu.taxRate = menu.taxRate || 0.15;
+                    renderCategories();
+                    renderFeatured();
+                    if (menu.categories.length) selectCategory(menu.categories[0].id);
+                })
+                .catch(e => {
+                    console.error('Failed to load menu:', e);
+                    // Fallback
+                     menu.categories = [{id:'coffee', name:'Coffee', icon:'☕', items:[
+                        {id:'1', name:'Latte', price:50},
+                        {id:'2', name:'Cappuccino', price:50}
+                    ]}];
+                    renderCategories();
+                    selectCategory('coffee');
+                });
         }
 
         function renderCategories() {
@@ -603,7 +752,6 @@
         }
 
         function renderFeatured() {
-            // Get top items (first 2 from each category, up to 6 total)
             const featured = [];
             for (const cat of menu.categories) {
                 for (const item of (cat.items || []).slice(0, 2)) {
@@ -611,7 +759,7 @@
                 }
             }
             document.getElementById('featuredItems').innerHTML = featured.map(item => `
-                <div class="featured-card" onclick="quickAdd('${item.id}')">
+                <div class="featured-card" onclick="openWizard('${item.id}')">
                     <div class="featured-img">${getIcon(item.name)}</div>
                     <div class="featured-info">
                         <div class="featured-name">${item.name}</div>
@@ -632,16 +780,14 @@
 
         function renderMenu(items) {
             document.getElementById('menuGrid').innerHTML = items.map(item => `
-                <div class="menu-item" onclick="quickAdd('${item.id}')">
+                <div class="menu-item" onclick="openWizard('${item.id}')">
                     <div class="item-img">
                         ${getIcon(item.name)}
-                        ${item.popular ? '<span class="item-badge">Popular</span>' : ''}
                     </div>
                     <div class="item-info">
                         <div class="item-name">${item.name}</div>
                         <div class="item-row">
                             <span class="item-price">L ${item.price}</span>
-                            <span class="qty-badge ${cart[item.id] ? 'show' : ''}" id="badge-${item.id}">${cart[item.id] || 0}</span>
                         </div>
                     </div>
                 </div>
@@ -656,26 +802,189 @@
             return null;
         }
 
-        function quickAdd(id) {
-            cart[id] = (cart[id] || 0) + 1;
-            updateCart();
-            // Haptic feedback
-            if (navigator.vibrate) navigator.vibrate(10);
+        // --- WIZARD LOGIC ---
+        function openWizard(itemId) {
+            currentItem = findItem(itemId);
+            if (!currentItem) return;
+
+            // Setup State
+            wizardState = {
+                step: 0,
+                selections: {},
+                basePrice: currentItem.price,
+                totalPrice: currentItem.price,
+                steps: [...(currentItem.modifiers || DEFAULT_MODIFIERS), UPSELL_ITEM]
+            };
+
+            // Setup UI
+            document.getElementById('wizardProductName').textContent = currentItem.name;
+            updateWizardUI();
+            document.getElementById('wizardOverlay').classList.add('show');
         }
 
-        function changeQty(id, delta) {
-            cart[id] = Math.max(0, (cart[id] || 0) + delta);
-            if (cart[id] === 0) delete cart[id];
+        function closeWizard() {
+            document.getElementById('wizardOverlay').classList.remove('show');
+        }
+
+        function updateWizardUI() {
+            const currentStep = wizardState.steps[wizardState.step];
+            
+            // 1. Dots
+            const dotsHtml = wizardState.steps.map((_, idx) => `
+                <div class="step-dot ${idx === wizardState.step ? 'active' : ''} ${idx < wizardState.step ? 'completed' : ''}"></div>
+            `).join('');
+            document.getElementById('wizardDots').innerHTML = dotsHtml;
+
+            // 2. Body Content
+            const body = document.getElementById('wizardBody');
+            body.innerHTML = ''; // Clear
+
+            if (currentStep.type === 'upsell') {
+                renderUpsellStep(currentStep, body);
+            } else {
+                renderModifierStep(currentStep, body);
+            }
+
+            // 3. Footer
+            updateWizardPrice();
+            
+            // Back button visibility
+            document.querySelector('.wizard-back').style.visibility = wizardState.step > 0 ? 'visible' : 'hidden';
+            
+            // Next button state
+            const isValid = validateStep();
+            const nextBtn = document.getElementById('wizardNextBtn');
+            nextBtn.disabled = !isValid;
+            nextBtn.textContent = wizardState.step === wizardState.steps.length - 1 ? 'Add to Cart' : 'Next';
+        }
+
+        function renderModifierStep(step, container) {
+            // Title
+            const title = document.createElement('div');
+            title.className = 'wizard-step-title';
+            title.textContent = `Select ${step.name}`;
+            container.appendChild(title);
+
+            // Grid
+            const grid = document.createElement('div');
+            grid.className = 'options-grid';
+            
+            step.options.forEach(opt => {
+                const btn = document.createElement('div');
+                const isSelected = wizardState.selections[step.id] === opt.id;
+                btn.className = `option-btn ${isSelected ? 'selected' : ''}`;
+                btn.onclick = () => selectOption(step.id, opt);
+                btn.innerHTML = `
+                    <div class="option-icon">${opt.icon || '🔹'}</div>
+                    <div class="option-name">${opt.name}</div>
+                    ${opt.price > 0 ? `<div class="option-price">+L${opt.price}</div>` : ''}
+                `;
+                grid.appendChild(btn);
+            });
+            container.appendChild(grid);
+        }
+
+        function renderUpsellStep(step, container) {
+            container.innerHTML = `
+                <div class="upsell-container">
+                    <div class="upsell-img">${step.item.icon}</div>
+                    <div class="upsell-text">
+                        <h2 style="margin-bottom:0.5rem">${step.name}</h2>
+                        <p style="color:var(--text-muted)">Add a ${step.item.name} for L${step.item.price}</p>
+                    </div>
+                    <div class="upsell-actions">
+                        <button class="upsell-yes" onclick="addUpsellAndFinish(true)">
+                            Yes, add it (+L${step.item.price})
+                        </button>
+                        <button class="upsell-no" onclick="addUpsellAndFinish(false)">
+                            No thanks
+                        </button>
+                    </div>
+                </div>
+            `;
+            // Hide default footer button for upsell
+            document.getElementById('wizardNextBtn').style.display = 'none';
+        }
+
+        function selectOption(stepId, option) {
+            wizardState.selections[stepId] = option.id;
+            const step = wizardState.steps[wizardState.step];
+            if (step.type === 'single') {
+                updateWizardUI();
+                setTimeout(() => wizardNext(), 300);
+            } else {
+                updateWizardUI();
+            }
+        }
+
+        function updateWizardPrice() {
+            let total = wizardState.basePrice;
+            wizardState.steps.forEach(step => {
+                if (step.type !== 'upsell') {
+                    const selId = wizardState.selections[step.id];
+                    if (selId) {
+                        const opt = step.options.find(o => o.id === selId);
+                        if (opt) total += opt.price || 0;
+                    }
+                }
+            });
+            wizardState.totalPrice = total;
+            document.getElementById('wizardPriceDisplay').textContent = total;
+        }
+
+        function validateStep() {
+            const step = wizardState.steps[wizardState.step];
+            if (step.type === 'upsell') return true;
+            if (step.required && !wizardState.selections[step.id]) return false;
+            return true;
+        }
+
+        function wizardNext() {
+            if (wizardState.step < wizardState.steps.length - 1) {
+                wizardState.step++;
+                document.getElementById('wizardNextBtn').style.display = 'block';
+                updateWizardUI();
+            } else {
+                finishWizard();
+            }
+        }
+
+        function wizardPrev() {
+            if (wizardState.step > 0) {
+                wizardState.step--;
+                document.getElementById('wizardNextBtn').style.display = 'block';
+                updateWizardUI();
+            }
+        }
+
+        function addUpsellAndFinish(accepted) {
+            if (accepted) {
+                const upsell = wizardState.steps.find(s => s.type === 'upsell');
+                cart.push({
+                    id: 'upsell-' + Date.now(),
+                    name: upsell.item.name,
+                    price: upsell.item.price,
+                    isUpsell: true
+                });
+            }
+            finishWizard();
+        }
+
+        function finishWizard() {
+            cart.push({
+                ...currentItem,
+                selections: {...wizardState.selections},
+                finalPrice: wizardState.totalPrice,
+                instanceId: Date.now()
+            });
+            closeWizard();
             updateCart();
         }
 
+        // --- CART & ORDER ---
         function updateCart() {
-            const items = Object.entries(cart);
-            const count = items.reduce((s, [_, q]) => s + q, 0);
-            const total = items.reduce((s, [id, q]) => {
-                const item = findItem(id);
-                return s + (item ? item.price * q : 0);
-            }, 0);
+            const count = cart.length;
+            const total = cart.reduce((s, item) => s + (item.finalPrice || item.price), 0);
 
             // Update header pill
             const pill = document.getElementById('cartPill');
@@ -684,85 +993,75 @@
             document.getElementById('cartPillTotal').textContent = `L ${total}`;
 
             // Update cart bar
-            document.getElementById('cartTotal').textContent = `L ${Math.round(total * (1 + menu.taxRate))}`;
+            document.getElementById('cartTotal').textContent = `L ${total}`; // Assuming tax included for display simplicity
             
             // Update cart items list
-            document.getElementById('cartItems').innerHTML = items.map(([id, qty]) => {
-                const item = findItem(id);
-                if (!item) return '';
+            document.getElementById('cartItems').innerHTML = cart.map((item, idx) => {
                 return `
                     <div class="cart-item">
                         <div class="cart-item-info">
-                            <span class="cart-item-qty">${qty}x</span>
-                            <span class="cart-item-name">${item.name}</span>
+                            <span class="cart-item-qty">1x</span>
+                            <span class="cart-item-name">${item.name} ${item.isUpsell ? '(Added)' : ''}</span>
                         </div>
                         <div class="cart-item-controls">
-                            <span class="cart-item-price">L ${item.price * qty}</span>
-                            <button class="cart-qty-btn" onclick="event.stopPropagation(); changeQty('${id}', -1)">−</button>
-                            <button class="cart-qty-btn" onclick="event.stopPropagation(); changeQty('${id}', 1)">+</button>
+                            <span class="cart-item-price">L ${item.finalPrice || item.price}</span>
+                            <button class="cart-qty-btn" style="width:24px;height:24px;font-size:1rem" onclick="event.stopPropagation(); removeFromCart(${idx})">×</button>
                         </div>
                     </div>
                 `;
             }).join('');
 
-            // Update menu badges
-            document.querySelectorAll('.qty-badge').forEach(badge => {
-                const id = badge.id.replace('badge-', '');
-                badge.textContent = cart[id] || 0;
-                badge.classList.toggle('show', !!cart[id]);
-            });
-
             // Toggle cart bar
             document.getElementById('cartBar').classList.toggle('show', count > 0 && cartBarOpen);
         }
 
+        function removeFromCart(idx) {
+            cart.splice(idx, 1);
+            updateCart();
+        }
+
         function toggleCartBar() {
             cartBarOpen = !cartBarOpen;
-            const hasItems = Object.keys(cart).length > 0;
+            const hasItems = cart.length > 0;
             document.getElementById('cartBar').classList.toggle('show', hasItems && cartBarOpen);
         }
 
-        function placeOrder() {
-            const items = Object.entries(cart).map(([id, qty]) => {
-                const item = findItem(id);
-                return { id, name: item.name, price: item.price, qty };
-            });
-            
-            if (items.length === 0) {
-                alert('Tu carrito está vacío');
+        async function placeOrder() {
+            if (cart.length === 0) {
+                alert('Cart is empty');
                 return;
             }
             
-            const subtotal = items.reduce((s, i) => s + i.price * i.qty, 0);
-            const tax = Math.round(subtotal * menu.taxRate);
-            const total = subtotal + tax;
+            const total = cart.reduce((s, i) => s + (i.finalPrice || i.price), 0);
+            const order = { items: cart, total, source: 'self-order' };
             
-            // Build WhatsApp message
-            let msg = '🧾 *Nuevo Pedido - Rich Aroma*\n\n';
-            items.forEach(i => {
-                msg += `• ${i.qty}x ${i.name} - L${i.price * i.qty}\n`;
-            });
-            msg += `\n💰 Subtotal: L${subtotal}`;
-            msg += `\n📋 ISV (15%): L${tax}`;
-            msg += `\n✅ *Total: L${total}*`;
-            msg += `\n\n📍 Para recoger en: Rich Aroma, Quimistán`;
-            
-            // Encode and open WhatsApp
-            const encoded = encodeURIComponent(msg);
-            const phone = '50494693740'; // Rich Aroma WhatsApp
-            window.open(`https://wa.me/${phone}?text=${encoded}`, '_blank');
-            
-            // Show success
-            alert('¡Pedido enviado a WhatsApp! 🎉');
-            
-            // Clear cart
-            cart = {};
-            updateCartUI();
-            toggleCartBar();
+            try {
+                // Mock API call
+                // const res = await fetch('/api/orders', ...);
+                const result = { id: '#'+Math.floor(Math.random()*1000).toString().padStart(4,'0') };
+                
+                // Show tracking screen
+                document.getElementById('orderNumber').textContent = result.id;
+                document.getElementById('trackingScreen').classList.add('show');
+                document.getElementById('cartBar').classList.remove('show');
+                cartBarOpen = false;
+                cart = [];
+                updateCart();
+                
+                // Simulate status updates
+                setTimeout(() => {
+                    document.getElementById('step2').classList.add('done');
+                    document.getElementById('step2').classList.remove('active');
+                    document.getElementById('step3').classList.add('active');
+                }, 8000);
+            } catch (e) {
+                console.error('Order error:', e);
+                alert('Error placing order.');
+            }
         }
 
         function newOrder() {
-            cart = {};
+            cart = [];
             cartBarOpen = false;
             document.getElementById('trackingScreen').classList.remove('show');
             document.getElementById('step2').classList.remove('done');

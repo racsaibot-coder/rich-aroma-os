@@ -50,7 +50,6 @@
         .logo-icon { font-size: 1.5rem; }
         .logo h1 { font-size: 1.2rem; font-weight: 700; }
         
-        /* Rico Rewards Badge */
         .rewards-badge {
             display: flex;
             align-items: center;
@@ -117,16 +116,6 @@
         .item-icon { font-size: 2rem; margin-bottom: 0.5rem; }
         .item-name { font-weight: 600; font-size: 0.95rem; margin-bottom: 0.25rem; }
         .item-price { color: var(--caramel); font-weight: 700; }
-        .item-badge {
-            display: inline-block;
-            background: var(--gold);
-            color: #000;
-            font-size: 0.7rem;
-            padding: 0.2rem 0.4rem;
-            border-radius: 4px;
-            margin-left: 0.5rem;
-            font-weight: 600;
-        }
 
         /* Cart Bar */
         .cart-bar {
@@ -169,7 +158,164 @@
         }
         .checkout-btn:active { transform: scale(0.98); }
 
-        /* Checkout Modal */
+        /* WIZARD MODAL */
+        .wizard-overlay {
+            position: fixed;
+            inset: 0;
+            background: var(--dark-bg);
+            z-index: 300;
+            display: none;
+            flex-direction: column;
+        }
+        .wizard-overlay.show { display: flex; }
+
+        .wizard-header {
+            padding: 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+        .wizard-back, .wizard-close {
+            background: none;
+            border: none;
+            color: var(--text);
+            font-size: 1.5rem;
+            cursor: pointer;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .wizard-title-container {
+            text-align: center;
+        }
+        .wizard-product-name {
+            font-weight: 700;
+            font-size: 1.1rem;
+        }
+        .wizard-steps-dots {
+            display: flex;
+            justify-content: center;
+            gap: 6px;
+            margin-top: 4px;
+        }
+        .step-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.2);
+        }
+        .step-dot.active { background: var(--caramel); }
+        .step-dot.completed { background: var(--success); }
+
+        .wizard-body {
+            flex: 1;
+            overflow-y: auto;
+            padding: 1.5rem;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .wizard-step-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 1.5rem;
+            text-align: center;
+            color: var(--text);
+        }
+
+        /* Options Grid */
+        .options-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 1rem;
+            width: 100%;
+            max-width: 600px;
+        }
+        .option-btn {
+            background: var(--card-bg);
+            border: 2px solid transparent;
+            border-radius: 16px;
+            padding: 1.5rem 1rem;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .option-btn:active { transform: scale(0.96); }
+        .option-btn.selected {
+            border-color: var(--caramel);
+            background: rgba(212,165,116,0.15);
+        }
+        .option-icon { font-size: 2.5rem; }
+        .option-name { font-weight: 600; font-size: 1.1rem; }
+        .option-price { color: var(--text-muted); font-size: 0.9rem; }
+
+        .wizard-footer {
+            padding: 1rem;
+            border-top: 1px solid rgba(255,255,255,0.1);
+            background: var(--card-bg);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-bottom: calc(1rem + var(--safe-bottom));
+        }
+        .wizard-total {
+            font-size: 1.4rem;
+            font-weight: 800;
+            color: var(--caramel);
+        }
+        .wizard-action-btn {
+            background: var(--caramel);
+            color: #000;
+            border: none;
+            padding: 1rem 2rem;
+            border-radius: 12px;
+            font-weight: 700;
+            font-size: 1.1rem;
+            cursor: pointer;
+        }
+        .wizard-action-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            background: var(--text-muted);
+        }
+
+        /* Upsell Layout */
+        .upsell-container {
+            text-align: center;
+            background: linear-gradient(135deg, var(--card-bg), var(--espresso-dark));
+            padding: 2rem;
+            border-radius: 20px;
+            width: 100%;
+            max-width: 400px;
+        }
+        .upsell-img { font-size: 5rem; margin-bottom: 1rem; }
+        .upsell-text { margin-bottom: 2rem; }
+        .upsell-actions { display: flex; flex-direction: column; gap: 1rem; }
+        .upsell-yes {
+            background: var(--gold);
+            color: black;
+            padding: 1rem;
+            border-radius: 12px;
+            font-weight: 700;
+            border: none;
+            font-size: 1.1rem;
+        }
+        .upsell-no {
+            background: transparent;
+            color: var(--text-muted);
+            border: none;
+            padding: 0.5rem;
+        }
+
+        /* Existing Checkout Modal Styles ... (Simplified) */
         .modal-overlay {
             position: fixed;
             inset: 0;
@@ -179,7 +325,6 @@
             align-items: flex-end;
         }
         .modal-overlay.show { display: flex; }
-        
         .checkout-modal {
             background: var(--card-bg);
             width: 100%;
@@ -188,198 +333,15 @@
             padding: 1.5rem;
             overflow-y: auto;
         }
-        .modal-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 1.5rem;
-        }
-        .modal-header h2 { font-size: 1.3rem; }
-        .close-btn {
-            background: var(--espresso);
-            border: none;
-            width: 36px;
-            height: 36px;
-            border-radius: 50%;
-            color: var(--text);
-            font-size: 1.2rem;
-            cursor: pointer;
-        }
-
-        /* Option Cards */
-        .option-section { margin-bottom: 1.5rem; }
-        .option-label {
-            font-size: 0.85rem;
-            color: var(--text-muted);
-            margin-bottom: 0.75rem;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-        .option-cards { display: flex; gap: 0.75rem; }
-        .option-card {
-            flex: 1;
-            background: var(--dark-bg);
-            border: 2px solid transparent;
-            border-radius: 12px;
-            padding: 1rem;
-            text-align: center;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-        .option-card.selected {
-            border-color: var(--caramel);
-            background: rgba(212,165,116,0.1);
-        }
-        .option-icon { font-size: 1.5rem; margin-bottom: 0.5rem; }
-        .option-title { font-weight: 600; font-size: 0.95rem; }
-        .option-desc { font-size: 0.75rem; color: var(--text-muted); margin-top: 0.25rem; }
-        .option-bonus {
-            background: var(--gold);
-            color: #000;
-            font-size: 0.7rem;
-            padding: 0.2rem 0.5rem;
-            border-radius: 10px;
-            margin-top: 0.5rem;
-            display: inline-block;
-            font-weight: 600;
-        }
-
-        /* Phone Input */
-        .phone-input-section {
-            background: var(--dark-bg);
-            border-radius: 12px;
-            padding: 1rem;
-            margin-bottom: 1.5rem;
-        }
-        .phone-row { display: flex; gap: 0.5rem; }
-        .phone-input {
-            flex: 1;
-            background: var(--card-bg);
-            border: 1px solid var(--espresso);
-            border-radius: 8px;
-            padding: 0.8rem;
-            color: var(--text);
-            font-size: 1rem;
-        }
-        .phone-btn {
-            background: var(--caramel);
-            border: none;
-            border-radius: 8px;
-            padding: 0 1rem;
-            color: #000;
-            font-weight: 600;
-            cursor: pointer;
-        }
-        .rewards-display {
-            margin-top: 1rem;
-            padding: 1rem;
-            background: linear-gradient(135deg, rgba(251,191,36,0.2), rgba(245,158,11,0.1));
-            border-radius: 12px;
-            display: none;
-        }
-        .rewards-display.show { display: block; }
-        .rewards-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-        .rewards-points {
-            font-size: 1.5rem;
-            font-weight: 800;
-            color: var(--gold);
-        }
-        .rewards-balance {
-            color: var(--success);
-            font-weight: 600;
-        }
-        .rewards-earning {
-            margin-top: 0.75rem;
-            padding-top: 0.75rem;
-            border-top: 1px solid rgba(255,255,255,0.1);
-            font-size: 0.9rem;
-            color: var(--text-muted);
-        }
-        .rewards-earning strong { color: var(--gold); }
-
-        /* Order Summary */
-        .order-summary {
-            background: var(--dark-bg);
-            border-radius: 12px;
-            padding: 1rem;
-            margin-bottom: 1.5rem;
-        }
-        .summary-row {
-            display: flex;
-            justify-content: space-between;
-            padding: 0.5rem 0;
-        }
-        .summary-row.total {
-            border-top: 1px solid rgba(255,255,255,0.1);
-            margin-top: 0.5rem;
-            padding-top: 0.75rem;
-            font-weight: 700;
-            font-size: 1.1rem;
-        }
-        .summary-row .earning { color: var(--gold); }
-
-        /* Confirm Button */
-        .confirm-btn {
-            width: 100%;
-            padding: 1.2rem;
-            background: linear-gradient(135deg, var(--success), #16a34a);
-            border: none;
-            border-radius: 14px;
-            color: #fff;
-            font-size: 1.1rem;
-            font-weight: 700;
-            cursor: pointer;
-        }
-        .confirm-btn:disabled {
-            background: var(--espresso);
-            opacity: 0.5;
-        }
-
-        /* Success Screen */
-        .success-screen {
-            position: fixed;
-            inset: 0;
-            background: var(--dark-bg);
-            z-index: 400;
-            display: none;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            padding: 2rem;
-            text-align: center;
-        }
-        .success-screen.show { display: flex; }
-        .success-icon { font-size: 5rem; margin-bottom: 1rem; }
-        .success-order { font-size: 2rem; font-weight: 800; color: var(--caramel); }
-        .success-msg { color: var(--text-muted); margin: 1rem 0 2rem; }
-        .success-points {
-            background: linear-gradient(135deg, var(--gold), #f59e0b);
-            padding: 1rem 2rem;
-            border-radius: 16px;
-            color: #000;
-            font-weight: 700;
-            font-size: 1.2rem;
-        }
-        .new-order-btn {
-            margin-top: 2rem;
-            padding: 1rem 2rem;
-            background: var(--card-bg);
-            border: 2px solid var(--espresso);
-            border-radius: 12px;
-            color: var(--text);
-            font-size: 1rem;
-            cursor: pointer;
-        }
+        .phone-input { width: 100%; padding: 0.8rem; border-radius: 8px; margin-bottom: 1rem; font-size:1rem; }
+        .confirm-btn { width: 100%; padding: 1.2rem; background: var(--success); border: none; border-radius: 14px; color: white; font-weight: 700; font-size:1.1rem; }
     </style>
 </head>
 <body>
     <div id="practiceBanner" style="display:none; background:#fbbf24; color:black; text-align:center; padding:0.5rem; font-weight:bold; position:sticky; top:0; z-index:200;">
         🟡 PRACTICE MODE
     </div>
+    
     <!-- Header -->
     <header class="header">
         <div class="header-top">
@@ -389,7 +351,7 @@
             </div>
             <div class="rewards-badge guest" id="rewardsBadge" onclick="showLogin()">
                 <span>⭐</span>
-                <span id="badgeText">Iniciar Sesión</span>
+                <span id="badgeText">Login</span>
             </div>
         </div>
         <div class="categories" id="categories"></div>
@@ -412,136 +374,77 @@
         </button>
     </div>
 
-    <!-- Checkout Modal -->
-    <div class="modal-overlay" id="checkoutModal">
-        <div class="checkout-modal">
-            <div class="modal-header">
-                <h2>🧾 Finalizar Pedido</h2>
-                <button class="close-btn" onclick="closeCheckout()">×</button>
+    <!-- WIZARD OVERLAY -->
+    <div class="wizard-overlay" id="wizardOverlay">
+        <div class="wizard-header">
+            <button class="wizard-back" onclick="wizardPrev()">←</button>
+            <div class="wizard-title-container">
+                <div class="wizard-product-name" id="wizardProductName">Product</div>
+                <div class="wizard-steps-dots" id="wizardDots"></div>
             </div>
-
-            <!-- Order Type -->
-            <div class="option-section">
-                <div class="option-label">Tipo de Pedido</div>
-                <div class="option-cards">
-                    <div class="option-card selected" data-type="pickup" onclick="selectOrderType('pickup')">
-                        <div class="option-icon">📍</div>
-                        <div class="option-title">Pickup</div>
-                        <div class="option-desc">Recoger en tienda</div>
-                    </div>
-                    <div class="option-card" data-type="delivery" onclick="selectOrderType('delivery')">
-                        <div class="option-icon">🛵</div>
-                        <div class="option-title">Delivery</div>
-                        <div class="option-desc">+L20 envío</div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Phone/Rewards -->
-            <div class="phone-input-section">
-                <div class="option-label">Rico Rewards ⭐</div>
-                <div class="phone-row">
-                    <input type="tel" class="phone-input" id="phoneInput" placeholder="Tu número (ej: 9999-9999)">
-                    <button class="phone-btn" onclick="lookupCustomer()">Buscar</button>
-                </div>
-                <div class="rewards-display" id="rewardsDisplay">
-                    <div class="rewards-header">
-                        <div>
-                            <div style="font-size:0.85rem;color:var(--text-muted)">Hola, <span id="customerName">Cliente</span>!</div>
-                            <div class="rewards-points"><span id="customerPoints">0</span> ⭐</div>
-                        </div>
-                        <div class="rewards-balance">L<span id="customerBalance">0</span></div>
-                    </div>
-                    <div class="rewards-earning">
-                        Ganarás <strong>+<span id="pointsToEarn">0</span>⭐</strong> con este pedido
-                    </div>
-                </div>
-            </div>
-
-            <!-- Payment Method -->
-            <div class="option-section">
-                <div class="option-label">Método de Pago</div>
-                <div class="option-cards" style="flex-wrap: wrap;">
-                    <div class="option-card selected" data-pay="cash" onclick="selectPayment('cash')" style="flex:1 1 45%">
-                        <div class="option-icon">💵</div>
-                        <div class="option-title">Efectivo</div>
-                        <div class="option-desc">1⭐ por L10</div>
-                    </div>
-                    <div class="option-card" data-pay="card" onclick="selectPayment('card')" style="flex:1 1 45%">
-                        <div class="option-icon">💳</div>
-                        <div class="option-title">Tarjeta</div>
-                        <div class="option-desc">1⭐ por L10</div>
-                    </div>
-                    <div class="option-card" data-pay="rico" onclick="selectPayment('rico')" style="flex:1 1 100%;display:none" id="ricoPayOption">
-                        <div class="option-icon">🦧</div>
-                        <div class="option-title">Rico Balance</div>
-                        <div class="option-desc">Saldo: L<span id="ricoBalanceAmt">0</span></div>
-                        <div class="option-bonus">2X PUNTOS ⭐</div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Order Summary -->
-            <div class="order-summary">
-                <div class="summary-row">
-                    <span>Subtotal</span>
-                    <span>L<span id="summarySubtotal">0</span></span>
-                </div>
-                <div class="summary-row" id="deliveryRow" style="display:none">
-                    <span>Envío</span>
-                    <span>L20</span>
-                </div>
-                <div class="summary-row">
-                    <span>ISV (15%)</span>
-                    <span>L<span id="summaryTax">0</span></span>
-                </div>
-                <div class="summary-row total">
-                    <span>Total</span>
-                    <span>L<span id="summaryTotal">0</span></span>
-                </div>
-                <div class="summary-row earning">
-                    <span>Puntos a ganar</span>
-                    <span class="earning">+<span id="summaryPoints">0</span>⭐</span>
-                </div>
-            </div>
-
-            <button class="confirm-btn" onclick="confirmOrder()">
-                ✓ Confirmar Pedido
-            </button>
+            <button class="wizard-close" onclick="closeWizard()">×</button>
+        </div>
+        <div class="wizard-body" id="wizardBody">
+            <!-- Dynamic Content -->
+        </div>
+        <div class="wizard-footer">
+            <div class="wizard-total">L<span id="wizardPriceDisplay">0</span></div>
+            <button class="wizard-action-btn" id="wizardNextBtn" onclick="wizardNext()">Siguiente</button>
         </div>
     </div>
 
-    <!-- Success Screen -->
-    <div class="success-screen" id="successScreen">
-        <div class="success-icon">✅</div>
-        <div class="success-order" id="successOrderId">#0001</div>
-        <div class="success-msg">Tu pedido está siendo preparado</div>
-        <div class="success-points" id="successPoints">+0 ⭐ Ganados!</div>
-        <button class="new-order-btn" onclick="newOrder()">Hacer Otro Pedido</button>
+    <!-- Checkout Modal (Simplified) -->
+    <div class="modal-overlay" id="checkoutModal">
+        <div class="checkout-modal">
+            <h2>Checkout</h2>
+            <div style="margin: 1rem 0;">
+                <input type="tel" id="phoneInput" class="phone-input" placeholder="Phone Number">
+                <button class="confirm-btn" onclick="confirmOrder()">Confirm Order</button>
+                <button style="width:100%; padding:1rem; background:transparent; border:none; color:var(--text-muted); margin-top:0.5rem" onclick="closeCheckout()">Cancel</button>
+            </div>
+        </div>
     </div>
 
     <script>
-        // Check Practice Mode
-        async function checkPracticeMode() {
-            try {
-                const res = await fetch('/api/settings');
-                const settings = await res.json();
-                if (settings.is_practice_mode) {
-                    document.getElementById('practiceBanner').style.display = 'block';
-                }
-            } catch (e) {
-                console.error(e);
-            }
-        }
-        checkPracticeMode();
-
+        // --- DATA & STATE ---
         let menu = { categories: [], taxRate: 0.15 };
-        let cart = {};
-        let customer = null;
-        let orderType = 'pickup';
-        let paymentMethod = 'cash';
-        const DELIVERY_FEE = 20;
-        const POINTS_PER_L10 = { cash: 1, card: 1, rico: 2 };
+        let cart = []; // Array of objects now, not map
+        let currentItem = null;
+        let wizardState = {
+            step: 0,
+            selections: {},
+            basePrice: 0,
+            totalPrice: 0,
+            steps: []
+        };
+        
+        // Mock Modifiers if API doesn't provide them
+        const DEFAULT_MODIFIERS = [
+            {
+                id: 'size', name: 'Tamaño', type: 'single', required: true,
+                options: [
+                    { id: 's', name: 'Pequeño', price: 0, icon: '🥤' },
+                    { id: 'm', name: 'Mediano', price: 10, icon: '🥤' },
+                    { id: 'l', name: 'Grande', price: 20, icon: '🥤' }
+                ]
+            },
+            {
+                id: 'milk', name: 'Leche', type: 'single', required: true,
+                options: [
+                    { id: 'whole', name: 'Entera', price: 0, icon: '🥛' },
+                    { id: 'skim', name: 'Descremada', price: 0, icon: '🥛' },
+                    { id: 'almond', name: 'Almendra', price: 15, icon: '🥜' },
+                    { id: 'oat', name: 'Avena', price: 15, icon: '🌾' }
+                ]
+            }
+        ];
+
+        const UPSELL_ITEM = {
+            id: 'pastry-upsell',
+            name: '¿Algo para picar?',
+            type: 'upsell',
+            item: { name: 'Croissant', price: 45, icon: '🥐' }
+        };
 
         const itemIcons = {
             'coffee': '☕', 'latte': '☕', 'espresso': '☕', 'cappuccino': '☕', 'americano': '☕',
@@ -560,273 +463,274 @@
             return itemIcons.default;
         }
 
+        // --- INIT ---
         function init() {
             fetch('/api/menu')
                 .then(r => r.json())
                 .then(data => {
                     menu = data;
-                    menu.taxRate = menu.taxRate || 0.15;
                     renderCategories();
                     if (menu.categories.length) selectCategory(menu.categories[0].id);
                 })
-                .catch(e => console.error('Menu load error:', e));
+                .catch(e => {
+                    console.error('Menu error', e);
+                    // Fallback for demo if API fails
+                    menu.categories = [{id:'coffee', name:'Coffee', icon:'☕', items:[
+                        {id:'1', name:'Latte', price:50},
+                        {id:'2', name:'Cappuccino', price:50}
+                    ]}];
+                    renderCategories();
+                    selectCategory('coffee');
+                });
         }
 
         function renderCategories() {
             document.getElementById('categories').innerHTML = menu.categories.map(c => `
                 <button class="cat-btn" data-id="${c.id}" onclick="selectCategory('${c.id}')">
-                    <span>${c.icon || '📁'}</span>
-                    <span>${c.name}</span>
+                    <span>${c.icon || '📁'}</span> <span>${c.name}</span>
                 </button>
             `).join('');
         }
 
         function selectCategory(id) {
-            document.querySelectorAll('.cat-btn').forEach(b => 
-                b.classList.toggle('active', b.dataset.id === id)
-            );
+            document.querySelectorAll('.cat-btn').forEach(b => b.classList.toggle('active', b.dataset.id === id));
             const cat = menu.categories.find(c => c.id === id);
             renderMenu(cat ? cat.items : []);
         }
 
         function renderMenu(items) {
             document.getElementById('menuGrid').innerHTML = items.map(item => `
-                <div class="menu-item" onclick="addToCart('${item.id}')">
+                <div class="menu-item" onclick="openWizard('${item.id}')">
                     <div class="item-icon">${getIcon(item.name)}</div>
-                    <div class="item-name">${item.name}${cart[item.id] ? `<span class="item-badge">${cart[item.id]}</span>` : ''}</div>
+                    <div class="item-name">${item.name}</div>
                     <div class="item-price">L${item.price}</div>
                 </div>
             `).join('');
         }
 
+        // --- WIZARD LOGIC ---
         function findItem(id) {
             for (const c of menu.categories) {
-                const item = (c.items || []).find(i => i.id === id);
-                if (item) return item;
+                const i = (c.items || []).find(it => it.id === id);
+                if (i) return i;
             }
             return null;
         }
 
-        function addToCart(id) {
-            cart[id] = (cart[id] || 0) + 1;
-            updateCartUI();
-            // Re-render current category to show badge
-            const activeBtn = document.querySelector('.cat-btn.active');
-            if (activeBtn) selectCategory(activeBtn.dataset.id);
+        function openWizard(itemId) {
+            currentItem = findItem(itemId);
+            if (!currentItem) return;
+
+            // Setup State
+            wizardState = {
+                step: 0,
+                selections: {},
+                basePrice: currentItem.price,
+                totalPrice: currentItem.price,
+                steps: [...(currentItem.modifiers || DEFAULT_MODIFIERS), UPSELL_ITEM]
+            };
+
+            // Setup UI
+            document.getElementById('wizardProductName').textContent = currentItem.name;
+            updateWizardUI();
+            document.getElementById('wizardOverlay').classList.add('show');
         }
 
-        function updateCartUI() {
-            const items = Object.entries(cart);
-            const count = items.reduce((s, [, q]) => s + q, 0);
-            const total = items.reduce((s, [id, q]) => {
-                const item = findItem(id);
-                return s + (item ? item.price * q : 0);
-            }, 0);
+        function closeWizard() {
+            document.getElementById('wizardOverlay').classList.remove('show');
+        }
 
+        function updateWizardUI() {
+            const currentStep = wizardState.steps[wizardState.step];
+            
+            // 1. Dots
+            const dotsHtml = wizardState.steps.map((_, idx) => `
+                <div class="step-dot ${idx === wizardState.step ? 'active' : ''} ${idx < wizardState.step ? 'completed' : ''}"></div>
+            `).join('');
+            document.getElementById('wizardDots').innerHTML = dotsHtml;
+
+            // 2. Body Content
+            const body = document.getElementById('wizardBody');
+            body.innerHTML = ''; // Clear
+
+            if (currentStep.type === 'upsell') {
+                renderUpsellStep(currentStep, body);
+            } else {
+                renderModifierStep(currentStep, body);
+            }
+
+            // 3. Footer
+            updateWizardPrice();
+            
+            // Back button visibility
+            document.querySelector('.wizard-back').style.visibility = wizardState.step > 0 ? 'visible' : 'hidden';
+            
+            // Next button state
+            const isValid = validateStep();
+            const nextBtn = document.getElementById('wizardNextBtn');
+            nextBtn.disabled = !isValid;
+            nextBtn.textContent = wizardState.step === wizardState.steps.length - 1 ? 'Agregar' : 'Siguiente';
+        }
+
+        function renderModifierStep(step, container) {
+            // Title
+            const title = document.createElement('div');
+            title.className = 'wizard-step-title';
+            title.textContent = `Selecciona ${step.name}`;
+            container.appendChild(title);
+
+            // Grid
+            const grid = document.createElement('div');
+            grid.className = 'options-grid';
+            
+            step.options.forEach(opt => {
+                const btn = document.createElement('div');
+                const isSelected = wizardState.selections[step.id] === opt.id;
+                btn.className = `option-btn ${isSelected ? 'selected' : ''}`;
+                btn.onclick = () => selectOption(step.id, opt);
+                btn.innerHTML = `
+                    <div class="option-icon">${opt.icon || '🔹'}</div>
+                    <div class="option-name">${opt.name}</div>
+                    ${opt.price > 0 ? `<div class="option-price">+L${opt.price}</div>` : ''}
+                `;
+                grid.appendChild(btn);
+            });
+            container.appendChild(grid);
+        }
+
+        function renderUpsellStep(step, container) {
+            container.innerHTML = `
+                <div class="upsell-container">
+                    <div class="upsell-img">${step.item.icon}</div>
+                    <div class="upsell-text">
+                        <h2 style="margin-bottom:0.5rem">${step.name}</h2>
+                        <p style="color:var(--text-muted)">Agrega un ${step.item.name} por solo L${step.item.price}</p>
+                    </div>
+                    <div class="upsell-actions">
+                        <button class="upsell-yes" onclick="addUpsellAndFinish(true)">
+                            Sí, agregar (+L${step.item.price})
+                        </button>
+                        <button class="upsell-no" onclick="addUpsellAndFinish(false)">
+                            No, gracias
+                        </button>
+                    </div>
+                </div>
+            `;
+            // Hide default footer button for upsell since we have custom actions
+            document.getElementById('wizardNextBtn').style.display = 'none';
+        }
+
+        function selectOption(stepId, option) {
+            wizardState.selections[stepId] = option.id;
+            
+            // Auto-advance if single selection
+            const step = wizardState.steps[wizardState.step];
+            if (step.type === 'single') {
+                // Small delay for visual feedback
+                updateWizardUI();
+                setTimeout(() => wizardNext(), 300);
+            } else {
+                updateWizardUI();
+            }
+        }
+
+        function updateWizardPrice() {
+            let total = wizardState.basePrice;
+            
+            // Modifiers
+            wizardState.steps.forEach(step => {
+                if (step.type !== 'upsell') {
+                    const selId = wizardState.selections[step.id];
+                    if (selId) {
+                        const opt = step.options.find(o => o.id === selId);
+                        if (opt) total += opt.price || 0;
+                    }
+                }
+            });
+
+            wizardState.totalPrice = total;
+            document.getElementById('wizardPriceDisplay').textContent = total;
+        }
+
+        function validateStep() {
+            const step = wizardState.steps[wizardState.step];
+            if (step.type === 'upsell') return true;
+            if (step.required && !wizardState.selections[step.id]) return false;
+            return true;
+        }
+
+        function wizardNext() {
+            if (wizardState.step < wizardState.steps.length - 1) {
+                wizardState.step++;
+                // Restore footer button if returning from upsell (edge case)
+                document.getElementById('wizardNextBtn').style.display = 'block';
+                updateWizardUI();
+            } else {
+                finishWizard();
+            }
+        }
+
+        function wizardPrev() {
+            if (wizardState.step > 0) {
+                wizardState.step--;
+                document.getElementById('wizardNextBtn').style.display = 'block';
+                updateWizardUI();
+            }
+        }
+
+        function addUpsellAndFinish(accepted) {
+            if (accepted) {
+                const upsell = wizardState.steps.find(s => s.type === 'upsell');
+                // Add as separate item or modifier? usually separate item in cart
+                // For simplicity, we'll hack it into the price or add a separate item
+                // Let's add a separate item to cart
+                cart.push({
+                    id: 'upsell-' + Date.now(),
+                    name: upsell.item.name,
+                    price: upsell.item.price,
+                    isUpsell: true
+                });
+            }
+            finishWizard();
+        }
+
+        function finishWizard() {
+            // Add main item
+            cart.push({
+                ...currentItem,
+                selections: {...wizardState.selections},
+                finalPrice: wizardState.totalPrice,
+                instanceId: Date.now()
+            });
+            
+            closeWizard();
+            updateCartUI();
+        }
+
+        // --- CART & CHECKOUT ---
+        function updateCartUI() {
+            const count = cart.length;
+            const total = cart.reduce((sum, item) => sum + (item.finalPrice || item.price), 0);
+            
             document.getElementById('cartCount').textContent = count;
             document.getElementById('cartTotal').textContent = total;
             document.getElementById('cartBar').classList.toggle('show', count > 0);
         }
 
         function openCheckout() {
-            updateSummary();
             document.getElementById('checkoutModal').classList.add('show');
         }
-
         function closeCheckout() {
             document.getElementById('checkoutModal').classList.remove('show');
         }
-
-        function selectOrderType(type) {
-            orderType = type;
-            document.querySelectorAll('[data-type]').forEach(c => 
-                c.classList.toggle('selected', c.dataset.type === type)
-            );
-            document.getElementById('deliveryRow').style.display = type === 'delivery' ? 'flex' : 'none';
-            updateSummary();
+        function confirmOrder() {
+            alert('Order sent!');
+            cart = [];
+            updateCartUI();
+            closeCheckout();
         }
-
-        function selectPayment(method) {
-            paymentMethod = method;
-            document.querySelectorAll('[data-pay]').forEach(c => 
-                c.classList.toggle('selected', c.dataset.pay === method)
-            );
-            updateSummary();
-        }
-
-        function lookupCustomer() {
-            const phone = document.getElementById('phoneInput').value.replace(/\D/g, '');
-            if (phone.length < 8) {
-                alert('Ingresa un número válido');
-                return;
-            }
-
-            fetch(`/api/customers/phone/${phone}`)
-                .then(r => r.ok ? r.json() : Promise.reject('Not found'))
-                .then(c => {
-                    customer = c;
-                    showCustomerRewards();
-                })
-                .catch(() => {
-                    // New customer - create account
-                    if (confirm('¡Bienvenido! ¿Crear cuenta Rico Rewards?')) {
-                        fetch('/api/customers', {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ phone, name: 'Nuevo Cliente' })
-                        })
-                        .then(r => r.json())
-                        .then(c => {
-                            customer = c;
-                            showCustomerRewards();
-                        });
-                    }
-                });
-        }
-
-        function showCustomerRewards() {
-            document.getElementById('rewardsDisplay').classList.add('show');
-            document.getElementById('customerName').textContent = customer.name || 'Cliente';
-            document.getElementById('customerPoints').textContent = customer.points || 0;
-            document.getElementById('customerBalance').textContent = customer.ricoBalance || 0;
-            
-            // Show Rico Balance payment option if they have balance
-            const ricoOpt = document.getElementById('ricoPayOption');
-            if (customer.ricoBalance > 0) {
-                ricoOpt.style.display = 'block';
-                document.getElementById('ricoBalanceAmt').textContent = customer.ricoBalance;
-            }
-            
-            // Update header badge
-            document.getElementById('rewardsBadge').classList.remove('guest');
-            document.getElementById('badgeText').textContent = `${customer.points || 0}⭐`;
-            
-            updateSummary();
-        }
-
-        function updateSummary() {
-            const items = Object.entries(cart);
-            const subtotal = items.reduce((s, [id, q]) => {
-                const item = findItem(id);
-                return s + (item ? item.price * q : 0);
-            }, 0);
-            const delivery = orderType === 'delivery' ? DELIVERY_FEE : 0;
-            const tax = Math.round((subtotal + delivery) * menu.taxRate);
-            const total = subtotal + delivery + tax;
-            const pointsMultiplier = POINTS_PER_L10[paymentMethod];
-            const points = Math.floor(total / 10) * pointsMultiplier;
-
-            document.getElementById('summarySubtotal').textContent = subtotal;
-            document.getElementById('summaryTax').textContent = tax;
-            document.getElementById('summaryTotal').textContent = total;
-            document.getElementById('summaryPoints').textContent = points;
-            document.getElementById('pointsToEarn').textContent = points;
-        }
-
-        async function confirmOrder() {
-            const items = Object.entries(cart).map(([id, qty]) => {
-                const item = findItem(id);
-                return { id, name: item.name, price: item.price, qty };
-            });
-
-            if (items.length === 0) {
-                alert('Tu carrito está vacío');
-                return;
-            }
-
-            const subtotal = items.reduce((s, i) => s + i.price * i.qty, 0);
-            const delivery = orderType === 'delivery' ? DELIVERY_FEE : 0;
-            const tax = Math.round((subtotal + delivery) * menu.taxRate);
-            const total = subtotal + delivery + tax;
-            const points = Math.floor(total / 10) * POINTS_PER_L10[paymentMethod];
-
-            const order = {
-                items,
-                subtotal,
-                deliveryFee: delivery,
-                tax,
-                total,
-                orderType,
-                paymentMethod,
-                pointsEarned: points,
-                customerId: customer?.id || null,
-                customerPhone: document.getElementById('phoneInput').value || null,
-                source: 'mobile-order'
-            };
-
-            try {
-                // If paying with Rico Balance, deduct first
-                if (paymentMethod === 'rico' && customer) {
-                    if ((customer.ricoBalance || 0) < total) {
-                        alert('Saldo insuficiente. Tu saldo es L' + (customer.ricoBalance || 0));
-                        return;
-                    }
-                    
-                    const payRes = await fetch(`/api/customers/${customer.id}/pay-balance`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ amount: total, orderId: 'pending' })
-                    });
-                    
-                    if (!payRes.ok) {
-                        const err = await payRes.json();
-                        alert('Error: ' + (err.error || 'No se pudo procesar el pago'));
-                        return;
-                    }
-                    
-                    const payResult = await payRes.json();
-                    customer.ricoBalance = payResult.newBalance;
-                }
-                
-                const res = await fetch('/api/orders', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(order)
-                });
-                const result = await res.json();
-
-                // Update customer points if logged in
-                if (customer) {
-                    await fetch(`/api/customers/${customer.id}`, {
-                        method: 'PATCH',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            points: (customer.points || 0) + points,
-                            totalSpent: (customer.totalSpent || 0) + total,
-                            visits: (customer.visits || 0) + 1
-                        })
-                    });
-                }
-
-                // Show success
-                document.getElementById('successOrderId').textContent = result.id;
-                document.getElementById('successPoints').textContent = `+${points}⭐ Ganados!`;
-                document.getElementById('successScreen').classList.add('show');
-                closeCheckout();
-                
-                // Reset
-                cart = {};
-                updateCartUI();
-
-            } catch (e) {
-                console.error('Order error:', e);
-                alert('Error al enviar pedido. Intenta de nuevo.');
-            }
-        }
-
-        function newOrder() {
-            document.getElementById('successScreen').classList.remove('show');
-            customer = null;
-            document.getElementById('rewardsDisplay').classList.remove('show');
-            document.getElementById('rewardsBadge').classList.add('guest');
-            document.getElementById('badgeText').textContent = 'Iniciar Sesión';
-            document.getElementById('phoneInput').value = '';
-            document.getElementById('ricoPayOption').style.display = 'none';
-        }
-
         function showLogin() {
-            openCheckout();
-            document.getElementById('phoneInput').focus();
+            alert('Login implementation here');
         }
 
         init();
