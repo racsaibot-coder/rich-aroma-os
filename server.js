@@ -1,10 +1,15 @@
 const express = require('express');
-const fs = require('fs');
 const path = require('path');
 const cors = require('cors');
+const { createClient } = require('@supabase/supabase-js');
 
 const app = express();
-const PORT = 8083;
+const PORT = process.env.PORT || 8083;
+
+// Supabase client
+const supabaseUrl = process.env.SUPABASE_URL || 'https://zcqubacfcettwawcimsy.supabase.co';
+const supabaseKey = process.env.SUPABASE_ANON_KEY || 'sb_publishable_hRVyru_6sektmVGQyJFfwQ_4b2-7MKq';
+const supabase = createClient(supabaseUrl, supabaseKey);
 
 // Middleware
 app.use(cors());
@@ -12,469 +17,457 @@ app.use(express.json());
 
 // Serve static files
 app.use('/src', express.static(path.join(__dirname, 'src')));
-app.use('/data', express.static(path.join(__dirname, 'data')));
-
-// Data directory
-const DATA_DIR = path.join(__dirname, 'data');
-
-// Helper to read JSON file
-function readJSON(filename) {
-    const filepath = path.join(DATA_DIR, filename);
-    if (!fs.existsSync(filepath)) {
-        return null;
-    }
-    return JSON.parse(fs.readFileSync(filepath, 'utf8'));
-}
-
-// Helper to write JSON file
-function writeJSON(filename, data) {
-    const filepath = path.join(DATA_DIR, filename);
-    fs.writeFileSync(filepath, JSON.stringify(data, null, 2));
-}
+app.use(express.static(path.join(__dirname, 'public')));
 
 // ============== API ROUTES ==============
 
 // MENU
-app.get('/api/menu', (req, res) => {
-    res.json(readJSON('menu.json'));
+app.get('/api/menu', async (req, res) => {
+    const { data: items } = await supabase.from('menu_items').select('*').eq('available', true);
+    const { data: modifiers } = await supabase.from('menu_modifiers').select('*');
+    
+    // Transform to expected format
+    const categories = {};
+    (items || []).forEach(item => {
+        if (!categories[item.category]) categories[item.category] = [];
+        categories[item.category].push({
+            id: item.id,
+            name: item.name,
+            nameEs: item.name_es,
+            price: parseFloat(item.price)
+        });
+    });
+    
+    const modifiersMap = {};
+    (modifiers || []).forEach(m => {
+        modifiersMap[m.id] = { name: m.name, price: parseFloat(m.price) };
+    });
+    
+    res.json({ categories, modifiers: modifiersMap, taxRate: 0.15 });
 });
 
 // ORDERS
-app.get('/api/orders', (req, res) => {
-    res.json(readJSON('orders.json'));
+app.get('/api/orders', async (req, res) => {
+    const { data, error } = await supabase
+        .from('orders')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(100);
+    res.json({ orders: data || [] });
 });
 
-app.post('/api/orders', (req, res) => {
-    const data = readJSON('orders.json') || { orders: [], lastOrderNumber: 0 };
+app.post('/api/orders', async (req, res) => {
+    // Get next order number
+    const { data: seqData } = await supabase.rpc('nextval', { seq_name: 'order_number_seq' });
+    const orderNum = seqData || Date.now();
+    
     const newOrder = {
-        ...req.body,
-        id: `ORD-${String(data.lastOrderNumber + 1).padStart(4, '0')}`,
-        orderNumber: data.lastOrderNumber + 1,
+        id: `ORD-${String(orderNum).padStart(4, '0')}`,
+        order_number: orderNum,
+        items: req.body.items,
+        subtotal: req.body.subtotal,
+        tax: req.body.tax || 0,
+        discount: req.body.discount || 0,
+        total: req.body.total,
         status: 'pending',
-        createdAt: new Date().toISOString()
+        payment_method: req.body.paymentMethod,
+        customer_id: req.body.customerId,
+        discount_code: req.body.discountCode,
+        notes: req.body.notes
     };
-    data.orders.push(newOrder);
-    data.lastOrderNumber++;
-    writeJSON('orders.json', data);
-    res.json(newOrder);
-});
-
-app.patch('/api/orders/:id', (req, res) => {
-    const data = readJSON('orders.json');
-    const order = data.orders.find(o => o.id === req.params.id);
-    if (order) {
-        Object.assign(order, req.body);
-        if (req.body.status === 'completed') {
-            order.completedAt = new Date().toISOString();
-        }
-        writeJSON('orders.json', data);
-        res.json(order);
-    } else {
-        res.status(404).json({ error: 'Order not found' });
-    }
-});
-
-// EMPLOYEES
-app.get('/api/employees', (req, res) => {
-    res.json(readJSON('employees.json'));
-});
-
-// TIMECLOCK
-app.get('/api/timeclock', (req, res) => {
-    res.json(readJSON('timeclock.json'));
-});
-
-app.post('/api/timeclock', (req, res) => {
-    const data = readJSON('timeclock.json') || { punches: [] };
-    const punch = {
-        ...req.body,
-        timestamp: new Date().toISOString()
-    };
-    data.punches.push(punch);
-    writeJSON('timeclock.json', data);
-    res.json(punch);
-});
-
-// SCHEDULE
-app.get('/api/schedule', (req, res) => {
-    res.json(readJSON('schedule.json'));
-});
-
-app.post('/api/schedule/shift', (req, res) => {
-    const data = readJSON('schedule.json');
-    data.shifts.push(req.body);
-    writeJSON('schedule.json', data);
+    
+    const { data, error } = await supabase.from('orders').insert(newOrder).select().single();
+    if (error) return res.status(500).json({ error: error.message });
     res.json(data);
 });
 
-app.put('/api/schedule', (req, res) => {
-    writeJSON('schedule.json', req.body);
-    res.json(req.body);
+app.patch('/api/orders/:id', async (req, res) => {
+    const updates = { ...req.body };
+    if (req.body.status === 'completed') {
+        updates.completed_at = new Date().toISOString();
+    }
+    
+    const { data, error } = await supabase
+        .from('orders')
+        .update(updates)
+        .eq('id', req.params.id)
+        .select()
+        .single();
+    
+    if (error) return res.status(404).json({ error: 'Order not found' });
+    res.json(data);
+});
+
+// EMPLOYEES
+app.get('/api/employees', async (req, res) => {
+    const { data } = await supabase.from('employees').select('*').eq('active', true);
+    res.json({ employees: data || [] });
+});
+
+// TIMECLOCK
+app.get('/api/timeclock', async (req, res) => {
+    const { data } = await supabase
+        .from('timeclock')
+        .select('*')
+        .order('timestamp', { ascending: false })
+        .limit(200);
+    res.json({ punches: data || [] });
+});
+
+app.post('/api/timeclock', async (req, res) => {
+    const punch = {
+        employee_id: req.body.employeeId,
+        type: req.body.type
+    };
+    
+    const { data, error } = await supabase.from('timeclock').insert(punch).select().single();
+    if (error) return res.status(500).json({ error: error.message });
+    res.json(data);
+});
+
+// SCHEDULE
+app.get('/api/schedule', async (req, res) => {
+    const { data } = await supabase
+        .from('schedule')
+        .select('*, employees(name, color)')
+        .gte('date', new Date().toISOString().split('T')[0]);
+    res.json({ shifts: data || [] });
+});
+
+app.post('/api/schedule/shift', async (req, res) => {
+    const { data, error } = await supabase.from('schedule').insert(req.body).select().single();
+    if (error) return res.status(500).json({ error: error.message });
+    res.json(data);
 });
 
 // INVENTORY
-app.get('/api/inventory', (req, res) => {
-    res.json(readJSON('inventory.json'));
+app.get('/api/inventory', async (req, res) => {
+    const { data } = await supabase.from('inventory').select('*').order('name');
+    res.json({ items: data || [] });
 });
 
-app.patch('/api/inventory/:id', (req, res) => {
-    const data = readJSON('inventory.json');
-    const item = data.items.find(i => i.id === req.params.id);
-    if (item) {
-        Object.assign(item, req.body);
-        writeJSON('inventory.json', data);
-        res.json(item);
-    } else {
-        res.status(404).json({ error: 'Item not found' });
-    }
+app.patch('/api/inventory/:id', async (req, res) => {
+    const { data, error } = await supabase
+        .from('inventory')
+        .update(req.body)
+        .eq('id', req.params.id)
+        .select()
+        .single();
+    
+    if (error) return res.status(404).json({ error: 'Item not found' });
+    res.json(data);
 });
 
 // WASTE
-app.get('/api/waste', (req, res) => {
-    res.json(readJSON('waste.json'));
+app.get('/api/waste', async (req, res) => {
+    const { data } = await supabase
+        .from('waste')
+        .select('*, inventory(name)')
+        .order('created_at', { ascending: false });
+    res.json({ entries: data || [] });
 });
 
-app.post('/api/waste', (req, res) => {
-    const data = readJSON('waste.json') || { entries: [] };
+app.post('/api/waste', async (req, res) => {
     const entry = {
-        ...req.body,
-        timestamp: new Date().toISOString()
+        item_id: req.body.itemId,
+        quantity: req.body.quantity,
+        reason: req.body.reason,
+        recorded_by: req.body.recordedBy
     };
-    data.entries.push(entry);
-    writeJSON('waste.json', data);
     
-    // Also decrement inventory
-    const inventory = readJSON('inventory.json');
-    const item = inventory.items.find(i => i.id === req.body.itemId);
-    if (item) {
-        item.currentStock = Math.max(0, item.currentStock - req.body.quantity);
-        writeJSON('inventory.json', inventory);
-    }
+    const { data, error } = await supabase.from('waste').insert(entry).select().single();
+    if (error) return res.status(500).json({ error: error.message });
     
-    res.json(entry);
+    // Decrement inventory
+    await supabase.rpc('decrement_inventory', { 
+        item_id: req.body.itemId, 
+        amount: req.body.quantity 
+    });
+    
+    res.json(data);
 });
 
 // CUSTOMERS (Loyalty)
-app.get('/api/customers', (req, res) => {
-    res.json(readJSON('customers.json'));
+app.get('/api/customers', async (req, res) => {
+    const { data } = await supabase.from('customers').select('*').order('name');
+    res.json({ customers: data || [] });
 });
 
-app.get('/api/customers/phone/:phone', (req, res) => {
-    const data = readJSON('customers.json');
-    const customer = data.customers.find(c => c.phone === req.params.phone);
-    if (customer) {
-        res.json(customer);
-    } else {
-        res.status(404).json({ error: 'Customer not found' });
-    }
+app.get('/api/customers/phone/:phone', async (req, res) => {
+    const phone = req.params.phone.replace(/\D/g, '');
+    const { data, error } = await supabase
+        .from('customers')
+        .select('*')
+        .eq('phone', phone)
+        .single();
+    
+    if (error || !data) return res.status(404).json({ error: 'Customer not found' });
+    res.json(data);
 });
 
-app.post('/api/customers', (req, res) => {
-    const data = readJSON('customers.json');
+app.post('/api/customers', async (req, res) => {
+    const { data: existing } = await supabase.from('customers').select('id').order('id', { ascending: false }).limit(1);
+    const nextNum = existing?.length ? parseInt(existing[0].id.slice(1)) + 1 : 1;
+    
     const newCustomer = {
-        id: `C${String(data.customers.length + 1).padStart(3, '0')}`,
-        ...req.body,
+        id: `C${String(nextNum).padStart(3, '0')}`,
+        name: req.body.name,
+        phone: req.body.phone.replace(/\D/g, ''),
+        email: req.body.email,
         points: 0,
-        totalSpent: 0,
+        total_spent: 0,
         visits: 0,
-        memberSince: new Date().toISOString().split('T')[0],
         tier: 'bronze'
     };
-    data.customers.push(newCustomer);
-    writeJSON('customers.json', data);
-    res.json(newCustomer);
+    
+    const { data, error } = await supabase.from('customers').insert(newCustomer).select().single();
+    if (error) return res.status(500).json({ error: error.message });
+    res.json(data);
 });
 
-app.patch('/api/customers/:id', (req, res) => {
-    const data = readJSON('customers.json');
-    const customer = data.customers.find(c => c.id === req.params.id);
-    if (customer) {
-        Object.assign(customer, req.body);
-        // Update tier based on points
-        if (customer.points >= 1500) customer.tier = 'gold';
-        else if (customer.points >= 500) customer.tier = 'silver';
-        else customer.tier = 'bronze';
-        writeJSON('customers.json', data);
-        res.json(customer);
-    } else {
-        res.status(404).json({ error: 'Customer not found' });
+app.patch('/api/customers/:id', async (req, res) => {
+    const updates = { ...req.body };
+    
+    // Update tier based on points
+    if (updates.points !== undefined) {
+        if (updates.points >= 1500) updates.tier = 'gold';
+        else if (updates.points >= 500) updates.tier = 'silver';
+        else updates.tier = 'bronze';
     }
+    
+    const { data, error } = await supabase
+        .from('customers')
+        .update(updates)
+        .eq('id', req.params.id)
+        .select()
+        .single();
+    
+    if (error) return res.status(404).json({ error: 'Customer not found' });
+    res.json(data);
 });
-
-// Customer self-ordering page
-app.get('/order', (req, res) => {
-    res.sendFile(path.join(__dirname, 'src', 'order', 'order-v2.html'));
-});
-
-// Captain Rico Rewards - Teacher Portal
-app.get('/rewards', (req, res) => {
-    res.sendFile(path.join(__dirname, 'src', 'rewards', 'teacher-portal.html'));
-});
-
-// Captain Rico Rewards - Certificate Generator
-app.get('/rewards/certificate', (req, res) => {
-    res.sendFile(path.join(__dirname, 'src', 'rewards', 'certificate.html'));
-});
-
-// Main app shell
-app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, 'public', 'index.html'));
-});
-
-app.use(express.static(path.join(__dirname, 'public')));
-
-app.listen(PORT, () => {
-    console.log(`
-╔═══════════════════════════════════════════════════════╗
-║                                                       ║
-║     ☕  RICH AROMA OS  ☕                             ║
-║                                                       ║
-║     Server running on http://localhost:${PORT}          ║
-║                                                       ║
-║     Modules:                                          ║
-║     • POS:        /src/pos/pos.html                   ║
-║     • KDS:        /src/kds/kds.html                   ║
-║     • Time Clock: /src/timeclock/timeclock.html       ║
-║     • Scheduling: /src/scheduling/scheduling.html     ║
-║     • Inventory:  /src/inventory/inventory.html       ║
-║     • KPIs:       /src/kpis/kpis.html                 ║
-║     • Loyalty:    /src/loyalty/loyalty.html           ║
-║                                                       ║
-╚═══════════════════════════════════════════════════════╝
-    `);
-});
-
-// Rico Rewards order page (v2)
 
 // Rico Balance - Load funds
-app.post('/api/customers/:id/load-balance', (req, res) => {
-    const data = readJSON('customers.json');
-    const customer = data.customers.find(c => c.id === req.params.id);
-    if (!customer) {
-        return res.status(404).json({ error: 'Customer not found' });
-    }
-    
+app.post('/api/customers/:id/load-balance', async (req, res) => {
     const amount = parseFloat(req.body.amount) || 0;
-    const bonus = Math.round(amount * 0.10); // 10% bonus
+    const bonus = Math.round(amount * 0.10);
     const totalCredit = amount + bonus;
     
-    customer.ricoBalance = (customer.ricoBalance || 0) + totalCredit;
-    customer.totalLoaded = (customer.totalLoaded || 0) + amount;
+    // Get current customer
+    const { data: customer } = await supabase
+        .from('customers')
+        .select('*')
+        .eq('id', req.params.id)
+        .single();
     
-    // Log the transaction
-    if (!customer.balanceHistory) customer.balanceHistory = [];
-    customer.balanceHistory.push({
+    if (!customer) return res.status(404).json({ error: 'Customer not found' });
+    
+    // Update balance
+    const newBalance = (parseFloat(customer.rico_balance) || 0) + totalCredit;
+    const newLoaded = (parseFloat(customer.total_loaded) || 0) + amount;
+    
+    await supabase
+        .from('customers')
+        .update({ rico_balance: newBalance, total_loaded: newLoaded })
+        .eq('id', req.params.id);
+    
+    // Log transaction
+    await supabase.from('balance_history').insert({
+        customer_id: req.params.id,
         type: 'load',
         amount: amount,
-        bonus: bonus,
-        total: totalCredit,
-        timestamp: new Date().toISOString()
+        bonus: bonus
     });
     
-    writeJSON('customers.json', data);
-    res.json({ 
-        success: true, 
-        loaded: amount, 
-        bonus: bonus, 
-        newBalance: customer.ricoBalance,
-        customer 
-    });
+    res.json({ success: true, loaded: amount, bonus, newBalance });
 });
 
 // Rico Balance - Pay with balance
-app.post('/api/customers/:id/pay-balance', (req, res) => {
-    const data = readJSON('customers.json');
-    const customer = data.customers.find(c => c.id === req.params.id);
-    if (!customer) {
-        return res.status(404).json({ error: 'Customer not found' });
-    }
-    
+app.post('/api/customers/:id/pay-balance', async (req, res) => {
     const amount = parseFloat(req.body.amount) || 0;
-    if ((customer.ricoBalance || 0) < amount) {
+    
+    const { data: customer } = await supabase
+        .from('customers')
+        .select('*')
+        .eq('id', req.params.id)
+        .single();
+    
+    if (!customer) return res.status(404).json({ error: 'Customer not found' });
+    
+    const currentBalance = parseFloat(customer.rico_balance) || 0;
+    if (currentBalance < amount) {
         return res.status(400).json({ error: 'Insufficient balance' });
     }
     
-    customer.ricoBalance = (customer.ricoBalance || 0) - amount;
+    const newBalance = currentBalance - amount;
+    await supabase
+        .from('customers')
+        .update({ rico_balance: newBalance })
+        .eq('id', req.params.id);
     
-    // Log the transaction
-    if (!customer.balanceHistory) customer.balanceHistory = [];
-    customer.balanceHistory.push({
+    await supabase.from('balance_history').insert({
+        customer_id: req.params.id,
         type: 'payment',
         amount: -amount,
-        orderId: req.body.orderId,
-        timestamp: new Date().toISOString()
+        order_id: req.body.orderId
     });
     
-    writeJSON('customers.json', data);
-    res.json({ 
-        success: true, 
-        paid: amount, 
-        newBalance: customer.ricoBalance,
-        customer 
-    });
-});
-
-// Rico Balance - Load Balance Page (Staff)
-app.get('/load-balance', (req, res) => {
-    res.sendFile(path.join(__dirname, 'src', 'rewards', 'load-balance.html'));
+    res.json({ success: true, paid: amount, newBalance });
 });
 
 // === Creator Submissions API ===
 
-// Get all submissions (staff review)
-app.get('/api/creator-submissions', (req, res) => {
-    const data = readJSON('creator-submissions.json');
-    res.json(data.submissions || []);
+app.get('/api/creator-submissions', async (req, res) => {
+    const { data } = await supabase
+        .from('creator_submissions')
+        .select('*')
+        .order('submitted_at', { ascending: false });
+    res.json(data || []);
 });
 
-// Get submissions by phone (creator view)
-app.get('/api/creator-submissions/phone/:phone', (req, res) => {
-    const data = readJSON('creator-submissions.json');
+app.get('/api/creator-submissions/phone/:phone', async (req, res) => {
     const phone = req.params.phone.replace(/\D/g, '');
-    const submissions = (data.submissions || []).filter(s => 
-        s.phone.replace(/\D/g, '') === phone
-    );
     
-    const approved = submissions.filter(s => s.status === 'approved');
-    const totalPoints = approved.reduce((sum, s) => sum + (s.pointsAwarded || 100), 0);
+    const { data: submissions } = await supabase
+        .from('creator_submissions')
+        .select('*')
+        .eq('phone', phone)
+        .order('submitted_at', { ascending: false });
     
-    // Check if creator has discount code
-    const creators = readJSON('creators.json');
-    const creator = (creators.creators || []).find(c => c.phone.replace(/\D/g, '') === phone);
+    const approved = (submissions || []).filter(s => s.status === 'approved');
+    const totalPoints = approved.reduce((sum, s) => sum + (s.points_awarded || 100), 0);
+    
+    const { data: creator } = await supabase
+        .from('creators')
+        .select('*')
+        .eq('phone', phone)
+        .single();
     
     res.json({
-        submissions,
+        submissions: submissions || [],
         totalPoints,
-        totalCommission: creator?.totalCommission || 0,
-        discountCode: creator?.discountCode || null,
-        codeUses: creator?.codeUses || 0,
-        codeSales: creator?.codeSales || 0,
-        codeCommission: creator?.codeCommission || 0
+        totalCommission: creator?.total_commission || 0,
+        discountCode: creator?.discount_code || null,
+        codeUses: creator?.code_uses || 0,
+        codeSales: creator?.code_sales || 0,
+        codeCommission: creator?.code_commission || 0
     });
 });
 
-// Submit new content
-app.post('/api/creator-submissions', (req, res) => {
-    const data = readJSON('creator-submissions.json');
-    if (!data.submissions) data.submissions = [];
-    
-    const { phone, platform, link, description } = req.body;
+app.post('/api/creator-submissions', async (req, res) => {
+    const phone = req.body.phone.replace(/\D/g, '');
     
     // Get creator name from customers
-    const customers = readJSON('customers.json');
-    const customer = (customers.customers || []).find(c => 
-        c.phone.replace(/\D/g, '') === phone.replace(/\D/g, '')
-    );
+    const { data: customer } = await supabase
+        .from('customers')
+        .select('name')
+        .eq('phone', phone)
+        .single();
     
     const submission = {
         id: 'sub_' + Date.now(),
         phone,
-        creatorName: customer?.name || null,
-        platform,
-        link,
-        description,
-        status: 'pending',
-        submittedAt: new Date().toISOString(),
-        reviewedAt: null,
-        pointsAwarded: null
+        creator_name: customer?.name || null,
+        platform: req.body.platform,
+        link: req.body.link,
+        description: req.body.description,
+        status: 'pending'
     };
     
-    data.submissions.unshift(submission);
-    writeJSON('creator-submissions.json', data);
-    
-    res.json({ success: true, submission });
+    const { data, error } = await supabase.from('creator_submissions').insert(submission).select().single();
+    if (error) return res.status(500).json({ error: error.message });
+    res.json({ success: true, submission: data });
 });
 
-// Review submission (approve/deny)
-app.post('/api/creator-submissions/:id/review', (req, res) => {
-    const data = readJSON('creator-submissions.json');
-    const sub = (data.submissions || []).find(s => s.id === req.params.id);
-    
-    if (!sub) {
-        return res.status(404).json({ error: 'Submission not found' });
-    }
-    
+app.post('/api/creator-submissions/:id/review', async (req, res) => {
     const { status, pointsAwarded } = req.body;
-    sub.status = status;
-    sub.reviewedAt = new Date().toISOString();
-    sub.pointsAwarded = status === 'approved' ? (pointsAwarded || 100) : 0;
+    
+    const { data: sub, error } = await supabase
+        .from('creator_submissions')
+        .update({
+            status,
+            reviewed_at: new Date().toISOString(),
+            points_awarded: status === 'approved' ? (pointsAwarded || 100) : 0
+        })
+        .eq('id', req.params.id)
+        .select()
+        .single();
+    
+    if (error) return res.status(404).json({ error: 'Submission not found' });
     
     // If approved, add points to customer
     if (status === 'approved' && sub.phone) {
-        const customers = readJSON('customers.json');
-        const customer = (customers.customers || []).find(c => 
-            c.phone.replace(/\D/g, '') === sub.phone.replace(/\D/g, '')
-        );
+        const { data: customer } = await supabase
+            .from('customers')
+            .select('*')
+            .eq('phone', sub.phone)
+            .single();
+        
         if (customer) {
-            customer.points = (customer.points || 0) + sub.pointsAwarded;
-            writeJSON('customers.json', customers);
+            await supabase
+                .from('customers')
+                .update({ points: (customer.points || 0) + sub.points_awarded })
+                .eq('id', customer.id);
         }
         
         // Check if creator qualifies for discount code (3+ approved)
-        const approved = data.submissions.filter(s => 
-            s.phone.replace(/\D/g, '') === sub.phone.replace(/\D/g, '') && 
-            s.status === 'approved'
-        );
-        if (approved.length >= 3) {
-            const creators = readJSON('creators.json');
-            if (!creators.creators) creators.creators = [];
-            let creator = creators.creators.find(c => 
-                c.phone.replace(/\D/g, '') === sub.phone.replace(/\D/g, '')
-            );
-            if (!creator) {
+        const { data: allApproved } = await supabase
+            .from('creator_submissions')
+            .select('id')
+            .eq('phone', sub.phone)
+            .eq('status', 'approved');
+        
+        if ((allApproved?.length || 0) >= 3) {
+            const { data: existingCreator } = await supabase
+                .from('creators')
+                .select('*')
+                .eq('phone', sub.phone)
+                .single();
+            
+            if (!existingCreator) {
                 const name = customer?.name || 'CREATOR';
-                const code = 'RICO-' + name.split(' ')[0].toUpperCase().slice(0,6);
-                creator = {
+                const code = 'RICO-' + name.split(' ')[0].toUpperCase().slice(0, 6);
+                
+                await supabase.from('creators').insert({
                     phone: sub.phone,
                     name: customer?.name,
-                    discountCode: code,
-                    codeUses: 0,
-                    codeSales: 0,
-                    codeCommission: 0,
-                    totalCommission: 0,
-                    createdAt: new Date().toISOString()
-                };
-                creators.creators.push(creator);
-                writeJSON('creators.json', creators);
+                    discount_code: code
+                });
             }
         }
     }
     
-    writeJSON('creator-submissions.json', data);
     res.json({ success: true, submission: sub });
-});
-
-// Creator pages routes
-app.get('/creators', (req, res) => {
-    res.sendFile(path.join(__dirname, 'src', 'creators', 'creators.html'));
-});
-app.get('/creators/review', (req, res) => {
-    res.sendFile(path.join(__dirname, 'src', 'creators', 'review.html'));
 });
 
 // === Discount Codes API ===
 
-// Validate discount code
-app.get('/api/discount-codes/:code', (req, res) => {
+app.get('/api/discount-codes/:code', async (req, res) => {
     const code = req.params.code.toUpperCase();
     
     // Check creator codes
-    const creators = readJSON('creators.json');
-    const creator = (creators.creators || []).find(c => c.discountCode === code);
+    const { data: creator } = await supabase
+        .from('creators')
+        .select('*')
+        .eq('discount_code', code)
+        .single();
     
     if (creator) {
         return res.json({
             valid: true,
-            code: creator.discountCode,
-            percent: 20, // 20% off for creator codes
+            code: creator.discount_code,
+            percent: 20,
             creatorId: creator.phone,
             creatorName: creator.name
         });
     }
     
     // Check promo codes
-    const promos = readJSON('promo-codes.json');
-    const promo = (promos.codes || []).find(p => p.code === code && p.active);
+    const { data: promo } = await supabase
+        .from('promo_codes')
+        .select('*')
+        .eq('code', code)
+        .eq('active', true)
+        .single();
     
     if (promo) {
         return res.json({
@@ -488,22 +481,28 @@ app.get('/api/discount-codes/:code', (req, res) => {
     res.status(404).json({ error: 'Invalid code' });
 });
 
-// Track code usage (called after order)
-app.post('/api/discount-codes/:code/use', (req, res) => {
+app.post('/api/discount-codes/:code/use', async (req, res) => {
     const code = req.params.code.toUpperCase();
     const { orderTotal, discountAmount } = req.body;
     
-    const creators = readJSON('creators.json');
-    const creator = (creators.creators || []).find(c => c.discountCode === code);
+    const { data: creator } = await supabase
+        .from('creators')
+        .select('*')
+        .eq('discount_code', code)
+        .single();
     
     if (creator) {
-        creator.codeUses = (creator.codeUses || 0) + 1;
-        creator.codeSales = (creator.codeSales || 0) + orderTotal;
-        // 10% commission on discounted amount
-        const commission = Math.round(discountAmount * 0.5); // 50% of discount = 10% of original
-        creator.codeCommission = (creator.codeCommission || 0) + commission;
-        creator.totalCommission = (creator.totalCommission || 0) + commission;
-        writeJSON('creators.json', creators);
+        const commission = Math.round(discountAmount * 0.5);
+        
+        await supabase
+            .from('creators')
+            .update({
+                code_uses: (creator.code_uses || 0) + 1,
+                code_sales: (parseFloat(creator.code_sales) || 0) + orderTotal,
+                code_commission: (parseFloat(creator.code_commission) || 0) + commission,
+                total_commission: (parseFloat(creator.total_commission) || 0) + commission
+            })
+            .eq('phone', creator.phone);
         
         return res.json({ success: true, commission });
     }
@@ -511,66 +510,55 @@ app.post('/api/discount-codes/:code/use', (req, res) => {
     res.json({ success: true });
 });
 
-// === Morning Dashboard APIs ===
+// === Page Routes ===
 
-// X Opportunities (reads from markdown file)
-app.get('/api/x-opportunities', (req, res) => {
-    const fs = require('fs');
-    try {
-        const content = fs.readFileSync('/Users/racs/clawd/projects/x-content/reply_opportunities.md', 'utf8');
-        // Parse simple format
-        const opportunities = [];
-        const sections = content.split('### ');
-        for (const section of sections.slice(1, 4)) { // First 3
-            const lines = section.split('\n');
-            const titleMatch = lines[0].match(/@(\w+)/);
-            const likesMatch = section.match(/(\d+(?:,\d+)?(?:\.\d+)?K?) likes/);
-            const textMatch = section.match(/\*\*Tweet:\*\* "(.+?)"/s);
-            const replyMatch = section.match(/```\n([\s\S]+?)```/);
-            
-            if (titleMatch) {
-                opportunities.push({
-                    author: titleMatch[1],
-                    likes: likesMatch ? likesMatch[1] : '?',
-                    replies: '?',
-                    text: textMatch ? textMatch[1].slice(0, 150) + '...' : lines[0],
-                    timeAgo: 'Recent',
-                    draftReply: replyMatch ? replyMatch[1].trim().slice(0, 200) + '...' : null
-                });
-            }
-        }
-        res.json({ opportunities });
-    } catch (e) {
-        res.json({ opportunities: [], error: e.message });
-    }
+app.get('/order', (req, res) => {
+    res.sendFile(path.join(__dirname, 'src', 'order', 'order-v2.html'));
 });
 
-// Trading status
-app.get('/api/trading-status', (req, res) => {
-    const fs = require('fs');
-    try {
-        const content = fs.readFileSync('/Users/racs/clawd/projects/polymarket-trader/learning_trades.json', 'utf8');
-        const data = JSON.parse(content);
-        res.json({
-            balance: data.balance,
-            positions: data.positions,
-            closedTrades: data.closed_trades
-        });
-    } catch (e) {
-        res.json({ balance: 100, positions: [], closedTrades: [] });
-    }
+app.get('/rewards', (req, res) => {
+    res.sendFile(path.join(__dirname, 'src', 'rewards', 'teacher-portal.html'));
 });
 
-// Overnight activity
-app.get('/api/overnight-activity', (req, res) => {
-    try {
-        const state = readJSON('/Users/racs/clawd/projects/command-center/data/state.json');
-        const activity = (state.activity || []).slice(0, 6).map(a => ({
-            time: new Date(a.time).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
-            text: a.text
-        }));
-        res.json({ activity });
-    } catch (e) {
-        res.json({ activity: [] });
-    }
+app.get('/rewards/certificate', (req, res) => {
+    res.sendFile(path.join(__dirname, 'src', 'rewards', 'certificate.html'));
 });
+
+app.get('/load-balance', (req, res) => {
+    res.sendFile(path.join(__dirname, 'src', 'rewards', 'load-balance.html'));
+});
+
+app.get('/creators', (req, res) => {
+    res.sendFile(path.join(__dirname, 'src', 'creators', 'creators.html'));
+});
+
+app.get('/creators/review', (req, res) => {
+    res.sendFile(path.join(__dirname, 'src', 'creators', 'review.html'));
+});
+
+app.get('/', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});
+
+// Health check for Vercel
+app.get('/api/health', (req, res) => {
+    res.json({ status: 'ok', timestamp: new Date().toISOString() });
+});
+
+// Start server (for local dev)
+if (require.main === module) {
+    app.listen(PORT, () => {
+        console.log(`
+╔═══════════════════════════════════════════════════════╗
+║                                                       ║
+║     ☕  RICH AROMA OS  ☕                             ║
+║                                                       ║
+║     Server running on http://localhost:${PORT}          ║
+║     Connected to Supabase                             ║
+║                                                       ║
+╚═══════════════════════════════════════════════════════╝
+        `);
+    });
+}
+
+module.exports = app;
