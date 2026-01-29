@@ -531,7 +531,247 @@ app.post('/api/discount-codes/:code/use', async (req, res) => {
     res.json({ success: true });
 });
 
-// === Page Routes ===
+// ============== ADMIN API ROUTES ==============
+
+// ADMIN: Menu Management
+app.get('/api/admin/menu', async (req, res) => {
+    const { data } = await supabase.from('menu_items').select('*').order('category').order('name');
+    res.json({ items: data || [] });
+});
+
+app.post('/api/admin/menu', async (req, res) => {
+    const item = {
+        name: req.body.name,
+        name_es: req.body.name_es,
+        category: req.body.category,
+        price: req.body.price,
+        description: req.body.description,
+        available: req.body.available !== false
+    };
+    
+    const { data, error } = await supabase.from('menu_items').insert(item).select().single();
+    if (error) return res.status(500).json({ error: error.message });
+    res.json(data);
+});
+
+app.put('/api/admin/menu/:id', async (req, res) => {
+    const { data, error } = await supabase
+        .from('menu_items')
+        .update(req.body)
+        .eq('id', req.params.id)
+        .select()
+        .single();
+    
+    if (error) return res.status(404).json({ error: 'Item not found' });
+    res.json(data);
+});
+
+app.delete('/api/admin/menu/:id', async (req, res) => {
+    const { error } = await supabase.from('menu_items').delete().eq('id', req.params.id);
+    if (error) return res.status(404).json({ error: 'Item not found' });
+    res.json({ success: true });
+});
+
+// ADMIN: Inventory Management
+app.post('/api/admin/inventory', async (req, res) => {
+    const item = {
+        name: req.body.name,
+        category: req.body.category,
+        quantity: req.body.quantity || 0,
+        min_stock: req.body.min_stock || 0,
+        unit: req.body.unit || 'units'
+    };
+    
+    const { data, error } = await supabase.from('inventory').insert(item).select().single();
+    if (error) return res.status(500).json({ error: error.message });
+    res.json(data);
+});
+
+app.put('/api/admin/inventory/:id', async (req, res) => {
+    const { data, error } = await supabase
+        .from('inventory')
+        .update(req.body)
+        .eq('id', req.params.id)
+        .select()
+        .single();
+    
+    if (error) return res.status(404).json({ error: 'Item not found' });
+    res.json(data);
+});
+
+app.delete('/api/admin/inventory/:id', async (req, res) => {
+    const { error } = await supabase.from('inventory').delete().eq('id', req.params.id);
+    if (error) return res.status(404).json({ error: 'Item not found' });
+    res.json({ success: true });
+});
+
+// ADMIN: Employee Management
+app.get('/api/admin/employees', async (req, res) => {
+    const { data } = await supabase.from('employees').select('*').order('name');
+    res.json({ employees: data || [] });
+});
+
+app.post('/api/admin/employees', async (req, res) => {
+    const emp = {
+        name: req.body.name,
+        role: req.body.role || 'barista',
+        pin: req.body.pin,
+        hourly_rate: req.body.hourly_rate || 0,
+        color: req.body.color || '#D4A574',
+        active: req.body.active !== false
+    };
+    
+    const { data, error } = await supabase.from('employees').insert(emp).select().single();
+    if (error) return res.status(500).json({ error: error.message });
+    res.json(data);
+});
+
+app.put('/api/admin/employees/:id', async (req, res) => {
+    const { data, error } = await supabase
+        .from('employees')
+        .update(req.body)
+        .eq('id', req.params.id)
+        .select()
+        .single();
+    
+    if (error) return res.status(404).json({ error: 'Employee not found' });
+    res.json(data);
+});
+
+app.delete('/api/admin/employees/:id', async (req, res) => {
+    const { error } = await supabase.from('employees').delete().eq('id', req.params.id);
+    if (error) return res.status(404).json({ error: 'Employee not found' });
+    res.json({ success: true });
+});
+
+// ADMIN: Challenges Management
+app.get('/api/admin/challenges', async (req, res) => {
+    const { data } = await supabase.from('challenges').select('*').order('created_at', { ascending: false });
+    res.json({ challenges: data || [] });
+});
+
+app.post('/api/admin/challenges', async (req, res) => {
+    const challenge = {
+        id: 'ch_' + Date.now(),
+        title: req.body.title,
+        description: req.body.description,
+        platform: req.body.platform || 'any',
+        points: req.body.points || 100,
+        active: req.body.active !== false
+    };
+    
+    const { data, error } = await supabase.from('challenges').insert(challenge).select().single();
+    if (error) return res.status(500).json({ error: error.message });
+    res.json(data);
+});
+
+app.put('/api/admin/challenges/:id', async (req, res) => {
+    const { data, error } = await supabase
+        .from('challenges')
+        .update(req.body)
+        .eq('id', req.params.id)
+        .select()
+        .single();
+    
+    if (error) return res.status(404).json({ error: 'Challenge not found' });
+    res.json(data);
+});
+
+app.delete('/api/admin/challenges/:id', async (req, res) => {
+    const { error } = await supabase.from('challenges').delete().eq('id', req.params.id);
+    if (error) return res.status(404).json({ error: 'Challenge not found' });
+    res.json({ success: true });
+});
+
+// ADMIN: Promo Codes Management
+app.get('/api/admin/promos', async (req, res) => {
+    const { data } = await supabase.from('promo_codes').select('*').order('created_at', { ascending: false });
+    res.json({ promos: data || [] });
+});
+
+app.post('/api/admin/promos', async (req, res) => {
+    const promo = {
+        id: 'promo_' + Date.now(),
+        code: req.body.code?.toUpperCase(),
+        type: req.body.type || 'percent',
+        value: req.body.value || 10,
+        max_uses: req.body.max_uses || null,
+        uses: 0,
+        expires_at: req.body.expires_at || null,
+        active: req.body.active !== false
+    };
+    
+    const { data, error } = await supabase.from('promo_codes').insert(promo).select().single();
+    if (error) return res.status(500).json({ error: error.message });
+    res.json(data);
+});
+
+app.put('/api/admin/promos/:id', async (req, res) => {
+    const updates = { ...req.body };
+    if (updates.code) updates.code = updates.code.toUpperCase();
+    
+    const { data, error } = await supabase
+        .from('promo_codes')
+        .update(updates)
+        .eq('id', req.params.id)
+        .select()
+        .single();
+    
+    if (error) return res.status(404).json({ error: 'Promo code not found' });
+    res.json(data);
+});
+
+app.delete('/api/admin/promos/:id', async (req, res) => {
+    const { error } = await supabase.from('promo_codes').delete().eq('id', req.params.id);
+    if (error) return res.status(404).json({ error: 'Promo code not found' });
+    res.json({ success: true });
+});
+
+// ADMIN: Rewards Settings Management
+app.get('/api/admin/rewards', async (req, res) => {
+    const { data } = await supabase.from('reward_options').select('*').order('points_cost');
+    res.json({ rewards: data || [] });
+});
+
+app.post('/api/admin/rewards', async (req, res) => {
+    const reward = {
+        id: 'rw_' + Date.now(),
+        name: req.body.name,
+        points_cost: req.body.points_cost || 100,
+        type: req.body.type || 'free_item',
+        description: req.body.description,
+        active: req.body.active !== false
+    };
+    
+    const { data, error } = await supabase.from('reward_options').insert(reward).select().single();
+    if (error) return res.status(500).json({ error: error.message });
+    res.json(data);
+});
+
+app.put('/api/admin/rewards/:id', async (req, res) => {
+    const { data, error } = await supabase
+        .from('reward_options')
+        .update(req.body)
+        .eq('id', req.params.id)
+        .select()
+        .single();
+    
+    if (error) return res.status(404).json({ error: 'Reward not found' });
+    res.json(data);
+});
+
+app.delete('/api/admin/rewards/:id', async (req, res) => {
+    const { error } = await supabase.from('reward_options').delete().eq('id', req.params.id);
+    if (error) return res.status(404).json({ error: 'Reward not found' });
+    res.json({ success: true });
+});
+
+// ============== PAGE ROUTES ==============
+
+// Admin Panel
+app.get('/admin', (req, res) => {
+    res.sendFile(path.join(__dirname, 'src', 'admin', 'admin.html'));
+});
 
 app.get('/order', (req, res) => {
     res.sendFile(path.join(__dirname, 'src', 'order', 'order-v2.html'));

@@ -1,0 +1,1782 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#0f0d0b">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <title>Admin Panel | Rich Aroma OS</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --espresso: #5D4037;
+            --espresso-dark: #3E2723;
+            --caramel: #D4A574;
+            --cream: #F5EDE4;
+            --dark-bg: #0f0d0b;
+            --card-bg: #1a1714;
+            --card-hover: #252019;
+            --text: #f5f0eb;
+            --text-muted: #8a8078;
+            --success: #22c55e;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --gold: #fbbf24;
+            --safe-bottom: env(safe-area-inset-bottom, 0px);
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        body {
+            font-family: 'Inter', -apple-system, sans-serif;
+            background: var(--dark-bg);
+            color: var(--text);
+            min-height: 100vh;
+            min-height: 100dvh;
+        }
+        
+        /* Header */
+        .header {
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            background: rgba(15,13,11,0.95);
+            backdrop-filter: blur(20px);
+            padding: 1rem;
+            border-bottom: 1px solid rgba(255,255,255,0.08);
+        }
+        .header-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        .logo { display: flex; align-items: center; gap: 0.75rem; }
+        .logo-icon { font-size: 1.8rem; }
+        .logo h1 { font-size: 1.3rem; font-weight: 700; }
+        .logo span { 
+            background: linear-gradient(135deg, var(--caramel), var(--gold));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+        .back-btn {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: var(--card-bg);
+            border: none;
+            padding: 0.6rem 1rem;
+            border-radius: 10px;
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            cursor: pointer;
+            text-decoration: none;
+        }
+        .back-btn:hover { background: var(--card-hover); color: var(--text); }
+        
+        /* Navigation Tabs */
+        .nav-tabs {
+            display: flex;
+            gap: 0.5rem;
+            padding: 1rem;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        .nav-tabs::-webkit-scrollbar { display: none; }
+        .nav-tab {
+            flex-shrink: 0;
+            padding: 0.7rem 1.2rem;
+            background: var(--card-bg);
+            border: none;
+            border-radius: 12px;
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            transition: all 0.2s;
+        }
+        .nav-tab:hover { background: var(--card-hover); }
+        .nav-tab.active {
+            background: linear-gradient(135deg, var(--caramel), var(--espresso));
+            color: #fff;
+            font-weight: 600;
+        }
+        .nav-tab .icon { font-size: 1.1rem; }
+        
+        /* Main Content */
+        main {
+            padding: 1rem;
+            max-width: 1400px;
+            margin: 0 auto;
+            padding-bottom: calc(2rem + var(--safe-bottom));
+        }
+        
+        /* Section */
+        .section {
+            display: none;
+        }
+        .section.active {
+            display: block;
+            animation: fadeIn 0.3s ease;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+        .section-header h2 {
+            font-size: 1.5rem;
+            font-weight: 700;
+        }
+        
+        /* Cards */
+        .card {
+            background: var(--card-bg);
+            border-radius: 16px;
+            padding: 1.5rem;
+            margin-bottom: 1rem;
+        }
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+        .card-header h3 {
+            font-size: 1.1rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        /* Form Elements */
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1rem;
+        }
+        .form-group {
+            margin-bottom: 1rem;
+        }
+        .form-group label {
+            display: block;
+            color: var(--text-muted);
+            font-size: 0.85rem;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+        }
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            width: 100%;
+            padding: 0.8rem 1rem;
+            background: var(--dark-bg);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 10px;
+            color: var(--text);
+            font-size: 1rem;
+            font-family: inherit;
+        }
+        .form-group input:focus,
+        .form-group select:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: var(--caramel);
+        }
+        .form-group textarea {
+            min-height: 100px;
+            resize: vertical;
+        }
+        
+        /* Buttons */
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 10px;
+            font-size: 0.95rem;
+            font-weight: 600;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            transition: all 0.2s;
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, var(--caramel), var(--espresso));
+            color: #fff;
+        }
+        .btn-primary:hover { opacity: 0.9; transform: translateY(-1px); }
+        .btn-success {
+            background: var(--success);
+            color: #fff;
+        }
+        .btn-danger {
+            background: var(--danger);
+            color: #fff;
+        }
+        .btn-ghost {
+            background: transparent;
+            color: var(--text-muted);
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+        .btn-ghost:hover { background: var(--card-hover); color: var(--text); }
+        .btn-sm {
+            padding: 0.5rem 0.8rem;
+            font-size: 0.85rem;
+        }
+        
+        /* Tables */
+        .table-wrapper {
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.9rem;
+        }
+        th, td {
+            padding: 1rem;
+            text-align: left;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+        }
+        th {
+            color: var(--text-muted);
+            font-weight: 600;
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        tr:hover td { background: var(--card-hover); }
+        
+        /* Status badges */
+        .badge {
+            padding: 0.3rem 0.6rem;
+            border-radius: 6px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+        .badge-success { background: rgba(34,197,94,0.2); color: var(--success); }
+        .badge-warning { background: rgba(245,158,11,0.2); color: var(--warning); }
+        .badge-danger { background: rgba(239,68,68,0.2); color: var(--danger); }
+        .badge-info { background: rgba(59,130,246,0.2); color: #3b82f6; }
+        
+        /* Action buttons in tables */
+        .actions {
+            display: flex;
+            gap: 0.5rem;
+        }
+        .action-btn {
+            width: 32px;
+            height: 32px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.9rem;
+            transition: all 0.2s;
+        }
+        .action-btn.edit { background: rgba(59,130,246,0.2); color: #3b82f6; }
+        .action-btn.delete { background: rgba(239,68,68,0.2); color: var(--danger); }
+        .action-btn:hover { transform: scale(1.1); }
+        
+        /* Modal */
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.85);
+            z-index: 500;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 1rem;
+        }
+        .modal-overlay.show { display: flex; }
+        
+        .modal {
+            background: var(--card-bg);
+            width: 100%;
+            max-width: 500px;
+            max-height: 90vh;
+            border-radius: 20px;
+            overflow: hidden;
+        }
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1.25rem 1.5rem;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+        }
+        .modal-header h3 { font-size: 1.2rem; }
+        .modal-close {
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            font-size: 1.5rem;
+            cursor: pointer;
+        }
+        .modal-body {
+            padding: 1.5rem;
+            overflow-y: auto;
+            max-height: calc(90vh - 140px);
+        }
+        .modal-footer {
+            padding: 1rem 1.5rem;
+            border-top: 1px solid rgba(255,255,255,0.05);
+            display: flex;
+            justify-content: flex-end;
+            gap: 0.75rem;
+        }
+        
+        /* Empty state */
+        .empty-state {
+            text-align: center;
+            padding: 3rem;
+            color: var(--text-muted);
+        }
+        .empty-state .icon { font-size: 3rem; margin-bottom: 1rem; opacity: 0.5; }
+        
+        /* Tier colors */
+        .tier-bronze { color: #cd7f32; }
+        .tier-silver { color: #c0c0c0; }
+        .tier-gold { color: var(--gold); }
+        
+        /* Toggle switch */
+        .toggle {
+            position: relative;
+            width: 50px;
+            height: 28px;
+        }
+        .toggle input { display: none; }
+        .toggle-slider {
+            position: absolute;
+            inset: 0;
+            background: var(--dark-bg);
+            border-radius: 28px;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+        .toggle-slider::before {
+            content: '';
+            position: absolute;
+            width: 22px;
+            height: 22px;
+            left: 3px;
+            top: 3px;
+            background: var(--text-muted);
+            border-radius: 50%;
+            transition: 0.3s;
+        }
+        .toggle input:checked + .toggle-slider { background: var(--success); }
+        .toggle input:checked + .toggle-slider::before {
+            transform: translateX(22px);
+            background: #fff;
+        }
+        
+        /* Toast notifications */
+        .toast {
+            position: fixed;
+            bottom: 2rem;
+            left: 50%;
+            transform: translateX(-50%) translateY(100px);
+            background: var(--card-bg);
+            padding: 1rem 1.5rem;
+            border-radius: 12px;
+            border-left: 4px solid var(--success);
+            box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+            z-index: 1000;
+            opacity: 0;
+            transition: all 0.3s;
+        }
+        .toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
+        .toast.error { border-left-color: var(--danger); }
+        
+        /* Stats grid */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+        .stat-card {
+            background: var(--card-bg);
+            border-radius: 14px;
+            padding: 1.25rem;
+        }
+        .stat-card .label {
+            color: var(--text-muted);
+            font-size: 0.85rem;
+            margin-bottom: 0.5rem;
+        }
+        .stat-card .value {
+            font-size: 1.8rem;
+            font-weight: 700;
+        }
+        .stat-card .value.caramel { color: var(--caramel); }
+        
+        /* Mobile improvements */
+        @media (max-width: 640px) {
+            .section-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 1rem;
+            }
+            .form-grid {
+                grid-template-columns: 1fr;
+            }
+            th, td {
+                padding: 0.75rem 0.5rem;
+            }
+            .hide-mobile { display: none; }
+        }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <div class="header-content">
+            <div class="logo">
+                <span class="logo-icon">☕</span>
+                <div>
+                    <h1>Rich Aroma</h1>
+                    <span>ADMIN PANEL</span>
+                </div>
+            </div>
+            <a href="/" class="back-btn">← Back to POS</a>
+        </div>
+    </header>
+    
+    <nav class="nav-tabs" id="navTabs">
+        <button class="nav-tab active" data-section="business">
+            <span class="icon">🏪</span> Business
+        </button>
+        <button class="nav-tab" data-section="menu">
+            <span class="icon">📋</span> Menu
+        </button>
+        <button class="nav-tab" data-section="inventory">
+            <span class="icon">📦</span> Inventory
+        </button>
+        <button class="nav-tab" data-section="employees">
+            <span class="icon">👥</span> Employees
+        </button>
+        <button class="nav-tab" data-section="challenges">
+            <span class="icon">🎯</span> Challenges
+        </button>
+        <button class="nav-tab" data-section="promos">
+            <span class="icon">🎟️</span> Promos
+        </button>
+        <button class="nav-tab" data-section="rewards">
+            <span class="icon">⭐</span> Rewards
+        </button>
+    </nav>
+    
+    <main>
+        <!-- BUSINESS SETTINGS SECTION -->
+        <section id="section-business" class="section active">
+            <div class="section-header">
+                <h2>🏪 Business Settings</h2>
+                <button class="btn btn-primary" onclick="saveBusinessSettings()">💾 Save Changes</button>
+            </div>
+            
+            <div class="card">
+                <div class="card-header">
+                    <h3>📍 General Information</h3>
+                </div>
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label>Business Name</label>
+                        <input type="text" id="businessName" value="Rich Aroma Coffee">
+                    </div>
+                    <div class="form-group">
+                        <label>Logo URL</label>
+                        <input type="url" id="logoUrl" placeholder="https://...">
+                    </div>
+                    <div class="form-group">
+                        <label>Phone Number</label>
+                        <input type="tel" id="businessPhone" placeholder="+504 ....">
+                    </div>
+                    <div class="form-group">
+                        <label>Email</label>
+                        <input type="email" id="businessEmail" placeholder="contact@richaroma.hn">
+                    </div>
+                </div>
+            </div>
+            
+            <div class="card">
+                <div class="card-header">
+                    <h3>💰 Financial Settings</h3>
+                </div>
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label>Tax Rate (%)</label>
+                        <input type="number" id="taxRate" value="15" min="0" max="100" step="0.5">
+                    </div>
+                    <div class="form-group">
+                        <label>Currency</label>
+                        <select id="currency">
+                            <option value="HNL" selected>HNL - Lempira</option>
+                            <option value="USD">USD - US Dollar</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Currency Symbol</label>
+                        <input type="text" id="currencySymbol" value="L">
+                    </div>
+                </div>
+            </div>
+            
+            <div class="card">
+                <div class="card-header">
+                    <h3>🕐 Business Hours</h3>
+                </div>
+                <div id="businessHours"></div>
+            </div>
+        </section>
+        
+        <!-- MENU MANAGER SECTION -->
+        <section id="section-menu" class="section">
+            <div class="section-header">
+                <h2>📋 Menu Manager</h2>
+                <button class="btn btn-primary" onclick="openMenuModal()">+ Add Item</button>
+            </div>
+            
+            <div class="card">
+                <div class="card-header">
+                    <h3>Menu Items</h3>
+                    <select id="menuCategoryFilter" onchange="filterMenuItems()">
+                        <option value="">All Categories</option>
+                        <option value="coffee">☕ Coffee</option>
+                        <option value="drinks">🧃 Drinks</option>
+                        <option value="food">🍳 Food</option>
+                        <option value="desserts">🍰 Desserts</option>
+                    </select>
+                </div>
+                <div class="table-wrapper">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Item</th>
+                                <th>Category</th>
+                                <th>Price</th>
+                                <th>Available</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="menuTableBody"></tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+        
+        <!-- INVENTORY MANAGER SECTION -->
+        <section id="section-inventory" class="section">
+            <div class="section-header">
+                <h2>📦 Inventory Manager</h2>
+                <button class="btn btn-primary" onclick="openInventoryModal()">+ Add Item</button>
+            </div>
+            
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="label">Total Items</div>
+                    <div class="value caramel" id="inventoryCount">0</div>
+                </div>
+                <div class="stat-card">
+                    <div class="label">Low Stock Alerts</div>
+                    <div class="value" id="lowStockCount" style="color: var(--warning)">0</div>
+                </div>
+                <div class="stat-card">
+                    <div class="label">Out of Stock</div>
+                    <div class="value" id="outOfStockCount" style="color: var(--danger)">0</div>
+                </div>
+            </div>
+            
+            <div class="card">
+                <div class="card-header">
+                    <h3>Inventory Items</h3>
+                </div>
+                <div class="table-wrapper">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Item</th>
+                                <th>Category</th>
+                                <th>Quantity</th>
+                                <th>Min Stock</th>
+                                <th>Unit</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="inventoryTableBody"></tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+        
+        <!-- EMPLOYEE MANAGER SECTION -->
+        <section id="section-employees" class="section">
+            <div class="section-header">
+                <h2>👥 Employee Manager</h2>
+                <button class="btn btn-primary" onclick="openEmployeeModal()">+ Add Employee</button>
+            </div>
+            
+            <div class="card">
+                <div class="table-wrapper">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Employee</th>
+                                <th>Role</th>
+                                <th>PIN</th>
+                                <th class="hide-mobile">Hourly Rate</th>
+                                <th>Active</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="employeeTableBody"></tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+        
+        <!-- CHALLENGES MANAGER SECTION -->
+        <section id="section-challenges" class="section">
+            <div class="section-header">
+                <h2>🎯 Creator Challenges</h2>
+                <button class="btn btn-primary" onclick="openChallengeModal()">+ New Challenge</button>
+            </div>
+            
+            <div class="card">
+                <div class="table-wrapper">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Challenge</th>
+                                <th>Platform</th>
+                                <th>Points</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="challengesTableBody"></tbody>
+                    </table>
+                </div>
+                <div class="empty-state" id="challengesEmpty" style="display:none">
+                    <div class="icon">🎯</div>
+                    <p>No challenges yet. Create one to engage creators!</p>
+                </div>
+            </div>
+        </section>
+        
+        <!-- PROMO CODES SECTION -->
+        <section id="section-promos" class="section">
+            <div class="section-header">
+                <h2>🎟️ Promo Codes</h2>
+                <button class="btn btn-primary" onclick="openPromoModal()">+ New Code</button>
+            </div>
+            
+            <div class="card">
+                <div class="table-wrapper">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Code</th>
+                                <th>Discount</th>
+                                <th>Uses</th>
+                                <th class="hide-mobile">Expires</th>
+                                <th>Active</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="promosTableBody"></tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+        
+        <!-- REWARDS SETTINGS SECTION -->
+        <section id="section-rewards" class="section">
+            <div class="section-header">
+                <h2>⭐ Rewards Settings</h2>
+                <button class="btn btn-primary" onclick="saveRewardsSettings()">💾 Save Changes</button>
+            </div>
+            
+            <div class="card">
+                <div class="card-header">
+                    <h3>💎 Points Configuration</h3>
+                </div>
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label>Points per Lempira Spent</label>
+                        <input type="number" id="pointsPerLempira" value="1" min="0.1" step="0.1">
+                    </div>
+                    <div class="form-group">
+                        <label>Points per Visit</label>
+                        <input type="number" id="pointsPerVisit" value="10" min="0">
+                    </div>
+                    <div class="form-group">
+                        <label>Bonus on Birthday (%)</label>
+                        <input type="number" id="birthdayBonus" value="100" min="0">
+                    </div>
+                </div>
+            </div>
+            
+            <div class="card">
+                <div class="card-header">
+                    <h3>🏆 Tier Thresholds</h3>
+                </div>
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label class="tier-bronze">🥉 Bronze (default)</label>
+                        <input type="number" id="tierBronze" value="0" disabled>
+                    </div>
+                    <div class="form-group">
+                        <label class="tier-silver">🥈 Silver (points needed)</label>
+                        <input type="number" id="tierSilver" value="500" min="1">
+                    </div>
+                    <div class="form-group">
+                        <label class="tier-gold">🥇 Gold (points needed)</label>
+                        <input type="number" id="tierGold" value="1500" min="1">
+                    </div>
+                </div>
+            </div>
+            
+            <div class="card">
+                <div class="card-header">
+                    <h3>🎁 Redemption Options</h3>
+                    <button class="btn btn-sm btn-ghost" onclick="openRewardModal()">+ Add Reward</button>
+                </div>
+                <div class="table-wrapper">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Reward</th>
+                                <th>Points Cost</th>
+                                <th>Type</th>
+                                <th>Active</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="rewardsTableBody"></tbody>
+                    </table>
+                </div>
+            </div>
+            
+            <div class="card">
+                <div class="card-header">
+                    <h3>💵 Rico Balance Settings</h3>
+                </div>
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label>Bonus % on Load</label>
+                        <input type="number" id="loadBonus" value="10" min="0" max="50">
+                    </div>
+                    <div class="form-group">
+                        <label>Minimum Load Amount (L)</label>
+                        <input type="number" id="minLoad" value="100" min="1">
+                    </div>
+                    <div class="form-group">
+                        <label>Maximum Load Amount (L)</label>
+                        <input type="number" id="maxLoad" value="5000" min="1">
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+    
+    <!-- MODALS -->
+    
+    <!-- Menu Item Modal -->
+    <div class="modal-overlay" id="menuModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3 id="menuModalTitle">Add Menu Item</h3>
+                <button class="modal-close" onclick="closeModal('menuModal')">×</button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="menuItemId">
+                <div class="form-group">
+                    <label>Item Name (English)</label>
+                    <input type="text" id="menuItemName" placeholder="Espresso">
+                </div>
+                <div class="form-group">
+                    <label>Item Name (Spanish)</label>
+                    <input type="text" id="menuItemNameEs" placeholder="Espresso">
+                </div>
+                <div class="form-group">
+                    <label>Category</label>
+                    <select id="menuItemCategory">
+                        <option value="coffee">☕ Coffee</option>
+                        <option value="drinks">🧃 Drinks</option>
+                        <option value="food">🍳 Food</option>
+                        <option value="desserts">🍰 Desserts</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Price (L)</label>
+                    <input type="number" id="menuItemPrice" placeholder="45" min="0" step="0.01">
+                </div>
+                <div class="form-group">
+                    <label>Description</label>
+                    <textarea id="menuItemDesc" placeholder="Rich and bold..."></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-ghost" onclick="closeModal('menuModal')">Cancel</button>
+                <button class="btn btn-primary" onclick="saveMenuItem()">Save Item</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Inventory Modal -->
+    <div class="modal-overlay" id="inventoryModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3 id="inventoryModalTitle">Add Inventory Item</h3>
+                <button class="modal-close" onclick="closeModal('inventoryModal')">×</button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="inventoryItemId">
+                <div class="form-group">
+                    <label>Item Name</label>
+                    <input type="text" id="inventoryItemName" placeholder="Coffee Beans">
+                </div>
+                <div class="form-group">
+                    <label>Category</label>
+                    <select id="inventoryItemCategory">
+                        <option value="ingredients">🥛 Ingredients</option>
+                        <option value="supplies">📦 Supplies</option>
+                        <option value="equipment">⚙️ Equipment</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Current Quantity</label>
+                    <input type="number" id="inventoryItemQty" placeholder="100" min="0">
+                </div>
+                <div class="form-group">
+                    <label>Minimum Stock Level</label>
+                    <input type="number" id="inventoryItemMin" placeholder="20" min="0">
+                </div>
+                <div class="form-group">
+                    <label>Unit</label>
+                    <select id="inventoryItemUnit">
+                        <option value="units">Units</option>
+                        <option value="kg">Kilograms</option>
+                        <option value="g">Grams</option>
+                        <option value="L">Liters</option>
+                        <option value="ml">Milliliters</option>
+                        <option value="bags">Bags</option>
+                    </select>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-ghost" onclick="closeModal('inventoryModal')">Cancel</button>
+                <button class="btn btn-primary" onclick="saveInventoryItem()">Save Item</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Employee Modal -->
+    <div class="modal-overlay" id="employeeModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3 id="employeeModalTitle">Add Employee</h3>
+                <button class="modal-close" onclick="closeModal('employeeModal')">×</button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="employeeId">
+                <div class="form-group">
+                    <label>Full Name</label>
+                    <input type="text" id="employeeName" placeholder="Maria Garcia">
+                </div>
+                <div class="form-group">
+                    <label>Role</label>
+                    <select id="employeeRole">
+                        <option value="barista">☕ Barista</option>
+                        <option value="cashier">💵 Cashier</option>
+                        <option value="manager">👔 Manager</option>
+                        <option value="admin">🔐 Admin</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>PIN Code (4 digits)</label>
+                    <input type="text" id="employeePin" placeholder="1234" maxlength="4" pattern="[0-9]{4}">
+                </div>
+                <div class="form-group">
+                    <label>Hourly Rate (L)</label>
+                    <input type="number" id="employeeRate" placeholder="50" min="0" step="0.01">
+                </div>
+                <div class="form-group">
+                    <label>Color (for schedule)</label>
+                    <input type="color" id="employeeColor" value="#D4A574">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-ghost" onclick="closeModal('employeeModal')">Cancel</button>
+                <button class="btn btn-primary" onclick="saveEmployee()">Save Employee</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Challenge Modal -->
+    <div class="modal-overlay" id="challengeModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3 id="challengeModalTitle">New Challenge</h3>
+                <button class="modal-close" onclick="closeModal('challengeModal')">×</button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="challengeId">
+                <div class="form-group">
+                    <label>Challenge Title</label>
+                    <input type="text" id="challengeTitle" placeholder="Share a Reels">
+                </div>
+                <div class="form-group">
+                    <label>Description</label>
+                    <textarea id="challengeDesc" placeholder="Post a creative reel featuring our coffee..."></textarea>
+                </div>
+                <div class="form-group">
+                    <label>Platform</label>
+                    <select id="challengePlatform">
+                        <option value="instagram">📸 Instagram</option>
+                        <option value="tiktok">🎵 TikTok</option>
+                        <option value="youtube">▶️ YouTube</option>
+                        <option value="facebook">📘 Facebook</option>
+                        <option value="any">🌐 Any Platform</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Points Reward</label>
+                    <input type="number" id="challengePoints" placeholder="100" min="1">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-ghost" onclick="closeModal('challengeModal')">Cancel</button>
+                <button class="btn btn-primary" onclick="saveChallenge()">Save Challenge</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Promo Code Modal -->
+    <div class="modal-overlay" id="promoModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3 id="promoModalTitle">New Promo Code</h3>
+                <button class="modal-close" onclick="closeModal('promoModal')">×</button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="promoId">
+                <div class="form-group">
+                    <label>Code</label>
+                    <input type="text" id="promoCode" placeholder="SUMMER20" style="text-transform: uppercase">
+                </div>
+                <div class="form-group">
+                    <label>Discount Type</label>
+                    <select id="promoType">
+                        <option value="percent">Percentage (%)</option>
+                        <option value="fixed">Fixed Amount (L)</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Discount Value</label>
+                    <input type="number" id="promoValue" placeholder="20" min="0">
+                </div>
+                <div class="form-group">
+                    <label>Max Uses (0 = unlimited)</label>
+                    <input type="number" id="promoMaxUses" placeholder="0" min="0">
+                </div>
+                <div class="form-group">
+                    <label>Expires On</label>
+                    <input type="date" id="promoExpires">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-ghost" onclick="closeModal('promoModal')">Cancel</button>
+                <button class="btn btn-primary" onclick="savePromoCode()">Save Code</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Reward Redemption Modal -->
+    <div class="modal-overlay" id="rewardModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3 id="rewardModalTitle">New Reward Option</h3>
+                <button class="modal-close" onclick="closeModal('rewardModal')">×</button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="rewardId">
+                <div class="form-group">
+                    <label>Reward Name</label>
+                    <input type="text" id="rewardName" placeholder="Free Coffee">
+                </div>
+                <div class="form-group">
+                    <label>Points Cost</label>
+                    <input type="number" id="rewardPoints" placeholder="100" min="1">
+                </div>
+                <div class="form-group">
+                    <label>Reward Type</label>
+                    <select id="rewardType">
+                        <option value="free_item">🎁 Free Item</option>
+                        <option value="discount">💰 Discount</option>
+                        <option value="merch">👕 Merchandise</option>
+                        <option value="experience">⭐ Experience</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Description</label>
+                    <textarea id="rewardDesc" placeholder="Get any regular coffee free..."></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-ghost" onclick="closeModal('rewardModal')">Cancel</button>
+                <button class="btn btn-primary" onclick="saveReward()">Save Reward</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Toast -->
+    <div class="toast" id="toast"></div>
+
+    <script>
+        const API_BASE = '/api';
+        
+        // State
+        let menuItems = [];
+        let inventoryItems = [];
+        let employees = [];
+        let challenges = [];
+        let promoCodes = [];
+        let rewards = [];
+        
+        // === NAVIGATION ===
+        document.querySelectorAll('.nav-tab').forEach(tab => {
+            tab.addEventListener('click', () => {
+                const section = tab.dataset.section;
+                
+                // Update tabs
+                document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+                tab.classList.add('active');
+                
+                // Update sections
+                document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+                document.getElementById(`section-${section}`).classList.add('active');
+                
+                // Load data for section
+                loadSectionData(section);
+            });
+        });
+        
+        function loadSectionData(section) {
+            switch(section) {
+                case 'menu': loadMenuItems(); break;
+                case 'inventory': loadInventory(); break;
+                case 'employees': loadEmployees(); break;
+                case 'challenges': loadChallenges(); break;
+                case 'promos': loadPromoCodes(); break;
+                case 'rewards': loadRewards(); break;
+                case 'business': loadBusinessSettings(); break;
+            }
+        }
+        
+        // === TOAST ===
+        function showToast(message, isError = false) {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.className = 'toast' + (isError ? ' error' : '');
+            toast.classList.add('show');
+            setTimeout(() => toast.classList.remove('show'), 3000);
+        }
+        
+        // === MODALS ===
+        function closeModal(id) {
+            document.getElementById(id).classList.remove('show');
+        }
+        
+        function openModal(id) {
+            document.getElementById(id).classList.add('show');
+        }
+        
+        // Close modals on backdrop click
+        document.querySelectorAll('.modal-overlay').forEach(modal => {
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) modal.classList.remove('show');
+            });
+        });
+        
+        // === BUSINESS SETTINGS ===
+        function loadBusinessSettings() {
+            // Generate business hours form
+            const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+            const hoursContainer = document.getElementById('businessHours');
+            hoursContainer.innerHTML = days.map(day => `
+                <div class="form-grid" style="margin-bottom: 0.5rem; align-items: center;">
+                    <div style="font-weight: 500;">${day}</div>
+                    <div style="display: flex; gap: 0.5rem; align-items: center;">
+                        <input type="time" id="hours-${day.toLowerCase()}-open" value="07:00" style="width: auto;">
+                        <span>to</span>
+                        <input type="time" id="hours-${day.toLowerCase()}-close" value="20:00" style="width: auto;">
+                    </div>
+                </div>
+            `).join('');
+        }
+        
+        async function saveBusinessSettings() {
+            // In a real app, this would save to the backend
+            showToast('Business settings saved!');
+        }
+        
+        // === MENU ===
+        async function loadMenuItems() {
+            try {
+                const res = await fetch(`${API_BASE}/admin/menu`);
+                const data = await res.json();
+                menuItems = data.items || [];
+                renderMenuTable();
+            } catch (e) {
+                console.error('Failed to load menu:', e);
+            }
+        }
+        
+        function renderMenuTable() {
+            const filter = document.getElementById('menuCategoryFilter').value;
+            const filtered = filter ? menuItems.filter(i => i.category === filter) : menuItems;
+            
+            const categoryIcons = { coffee: '☕', drinks: '🧃', food: '🍳', desserts: '🍰' };
+            
+            document.getElementById('menuTableBody').innerHTML = filtered.map(item => `
+                <tr>
+                    <td><strong>${item.name}</strong>${item.name_es ? `<br><small style="color:var(--text-muted)">${item.name_es}</small>` : ''}</td>
+                    <td>${categoryIcons[item.category] || '📦'} ${item.category}</td>
+                    <td>L ${parseFloat(item.price).toFixed(2)}</td>
+                    <td>
+                        <label class="toggle">
+                            <input type="checkbox" ${item.available ? 'checked' : ''} onchange="toggleMenuAvailability('${item.id}', this.checked)">
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </td>
+                    <td>
+                        <div class="actions">
+                            <button class="action-btn edit" onclick="editMenuItem('${item.id}')">✏️</button>
+                            <button class="action-btn delete" onclick="deleteMenuItem('${item.id}')">🗑️</button>
+                        </div>
+                    </td>
+                </tr>
+            `).join('') || '<tr><td colspan="5" style="text-align:center; color:var(--text-muted)">No menu items found</td></tr>';
+        }
+        
+        function filterMenuItems() {
+            renderMenuTable();
+        }
+        
+        function openMenuModal(item = null) {
+            document.getElementById('menuModalTitle').textContent = item ? 'Edit Menu Item' : 'Add Menu Item';
+            document.getElementById('menuItemId').value = item?.id || '';
+            document.getElementById('menuItemName').value = item?.name || '';
+            document.getElementById('menuItemNameEs').value = item?.name_es || '';
+            document.getElementById('menuItemCategory').value = item?.category || 'coffee';
+            document.getElementById('menuItemPrice').value = item?.price || '';
+            document.getElementById('menuItemDesc').value = item?.description || '';
+            openModal('menuModal');
+        }
+        
+        function editMenuItem(id) {
+            const item = menuItems.find(i => i.id === id);
+            if (item) openMenuModal(item);
+        }
+        
+        async function saveMenuItem() {
+            const id = document.getElementById('menuItemId').value;
+            const data = {
+                name: document.getElementById('menuItemName').value,
+                name_es: document.getElementById('menuItemNameEs').value,
+                category: document.getElementById('menuItemCategory').value,
+                price: parseFloat(document.getElementById('menuItemPrice').value),
+                description: document.getElementById('menuItemDesc').value,
+                available: true
+            };
+            
+            try {
+                const url = id ? `${API_BASE}/admin/menu/${id}` : `${API_BASE}/admin/menu`;
+                const method = id ? 'PUT' : 'POST';
+                
+                await fetch(url, {
+                    method,
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+                
+                closeModal('menuModal');
+                showToast(id ? 'Menu item updated!' : 'Menu item added!');
+                loadMenuItems();
+            } catch (e) {
+                showToast('Failed to save item', true);
+            }
+        }
+        
+        async function toggleMenuAvailability(id, available) {
+            try {
+                await fetch(`${API_BASE}/admin/menu/${id}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ available })
+                });
+            } catch (e) {
+                showToast('Failed to update availability', true);
+            }
+        }
+        
+        async function deleteMenuItem(id) {
+            if (!confirm('Delete this menu item?')) return;
+            try {
+                await fetch(`${API_BASE}/admin/menu/${id}`, { method: 'DELETE' });
+                showToast('Menu item deleted');
+                loadMenuItems();
+            } catch (e) {
+                showToast('Failed to delete item', true);
+            }
+        }
+        
+        // === INVENTORY ===
+        async function loadInventory() {
+            try {
+                const res = await fetch(`${API_BASE}/inventory`);
+                const data = await res.json();
+                inventoryItems = data.items || [];
+                renderInventoryTable();
+                updateInventoryStats();
+            } catch (e) {
+                console.error('Failed to load inventory:', e);
+            }
+        }
+        
+        function updateInventoryStats() {
+            document.getElementById('inventoryCount').textContent = inventoryItems.length;
+            const lowStock = inventoryItems.filter(i => i.quantity > 0 && i.quantity <= i.min_stock).length;
+            const outOfStock = inventoryItems.filter(i => i.quantity <= 0).length;
+            document.getElementById('lowStockCount').textContent = lowStock;
+            document.getElementById('outOfStockCount').textContent = outOfStock;
+        }
+        
+        function renderInventoryTable() {
+            document.getElementById('inventoryTableBody').innerHTML = inventoryItems.map(item => {
+                let status = 'badge-success';
+                let statusText = 'In Stock';
+                
+                if (item.quantity <= 0) {
+                    status = 'badge-danger';
+                    statusText = 'Out of Stock';
+                } else if (item.quantity <= item.min_stock) {
+                    status = 'badge-warning';
+                    statusText = 'Low Stock';
+                }
+                
+                return `
+                <tr>
+                    <td><strong>${item.name}</strong></td>
+                    <td>${item.category || '-'}</td>
+                    <td>${item.quantity}</td>
+                    <td>${item.min_stock || 0}</td>
+                    <td>${item.unit || 'units'}</td>
+                    <td><span class="badge ${status}">${statusText}</span></td>
+                    <td>
+                        <div class="actions">
+                            <button class="action-btn edit" onclick="editInventoryItem('${item.id}')">✏️</button>
+                            <button class="action-btn delete" onclick="deleteInventoryItem('${item.id}')">🗑️</button>
+                        </div>
+                    </td>
+                </tr>
+            `}).join('') || '<tr><td colspan="7" style="text-align:center; color:var(--text-muted)">No inventory items</td></tr>';
+        }
+        
+        function openInventoryModal(item = null) {
+            document.getElementById('inventoryModalTitle').textContent = item ? 'Edit Inventory Item' : 'Add Inventory Item';
+            document.getElementById('inventoryItemId').value = item?.id || '';
+            document.getElementById('inventoryItemName').value = item?.name || '';
+            document.getElementById('inventoryItemCategory').value = item?.category || 'ingredients';
+            document.getElementById('inventoryItemQty').value = item?.quantity || '';
+            document.getElementById('inventoryItemMin').value = item?.min_stock || '';
+            document.getElementById('inventoryItemUnit').value = item?.unit || 'units';
+            openModal('inventoryModal');
+        }
+        
+        function editInventoryItem(id) {
+            const item = inventoryItems.find(i => i.id === id);
+            if (item) openInventoryModal(item);
+        }
+        
+        async function saveInventoryItem() {
+            const id = document.getElementById('inventoryItemId').value;
+            const data = {
+                name: document.getElementById('inventoryItemName').value,
+                category: document.getElementById('inventoryItemCategory').value,
+                quantity: parseInt(document.getElementById('inventoryItemQty').value),
+                min_stock: parseInt(document.getElementById('inventoryItemMin').value),
+                unit: document.getElementById('inventoryItemUnit').value
+            };
+            
+            try {
+                const url = id ? `${API_BASE}/admin/inventory/${id}` : `${API_BASE}/admin/inventory`;
+                const method = id ? 'PUT' : 'POST';
+                
+                await fetch(url, {
+                    method,
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+                
+                closeModal('inventoryModal');
+                showToast(id ? 'Inventory item updated!' : 'Inventory item added!');
+                loadInventory();
+            } catch (e) {
+                showToast('Failed to save item', true);
+            }
+        }
+        
+        async function deleteInventoryItem(id) {
+            if (!confirm('Delete this inventory item?')) return;
+            try {
+                await fetch(`${API_BASE}/admin/inventory/${id}`, { method: 'DELETE' });
+                showToast('Inventory item deleted');
+                loadInventory();
+            } catch (e) {
+                showToast('Failed to delete item', true);
+            }
+        }
+        
+        // === EMPLOYEES ===
+        async function loadEmployees() {
+            try {
+                const res = await fetch(`${API_BASE}/admin/employees`);
+                const data = await res.json();
+                employees = data.employees || [];
+                renderEmployeeTable();
+            } catch (e) {
+                console.error('Failed to load employees:', e);
+            }
+        }
+        
+        function renderEmployeeTable() {
+            const roleIcons = { barista: '☕', cashier: '💵', manager: '👔', admin: '🔐' };
+            
+            document.getElementById('employeeTableBody').innerHTML = employees.map(emp => `
+                <tr>
+                    <td>
+                        <div style="display:flex; align-items:center; gap:0.75rem;">
+                            <div style="width:36px; height:36px; border-radius:50%; background:${emp.color || '#D4A574'}; display:flex; align-items:center; justify-content:center; font-weight:600;">
+                                ${emp.name?.charAt(0) || '?'}
+                            </div>
+                            <strong>${emp.name}</strong>
+                        </div>
+                    </td>
+                    <td>${roleIcons[emp.role] || '👤'} ${emp.role || 'staff'}</td>
+                    <td><code style="background:var(--dark-bg); padding:0.2rem 0.5rem; border-radius:4px;">${emp.pin || '****'}</code></td>
+                    <td class="hide-mobile">L ${parseFloat(emp.hourly_rate || 0).toFixed(2)}/hr</td>
+                    <td>
+                        <label class="toggle">
+                            <input type="checkbox" ${emp.active ? 'checked' : ''} onchange="toggleEmployeeActive('${emp.id}', this.checked)">
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </td>
+                    <td>
+                        <div class="actions">
+                            <button class="action-btn edit" onclick="editEmployee('${emp.id}')">✏️</button>
+                            <button class="action-btn delete" onclick="deleteEmployee('${emp.id}')">🗑️</button>
+                        </div>
+                    </td>
+                </tr>
+            `).join('') || '<tr><td colspan="6" style="text-align:center; color:var(--text-muted)">No employees found</td></tr>';
+        }
+        
+        function openEmployeeModal(emp = null) {
+            document.getElementById('employeeModalTitle').textContent = emp ? 'Edit Employee' : 'Add Employee';
+            document.getElementById('employeeId').value = emp?.id || '';
+            document.getElementById('employeeName').value = emp?.name || '';
+            document.getElementById('employeeRole').value = emp?.role || 'barista';
+            document.getElementById('employeePin').value = emp?.pin || '';
+            document.getElementById('employeeRate').value = emp?.hourly_rate || '';
+            document.getElementById('employeeColor').value = emp?.color || '#D4A574';
+            openModal('employeeModal');
+        }
+        
+        function editEmployee(id) {
+            const emp = employees.find(e => e.id === id);
+            if (emp) openEmployeeModal(emp);
+        }
+        
+        async function saveEmployee() {
+            const id = document.getElementById('employeeId').value;
+            const data = {
+                name: document.getElementById('employeeName').value,
+                role: document.getElementById('employeeRole').value,
+                pin: document.getElementById('employeePin').value,
+                hourly_rate: parseFloat(document.getElementById('employeeRate').value),
+                color: document.getElementById('employeeColor').value,
+                active: true
+            };
+            
+            try {
+                const url = id ? `${API_BASE}/admin/employees/${id}` : `${API_BASE}/admin/employees`;
+                const method = id ? 'PUT' : 'POST';
+                
+                await fetch(url, {
+                    method,
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+                
+                closeModal('employeeModal');
+                showToast(id ? 'Employee updated!' : 'Employee added!');
+                loadEmployees();
+            } catch (e) {
+                showToast('Failed to save employee', true);
+            }
+        }
+        
+        async function toggleEmployeeActive(id, active) {
+            try {
+                await fetch(`${API_BASE}/admin/employees/${id}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ active })
+                });
+            } catch (e) {
+                showToast('Failed to update employee', true);
+            }
+        }
+        
+        async function deleteEmployee(id) {
+            if (!confirm('Delete this employee?')) return;
+            try {
+                await fetch(`${API_BASE}/admin/employees/${id}`, { method: 'DELETE' });
+                showToast('Employee deleted');
+                loadEmployees();
+            } catch (e) {
+                showToast('Failed to delete employee', true);
+            }
+        }
+        
+        // === CHALLENGES ===
+        async function loadChallenges() {
+            try {
+                const res = await fetch(`${API_BASE}/admin/challenges`);
+                const data = await res.json();
+                challenges = data.challenges || [];
+                renderChallengesTable();
+            } catch (e) {
+                console.error('Failed to load challenges:', e);
+            }
+        }
+        
+        function renderChallengesTable() {
+            const platformIcons = { instagram: '📸', tiktok: '🎵', youtube: '▶️', facebook: '📘', any: '🌐' };
+            
+            if (challenges.length === 0) {
+                document.getElementById('challengesTableBody').innerHTML = '';
+                document.getElementById('challengesEmpty').style.display = 'block';
+                return;
+            }
+            
+            document.getElementById('challengesEmpty').style.display = 'none';
+            document.getElementById('challengesTableBody').innerHTML = challenges.map(ch => `
+                <tr>
+                    <td><strong>${ch.title}</strong><br><small style="color:var(--text-muted)">${ch.description?.slice(0, 50) || ''}...</small></td>
+                    <td>${platformIcons[ch.platform] || '🌐'} ${ch.platform}</td>
+                    <td><span style="color:var(--gold)">⭐ ${ch.points}</span></td>
+                    <td><span class="badge ${ch.active ? 'badge-success' : 'badge-warning'}">${ch.active ? 'Active' : 'Inactive'}</span></td>
+                    <td>
+                        <div class="actions">
+                            <button class="action-btn edit" onclick="editChallenge('${ch.id}')">✏️</button>
+                            <button class="action-btn delete" onclick="deleteChallenge('${ch.id}')">🗑️</button>
+                        </div>
+                    </td>
+                </tr>
+            `).join('');
+        }
+        
+        function openChallengeModal(ch = null) {
+            document.getElementById('challengeModalTitle').textContent = ch ? 'Edit Challenge' : 'New Challenge';
+            document.getElementById('challengeId').value = ch?.id || '';
+            document.getElementById('challengeTitle').value = ch?.title || '';
+            document.getElementById('challengeDesc').value = ch?.description || '';
+            document.getElementById('challengePlatform').value = ch?.platform || 'instagram';
+            document.getElementById('challengePoints').value = ch?.points || 100;
+            openModal('challengeModal');
+        }
+        
+        function editChallenge(id) {
+            const ch = challenges.find(c => c.id === id);
+            if (ch) openChallengeModal(ch);
+        }
+        
+        async function saveChallenge() {
+            const id = document.getElementById('challengeId').value;
+            const data = {
+                title: document.getElementById('challengeTitle').value,
+                description: document.getElementById('challengeDesc').value,
+                platform: document.getElementById('challengePlatform').value,
+                points: parseInt(document.getElementById('challengePoints').value),
+                active: true
+            };
+            
+            try {
+                const url = id ? `${API_BASE}/admin/challenges/${id}` : `${API_BASE}/admin/challenges`;
+                const method = id ? 'PUT' : 'POST';
+                
+                await fetch(url, {
+                    method,
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+                
+                closeModal('challengeModal');
+                showToast(id ? 'Challenge updated!' : 'Challenge created!');
+                loadChallenges();
+            } catch (e) {
+                showToast('Failed to save challenge', true);
+            }
+        }
+        
+        async function deleteChallenge(id) {
+            if (!confirm('Delete this challenge?')) return;
+            try {
+                await fetch(`${API_BASE}/admin/challenges/${id}`, { method: 'DELETE' });
+                showToast('Challenge deleted');
+                loadChallenges();
+            } catch (e) {
+                showToast('Failed to delete challenge', true);
+            }
+        }
+        
+        // === PROMO CODES ===
+        async function loadPromoCodes() {
+            try {
+                const res = await fetch(`${API_BASE}/admin/promos`);
+                const data = await res.json();
+                promoCodes = data.promos || [];
+                renderPromosTable();
+            } catch (e) {
+                console.error('Failed to load promos:', e);
+            }
+        }
+        
+        function renderPromosTable() {
+            document.getElementById('promosTableBody').innerHTML = promoCodes.map(promo => {
+                const isExpired = promo.expires_at && new Date(promo.expires_at) < new Date();
+                
+                return `
+                <tr>
+                    <td><code style="background:var(--dark-bg); padding:0.3rem 0.6rem; border-radius:6px; font-weight:600; color:var(--caramel);">${promo.code}</code></td>
+                    <td>${promo.type === 'percent' ? promo.value + '%' : 'L ' + promo.value}</td>
+                    <td>${promo.uses || 0}${promo.max_uses ? ' / ' + promo.max_uses : ''}</td>
+                    <td class="hide-mobile">${promo.expires_at ? new Date(promo.expires_at).toLocaleDateString() : 'Never'}</td>
+                    <td>
+                        <label class="toggle">
+                            <input type="checkbox" ${promo.active && !isExpired ? 'checked' : ''} onchange="togglePromoActive('${promo.id}', this.checked)" ${isExpired ? 'disabled' : ''}>
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </td>
+                    <td>
+                        <div class="actions">
+                            <button class="action-btn edit" onclick="editPromoCode('${promo.id}')">✏️</button>
+                            <button class="action-btn delete" onclick="deletePromoCode('${promo.id}')">🗑️</button>
+                        </div>
+                    </td>
+                </tr>
+            `}).join('') || '<tr><td colspan="6" style="text-align:center; color:var(--text-muted)">No promo codes</td></tr>';
+        }
+        
+        function openPromoModal(promo = null) {
+            document.getElementById('promoModalTitle').textContent = promo ? 'Edit Promo Code' : 'New Promo Code';
+            document.getElementById('promoId').value = promo?.id || '';
+            document.getElementById('promoCode').value = promo?.code || '';
+            document.getElementById('promoType').value = promo?.type || 'percent';
+            document.getElementById('promoValue').value = promo?.value || '';
+            document.getElementById('promoMaxUses').value = promo?.max_uses || 0;
+            document.getElementById('promoExpires').value = promo?.expires_at?.split('T')[0] || '';
+            openModal('promoModal');
+        }
+        
+        function editPromoCode(id) {
+            const promo = promoCodes.find(p => p.id === id);
+            if (promo) openPromoModal(promo);
+        }
+        
+        async function savePromoCode() {
+            const id = document.getElementById('promoId').value;
+            const data = {
+                code: document.getElementById('promoCode').value.toUpperCase(),
+                type: document.getElementById('promoType').value,
+                value: parseFloat(document.getElementById('promoValue').value),
+                max_uses: parseInt(document.getElementById('promoMaxUses').value) || null,
+                expires_at: document.getElementById('promoExpires').value || null,
+                active: true
+            };
+            
+            try {
+                const url = id ? `${API_BASE}/admin/promos/${id}` : `${API_BASE}/admin/promos`;
+                const method = id ? 'PUT' : 'POST';
+                
+                await fetch(url, {
+                    method,
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+                
+                closeModal('promoModal');
+                showToast(id ? 'Promo code updated!' : 'Promo code created!');
+                loadPromoCodes();
+            } catch (e) {
+                showToast('Failed to save promo code', true);
+            }
+        }
+        
+        async function togglePromoActive(id, active) {
+            try {
+                await fetch(`${API_BASE}/admin/promos/${id}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ active })
+                });
+            } catch (e) {
+                showToast('Failed to update promo', true);
+            }
+        }
+        
+        async function deletePromoCode(id) {
+            if (!confirm('Delete this promo code?')) return;
+            try {
+                await fetch(`${API_BASE}/admin/promos/${id}`, { method: 'DELETE' });
+                showToast('Promo code deleted');
+                loadPromoCodes();
+            } catch (e) {
+                showToast('Failed to delete promo', true);
+            }
+        }
+        
+        // === REWARDS ===
+        async function loadRewards() {
+            try {
+                const res = await fetch(`${API_BASE}/admin/rewards`);
+                const data = await res.json();
+                rewards = data.rewards || [];
+                renderRewardsTable();
+            } catch (e) {
+                console.error('Failed to load rewards:', e);
+            }
+        }
+        
+        function renderRewardsTable() {
+            const typeIcons = { free_item: '🎁', discount: '💰', merch: '👕', experience: '⭐' };
+            
+            document.getElementById('rewardsTableBody').innerHTML = rewards.map(rw => `
+                <tr>
+                    <td><strong>${rw.name}</strong></td>
+                    <td><span style="color:var(--gold)">⭐ ${rw.points_cost}</span></td>
+                    <td>${typeIcons[rw.type] || '🎁'} ${rw.type?.replace('_', ' ') || 'item'}</td>
+                    <td>
+                        <label class="toggle">
+                            <input type="checkbox" ${rw.active ? 'checked' : ''} onchange="toggleRewardActive('${rw.id}', this.checked)">
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </td>
+                    <td>
+                        <div class="actions">
+                            <button class="action-btn edit" onclick="editReward('${rw.id}')">✏️</button>
+                            <button class="action-btn delete" onclick="deleteReward('${rw.id}')">🗑️</button>
+                        </div>
+                    </td>
+                </tr>
+            `).join('') || '<tr><td colspan="5" style="text-align:center; color:var(--text-muted)">No rewards configured</td></tr>';
+        }
+        
+        function openRewardModal(rw = null) {
+            document.getElementById('rewardModalTitle').textContent = rw ? 'Edit Reward' : 'New Reward Option';
+            document.getElementById('rewardId').value = rw?.id || '';
+            document.getElementById('rewardName').value = rw?.name || '';
+            document.getElementById('rewardPoints').value = rw?.points_cost || '';
+            document.getElementById('rewardType').value = rw?.type || 'free_item';
+            document.getElementById('rewardDesc').value = rw?.description || '';
+            openModal('rewardModal');
+        }
+        
+        function editReward(id) {
+            const rw = rewards.find(r => r.id === id);
+            if (rw) openRewardModal(rw);
+        }
+        
+        async function saveReward() {
+            const id = document.getElementById('rewardId').value;
+            const data = {
+                name: document.getElementById('rewardName').value,
+                points_cost: parseInt(document.getElementById('rewardPoints').value),
+                type: document.getElementById('rewardType').value,
+                description: document.getElementById('rewardDesc').value,
+                active: true
+            };
+            
+            try {
+                const url = id ? `${API_BASE}/admin/rewards/${id}` : `${API_BASE}/admin/rewards`;
+                const method = id ? 'PUT' : 'POST';
+                
+                await fetch(url, {
+                    method,
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+                
+                closeModal('rewardModal');
+                showToast(id ? 'Reward updated!' : 'Reward created!');
+                loadRewards();
+            } catch (e) {
+                showToast('Failed to save reward', true);
+            }
+        }
+        
+        async function toggleRewardActive(id, active) {
+            try {
+                await fetch(`${API_BASE}/admin/rewards/${id}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ active })
+                });
+            } catch (e) {
+                showToast('Failed to update reward', true);
+            }
+        }
+        
+        async function deleteReward(id) {
+            if (!confirm('Delete this reward?')) return;
+            try {
+                await fetch(`${API_BASE}/admin/rewards/${id}`, { method: 'DELETE' });
+                showToast('Reward deleted');
+                loadRewards();
+            } catch (e) {
+                showToast('Failed to delete reward', true);
+            }
+        }
+        
+        async function saveRewardsSettings() {
+            showToast('Rewards settings saved!');
+        }
+        
+        // === INIT ===
+        loadBusinessSettings();
+    </script>
+</body>
+</html>
