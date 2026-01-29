@@ -98,6 +98,155 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 // ============== API ROUTES ==============
 
+// === AUTH ROUTES ===
+
+// Login (Hybrid: Phone+PIN or Email+Password)
+app.post('/api/auth/login', async (req, res) => {
+    const { identifier, secret, type } = req.body; // type: 'phone' or 'email'
+
+    if (!identifier || !secret) {
+        return res.status(400).json({ error: 'Missing credentials' });
+    }
+
+    try {
+        let user;
+
+        if (type === 'phone') {
+            // Phone + PIN Login
+            // Clean phone number
+            const phone = identifier.replace(/\D/g, '');
+            
+            const { data, error } = await supabase
+                .from('customers')
+                .select('*')
+                .eq('phone', phone)
+                .single();
+
+            if (error || !data) {
+                return res.status(401).json({ error: 'Invalid phone number' });
+            }
+
+            // Check PIN
+            // In a real app, hash this! For MVP/Demo, simple comparison.
+            if (data.pin !== secret) {
+                return res.status(401).json({ error: 'Invalid PIN' });
+            }
+            user = data;
+
+        } else {
+            // Email + Password Login
+            const email = identifier.toLowerCase();
+            
+            const { data, error } = await supabase
+                .from('customers')
+                .select('*')
+                .eq('email', email)
+                .single();
+
+            if (error || !data) {
+                return res.status(401).json({ error: 'Invalid email' });
+            }
+
+            // Check Password
+            // In a real app, hash this!
+            if (data.password !== secret) {
+                return res.status(401).json({ error: 'Invalid password' });
+            }
+            user = data;
+        }
+
+        // Return user data
+        res.json({ 
+            success: true, 
+            user: {
+                id: user.id,
+                name: user.name,
+                role: 'customer',
+                email: user.email,
+                phone: user.phone,
+                points: user.points,
+                tier: user.tier,
+                is_vip: user.is_vip
+            }
+        });
+
+    } catch (e) {
+        console.error("Login error:", e);
+        res.status(500).json({ error: 'Login failed' });
+    }
+});
+
+// Register (Hybrid)
+app.post('/api/auth/register', async (req, res) => {
+    const { name, phone, email, secret, type } = req.body; 
+    // type: 'phone' (secret=PIN) or 'email' (secret=password)
+
+    try {
+        // 1. Check existing
+        const cleanPhone = phone ? phone.replace(/\D/g, '') : null;
+        const cleanEmail = email ? email.toLowerCase() : null;
+
+        if (cleanPhone) {
+            const { data: existingPhone } = await supabase
+                .from('customers')
+                .select('id')
+                .eq('phone', cleanPhone)
+                .single();
+            if (existingPhone) return res.status(400).json({ error: 'Phone already registered' });
+        }
+
+        if (cleanEmail) {
+            const { data: existingEmail } = await supabase
+                .from('customers')
+                .select('id')
+                .eq('email', cleanEmail)
+                .single();
+            if (existingEmail) return res.status(400).json({ error: 'Email already registered' });
+        }
+
+        // 2. Generate ID
+        const { data: maxId } = await supabase
+            .from('customers')
+            .select('id')
+            .order('id', { ascending: false })
+            .limit(1);
+        
+        const nextNum = maxId?.length ? parseInt(maxId[0].id.slice(1)) + 1 : 1;
+        const newId = `C${String(nextNum).padStart(3, '0')}`;
+
+        // 3. Prepare Data
+        const newUser = {
+            id: newId,
+            name,
+            phone: cleanPhone,
+            email: cleanEmail,
+            points: 0,
+            tier: 'bronze'
+        };
+
+        if (type === 'phone') {
+            newUser.pin = secret;
+        } else {
+            newUser.password = secret;
+        }
+
+        // 4. Insert
+        const { data, error } = await supabase
+            .from('customers')
+            .insert(newUser)
+            .select()
+            .single();
+
+        if (error) throw error;
+
+        res.json({ success: true, user: data });
+
+    } catch (e) {
+        console.error("Register error:", e);
+        res.status(500).json({ error: e.message || 'Registration failed' });
+    }
+});
+
 // MENU (Public Read)
 app.get('/api/menu', async (req, res) => {
     const { data: items } = await supabase.from('menu_items').select('*').eq('available', true);

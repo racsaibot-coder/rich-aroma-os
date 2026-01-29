@@ -398,22 +398,79 @@
     <div class="modal-overlay" id="loginModal">
         <div class="checkout-modal">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem">
-                <h2>Customer Login</h2>
+                <h2>Login</h2>
                 <button onclick="closeLogin()" style="background:none; border:none; font-size:1.5rem; color:var(--text)">×</button>
             </div>
+
+            <!-- Tabs -->
+            <div style="display:flex; gap:0.5rem; margin-bottom:1.5rem;">
+                <button id="tabPhone" onclick="toggleLoginMethod('phone')" class="cat-btn active" style="flex:1; justify-content:center;">Phone</button>
+                <button id="tabEmail" onclick="toggleLoginMethod('email')" class="cat-btn" style="flex:1; justify-content:center;">Email</button>
+            </div>
             
-            <div style="text-align:center; margin-bottom:1.5rem">
-                 <div id="qr-reader" style="width: 100%; max-width: 300px; margin: 0 auto; display:none;"></div>
-                 <button id="btnScanQr" onclick="startQrScanner()" style="background:var(--card-bg); border:1px solid var(--caramel); color:var(--caramel); padding:0.8rem 1.5rem; border-radius:12px; font-weight:600; margin-bottom:1rem; display:flex; align-items:center; gap:0.5rem; margin-inline:auto;">
-                    <span>📸</span> Scan QR
-                 </button>
+            <div id="loginFormPhone">
+                <div style="margin-bottom: 1rem;">
+                    <label style="display:block; margin-bottom:0.5rem; font-size:0.9rem; color:var(--text-muted)">Phone Number</label>
+                    <input type="tel" id="loginPhone" class="phone-input" placeholder="e.g. 99999999">
+                </div>
+                <div style="margin-bottom: 1rem;">
+                    <label style="display:block; margin-bottom:0.5rem; font-size:0.9rem; color:var(--text-muted)">PIN (4 digits)</label>
+                    <input type="password" id="loginPin" class="phone-input" placeholder="****" maxlength="4">
+                </div>
             </div>
 
-            <div style="margin-bottom:1rem; text-align:center; color:var(--text-muted)">— OR —</div>
+            <div id="loginFormEmail" style="display:none;">
+                <div style="margin-bottom: 1rem;">
+                    <label style="display:block; margin-bottom:0.5rem; font-size:0.9rem; color:var(--text-muted)">Email Address</label>
+                    <input type="email" id="loginEmail" class="phone-input" placeholder="name@example.com">
+                </div>
+                <div style="margin-bottom: 1rem;">
+                    <label style="display:block; margin-bottom:0.5rem; font-size:0.9rem; color:var(--text-muted)">Password</label>
+                    <input type="password" id="loginPassword" class="phone-input" placeholder="Password">
+                </div>
+            </div>
+
+            <button class="confirm-btn" onclick="submitLogin()">Login</button>
+            
+            <div style="margin-top:1.5rem; text-align:center;">
+                <span style="color:var(--text-muted)">New user?</span>
+                <button onclick="showRegister()" style="background:none; border:none; color:var(--caramel); font-weight:600; text-decoration:underline;">Create Account</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Register Modal -->
+    <div class="modal-overlay" id="registerModal">
+        <div class="checkout-modal">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem">
+                <h2>Create Account</h2>
+                <button onclick="closeRegister()" style="background:none; border:none; font-size:1.5rem; color:var(--text)">×</button>
+            </div>
 
             <div style="margin-bottom: 1rem;">
-                <input type="tel" id="loginPhoneInput" class="phone-input" placeholder="Phone Number (e.g. 99999999)">
-                <button class="confirm-btn" onclick="manualLogin()">Lookup</button>
+                <label style="display:block; margin-bottom:0.5rem; font-size:0.9rem; color:var(--text-muted)">Full Name</label>
+                <input type="text" id="regName" class="phone-input" placeholder="Your Name">
+            </div>
+
+            <div style="margin-bottom: 1rem;">
+                <label style="display:block; margin-bottom:0.5rem; font-size:0.9rem; color:var(--text-muted)">Phone Number</label>
+                <input type="tel" id="regPhone" class="phone-input" placeholder="e.g. 99999999">
+            </div>
+
+            <div style="margin-bottom: 1rem;">
+                <label style="display:block; margin-bottom:0.5rem; font-size:0.9rem; color:var(--text-muted)">Email (Optional)</label>
+                <input type="email" id="regEmail" class="phone-input" placeholder="name@example.com">
+            </div>
+
+            <div style="margin-bottom: 1rem;">
+                <label style="display:block; margin-bottom:0.5rem; font-size:0.9rem; color:var(--text-muted)">PIN (4 digits)</label>
+                <input type="number" id="regPin" class="phone-input" placeholder="****" maxlength="4">
+            </div>
+
+            <button class="confirm-btn" onclick="submitRegister()">Sign Up</button>
+
+            <div style="margin-top:1.5rem; text-align:center;">
+                <button onclick="closeRegister(); showLogin()" style="background:none; border:none; color:var(--text-muted);">Back to Login</button>
             </div>
         </div>
     </div>
@@ -1052,9 +1109,99 @@
             // console.warn(`Code scan error = ${error}`);
         }
 
-        function manualLogin() {
-            const phone = document.getElementById('loginPhoneInput').value;
-            if(phone) lookupCustomer(phone);
+        // --- AUTH ---
+        let loginMethod = 'phone';
+
+        function toggleLoginMethod(method) {
+            loginMethod = method;
+            document.getElementById('tabPhone').classList.toggle('active', method === 'phone');
+            document.getElementById('tabEmail').classList.toggle('active', method === 'email');
+            
+            document.getElementById('loginFormPhone').style.display = method === 'phone' ? 'block' : 'none';
+            document.getElementById('loginFormEmail').style.display = method === 'email' ? 'block' : 'none';
+        }
+
+        async function submitLogin() {
+            const btn = document.querySelector('#loginModal .confirm-btn');
+            btn.textContent = 'Verifying...';
+            btn.disabled = true;
+
+            const payload = { type: loginMethod };
+            
+            if (loginMethod === 'phone') {
+                payload.identifier = document.getElementById('loginPhone').value;
+                payload.secret = document.getElementById('loginPin').value;
+            } else {
+                payload.identifier = document.getElementById('loginEmail').value;
+                payload.secret = document.getElementById('loginPassword').value;
+            }
+
+            try {
+                const res = await fetch('/api/auth/login', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify(payload)
+                });
+                
+                const data = await res.json();
+                
+                if (!data.success) throw new Error(data.error);
+                
+                loginCustomer(data.user);
+                
+            } catch (e) {
+                alert(e.message || 'Login failed');
+            } finally {
+                btn.textContent = 'Login';
+                btn.disabled = false;
+            }
+        }
+
+        function showRegister() {
+            closeLogin();
+            document.getElementById('registerModal').classList.add('show');
+        }
+
+        function closeRegister() {
+            document.getElementById('registerModal').classList.remove('show');
+        }
+
+        async function submitRegister() {
+            const name = document.getElementById('regName').value;
+            const phone = document.getElementById('regPhone').value;
+            const email = document.getElementById('regEmail').value;
+            const pin = document.getElementById('regPin').value;
+
+            if (!name || !phone || !pin) return alert('Please fill in required fields');
+            if (pin.length < 4) return alert('PIN must be 4 digits');
+
+            const btn = document.querySelector('#registerModal .confirm-btn');
+            btn.textContent = 'Creating...';
+            btn.disabled = true;
+
+            try {
+                const res = await fetch('/api/auth/register', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({
+                        type: 'phone', // Default registration is phone-centric for this POS
+                        name, phone, email, secret: pin
+                    })
+                });
+
+                const data = await res.json();
+                if (!data.success) throw new Error(data.error);
+
+                closeRegister();
+                loginCustomer(data.user);
+                alert('Account created successfully!');
+
+            } catch (e) {
+                alert(e.message || 'Registration failed');
+            } finally {
+                btn.textContent = 'Sign Up';
+                btn.disabled = false;
+            }
         }
 
         async function lookupCustomer(identifier) {

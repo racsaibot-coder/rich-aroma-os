@@ -169,6 +169,10 @@ CREATE TABLE promo_codes (
 -- Order number sequence
 CREATE SEQUENCE order_number_seq START 1;
 
+-- Hybrid Auth Updates (2025-01-29)
+ALTER TABLE customers ADD COLUMN IF NOT EXISTS pin TEXT;
+ALTER TABLE customers ADD COLUMN IF NOT EXISTS password TEXT;
+
 -- Enable Row Level Security (optional, for auth later)
 ALTER TABLE customers ENABLE ROW LEVEL SECURITY;
 ALTER TABLE orders ENABLE ROW LEVEL SECURITY;
