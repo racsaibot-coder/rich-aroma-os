@@ -73,9 +73,14 @@ app.get('/api/orders', async (req, res) => {
 });
 
 app.post('/api/orders', async (req, res) => {
-    // Get next order number
-    const { data: seqData } = await supabase.rpc('nextval', { seq_name: 'order_number_seq' });
-    const orderNum = seqData || Date.now();
+    // Get next order number from max existing
+    const { data: maxOrder } = await supabase
+        .from('orders')
+        .select('order_number')
+        .order('order_number', { ascending: false })
+        .limit(1);
+    
+    const orderNum = (maxOrder?.[0]?.order_number || 0) + 1;
     
     const newOrder = {
         id: `ORD-${String(orderNum).padStart(4, '0')}`,
