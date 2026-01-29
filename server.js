@@ -768,6 +768,100 @@ app.delete('/api/admin/rewards/:id', async (req, res) => {
 
 // ============== PAGE ROUTES ==============
 
+// SETUP & SETTINGS
+app.get('/setup', (req, res) => {
+    res.sendFile(path.join(__dirname, 'src', 'admin', 'setup.html'));
+});
+
+app.get('/api/settings', async (req, res) => {
+    try {
+        const { data, error } = await supabase.from('business_settings').select('*').single();
+        // If table doesn't exist or is empty, return defaults
+        if (error) {
+            return res.json({ 
+                name: 'Rich Aroma', 
+                currency: 'HNL', 
+                tax_rate: 15, 
+                is_practice_mode: true, 
+                setup_completed: false 
+            });
+        }
+        res.json(data);
+    } catch (e) {
+        res.json({ is_practice_mode: true, setup_completed: false });
+    }
+});
+
+app.post('/api/admin/setup', async (req, res) => {
+    const { business, menu, owner } = req.body;
+    
+    // 1. Save Business Settings (Upsert to ensure ID 1)
+    const { error: settingsError } = await supabase
+        .from('business_settings')
+        .upsert({
+            id: 1, 
+            name: business.name,
+            currency: business.currency,
+            tax_rate: business.taxRate,
+            is_practice_mode: true, 
+            setup_completed: true
+        });
+        
+    if (settingsError) {
+        // If table doesn't exist, this will fail. We might want to try creating it? 
+        // For now, assuming schema exists.
+        return res.status(500).json({ error: settingsError.message });
+    }
+
+    // 2. Add Menu Items
+    if (menu && menu.length) {
+        const menuItems = menu.map(m => ({
+            id: 'item_' + Date.now() + Math.random().toString(36).substr(2,5),
+            name: m.name,
+            price: parseFloat(m.price),
+            category: m.category,
+            available: true
+        }));
+        await supabase.from('menu_items').insert(menuItems);
+    }
+
+    // 3. Create Owner
+    if (owner) {
+        await supabase.from('employees').insert({
+            id: 'emp_' + Date.now(),
+            name: owner.name,
+            pin: owner.pin,
+            role: 'admin',
+            active: true
+        });
+    }
+
+    res.json({ success: true });
+});
+
+app.post('/api/admin/go-live', async (req, res) => {
+    try {
+        // 1. Clear transactional data
+        await supabase.from('orders').delete().neq('id', 'xo');
+        await supabase.from('timeclock').delete().gt('id', 0);
+        await supabase.from('waste').delete().gt('id', 0);
+        await supabase.from('creator_submissions').delete().neq('id', 'xo');
+        await supabase.from('balance_history').delete().gt('id', 0);
+        
+        // 2. Disable Practice Mode
+        const { error } = await supabase
+            .from('business_settings')
+            .update({ is_practice_mode: false })
+            .eq('id', 1);
+
+        if (error) throw error;
+        
+        res.json({ success: true });
+    } catch (e) {
+        res.status(500).json({ error: e.message });
+    }
+});
+
 // Admin Panel
 app.get('/admin', (req, res) => {
     res.sendFile(path.join(__dirname, 'src', 'admin', 'admin.html'));

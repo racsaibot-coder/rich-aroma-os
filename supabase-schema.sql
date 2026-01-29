@@ -180,3 +180,23 @@ CREATE POLICY "Allow all" ON creators FOR ALL USING (true);
 CREATE POLICY "Allow all" ON creator_submissions FOR ALL USING (true);
 CREATE POLICY "Allow all" ON promo_codes FOR ALL USING (true);
 CREATE POLICY "Allow all" ON balance_history FOR ALL USING (true);
+
+-- Business Settings
+CREATE TABLE business_settings (
+    id SERIAL PRIMARY KEY,
+    name TEXT DEFAULT 'Rich Aroma',
+    currency TEXT DEFAULT 'HNL',
+    tax_rate DECIMAL(5,2) DEFAULT 15.0,
+    is_practice_mode BOOLEAN DEFAULT true,
+    setup_completed BOOLEAN DEFAULT false,
+    updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Ensure only one row exists
+CREATE UNIQUE INDEX one_row_only ON business_settings((TRUE));
+
+-- Initial default row
+INSERT INTO business_settings (name, is_practice_mode) VALUES ('Rich Aroma', true) ON CONFLICT DO NOTHING;
+
+-- Allow all policy for settings
+CREATE POLICY "Allow all" ON business_settings FOR ALL USING (true);

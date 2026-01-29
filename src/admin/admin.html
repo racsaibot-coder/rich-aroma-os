@@ -448,6 +448,9 @@
     </style>
 </head>
 <body>
+    <div id="practiceBanner" style="display:none; background:#fbbf24; color:black; text-align:center; padding:0.5rem; font-weight:bold;">
+        🟡 PRACTICE MODE ACTIVE
+    </div>
     <header class="header">
         <div class="header-content">
             <div class="logo">
@@ -545,6 +548,27 @@
                     <h3>🕐 Business Hours</h3>
                 </div>
                 <div id="businessHours"></div>
+            </div>
+
+            <div class="card" id="goLiveCard" style="display:none; border: 1px solid var(--caramel);">
+                <div class="card-header">
+                    <h3>🚀 System Status</h3>
+                </div>
+                <div style="padding: 1rem;">
+                    <div style="background: rgba(251, 191, 36, 0.1); padding: 1rem; border-radius: 8px; margin-bottom: 1rem; color: #fbbf24; border: 1px solid rgba(251, 191, 36, 0.3);">
+                        <strong>🟡 Practice Mode is ON</strong>
+                        <p style="margin-top:0.5rem; font-size:0.9rem; opacity:0.9">
+                            You are currently in practice mode. Use this time to train staff and test the menu.
+                            Orders and data created now are temporary.
+                        </p>
+                    </div>
+                    <button class="btn btn-primary" style="width:100%; justify-content:center;" onclick="goLive()">
+                        🚀 Go Live (Clear Test Data)
+                    </button>
+                    <p style="text-align:center; font-size:0.8rem; color:var(--text-muted); margin-top:0.5rem;">
+                        This will delete all test orders, sales, and timeclock data. Menu and settings will be kept.
+                    </p>
+                </div>
             </div>
         </section>
         
@@ -1063,6 +1087,51 @@
         let challenges = [];
         let promoCodes = [];
         let rewards = [];
+
+        // === SYSTEM STATUS ===
+        checkSystemStatus();
+
+        async function checkSystemStatus() {
+            try {
+                const res = await fetch(`${API_BASE}/settings`);
+                const settings = await res.json();
+                
+                if (settings.is_practice_mode) {
+                    document.getElementById('practiceBanner').style.display = 'block';
+                    document.getElementById('goLiveCard').style.display = 'block';
+                } else {
+                    document.getElementById('practiceBanner').style.display = 'none';
+                    document.getElementById('goLiveCard').style.display = 'none';
+                }
+            } catch (e) {
+                console.error("Failed to check status", e);
+            }
+        }
+
+        async function goLive() {
+            if (!confirm("⚠️ Are you sure you want to GO LIVE?\n\nThis will PERMANENTLY DELETE all test orders, sales records, and timeclock data.\n\nYour menu and employees will be saved.")) {
+                return;
+            }
+            
+            const btn = document.querySelector('#goLiveCard button');
+            const originalText = btn.innerText;
+            btn.innerText = "Launching... 🚀";
+            btn.disabled = true;
+
+            try {
+                const res = await fetch(`${API_BASE}/admin/go-live`, { method: 'POST' });
+                if (res.ok) {
+                    alert("🎉 You are now LIVE!\n\nThe system will now reload.");
+                    window.location.reload();
+                } else {
+                    throw new Error("Failed to go live");
+                }
+            } catch (e) {
+                alert("Error: " + e.message);
+                btn.innerText = originalText;
+                btn.disabled = false;
+            }
+        }
         
         // === NAVIGATION ===
         document.querySelectorAll('.nav-tab').forEach(tab => {

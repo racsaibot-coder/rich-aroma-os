@@ -377,6 +377,9 @@
     </style>
 </head>
 <body>
+    <div id="practiceBanner" style="display:none; background:#fbbf24; color:black; text-align:center; padding:0.5rem; font-weight:bold; position:sticky; top:0; z-index:200;">
+        🟡 PRACTICE MODE
+    </div>
     <!-- Header -->
     <header class="header">
         <div class="header-top">
@@ -518,6 +521,20 @@
     </div>
 
     <script>
+        // Check Practice Mode
+        async function checkPracticeMode() {
+            try {
+                const res = await fetch('/api/settings');
+                const settings = await res.json();
+                if (settings.is_practice_mode) {
+                    document.getElementById('practiceBanner').style.display = 'block';
+                }
+            } catch (e) {
+                console.error(e);
+            }
+        }
+        checkPracticeMode();
+
         let menu = { categories: [], taxRate: 0.15 };
         let cart = {};
         let customer = null;

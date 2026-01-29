@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Setup Wizard | Rich Aroma OS</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --espresso: #5D4037;
+            --caramel: #D4A574;
+            --dark-bg: #0f0d0b;
+            --card-bg: #1a1714;
+            --text: #f5f0eb;
+            --text-muted: #8a8078;
+            --success: #22c55e;
+            --primary-gradient: linear-gradient(135deg, var(--caramel), var(--espresso));
+        }
+        * { box-sizing: border-box; font-family: 'Inter', sans-serif; }
+        body {
+            background: var(--dark-bg);
+            color: var(--text);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 1rem;
+        }
+        .wizard-container {
+            width: 100%;
+            max-width: 600px;
+            background: var(--card-bg);
+            border-radius: 20px;
+            padding: 2rem;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+            position: relative;
+            overflow: hidden;
+        }
+        .progress-bar {
+            position: absolute;
+            top: 0;
+            left: 0;
+            height: 4px;
+            background: rgba(255,255,255,0.1);
+            width: 100%;
+        }
+        .progress-fill {
+            height: 100%;
+            background: var(--caramel);
+            width: 25%;
+            transition: width 0.3s ease;
+        }
+        .step { display: none; animation: fadeIn 0.4s ease; }
+        .step.active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        
+        h1, h2 { margin-bottom: 0.5rem; }
+        h1 { color: var(--caramel); font-size: 1.5rem; }
+        p.subtitle { color: var(--text-muted); margin-bottom: 2rem; font-size: 0.9rem; }
+        
+        .form-group { margin-bottom: 1.5rem; }
+        label { display: block; margin-bottom: 0.5rem; color: var(--text-muted); font-size: 0.9rem; }
+        input, select {
+            width: 100%;
+            padding: 0.8rem;
+            background: rgba(0,0,0,0.3);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 8px;
+            color: var(--text);
+            font-size: 1rem;
+        }
+        input:focus { outline: none; border-color: var(--caramel); }
+        
+        .btn-group { display: flex; justify-content: flex-end; gap: 1rem; margin-top: 2rem; }
+        .btn {
+            padding: 0.8rem 1.5rem;
+            border-radius: 8px;
+            border: none;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 1rem;
+            transition: opacity 0.2s;
+        }
+        .btn-primary { background: var(--primary-gradient); color: white; }
+        .btn-ghost { background: transparent; color: var(--text-muted); }
+        .btn:hover { opacity: 0.9; }
+        
+        .welcome-icon { font-size: 3rem; margin-bottom: 1rem; display: block; }
+        
+        /* Practice Mode Badge Preview */
+        .practice-badge-preview {
+            background: #fbbf24;
+            color: #000;
+            padding: 0.5rem 1rem;
+            border-radius: 50px;
+            font-weight: bold;
+            display: inline-block;
+            margin-bottom: 1rem;
+            font-size: 0.8rem;
+        }
+    </style>
+</head>
+<body>
+
+<div class="wizard-container">
+    <div class="progress-bar"><div class="progress-fill" id="progress"></div></div>
+
+    <!-- STEP 1: WELCOME & BUSINESS INFO -->
+    <div class="step active" id="step1">
+        <span class="welcome-icon">☕</span>
+        <h1>Welcome to Rich Aroma</h1>
+        <p class="subtitle">Let's get your coffee shop set up in less than 2 minutes.</p>
+        
+        <form onsubmit="nextStep(2); return false;">
+            <div class="form-group">
+                <label>Business Name</label>
+                <input type="text" id="bizName" placeholder="My Coffee Shop" required>
+            </div>
+            <div class="form-group">
+                <label>Currency</label>
+                <select id="bizCurrency">
+                    <option value="HNL">HNL (Lempira)</option>
+                    <option value="USD">USD (Dollar)</option>
+                    <option value="EUR">EUR (Euro)</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Tax Rate (%)</label>
+                <input type="number" id="bizTax" value="15" step="0.1" required>
+            </div>
+            <div class="btn-group">
+                <button type="submit" class="btn btn-primary">Next: Menu →</button>
+            </div>
+        </form>
+    </div>
+
+    <!-- STEP 2: QUICK MENU -->
+    <div class="step" id="step2">
+        <h1>Quick Menu Setup</h1>
+        <p class="subtitle">Add a few items to get started. You can add more later.</p>
+        
+        <form onsubmit="nextStep(3); return false;">
+            <div id="menuItemsList">
+                <!-- Will be populated by JS -->
+            </div>
+            <div class="btn-group">
+                <button type="button" class="btn btn-ghost" onclick="prevStep(1)">Back</button>
+                <button type="submit" class="btn btn-primary">Next: Staff →</button>
+            </div>
+        </form>
+    </div>
+
+    <!-- STEP 3: OWNER ACCOUNT -->
+    <div class="step" id="step3">
+        <h1>Create Owner Account</h1>
+        <p class="subtitle">This will be your admin login PIN.</p>
+        
+        <form onsubmit="finishSetup(); return false;">
+            <div class="form-group">
+                <label>Your Name</label>
+                <input type="text" id="ownerName" placeholder="Jane Doe" required>
+            </div>
+            <div class="form-group">
+                <label>Create a PIN (4-6 digits)</label>
+                <input type="password" id="ownerPin" placeholder="1234" pattern="[0-9]{4,6}" inputmode="numeric" required>
+            </div>
+            <div class="form-group">
+                <label>Confirm PIN</label>
+                <input type="password" id="ownerPinConfirm" placeholder="1234" required>
+            </div>
+            
+            <div style="background: rgba(255,255,255,0.05); padding: 1rem; border-radius: 8px; margin-top: 1rem;">
+                <div class="practice-badge-preview">🟡 PRACTICE MODE</div>
+                <p style="font-size: 0.85rem; color: var(--text-muted); margin: 0;">
+                    Your system will start in <strong>Practice Mode</strong> so you can test orders safely. 
+                    You can "Go Live" later from settings.
+                </p>
+            </div>
+
+            <div class="btn-group">
+                <button type="button" class="btn btn-ghost" onclick="prevStep(2)">Back</button>
+                <button type="submit" class="btn btn-primary" id="finishBtn">Finish Setup 🚀</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    const API_BASE = '/api';
+    
+    // Default menu items to populate
+    const defaultMenu = [
+        { name: 'Espresso', price: 25, category: 'coffee' },
+        { name: 'Cappuccino', price: 45, category: 'coffee' },
+        { name: 'Latte', price: 50, category: 'coffee' }
+    ];
+
+    // Initialize Step 2
+    const menuList = document.getElementById('menuItemsList');
+    defaultMenu.forEach((item, i) => {
+        menuList.innerHTML += `
+            <div style="display: flex; gap: 0.5rem; margin-bottom: 1rem;">
+                <input type="text" name="itemName_${i}" value="${item.name}" placeholder="Item Name" required style="flex: 2;">
+                <input type="number" name="itemPrice_${i}" value="${item.price}" placeholder="Price" required style="flex: 1;">
+            </div>
+        `;
+    });
+
+    function nextStep(step) {
+        document.querySelectorAll('.step').forEach(s => s.classList.remove('active'));
+        document.getElementById(`step${step}`).classList.add('active');
+        document.getElementById('progress').style.width = `${(step/3)*100}%`;
+    }
+
+    function prevStep(step) {
+        nextStep(step);
+    }
+
+    async function finishSetup() {
+        const pin = document.getElementById('ownerPin').value;
+        const confirm = document.getElementById('ownerPinConfirm').value;
+        
+        if (pin !== confirm) {
+            alert("PINs do not match!");
+            return;
+        }
+        
+        const btn = document.getElementById('finishBtn');
+        btn.innerText = "Setting up...";
+        btn.disabled = true;
+
+        // Collect Data
+        const businessData = {
+            name: document.getElementById('bizName').value,
+            currency: document.getElementById('bizCurrency').value,
+            taxRate: document.getElementById('bizTax').value
+        };
+
+        const menuItems = [];
+        for (let i = 0; i < 3; i++) {
+            menuItems.push({
+                name: document.querySelector(`[name="itemName_${i}"]`).value,
+                price: document.querySelector(`[name="itemPrice_${i}"]`).value,
+                category: 'coffee'
+            });
+        }
+
+        const ownerData = {
+            name: document.getElementById('ownerName').value,
+            pin: pin,
+            role: 'admin'
+        };
+
+        try {
+            const res = await fetch(`${API_BASE}/admin/setup`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    business: businessData,
+                    menu: menuItems,
+                    owner: ownerData
+                })
+            });
+
+            if (res.ok) {
+                window.location.href = '/admin';
+            } else {
+                const err = await res.json();
+                alert('Setup failed: ' + err.error);
+                btn.disabled = false;
+                btn.innerText = "Finish Setup 🚀";
+            }
+        } catch (e) {
+            console.error(e);
+            alert('Network error during setup');
+            btn.disabled = false;
+        }
+    }
+</script>
+</body>
+</html>

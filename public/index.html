@@ -378,6 +378,9 @@
 </head>
 <body>
     <div class="app" id="app">
+        <div id="practiceBanner" style="display:none; background:#fbbf24; color:black; text-align:center; padding:0.5rem; font-weight:bold; font-size: 0.9rem;">
+            🟡 PRACTICE MODE
+        </div>
         <header class="header">
             <div class="header-left">
                 <button class="back-btn" id="backBtn" onclick="goHome()">←</button>
@@ -490,6 +493,22 @@
     </div>
     
     <script>
+        // Check Practice Mode
+        async function checkPracticeMode() {
+            try {
+                const res = await fetch('/api/settings');
+                const settings = await res.json();
+                if (settings.is_practice_mode) {
+                    document.getElementById('practiceBanner').style.display = 'block';
+                } else {
+                    document.getElementById('practiceBanner').style.display = 'none';
+                }
+            } catch (e) {
+                console.error("Practice mode check failed", e);
+            }
+        }
+        checkPracticeMode();
+
         // Clock
         function updateClock() {
             const now = new Date();
