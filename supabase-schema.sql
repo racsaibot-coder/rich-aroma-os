@@ -12,8 +12,13 @@ CREATE TABLE customers (
     visits INTEGER DEFAULT 0,
     tier TEXT DEFAULT 'bronze',
     member_since DATE DEFAULT CURRENT_DATE,
-    rico_balance DECIMAL(10,2) DEFAULT 0,
+    cash_balance DECIMAL(10,2) DEFAULT 0, -- Renamed from rico_balance
+    membership_credit DECIMAL(10,2) DEFAULT 0,
+    membership_credit_expires_at TIMESTAMPTZ,
     total_loaded DECIMAL(10,2) DEFAULT 0,
+    is_vip BOOLEAN DEFAULT false,
+    vip_expiry TIMESTAMPTZ,
+    last_free_coffee_at TIMESTAMPTZ,
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
@@ -200,3 +205,91 @@ INSERT INTO business_settings (name, is_practice_mode) VALUES ('Rich Aroma', tru
 
 -- Allow all policy for settings
 CREATE POLICY "Allow all" ON business_settings FOR ALL USING (true);
+
+-- Loyalty Settings
+CREATE TABLE loyalty_settings (
+    id SERIAL PRIMARY KEY,
+    tier_copper_image TEXT,
+    tier_silver_image TEXT,
+    tier_gold_image TEXT,
+    tier_vip_overlay_image TEXT,
+    updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Ensure only one row exists
+CREATE UNIQUE INDEX one_row_only_loyalty ON loyalty_settings((TRUE));
+
+-- Initial default row (empty)
+INSERT INTO loyalty_settings DEFAULT VALUES ON CONFLICT DO NOTHING;
+
+-- Allow all policy for loyalty settings
+CREATE POLICY "Allow all" ON loyalty_settings FOR ALL USING (true);
+
+
+-- --- EMPLOYEE OS MODULE ---
+
+-- SOPs (Standard Operating Procedures)
+CREATE TABLE sops (
+    id SERIAL PRIMARY KEY,
+    title TEXT NOT NULL,
+    content_url TEXT, -- URL to PDF or external doc
+    content_text TEXT, -- Markdown or HTML content
+    role_required TEXT, -- e.g., 'barista', 'manager', or null for all
+    is_active BOOLEAN DEFAULT true,
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Employee Contracts
+CREATE TABLE employee_contracts (
+    id SERIAL PRIMARY KEY,
+    employee_id TEXT REFERENCES employees(id),
+    contract_text TEXT NOT NULL,
+    signed_at TIMESTAMPTZ DEFAULT NOW(),
+    signature_data_url TEXT, -- Base64 encoded signature image
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Training Modules
+CREATE TABLE training_modules (
+    id SERIAL PRIMARY KEY,
+    title TEXT NOT NULL,
+    content TEXT NOT NULL, -- Learning material (text/video url)
+    quiz_data JSONB, -- Question/Answer structure
+    role_required TEXT,
+    is_mandatory BOOLEAN DEFAULT true,
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Training Completions
+CREATE TABLE training_completions (
+    id SERIAL PRIMARY KEY,
+    employee_id TEXT REFERENCES employees(id),
+    module_id INTEGER REFERENCES training_modules(id),
+    completed_at TIMESTAMPTZ DEFAULT NOW(),
+    score INTEGER -- if quiz involved
+);
+
+-- Daily Tasks (Checklist Templates)
+CREATE TABLE daily_tasks (
+    id SERIAL PRIMARY KEY,
+    role TEXT NOT NULL, -- e.g., 'opener', 'closer', 'barista'
+    task_description TEXT NOT NULL,
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Task Logs (Actual completions)
+CREATE TABLE task_logs (
+    id SERIAL PRIMARY KEY,
+    employee_id TEXT REFERENCES employees(id),
+    task_id INTEGER REFERENCES daily_tasks(id),
+    completed_at TIMESTAMPTZ DEFAULT NOW(),
+    date DATE DEFAULT CURRENT_DATE
+);
+
+-- Policies for new tables
+CREATE POLICY "Allow all" ON sops FOR ALL USING (true);
+CREATE POLICY "Allow all" ON employee_contracts FOR ALL USING (true);
+CREATE POLICY "Allow all" ON training_modules FOR ALL USING (true);
+CREATE POLICY "Allow all" ON training_completions FOR ALL USING (true);
+CREATE POLICY "Allow all" ON daily_tasks FOR ALL USING (true);
+CREATE POLICY "Allow all" ON task_logs FOR ALL USING (true);

@@ -813,7 +813,23 @@
             document.getElementById('balanceCustomer').classList.add('show');
             document.getElementById('balanceCustomerName').textContent = balanceCustomer.name || 'Cliente';
             document.getElementById('balanceCustomerPoints').textContent = balanceCustomer.points || 0;
-            document.getElementById('balanceCustomerBalance').textContent = balanceCustomer.ricoBalance || 0;
+            
+            const cash = parseFloat(balanceCustomer.cash_balance) || 0;
+            const credit = parseFloat(balanceCustomer.membership_credit) || 0;
+            const total = cash + credit;
+            
+            const balanceEl = document.getElementById('balanceCustomerBalance');
+            if (credit > 0) {
+                balanceEl.innerHTML = `${total} <div style="font-size:0.8em; opacity:0.8">Cash: ${cash} | Credit: ${credit}</div>`;
+            } else {
+                balanceEl.textContent = total;
+            }
+            
+            // Update bonus indicators based on VIP status
+            const isVip = balanceCustomer.is_vip;
+            document.querySelectorAll('.balance-amt-btn .bonus').forEach(el => {
+                el.style.display = isVip ? 'block' : 'none';
+            });
         }
 
         function selectBalanceAmt(amt) {
@@ -825,7 +841,10 @@
 
         function updateBalanceSummary() {
             if (balanceAmount > 0 && balanceCustomer) {
-                const bonus = Math.round(balanceAmount * 0.10);
+                // VIP Check
+                const isVip = balanceCustomer.is_vip;
+                const bonus = isVip ? Math.round(balanceAmount * 0.10) : 0;
+                
                 document.getElementById('balanceSummaryAmt').textContent = balanceAmount;
                 document.getElementById('balanceSummaryBonus').textContent = bonus;
                 document.getElementById('balanceSummaryTotal').textContent = balanceAmount + bonus;

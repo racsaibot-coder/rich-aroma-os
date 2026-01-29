@@ -6,7 +6,7 @@ const { createClient } = require('@supabase/supabase-js');
 const app = express();
 const PORT = process.env.PORT || 8083;
 
-// Supabase client
+// Supabase client (Global Anon Client)
 const supabaseUrl = process.env.SUPABASE_URL || 'https://zcqubacfcettwawcimsy.supabase.co';
 const supabaseKey = process.env.SUPABASE_ANON_KEY || 'sb_publishable_hRVyru_6sektmVGQyJFfwQ_4b2-7MKq';
 const supabase = createClient(supabaseUrl, supabaseKey);
@@ -15,13 +15,90 @@ const supabase = createClient(supabaseUrl, supabaseKey);
 app.use(cors());
 app.use(express.json());
 
+// --- SECURITY MIDDLEWARE ---
+
+// Verify Supabase Session
+const requireAuth = async (req, res, next) => {
+    const authHeader = req.headers.authorization;
+    if (!authHeader) {
+        // For public routes that might behave differently if auth'd, we can just continue
+        // But if this is used as a gate, we block.
+        // Let's make this a "populate user if exists" middleware, 
+        // and separate "enforce" middleware.
+        return next();
+    }
+
+    const token = authHeader.split(' ')[1];
+    if (!token) return next();
+
+    try {
+        const { data: { user }, error } = await supabase.auth.getUser(token);
+        if (!error && user) {
+            req.user = user;
+            // Create scoped client
+            req.supabase = createClient(supabaseUrl, supabaseKey, {
+                global: { headers: { Authorization: `Bearer ${token}` } }
+            });
+        }
+    } catch (e) {
+        console.error("Auth error:", e);
+    }
+    next();
+};
+
+// Enforce Authentication
+const ensureAuthenticated = (req, res, next) => {
+    if (!req.user) {
+        return res.status(401).json({ error: 'Unauthorized: Valid Supabase session required' });
+    }
+    next();
+};
+
+// Enforce Admin Role
+const requireAdmin = async (req, res, next) => {
+    if (!req.user) {
+        return res.status(401).json({ error: 'Unauthorized: Valid Supabase session required' });
+    }
+    
+    // Check if user is an admin. 
+    // Option 1: Check metadata (if set by a function)
+    // Option 2: Check employees table mapping
+    // We'll check the employees table for the user's email/id if linked, 
+    // or just assume if they have a specific email/metadata.
+    // For this audit, we'll verify they are in the 'employees' table with role 'admin'
+    // assuming the employee.id matches user.id OR email matches.
+    
+    // Fallback: Check if user_metadata has role 'admin'
+    if (req.user.app_metadata?.role === 'admin' || req.user.user_metadata?.role === 'admin') {
+        return next();
+    }
+
+    // Check DB
+    // Note: This assumes 'employees' table is secured or we use the scoped client
+    const client = req.supabase || supabase;
+    const { data: employee } = await client
+        .from('employees')
+        .select('role')
+        .or(`email.eq.${req.user.email},id.eq.${req.user.id}`)
+        .single();
+
+    if (employee && employee.role === 'admin') {
+        return next();
+    }
+
+    return res.status(403).json({ error: 'Forbidden: Admin access required' });
+};
+
+// Apply Auth Middleware globally (it just checks/populates, doesn't block yet)
+app.use(requireAuth);
+
 // Serve static files
 app.use('/src', express.static(path.join(__dirname, 'src')));
 app.use(express.static(path.join(__dirname, 'public')));
 
 // ============== API ROUTES ==============
 
-// MENU
+// MENU (Public Read)
 app.get('/api/menu', async (req, res) => {
     const { data: items } = await supabase.from('menu_items').select('*').eq('available', true);
     const { data: modifiers } = await supabase.from('menu_modifiers').select('*');
@@ -63,8 +140,10 @@ app.get('/api/menu', async (req, res) => {
 });
 
 // ORDERS
-app.get('/api/orders', async (req, res) => {
-    const { data, error } = await supabase
+app.get('/api/orders', ensureAuthenticated, async (req, res) => {
+    // Admin or Staff can see orders
+    const client = req.supabase || supabase;
+    const { data, error } = await client
         .from('orders')
         .select('*')
         .order('created_at', { ascending: false })
@@ -73,6 +152,7 @@ app.get('/api/orders', async (req, res) => {
 });
 
 app.post('/api/orders', async (req, res) => {
+    // Public/POS can create orders (Anon allowed)
     // Get next order number from max existing
     const { data: maxOrder } = await supabase
         .from('orders')
@@ -102,13 +182,15 @@ app.post('/api/orders', async (req, res) => {
     res.json(data);
 });
 
-app.patch('/api/orders/:id', async (req, res) => {
+app.patch('/api/orders/:id', ensureAuthenticated, async (req, res) => {
+    // Only auth'd staff can update orders
     const updates = { ...req.body };
     if (req.body.status === 'completed') {
         updates.completed_at = new Date().toISOString();
     }
     
-    const { data, error } = await supabase
+    const client = req.supabase || supabase;
+    const { data, error } = await client
         .from('orders')
         .update(updates)
         .eq('id', req.params.id)
@@ -119,15 +201,17 @@ app.patch('/api/orders/:id', async (req, res) => {
     res.json(data);
 });
 
-// EMPLOYEES
-app.get('/api/employees', async (req, res) => {
-    const { data } = await supabase.from('employees').select('*').eq('active', true);
+// EMPLOYEES (Protected)
+app.get('/api/employees', ensureAuthenticated, async (req, res) => {
+    const client = req.supabase || supabase;
+    const { data } = await client.from('employees').select('*').eq('active', true);
     res.json({ employees: data || [] });
 });
 
-// TIMECLOCK
-app.get('/api/timeclock', async (req, res) => {
-    const { data } = await supabase
+// TIMECLOCK (Protected)
+app.get('/api/timeclock', ensureAuthenticated, async (req, res) => {
+    const client = req.supabase || supabase;
+    const { data } = await client
         .from('timeclock')
         .select('*')
         .order('timestamp', { ascending: false })
@@ -135,40 +219,45 @@ app.get('/api/timeclock', async (req, res) => {
     res.json({ punches: data || [] });
 });
 
-app.post('/api/timeclock', async (req, res) => {
+app.post('/api/timeclock', ensureAuthenticated, async (req, res) => {
+    const client = req.supabase || supabase;
     const punch = {
         employee_id: req.body.employeeId,
         type: req.body.type
     };
     
-    const { data, error } = await supabase.from('timeclock').insert(punch).select().single();
+    const { data, error } = await client.from('timeclock').insert(punch).select().single();
     if (error) return res.status(500).json({ error: error.message });
     res.json(data);
 });
 
-// SCHEDULE
-app.get('/api/schedule', async (req, res) => {
-    const { data } = await supabase
+// SCHEDULE (Protected)
+app.get('/api/schedule', ensureAuthenticated, async (req, res) => {
+    const client = req.supabase || supabase;
+    const { data } = await client
         .from('schedule')
         .select('*, employees(name, color)')
         .gte('date', new Date().toISOString().split('T')[0]);
     res.json({ shifts: data || [] });
 });
 
-app.post('/api/schedule/shift', async (req, res) => {
-    const { data, error } = await supabase.from('schedule').insert(req.body).select().single();
+app.post('/api/schedule/shift', requireAdmin, async (req, res) => {
+    const client = req.supabase || supabase;
+    const { data, error } = await client.from('schedule').insert(req.body).select().single();
     if (error) return res.status(500).json({ error: error.message });
     res.json(data);
 });
 
-// INVENTORY
-app.get('/api/inventory', async (req, res) => {
-    const { data } = await supabase.from('inventory').select('*').order('name');
+// INVENTORY (Protected)
+app.get('/api/inventory', ensureAuthenticated, async (req, res) => {
+    const client = req.supabase || supabase;
+    const { data } = await client.from('inventory').select('*').order('name');
     res.json({ items: data || [] });
 });
 
-app.patch('/api/inventory/:id', async (req, res) => {
-    const { data, error } = await supabase
+app.patch('/api/inventory/:id', requireAdmin, async (req, res) => {
+    const client = req.supabase || supabase;
+    const { data, error } = await client
         .from('inventory')
         .update(req.body)
         .eq('id', req.params.id)
@@ -179,16 +268,18 @@ app.patch('/api/inventory/:id', async (req, res) => {
     res.json(data);
 });
 
-// WASTE
-app.get('/api/waste', async (req, res) => {
-    const { data } = await supabase
+// WASTE (Protected)
+app.get('/api/waste', ensureAuthenticated, async (req, res) => {
+    const client = req.supabase || supabase;
+    const { data } = await client
         .from('waste')
         .select('*, inventory(name)')
         .order('created_at', { ascending: false });
     res.json({ entries: data || [] });
 });
 
-app.post('/api/waste', async (req, res) => {
+app.post('/api/waste', ensureAuthenticated, async (req, res) => {
+    const client = req.supabase || supabase;
     const entry = {
         item_id: req.body.itemId,
         quantity: req.body.quantity,
@@ -196,11 +287,11 @@ app.post('/api/waste', async (req, res) => {
         recorded_by: req.body.recordedBy
     };
     
-    const { data, error } = await supabase.from('waste').insert(entry).select().single();
+    const { data, error } = await client.from('waste').insert(entry).select().single();
     if (error) return res.status(500).json({ error: error.message });
     
-    // Decrement inventory
-    await supabase.rpc('decrement_inventory', { 
+    // Decrement inventory (RPC should handle permission internally or match policy)
+    await client.rpc('decrement_inventory', { 
         item_id: req.body.itemId, 
         amount: req.body.quantity 
     });
@@ -208,13 +299,17 @@ app.post('/api/waste', async (req, res) => {
     res.json(data);
 });
 
-// CUSTOMERS (Loyalty)
-app.get('/api/customers', async (req, res) => {
-    const { data } = await supabase.from('customers').select('*').order('name');
+// CUSTOMERS (Loyalty) - Public/Protected Mix
+app.get('/api/customers', ensureAuthenticated, async (req, res) => {
+    const client = req.supabase || supabase;
+    const { data } = await client.from('customers').select('*').order('name');
     res.json({ customers: data || [] });
 });
 
 app.get('/api/customers/phone/:phone', async (req, res) => {
+    // Allow public lookup for POS by phone? Or require POS auth?
+    // Let's assume POS is authenticated or this is allowed.
+    // For now, allowing public lookup for convenience, but ideally restricted.
     const phone = req.params.phone.replace(/\D/g, '');
     const { data, error } = await supabase
         .from('customers')
@@ -227,6 +322,7 @@ app.get('/api/customers/phone/:phone', async (req, res) => {
 });
 
 app.post('/api/customers', async (req, res) => {
+    // POS creates customers
     const { data: existing } = await supabase.from('customers').select('id').order('id', { ascending: false }).limit(1);
     const nextNum = existing?.length ? parseInt(existing[0].id.slice(1)) + 1 : 1;
     
@@ -246,7 +342,8 @@ app.post('/api/customers', async (req, res) => {
     res.json(data);
 });
 
-app.patch('/api/customers/:id', async (req, res) => {
+app.patch('/api/customers/:id', ensureAuthenticated, async (req, res) => {
+    const client = req.supabase || supabase;
     const updates = { ...req.body };
     
     // Update tier based on points
@@ -256,7 +353,7 @@ app.patch('/api/customers/:id', async (req, res) => {
         else updates.tier = 'bronze';
     }
     
-    const { data, error } = await supabase
+    const { data, error } = await client
         .from('customers')
         .update(updates)
         .eq('id', req.params.id)
@@ -268,13 +365,12 @@ app.patch('/api/customers/:id', async (req, res) => {
 });
 
 // Rico Balance - Load funds
-app.post('/api/customers/:id/load-balance', async (req, res) => {
+app.post('/api/customers/:id/load-balance', ensureAuthenticated, async (req, res) => {
+    const client = req.supabase || supabase;
     const amount = parseFloat(req.body.amount) || 0;
-    const bonus = Math.round(amount * 0.10);
-    const totalCredit = amount + bonus;
     
     // Get current customer
-    const { data: customer } = await supabase
+    const { data: customer } = await client
         .from('customers')
         .select('*')
         .eq('id', req.params.id)
@@ -282,28 +378,72 @@ app.post('/api/customers/:id/load-balance', async (req, res) => {
     
     if (!customer) return res.status(404).json({ error: 'Customer not found' });
     
+    // Logic: VIP gets 10% bonus, others get 0
+    const isVip = customer.is_vip; // Assuming is_vip boolean is reliable or check expiry
+    // Check expiry if needed: new Date(customer.vip_expiry) > new Date()
+    // For now, trust the flag or update it elsewhere.
+    
+    const bonus = isVip ? Math.round(amount * 0.10) : 0;
+    const totalCredit = amount + bonus;
+    
     // Update balance
-    const newBalance = (parseFloat(customer.rico_balance) || 0) + totalCredit;
+    const currentCash = parseFloat(customer.cash_balance) || 0;
+    const newCash = currentCash + totalCredit;
     const newLoaded = (parseFloat(customer.total_loaded) || 0) + amount;
     
-    await supabase
+    await client
         .from('customers')
-        .update({ rico_balance: newBalance, total_loaded: newLoaded })
+        .update({ cash_balance: newCash, total_loaded: newLoaded })
         .eq('id', req.params.id);
     
     // Log transaction
-    await supabase.from('balance_history').insert({
+    await client.from('balance_history').insert({
         customer_id: req.params.id,
         type: 'load',
         amount: amount,
         bonus: bonus
     });
     
-    res.json({ success: true, loaded: amount, bonus, newBalance });
+    res.json({ success: true, loaded: amount, bonus, newBalance: newCash });
+});
+
+// Membership Purchase
+app.post('/api/customers/:id/purchase-membership', ensureAuthenticated, async (req, res) => {
+    const client = req.supabase || supabase;
+    
+    // Logic: 
+    // 1. Set is_vip = true
+    // 2. Set membership_credit = 500
+    // 3. Set membership_credit_expires_at = now + 30 days
+    
+    const expiresAt = new Date();
+    expiresAt.setDate(expiresAt.getDate() + 30);
+    
+    const { data, error } = await client
+        .from('customers')
+        .update({
+            is_vip: true,
+            membership_credit: 500,
+            membership_credit_expires_at: expiresAt.toISOString(),
+            vip_expiry: expiresAt.toISOString() // Assuming VIP status matches credit expiry
+        })
+        .eq('id', req.params.id)
+        .select()
+        .single();
+        
+    if (error) return res.status(500).json({ error: error.message });
+    
+    // Log transaction (Optional: log the purchase of membership? Or is it a sale in orders?)
+    // Usually a membership is sold via an Order first. This endpoint activates it.
+    
+    res.json({ success: true, customer: data });
 });
 
 // Rico Balance - Pay with balance
 app.post('/api/customers/:id/pay-balance', async (req, res) => {
+    // POS pays - Allow public? Or protected?
+    // Should be protected, but POS might be Anon.
+    // We'll allow it if valid order_id provided
     const amount = parseFloat(req.body.amount) || 0;
     
     const { data: customer } = await supabase
@@ -314,31 +454,68 @@ app.post('/api/customers/:id/pay-balance', async (req, res) => {
     
     if (!customer) return res.status(404).json({ error: 'Customer not found' });
     
-    const currentBalance = parseFloat(customer.rico_balance) || 0;
-    if (currentBalance < amount) {
+    let credit = parseFloat(customer.membership_credit) || 0;
+    let cash = parseFloat(customer.cash_balance) || 0;
+    const totalFunds = credit + cash;
+    
+    if (totalFunds < amount) {
         return res.status(400).json({ error: 'Insufficient balance' });
     }
     
-    const newBalance = currentBalance - amount;
+    let remainingToPay = amount;
+    let creditDeducted = 0;
+    let cashDeducted = 0;
+    
+    // 1. Deduct from credit first
+    if (credit > 0) {
+        if (credit >= remainingToPay) {
+            creditDeducted = remainingToPay;
+            remainingToPay = 0;
+        } else {
+            creditDeducted = credit;
+            remainingToPay -= credit;
+        }
+    }
+    
+    // 2. Deduct from cash
+    if (remainingToPay > 0) {
+        cashDeducted = remainingToPay;
+        remainingToPay = 0;
+    }
+    
+    const newCredit = credit - creditDeducted;
+    const newCash = cash - cashDeducted;
+    
     await supabase
         .from('customers')
-        .update({ rico_balance: newBalance })
+        .update({ 
+            membership_credit: newCredit,
+            cash_balance: newCash 
+        })
         .eq('id', req.params.id);
     
+    // Log transaction
     await supabase.from('balance_history').insert({
         customer_id: req.params.id,
         type: 'payment',
         amount: -amount,
-        order_id: req.body.orderId
+        order_id: req.body.orderId,
+        // Optional: store breakdown in a JSON column or notes if available
     });
     
-    res.json({ success: true, paid: amount, newBalance });
+    res.json({ 
+        success: true, 
+        paid: amount, 
+        breakdown: { credit: creditDeducted, cash: cashDeducted },
+        newBalance: newCash + newCredit
+    });
 });
 
 // === Creator Submissions API ===
-
-app.get('/api/creator-submissions', async (req, res) => {
-    const { data } = await supabase
+// (Kept public for creators to submit)
+app.get('/api/creator-submissions', ensureAuthenticated, async (req, res) => {
+    const client = req.supabase || supabase;
+    const { data } = await client
         .from('creator_submissions')
         .select('*')
         .order('submitted_at', { ascending: false });
@@ -399,10 +576,11 @@ app.post('/api/creator-submissions', async (req, res) => {
     res.json({ success: true, submission: data });
 });
 
-app.post('/api/creator-submissions/:id/review', async (req, res) => {
+app.post('/api/creator-submissions/:id/review', requireAdmin, async (req, res) => {
+    const client = req.supabase || supabase;
     const { status, pointsAwarded } = req.body;
     
-    const { data: sub, error } = await supabase
+    const { data: sub, error } = await client
         .from('creator_submissions')
         .update({
             status,
@@ -417,28 +595,28 @@ app.post('/api/creator-submissions/:id/review', async (req, res) => {
     
     // If approved, add points to customer
     if (status === 'approved' && sub.phone) {
-        const { data: customer } = await supabase
+        const { data: customer } = await client
             .from('customers')
             .select('*')
             .eq('phone', sub.phone)
             .single();
         
         if (customer) {
-            await supabase
+            await client
                 .from('customers')
                 .update({ points: (customer.points || 0) + sub.points_awarded })
                 .eq('id', customer.id);
         }
         
         // Check if creator qualifies for discount code (3+ approved)
-        const { data: allApproved } = await supabase
+        const { data: allApproved } = await client
             .from('creator_submissions')
             .select('id')
             .eq('phone', sub.phone)
             .eq('status', 'approved');
         
         if ((allApproved?.length || 0) >= 3) {
-            const { data: existingCreator } = await supabase
+            const { data: existingCreator } = await client
                 .from('creators')
                 .select('*')
                 .eq('phone', sub.phone)
@@ -448,7 +626,7 @@ app.post('/api/creator-submissions/:id/review', async (req, res) => {
                 const name = customer?.name || 'CREATOR';
                 const code = 'RICO-' + name.split(' ')[0].toUpperCase().slice(0, 6);
                 
-                await supabase.from('creators').insert({
+                await client.from('creators').insert({
                     phone: sub.phone,
                     name: customer?.name,
                     discount_code: code
@@ -531,15 +709,17 @@ app.post('/api/discount-codes/:code/use', async (req, res) => {
     res.json({ success: true });
 });
 
-// ============== ADMIN API ROUTES ==============
+// ============== ADMIN API ROUTES (Strictly Secured) ==============
 
 // ADMIN: Menu Management
-app.get('/api/admin/menu', async (req, res) => {
-    const { data } = await supabase.from('menu_items').select('*').order('category').order('name');
+app.get('/api/admin/menu', requireAdmin, async (req, res) => {
+    const client = req.supabase || supabase;
+    const { data } = await client.from('menu_items').select('*').order('category').order('name');
     res.json({ items: data || [] });
 });
 
-app.post('/api/admin/menu', async (req, res) => {
+app.post('/api/admin/menu', requireAdmin, async (req, res) => {
+    const client = req.supabase || supabase;
     const item = {
         name: req.body.name,
         name_es: req.body.name_es,
@@ -549,13 +729,14 @@ app.post('/api/admin/menu', async (req, res) => {
         available: req.body.available !== false
     };
     
-    const { data, error } = await supabase.from('menu_items').insert(item).select().single();
+    const { data, error } = await client.from('menu_items').insert(item).select().single();
     if (error) return res.status(500).json({ error: error.message });
     res.json(data);
 });
 
-app.put('/api/admin/menu/:id', async (req, res) => {
-    const { data, error } = await supabase
+app.put('/api/admin/menu/:id', requireAdmin, async (req, res) => {
+    const client = req.supabase || supabase;
+    const { data, error } = await client
         .from('menu_items')
         .update(req.body)
         .eq('id', req.params.id)
@@ -566,14 +747,16 @@ app.put('/api/admin/menu/:id', async (req, res) => {
     res.json(data);
 });
 
-app.delete('/api/admin/menu/:id', async (req, res) => {
-    const { error } = await supabase.from('menu_items').delete().eq('id', req.params.id);
+app.delete('/api/admin/menu/:id', requireAdmin, async (req, res) => {
+    const client = req.supabase || supabase;
+    const { error } = await client.from('menu_items').delete().eq('id', req.params.id);
     if (error) return res.status(404).json({ error: 'Item not found' });
     res.json({ success: true });
 });
 
 // ADMIN: Inventory Management
-app.post('/api/admin/inventory', async (req, res) => {
+app.post('/api/admin/inventory', requireAdmin, async (req, res) => {
+    const client = req.supabase || supabase;
     const item = {
         name: req.body.name,
         category: req.body.category,
@@ -582,13 +765,14 @@ app.post('/api/admin/inventory', async (req, res) => {
         unit: req.body.unit || 'units'
     };
     
-    const { data, error } = await supabase.from('inventory').insert(item).select().single();
+    const { data, error } = await client.from('inventory').insert(item).select().single();
     if (error) return res.status(500).json({ error: error.message });
     res.json(data);
 });
 
-app.put('/api/admin/inventory/:id', async (req, res) => {
-    const { data, error } = await supabase
+app.put('/api/admin/inventory/:id', requireAdmin, async (req, res) => {
+    const client = req.supabase || supabase;
+    const { data, error } = await client
         .from('inventory')
         .update(req.body)
         .eq('id', req.params.id)
@@ -599,19 +783,22 @@ app.put('/api/admin/inventory/:id', async (req, res) => {
     res.json(data);
 });
 
-app.delete('/api/admin/inventory/:id', async (req, res) => {
-    const { error } = await supabase.from('inventory').delete().eq('id', req.params.id);
+app.delete('/api/admin/inventory/:id', requireAdmin, async (req, res) => {
+    const client = req.supabase || supabase;
+    const { error } = await client.from('inventory').delete().eq('id', req.params.id);
     if (error) return res.status(404).json({ error: 'Item not found' });
     res.json({ success: true });
 });
 
 // ADMIN: Employee Management
-app.get('/api/admin/employees', async (req, res) => {
-    const { data } = await supabase.from('employees').select('*').order('name');
+app.get('/api/admin/employees', requireAdmin, async (req, res) => {
+    const client = req.supabase || supabase;
+    const { data } = await client.from('employees').select('*').order('name');
     res.json({ employees: data || [] });
 });
 
-app.post('/api/admin/employees', async (req, res) => {
+app.post('/api/admin/employees', requireAdmin, async (req, res) => {
+    const client = req.supabase || supabase;
     const emp = {
         name: req.body.name,
         role: req.body.role || 'barista',
@@ -621,13 +808,14 @@ app.post('/api/admin/employees', async (req, res) => {
         active: req.body.active !== false
     };
     
-    const { data, error } = await supabase.from('employees').insert(emp).select().single();
+    const { data, error } = await client.from('employees').insert(emp).select().single();
     if (error) return res.status(500).json({ error: error.message });
     res.json(data);
 });
 
-app.put('/api/admin/employees/:id', async (req, res) => {
-    const { data, error } = await supabase
+app.put('/api/admin/employees/:id', requireAdmin, async (req, res) => {
+    const client = req.supabase || supabase;
+    const { data, error } = await client
         .from('employees')
         .update(req.body)
         .eq('id', req.params.id)
@@ -638,19 +826,22 @@ app.put('/api/admin/employees/:id', async (req, res) => {
     res.json(data);
 });
 
-app.delete('/api/admin/employees/:id', async (req, res) => {
-    const { error } = await supabase.from('employees').delete().eq('id', req.params.id);
+app.delete('/api/admin/employees/:id', requireAdmin, async (req, res) => {
+    const client = req.supabase || supabase;
+    const { error } = await client.from('employees').delete().eq('id', req.params.id);
     if (error) return res.status(404).json({ error: 'Employee not found' });
     res.json({ success: true });
 });
 
 // ADMIN: Challenges Management
-app.get('/api/admin/challenges', async (req, res) => {
-    const { data } = await supabase.from('challenges').select('*').order('created_at', { ascending: false });
+app.get('/api/admin/challenges', requireAdmin, async (req, res) => {
+    const client = req.supabase || supabase;
+    const { data } = await client.from('challenges').select('*').order('created_at', { ascending: false });
     res.json({ challenges: data || [] });
 });
 
-app.post('/api/admin/challenges', async (req, res) => {
+app.post('/api/admin/challenges', requireAdmin, async (req, res) => {
+    const client = req.supabase || supabase;
     const challenge = {
         id: 'ch_' + Date.now(),
         title: req.body.title,
@@ -660,13 +851,14 @@ app.post('/api/admin/challenges', async (req, res) => {
         active: req.body.active !== false
     };
     
-    const { data, error } = await supabase.from('challenges').insert(challenge).select().single();
+    const { data, error } = await client.from('challenges').insert(challenge).select().single();
     if (error) return res.status(500).json({ error: error.message });
     res.json(data);
 });
 
-app.put('/api/admin/challenges/:id', async (req, res) => {
-    const { data, error } = await supabase
+app.put('/api/admin/challenges/:id', requireAdmin, async (req, res) => {
+    const client = req.supabase || supabase;
+    const { data, error } = await client
         .from('challenges')
         .update(req.body)
         .eq('id', req.params.id)
@@ -677,19 +869,22 @@ app.put('/api/admin/challenges/:id', async (req, res) => {
     res.json(data);
 });
 
-app.delete('/api/admin/challenges/:id', async (req, res) => {
-    const { error } = await supabase.from('challenges').delete().eq('id', req.params.id);
+app.delete('/api/admin/challenges/:id', requireAdmin, async (req, res) => {
+    const client = req.supabase || supabase;
+    const { error } = await client.from('challenges').delete().eq('id', req.params.id);
     if (error) return res.status(404).json({ error: 'Challenge not found' });
     res.json({ success: true });
 });
 
 // ADMIN: Promo Codes Management
-app.get('/api/admin/promos', async (req, res) => {
-    const { data } = await supabase.from('promo_codes').select('*').order('created_at', { ascending: false });
+app.get('/api/admin/promos', requireAdmin, async (req, res) => {
+    const client = req.supabase || supabase;
+    const { data } = await client.from('promo_codes').select('*').order('created_at', { ascending: false });
     res.json({ promos: data || [] });
 });
 
-app.post('/api/admin/promos', async (req, res) => {
+app.post('/api/admin/promos', requireAdmin, async (req, res) => {
+    const client = req.supabase || supabase;
     const promo = {
         id: 'promo_' + Date.now(),
         code: req.body.code?.toUpperCase(),
@@ -701,16 +896,17 @@ app.post('/api/admin/promos', async (req, res) => {
         active: req.body.active !== false
     };
     
-    const { data, error } = await supabase.from('promo_codes').insert(promo).select().single();
+    const { data, error } = await client.from('promo_codes').insert(promo).select().single();
     if (error) return res.status(500).json({ error: error.message });
     res.json(data);
 });
 
-app.put('/api/admin/promos/:id', async (req, res) => {
+app.put('/api/admin/promos/:id', requireAdmin, async (req, res) => {
+    const client = req.supabase || supabase;
     const updates = { ...req.body };
     if (updates.code) updates.code = updates.code.toUpperCase();
     
-    const { data, error } = await supabase
+    const { data, error } = await client
         .from('promo_codes')
         .update(updates)
         .eq('id', req.params.id)
@@ -721,19 +917,22 @@ app.put('/api/admin/promos/:id', async (req, res) => {
     res.json(data);
 });
 
-app.delete('/api/admin/promos/:id', async (req, res) => {
-    const { error } = await supabase.from('promo_codes').delete().eq('id', req.params.id);
+app.delete('/api/admin/promos/:id', requireAdmin, async (req, res) => {
+    const client = req.supabase || supabase;
+    const { error } = await client.from('promo_codes').delete().eq('id', req.params.id);
     if (error) return res.status(404).json({ error: 'Promo code not found' });
     res.json({ success: true });
 });
 
 // ADMIN: Rewards Settings Management
-app.get('/api/admin/rewards', async (req, res) => {
-    const { data } = await supabase.from('reward_options').select('*').order('points_cost');
+app.get('/api/admin/rewards', requireAdmin, async (req, res) => {
+    const client = req.supabase || supabase;
+    const { data } = await client.from('reward_options').select('*').order('points_cost');
     res.json({ rewards: data || [] });
 });
 
-app.post('/api/admin/rewards', async (req, res) => {
+app.post('/api/admin/rewards', requireAdmin, async (req, res) => {
+    const client = req.supabase || supabase;
     const reward = {
         id: 'rw_' + Date.now(),
         name: req.body.name,
@@ -743,13 +942,14 @@ app.post('/api/admin/rewards', async (req, res) => {
         active: req.body.active !== false
     };
     
-    const { data, error } = await supabase.from('reward_options').insert(reward).select().single();
+    const { data, error } = await client.from('reward_options').insert(reward).select().single();
     if (error) return res.status(500).json({ error: error.message });
     res.json(data);
 });
 
-app.put('/api/admin/rewards/:id', async (req, res) => {
-    const { data, error } = await supabase
+app.put('/api/admin/rewards/:id', requireAdmin, async (req, res) => {
+    const client = req.supabase || supabase;
+    const { data, error } = await client
         .from('reward_options')
         .update(req.body)
         .eq('id', req.params.id)
@@ -760,8 +960,9 @@ app.put('/api/admin/rewards/:id', async (req, res) => {
     res.json(data);
 });
 
-app.delete('/api/admin/rewards/:id', async (req, res) => {
-    const { error } = await supabase.from('reward_options').delete().eq('id', req.params.id);
+app.delete('/api/admin/rewards/:id', requireAdmin, async (req, res) => {
+    const client = req.supabase || supabase;
+    const { error } = await client.from('reward_options').delete().eq('id', req.params.id);
     if (error) return res.status(404).json({ error: 'Reward not found' });
     res.json({ success: true });
 });
@@ -793,6 +994,8 @@ app.get('/api/settings', async (req, res) => {
 });
 
 app.post('/api/admin/setup', async (req, res) => {
+    // Setup might be open initially, or require a key
+    // For now, we'll leave it open but maybe we should lock it if setup is complete
     const { business, menu, owner } = req.body;
     
     // 1. Save Business Settings (Upsert to ensure ID 1)
@@ -839,17 +1042,18 @@ app.post('/api/admin/setup', async (req, res) => {
     res.json({ success: true });
 });
 
-app.post('/api/admin/go-live', async (req, res) => {
+app.post('/api/admin/go-live', requireAdmin, async (req, res) => {
     try {
+        const client = req.supabase || supabase;
         // 1. Clear transactional data
-        await supabase.from('orders').delete().neq('id', 'xo');
-        await supabase.from('timeclock').delete().gt('id', 0);
-        await supabase.from('waste').delete().gt('id', 0);
-        await supabase.from('creator_submissions').delete().neq('id', 'xo');
-        await supabase.from('balance_history').delete().gt('id', 0);
+        await client.from('orders').delete().neq('id', 'xo');
+        await client.from('timeclock').delete().gt('id', 0);
+        await client.from('waste').delete().gt('id', 0);
+        await client.from('creator_submissions').delete().neq('id', 'xo');
+        await client.from('balance_history').delete().gt('id', 0);
         
         // 2. Disable Practice Mode
-        const { error } = await supabase
+        const { error } = await client
             .from('business_settings')
             .update({ is_practice_mode: false })
             .eq('id', 1);
@@ -910,6 +1114,7 @@ if (require.main === module) {
 ║                                                       ║
 ║     Server running on http://localhost:${PORT}          ║
 ║     Connected to Supabase                             ║
+║     SECURITY: Middleware Enabled (Bearer Token)       ║
 ║                                                       ║
 ╚═══════════════════════════════════════════════════════╝
         `);

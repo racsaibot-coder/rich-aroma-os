@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#1a1410">
+    <title>SOP Library | Rich Aroma</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --espresso: #5D4037;
+            --caramel: #D4A574;
+            --cream: #F5EDE4;
+            --dark-bg: #0f0d0b;
+            --card-bg: #1a1714;
+            --text: #f5f0eb;
+            --text-muted: #8a8078;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html, body {
+            font-family: 'Inter', sans-serif;
+            background: var(--dark-bg);
+            color: var(--text);
+            min-height: 100vh;
+            padding: 1rem;
+        }
+        
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+        .title { font-size: 1.5rem; font-weight: 700; color: var(--caramel); }
+        .back-btn { 
+            padding: 0.5rem 1rem; 
+            border: 1px solid var(--text-muted); 
+            border-radius: 8px; 
+            color: var(--text); 
+            text-decoration: none; 
+        }
+
+        .sop-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 1.5rem;
+        }
+        
+        .sop-card {
+            background: var(--card-bg);
+            border-radius: 12px;
+            padding: 1.5rem;
+            border: 1px solid rgba(255,255,255,0.05);
+            transition: transform 0.2s;
+        }
+        .sop-card:hover { transform: translateY(-2px); border-color: var(--caramel); }
+        
+        .sop-title { font-size: 1.25rem; font-weight: 600; margin-bottom: 0.5rem; color: var(--cream); }
+        .sop-role { 
+            display: inline-block;
+            font-size: 0.75rem; 
+            padding: 0.25rem 0.5rem; 
+            background: rgba(255,255,255,0.1); 
+            color: var(--text-muted);
+            border-radius: 4px;
+            margin-bottom: 1rem;
+        }
+        
+        .sop-content {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            line-height: 1.5;
+            max-height: 150px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            display: -webkit-box;
+            -webkit-line-clamp: 5;
+            -webkit-box-orient: vertical;
+        }
+        
+        .view-btn {
+            display: block;
+            width: 100%;
+            margin-top: 1rem;
+            padding: 0.75rem;
+            background: rgba(212, 165, 116, 0.1);
+            color: var(--caramel);
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+        }
+        .view-btn:hover { background: rgba(212, 165, 116, 0.2); }
+
+        /* Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.8);
+            z-index: 1000;
+            padding: 2rem;
+            overflow-y: auto;
+        }
+        .modal.active { display: flex; justify-content: center; align-items: start; }
+        
+        .modal-content {
+            background: var(--card-bg);
+            width: 100%;
+            max-width: 800px;
+            border-radius: 12px;
+            padding: 2rem;
+            margin-top: 2rem;
+            position: relative;
+        }
+        
+        .close-btn {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            font-size: 1.5rem;
+            cursor: pointer;
+        }
+        
+        .full-content {
+            margin-top: 1.5rem;
+            line-height: 1.6;
+            white-space: pre-wrap;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="title">Standard Operating Procedures</div>
+        <a href="/dashboard" class="back-btn">← Dashboard</a>
+    </div>
+    
+    <div class="sop-grid" id="grid">
+        <!-- SOPs here -->
+    </div>
+    
+    <div class="modal" id="sopModal" onclick="if(event.target===this) closeModal()">
+        <div class="modal-content">
+            <button class="close-btn" onclick="closeModal()">✕</button>
+            <h2 id="modalTitle">Title</h2>
+            <div id="modalContent" class="full-content"></div>
+        </div>
+    </div>
+
+    <script>
+        let sops = [];
+
+        async function loadSops() {
+            const res = await fetch('/api/employee-os/sops');
+            const data = await res.json();
+            sops = data.sops || [];
+            render();
+        }
+
+        function render() {
+            const grid = document.getElementById('grid');
+            if (sops.length === 0) {
+                grid.innerHTML = '<div style="color: var(--text-muted);">No SOPs found.</div>';
+                return;
+            }
+            
+            grid.innerHTML = sops.map(sop => `
+                <div class="sop-card">
+                    <div class="sop-title">${sop.title}</div>
+                    <div class="sop-role">${sop.role_required || 'All Roles'}</div>
+                    <div class="sop-content">${sop.content_text || '(See link)'}</div>
+                    <button class="view-btn" onclick="openSop(${sop.id})">Read Full SOP</button>
+                </div>
+            `).join('');
+        }
+
+        function openSop(id) {
+            const sop = sops.find(s => s.id === id);
+            if (!sop) return;
+            
+            document.getElementById('modalTitle').textContent = sop.title;
+            
+            let content = sop.content_text || '';
+            if (sop.content_url) {
+                content += `\n\n<a href="${sop.content_url}" target="_blank" style="color: var(--caramel);">Open External Document ↗</a>`;
+            }
+            
+            document.getElementById('modalContent').innerHTML = content;
+            document.getElementById('sopModal').classList.add('active');
+        }
+
+        function closeModal() {
+            document.getElementById('sopModal').classList.remove('active');
+        }
+
+        loadSops();
+    </script>
+</body>
+</html>

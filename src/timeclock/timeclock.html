@@ -235,6 +235,7 @@
                 return;
             }
             currentEmployee = emp;
+            localStorage.setItem('currentEmployeeId', emp.id);
             showEmployeeScreen();
         }
 
@@ -254,6 +255,7 @@
             const buttons = document.getElementById('actionButtons');
             if (isClockedIn) {
                 buttons.innerHTML = `
+                    <button class="action-btn" style="background: var(--caramel); color: var(--dark-bg); margin-bottom: 0.5rem;" onclick="window.location.href='/dashboard'">🚀 Go to Dashboard</button>
                     <button class="action-btn break" onclick="punch('break')">☕ Start Break</button>
                     <button class="action-btn clock-out" onclick="punch('out')">🚪 Clock Out</button>
                 `;
@@ -296,7 +298,12 @@
                 body: JSON.stringify({ employeeId: currentEmployee.id, type })
             });
             await loadData();
-            showEmployeeScreen();
+            
+            if (type === 'in') {
+                window.location.href = '/dashboard';
+            } else {
+                showEmployeeScreen();
+            }
         }
 
         function goBack() {

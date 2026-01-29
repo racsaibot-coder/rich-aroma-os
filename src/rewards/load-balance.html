@@ -403,8 +403,18 @@
             document.getElementById('customerPhone').textContent = formatPhone(customer.phone);
             document.getElementById('customerTier').textContent = (customer.tier || 'bronze').toUpperCase();
             document.getElementById('customerPoints').textContent = customer.points || 0;
-            document.getElementById('customerBalance').textContent = 'L' + (customer.ricoBalance || 0);
+            
+            const cash = parseFloat(customer.cash_balance) || 0;
+            const credit = parseFloat(customer.membership_credit) || 0;
+            document.getElementById('customerBalance').innerHTML = `L${cash + credit}<br><small style="font-size:0.5em; opacity:0.8; font-weight:400">Cash: ${cash} | Credit: ${credit}</small>`;
+            
             document.getElementById('customerVisits').textContent = customer.visits || 0;
+            
+            // Update bonus visibility
+            const isVip = customer.is_vip;
+            document.querySelectorAll('.amount-btn .bonus').forEach(el => {
+                el.style.display = isVip ? 'block' : 'none';
+            });
         }
 
         function selectAmount(amount) {
@@ -426,7 +436,8 @@
         function updateSummary() {
             if (selectedAmount > 0) {
                 document.getElementById('summary').style.display = 'block';
-                const bonus = Math.round(selectedAmount * 0.10);
+                const isVip = customer?.is_vip;
+                const bonus = isVip ? Math.round(selectedAmount * 0.10) : 0;
                 const total = selectedAmount + bonus;
                 document.getElementById('summaryAmount').textContent = selectedAmount;
                 document.getElementById('summaryBonus').textContent = bonus;
