@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#1a1410">
+    <title>Kitchen | Rich Aroma</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --espresso: #5D4037;
+            --caramel: #D4A574;
+            --cream: #F5EDE4;
+            --dark-bg: #0f0d0b;
+            --card-bg: #1a1714;
+            --text: #f5f0eb;
+            --text-muted: #8a8078;
+            --success: #22c55e;
+            --warning: #eab308;
+            --danger: #ef4444;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html, body {
+            font-family: 'Inter', sans-serif;
+            background: var(--dark-bg);
+            color: var(--text);
+            min-height: 100vh;
+        }
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem;
+            background: var(--card-bg);
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+        }
+        .header h1 { font-size: 1.25rem; display: flex; align-items: center; gap: 0.5rem; }
+        .pending-count {
+            background: var(--danger);
+            color: white;
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.875rem;
+            font-weight: 600;
+        }
+        .orders {
+            padding: 1rem;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+        .order-card {
+            background: var(--card-bg);
+            border-radius: 16px;
+            overflow: hidden;
+            border-left: 4px solid var(--warning);
+        }
+        .order-card.urgent { border-left-color: var(--danger); }
+        .order-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem;
+            background: rgba(0,0,0,0.2);
+        }
+        .order-num { font-weight: 700; font-size: 1.25rem; }
+        .order-time {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.875rem;
+        }
+        .timer { font-weight: 700; font-family: monospace; }
+        .timer.urgent { color: var(--danger); }
+        .order-items { padding: 1rem; }
+        .order-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 0.75rem;
+            padding: 0.5rem 0;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+        }
+        .order-item:last-child { border-bottom: none; }
+        .item-qty {
+            background: var(--espresso);
+            color: white;
+            width: 28px;
+            height: 28px;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 0.875rem;
+            flex-shrink: 0;
+        }
+        .item-details { flex: 1; }
+        .item-name { font-weight: 600; }
+        .item-mods { font-size: 0.8rem; color: var(--caramel); margin-top: 0.25rem; }
+        .bump-btn {
+            width: 100%;
+            padding: 1.25rem;
+            background: var(--success);
+            border: none;
+            color: white;
+            font-size: 1.125rem;
+            font-weight: 700;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+        .bump-btn:active { background: #16a34a; }
+        .empty {
+            text-align: center;
+            padding: 4rem 2rem;
+            color: var(--text-muted);
+        }
+        .empty-icon { font-size: 4rem; margin-bottom: 1rem; }
+        
+        @media (min-width: 768px) {
+            .orders {
+                display: grid;
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+        @media (min-width: 1024px) {
+            .orders { grid-template-columns: repeat(3, 1fr); }
+        }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <h1>🍳 Kitchen Display</h1>
+        <span class="pending-count" id="pendingCount">0 orders</span>
+    </header>
+    <div class="orders" id="orders"></div>
+
+    <script>
+        let orders = [];
+        const startTimes = {};
+
+        async function loadOrders() {
+            const res = await fetch('/api/orders');
+            const data = await res.json();
+            orders = (data.orders || []).filter(o => o.status === 'pending');
+            render();
+        }
+
+        function render() {
+            const container = document.getElementById('orders');
+            document.getElementById('pendingCount').textContent = `${orders.length} order${orders.length !== 1 ? 's' : ''}`;
+            
+            if (orders.length === 0) {
+                container.innerHTML = `<div class="empty"><div class="empty-icon">✨</div><p>No pending orders</p></div>`;
+                return;
+            }
+            
+            container.innerHTML = orders.map(order => {
+                if (!startTimes[order.id]) startTimes[order.id] = new Date(order.createdAt);
+                const elapsed = Math.floor((Date.now() - startTimes[order.id]) / 1000);
+                const mins = Math.floor(elapsed / 60);
+                const secs = elapsed % 60;
+                const isUrgent = mins >= 5;
+                
+                return `<div class="order-card ${isUrgent ? 'urgent' : ''}">
+                    <div class="order-header">
+                        <span class="order-num">${order.id}</span>
+                        <div class="order-time">
+                            <span>⏱</span>
+                            <span class="timer ${isUrgent ? 'urgent' : ''}">${mins}:${String(secs).padStart(2, '0')}</span>
+                        </div>
+                    </div>
+                    <div class="order-items">
+                        ${order.items.map(item => `
+                            <div class="order-item">
+                                <span class="item-qty">${item.qty}</span>
+                                <div class="item-details">
+                                    <div class="item-name">${item.name}</div>
+                                    ${item.mods && item.mods.length ? `<div class="item-mods">${item.mods.map(m => m.name).join(', ')}</div>` : ''}
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                    <button class="bump-btn" onclick="bumpOrder('${order.id}')">✓ BUMP</button>
+                </div>`;
+            }).join('');
+        }
+
+        async function bumpOrder(orderId) {
+            await fetch(`/api/orders/${orderId}`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ status: 'completed' })
+            });
+            delete startTimes[orderId];
+            loadOrders();
+        }
+
+        loadOrders();
+        setInterval(loadOrders, 5000);
+        setInterval(render, 1000);
+    </script>
+</body>
+</html>

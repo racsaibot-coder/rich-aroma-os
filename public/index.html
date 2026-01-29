@@ -1,0 +1,629 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="theme-color" content="#1a1410">
+    <title>Rich Aroma OS</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --espresso: #5D4037;
+            --caramel: #D4A574;
+            --cream: #F5EDE4;
+            --dark-bg: #0f0d0b;
+            --card-bg: #1a1714;
+            --card-hover: #252220;
+            --text-light: #f5f0eb;
+            --text-muted: #8a8078;
+            --success: #22c55e;
+            --warning: #eab308;
+            --danger: #ef4444;
+            --safe-top: env(safe-area-inset-top, 0px);
+            --safe-bottom: env(safe-area-inset-bottom, 0px);
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+        
+        html, body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--dark-bg);
+            color: var(--text-light);
+            height: 100%;
+            overflow: hidden;
+            touch-action: manipulation;
+        }
+        
+        .app {
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+            padding-top: var(--safe-top);
+            padding-bottom: var(--safe-bottom);
+        }
+        
+        /* Header */
+        .header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 1rem 1.25rem;
+            background: var(--card-bg);
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+            flex-shrink: 0;
+        }
+        
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+        
+        .back-btn {
+            display: none;
+            width: 40px;
+            height: 40px;
+            align-items: center;
+            justify-content: center;
+            background: rgba(255,255,255,0.05);
+            border: none;
+            border-radius: 12px;
+            color: var(--text-light);
+            font-size: 1.25rem;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        
+        .back-btn:hover { background: rgba(255,255,255,0.1); }
+        .back-btn:active { background: rgba(255,255,255,0.15); }
+        
+        .back-btn.visible { display: flex; }
+        
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+        
+        .brand-icon { font-size: 1.5rem; }
+        
+        .brand-text {
+            font-weight: 700;
+            font-size: 1.125rem;
+            background: linear-gradient(135deg, var(--caramel), var(--cream));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .page-title {
+            display: none;
+            font-weight: 600;
+            font-size: 1.1rem;
+        }
+        
+        .page-title.visible { display: block; }
+        .brand.hidden { display: none; }
+        
+        .status {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.75rem;
+            color: var(--text-muted);
+        }
+        
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            background: var(--success);
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        
+        /* Main content area */
+        .main-container {
+            flex: 1;
+            overflow: hidden;
+            position: relative;
+        }
+        
+        /* Home View */
+        .home-view {
+            position: absolute;
+            inset: 0;
+            overflow-y: auto;
+            overflow-x: hidden;
+            padding: 1.25rem;
+            -webkit-overflow-scrolling: touch;
+            transition: opacity 0.2s, transform 0.2s;
+        }
+        
+        .home-view.hidden {
+            opacity: 0;
+            transform: translateX(-20px);
+            pointer-events: none;
+        }
+        
+        /* Module grid */
+        .modules {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 1rem;
+        }
+        
+        .module {
+            background: var(--card-bg);
+            border-radius: 16px;
+            padding: 1.25rem 1rem;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            text-decoration: none;
+            color: inherit;
+            transition: all 0.2s ease;
+            border: 1px solid rgba(255,255,255,0.03);
+            cursor: pointer;
+            -webkit-user-select: none;
+            user-select: none;
+            min-height: 120px;
+        }
+        
+        .module:active {
+            transform: scale(0.97);
+            background: var(--card-hover);
+        }
+        
+        .module-icon {
+            font-size: 2.25rem;
+            margin-bottom: 0.75rem;
+        }
+        
+        .module-name {
+            font-weight: 600;
+            font-size: 0.875rem;
+            margin-bottom: 0.25rem;
+        }
+        
+        .module-desc {
+            font-size: 0.7rem;
+            color: var(--text-muted);
+            line-height: 1.3;
+        }
+        
+        .module.featured {
+            grid-column: span 2;
+            flex-direction: row;
+            justify-content: flex-start;
+            gap: 1rem;
+            padding: 1.25rem 1.5rem;
+            background: linear-gradient(135deg, var(--espresso) 0%, var(--card-bg) 100%);
+            border-color: rgba(212,165,116,0.2);
+            min-height: auto;
+        }
+        
+        .module.featured .module-icon {
+            font-size: 2rem;
+            margin-bottom: 0;
+        }
+        
+        .module.featured .module-info { text-align: left; }
+        
+        /* Content View (iframe) */
+        .content-view {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            flex-direction: column;
+            background: var(--dark-bg);
+            opacity: 0;
+            transform: translateX(20px);
+            pointer-events: none;
+            transition: opacity 0.2s, transform 0.2s;
+        }
+        
+        .content-view.active {
+            opacity: 1;
+            transform: translateX(0);
+            pointer-events: auto;
+        }
+        
+        .content-frame {
+            flex: 1;
+            width: 100%;
+            border: none;
+            background: var(--dark-bg);
+        }
+        
+        /* Bottom nav */
+        .nav {
+            display: flex;
+            justify-content: space-around;
+            background: var(--card-bg);
+            border-top: 1px solid rgba(255,255,255,0.05);
+            padding: 0.5rem 0;
+            padding-bottom: max(0.5rem, var(--safe-bottom));
+            flex-shrink: 0;
+        }
+        
+        .nav-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 0.5rem 0.75rem;
+            color: var(--text-muted);
+            text-decoration: none;
+            font-size: 0.65rem;
+            font-weight: 500;
+            border-radius: 12px;
+            transition: all 0.2s;
+            cursor: pointer;
+            min-width: 60px;
+        }
+        
+        .nav-item:active,
+        .nav-item.active {
+            color: var(--caramel);
+        }
+        
+        .nav-item .icon {
+            font-size: 1.4rem;
+            margin-bottom: 0.25rem;
+        }
+        
+        /* Tablet styles (iPad) */
+        @media (min-width: 768px) {
+            .modules {
+                grid-template-columns: repeat(3, 1fr);
+                max-width: 900px;
+                margin: 0 auto;
+                gap: 1.25rem;
+            }
+            
+            .module {
+                padding: 1.5rem 1.25rem;
+                min-height: 140px;
+            }
+            
+            .module.featured {
+                grid-column: span 1;
+                flex-direction: column;
+            }
+            
+            .module.featured .module-icon {
+                margin-bottom: 0.75rem;
+            }
+            
+            .module.featured .module-info {
+                text-align: center;
+            }
+            
+            .module-icon { font-size: 2.5rem; }
+            .module-name { font-size: 0.95rem; }
+            .module-desc { font-size: 0.75rem; }
+            
+            .nav {
+                justify-content: center;
+                gap: 0.5rem;
+            }
+            
+            .nav-item {
+                padding: 0.75rem 1.25rem;
+                font-size: 0.7rem;
+                min-width: 80px;
+            }
+            
+            .nav-item .icon { font-size: 1.5rem; }
+            
+            .home-view { padding: 2rem; }
+        }
+        
+        /* Desktop styles */
+        @media (min-width: 1024px) {
+            .modules {
+                grid-template-columns: repeat(4, 1fr);
+                max-width: 1100px;
+            }
+            
+            .module {
+                padding: 2rem 1.5rem;
+                min-height: 160px;
+            }
+            
+            .module:hover {
+                transform: translateY(-3px);
+                background: var(--card-hover);
+                border-color: rgba(212,165,116,0.3);
+                box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+            }
+            
+            .module:active { transform: translateY(-1px); }
+            
+            .module-icon { font-size: 3rem; }
+            .module-name { font-size: 1rem; }
+            .module-desc { font-size: 0.8rem; }
+            
+            .nav-item {
+                padding: 0.75rem 2rem;
+                min-width: 100px;
+            }
+            
+            .header { padding: 1rem 2rem; }
+            .home-view { padding: 2.5rem; }
+        }
+        
+        /* Large desktop */
+        @media (min-width: 1400px) {
+            .modules {
+                grid-template-columns: repeat(5, 1fr);
+                max-width: 1400px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="app" id="app">
+        <header class="header">
+            <div class="header-left">
+                <button class="back-btn" id="backBtn" onclick="goHome()">←</button>
+                <div class="brand" id="brand">
+                    <span class="brand-icon">☕</span>
+                    <span class="brand-text">Rich Aroma</span>
+                </div>
+                <span class="page-title" id="pageTitle"></span>
+            </div>
+            <div class="status">
+                <span class="status-dot"></span>
+                <span id="clock">--:--</span>
+            </div>
+        </header>
+        
+        <div class="main-container">
+            <!-- Home View -->
+            <div class="home-view" id="homeView">
+                <div class="modules">
+                    <div class="module featured" onclick="openModule('pos', 'Point of Sale')">
+                        <span class="module-icon">💵</span>
+                        <div class="module-info">
+                            <div class="module-name">Point of Sale</div>
+                            <div class="module-desc">Take orders & payments</div>
+                        </div>
+                    </div>
+                    
+                    <div class="module" onclick="openModule('kds', 'Kitchen Display')">
+                        <span class="module-icon">🍳</span>
+                        <div class="module-name">Kitchen</div>
+                        <div class="module-desc">Order display</div>
+                    </div>
+                    
+                    <div class="module" onclick="openModule('timeclock', 'Time Clock')">
+                        <span class="module-icon">⏰</span>
+                        <div class="module-name">Time Clock</div>
+                        <div class="module-desc">Punch in/out</div>
+                    </div>
+                    
+                    <div class="module" onclick="openModule('scheduling', 'Scheduling')">
+                        <span class="module-icon">📅</span>
+                        <div class="module-name">Schedule</div>
+                        <div class="module-desc">Staff shifts</div>
+                    </div>
+                    
+                    <div class="module" onclick="openModule('inventory', 'Inventory')">
+                        <span class="module-icon">📦</span>
+                        <div class="module-name">Inventory</div>
+                        <div class="module-desc">Stock levels</div>
+                    </div>
+                    
+                    <div class="module" onclick="openModule('kpis', 'KPIs Dashboard')">
+                        <span class="module-icon">📊</span>
+                        <div class="module-name">KPIs</div>
+                        <div class="module-desc">Performance</div>
+                    </div>
+                    
+                    <div class="module" onclick="openModule('loyalty', 'Loyalty Program')">
+                        <span class="module-icon">⭐</span>
+                        <div class="module-name">Loyalty</div>
+                        <div class="module-desc">Rewards</div>
+                    </div>
+                    
+                    <div class="module" onclick="openModule('rewards', 'Captain Rico Rewards')">
+                        <span class="module-icon">🎓</span>
+                        <div class="module-name">Rico Rewards</div>
+                        <div class="module-desc">Teacher program</div>
+                    </div>
+                    
+                    <div class="module featured" onclick="openModule('balance', 'Cargar Balance')">
+                        <span class="module-icon">🦧</span>
+                        <div class="module-info">
+                            <div class="module-name">Cargar Balance</div>
+                            <div class="module-desc">Rico Balance +10% bonus</div>
+                        </div>
+                    </div>
+                    
+                    <div class="module" onclick="openModule('creators', 'Revisar Contenido')">
+                        <span class="module-icon">🎬</span>
+                        <div class="module-name">Creadores</div>
+                        <div class="module-desc">Revisar contenido</div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Content View -->
+            <div class="content-view" id="contentView">
+                <iframe class="content-frame" id="contentFrame"></iframe>
+            </div>
+        </div>
+        
+        <nav class="nav">
+            <div class="nav-item active" id="navHome" onclick="goHome()">
+                <span class="icon">🏠</span>
+                <span>Home</span>
+            </div>
+            <div class="nav-item" id="navPos" onclick="openModule('pos', 'POS')">
+                <span class="icon">💵</span>
+                <span>POS</span>
+            </div>
+            <div class="nav-item" id="navKds" onclick="openModule('kds', 'Kitchen')">
+                <span class="icon">🍳</span>
+                <span>Kitchen</span>
+            </div>
+            <div class="nav-item" id="navKpis" onclick="openModule('kpis', 'KPIs')">
+                <span class="icon">📊</span>
+                <span>KPIs</span>
+            </div>
+        </nav>
+    </div>
+    
+    <script>
+        // Clock
+        function updateClock() {
+            const now = new Date();
+            document.getElementById('clock').textContent = 
+                now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+        }
+        updateClock();
+        setInterval(updateClock, 1000);
+        
+        // Module URLs
+        const modules = {
+            pos: '/src/pos/pos.html',
+            kds: '/src/kds/kds.html',
+            timeclock: '/src/timeclock/timeclock.html',
+            scheduling: '/src/scheduling/scheduling.html',
+            inventory: '/src/inventory/inventory.html',
+            kpis: '/src/kpis/kpis.html',
+            loyalty: '/src/loyalty/loyalty.html',
+            rewards: '/src/rewards/teacher-portal.html',
+            balance: '/src/rewards/load-balance.html',
+            creators: '/src/creators/review.html'
+        };
+        
+        let currentModule = null;
+        
+        function openModule(moduleId, title) {
+            if (!modules[moduleId]) return;
+            
+            currentModule = moduleId;
+            
+            // Update UI
+            document.getElementById('homeView').classList.add('hidden');
+            document.getElementById('contentView').classList.add('active');
+            document.getElementById('backBtn').classList.add('visible');
+            document.getElementById('brand').classList.add('hidden');
+            document.getElementById('pageTitle').classList.add('visible');
+            document.getElementById('pageTitle').textContent = title;
+            
+            // Load iframe
+            document.getElementById('contentFrame').src = modules[moduleId];
+            
+            // Update nav
+            updateNav(moduleId);
+            
+            // Update browser history for back button support
+            history.pushState({ module: moduleId, title: title }, title, `#${moduleId}`);
+        }
+        
+        function goHome() {
+            currentModule = null;
+            
+            // Update UI
+            document.getElementById('homeView').classList.remove('hidden');
+            document.getElementById('contentView').classList.remove('active');
+            document.getElementById('backBtn').classList.remove('visible');
+            document.getElementById('brand').classList.remove('hidden');
+            document.getElementById('pageTitle').classList.remove('visible');
+            
+            // Clear iframe
+            document.getElementById('contentFrame').src = '';
+            
+            // Update nav
+            updateNav('home');
+            
+            // Update browser history
+            history.pushState({ module: null }, 'Rich Aroma OS', '#');
+        }
+        
+        function updateNav(moduleId) {
+            document.querySelectorAll('.nav-item').forEach(item => item.classList.remove('active'));
+            
+            if (moduleId === 'home' || !moduleId) {
+                document.getElementById('navHome').classList.add('active');
+            } else if (moduleId === 'pos') {
+                document.getElementById('navPos').classList.add('active');
+            } else if (moduleId === 'kds') {
+                document.getElementById('navKds').classList.add('active');
+            } else if (moduleId === 'kpis') {
+                document.getElementById('navKpis').classList.add('active');
+            }
+        }
+        
+        // Handle browser back button
+        window.addEventListener('popstate', function(event) {
+            if (event.state && event.state.module) {
+                // Re-open the module without adding to history
+                currentModule = event.state.module;
+                document.getElementById('homeView').classList.add('hidden');
+                document.getElementById('contentView').classList.add('active');
+                document.getElementById('backBtn').classList.add('visible');
+                document.getElementById('brand').classList.add('hidden');
+                document.getElementById('pageTitle').classList.add('visible');
+                document.getElementById('pageTitle').textContent = event.state.title;
+                document.getElementById('contentFrame').src = modules[event.state.module];
+                updateNav(event.state.module);
+            } else {
+                goHome();
+            }
+        });
+        
+        // Handle initial hash
+        window.addEventListener('load', function() {
+            const hash = window.location.hash.replace('#', '');
+            if (hash && modules[hash]) {
+                const titles = {
+                    pos: 'Point of Sale',
+                    kds: 'Kitchen Display',
+                    timeclock: 'Time Clock',
+                    scheduling: 'Scheduling',
+                    inventory: 'Inventory',
+                    kpis: 'KPIs Dashboard',
+                    loyalty: 'Loyalty Program',
+                    rewards: 'Captain Rico Rewards'
+                };
+                openModule(hash, titles[hash] || hash);
+            }
+        });
+        
+        // Prevent pull-to-refresh on mobile
+        let lastTouchY = 0;
+        document.addEventListener('touchstart', function(e) {
+            lastTouchY = e.touches[0].clientY;
+        }, { passive: true });
+        
+        document.addEventListener('touchmove', function(e) {
+            const touchY = e.touches[0].clientY;
+            const scrollable = e.target.closest('.home-view, .content-frame');
+            
+            if (!scrollable) {
+                e.preventDefault();
+            } else if (scrollable.scrollTop === 0 && touchY > lastTouchY) {
+                e.preventDefault();
+            }
+        }, { passive: false });
+    </script>
+</body>
+</html>

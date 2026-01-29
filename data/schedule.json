@@ -1,0 +1,41 @@
+{
+  "weekOf": "2026-01-27",
+  "shifts": [
+    {
+      "employeeId": "002",
+      "day": "monday",
+      "start": "08:00",
+      "end": "16:00",
+      "position": "barista"
+    },
+    {
+      "employeeId": "003",
+      "day": "tuesday",
+      "start": "08:00",
+      "end": "16:00",
+      "position": "barista"
+    },
+    {
+      "employeeId": "004",
+      "day": "tuesday",
+      "start": "08:00",
+      "end": "16:00",
+      "position": "barista"
+    },
+    {
+      "employeeId": "003",
+      "day": "wednesday",
+      "start": "08:00",
+      "end": "16:00",
+      "position": "cashier"
+    },
+    {
+      "employeeId": "003",
+      "day": "friday",
+      "start": "08:00",
+      "end": "16:00",
+      "position": "manager"
+    }
+  ],
+  "published": true
+}

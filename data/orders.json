@@ -1,0 +1,802 @@
+{
+  "orders": [
+    {
+      "id": "ORD-001",
+      "timestamp": "2025-01-27T08:15:00",
+      "items": [
+        {
+          "itemId": "latte",
+          "name": "Latte",
+          "category": "beverages",
+          "price": 55,
+          "quantity": 2
+        },
+        {
+          "itemId": "pastry",
+          "name": "Pastry of the Day",
+          "category": "extras",
+          "price": 45,
+          "quantity": 1
+        }
+      ],
+      "subtotal": 155,
+      "tax": 23.25,
+      "total": 178.25,
+      "status": "completed",
+      "completedAt": "2025-01-27T08:22:00",
+      "prepTimeMinutes": 7
+    },
+    {
+      "id": "ORD-002",
+      "timestamp": "2025-01-27T08:32:00",
+      "items": [
+        {
+          "itemId": "americano",
+          "name": "Americano",
+          "category": "beverages",
+          "price": 40,
+          "quantity": 1
+        },
+        {
+          "itemId": "avocado_toast",
+          "name": "Avocado Toast",
+          "category": "grill",
+          "price": 85,
+          "quantity": 1
+        }
+      ],
+      "subtotal": 125,
+      "tax": 18.75,
+      "total": 143.75,
+      "status": "completed",
+      "completedAt": "2025-01-27T08:40:00",
+      "prepTimeMinutes": 8
+    },
+    {
+      "id": "ORD-003",
+      "timestamp": "2025-01-27T09:05:00",
+      "items": [
+        {
+          "itemId": "cappuccino",
+          "name": "Cappuccino",
+          "category": "beverages",
+          "price": 55,
+          "quantity": 1
+        },
+        {
+          "itemId": "breakfast_burrito",
+          "name": "Breakfast Burrito",
+          "category": "grill",
+          "price": 95,
+          "quantity": 1
+        },
+        {
+          "itemId": "cookie",
+          "name": "Cookie",
+          "category": "extras",
+          "price": 25,
+          "quantity": 2
+        }
+      ],
+      "subtotal": 200,
+      "tax": 30,
+      "total": 230,
+      "status": "completed",
+      "completedAt": "2025-01-27T09:15:00",
+      "prepTimeMinutes": 10
+    },
+    {
+      "id": "ORD-004",
+      "timestamp": "2025-01-27T09:22:00",
+      "items": [
+        {
+          "itemId": "cold_brew",
+          "name": "Cold Brew",
+          "category": "beverages",
+          "price": 50,
+          "quantity": 3
+        },
+        {
+          "itemId": "acai_bowl",
+          "name": "Açaí Bowl",
+          "category": "bowls",
+          "price": 125,
+          "quantity": 2
+        }
+      ],
+      "subtotal": 400,
+      "tax": 60,
+      "total": 460,
+      "status": "completed",
+      "completedAt": "2025-01-27T09:30:00",
+      "prepTimeMinutes": 8
+    },
+    {
+      "id": "ORD-005",
+      "timestamp": "2025-01-27T09:45:00",
+      "items": [
+        {
+          "itemId": "mocha",
+          "name": "Mocha",
+          "category": "beverages",
+          "price": 65,
+          "quantity": 1
+        },
+        {
+          "itemId": "brownie",
+          "name": "Brownie",
+          "category": "extras",
+          "price": 35,
+          "quantity": 1
+        }
+      ],
+      "subtotal": 100,
+      "tax": 15,
+      "total": 115,
+      "status": "completed",
+      "completedAt": "2025-01-27T09:50:00",
+      "prepTimeMinutes": 5
+    },
+    {
+      "id": "ORD-006",
+      "timestamp": "2025-01-27T10:10:00",
+      "items": [
+        {
+          "itemId": "matcha_latte",
+          "name": "Matcha Latte",
+          "category": "beverages",
+          "price": 70,
+          "quantity": 2
+        },
+        {
+          "itemId": "chicken_asado",
+          "name": "Chicken Asado Bowl",
+          "category": "bowls",
+          "price": 145,
+          "quantity": 1
+        }
+      ],
+      "subtotal": 285,
+      "tax": 42.75,
+      "total": 327.75,
+      "status": "completed",
+      "completedAt": "2025-01-27T10:22:00",
+      "prepTimeMinutes": 12
+    },
+    {
+      "id": "ORD-007",
+      "timestamp": "2025-01-27T10:35:00",
+      "items": [
+        {
+          "itemId": "iced_latte",
+          "name": "Iced Latte",
+          "category": "beverages",
+          "price": 60,
+          "quantity": 1
+        },
+        {
+          "itemId": "grilled_sandwich",
+          "name": "Grilled Sandwich",
+          "category": "grill",
+          "price": 90,
+          "quantity": 1
+        }
+      ],
+      "subtotal": 150,
+      "tax": 22.5,
+      "total": 172.5,
+      "status": "completed",
+      "completedAt": "2025-01-27T10:43:00",
+      "prepTimeMinutes": 8
+    },
+    {
+      "id": "ORD-008",
+      "timestamp": "2025-01-27T11:00:00",
+      "items": [
+        {
+          "itemId": "chai_latte",
+          "name": "Chai Latte",
+          "category": "beverages",
+          "price": 60,
+          "quantity": 1
+        },
+        {
+          "itemId": "crepe_sweet",
+          "name": "Sweet Crepe",
+          "category": "grill",
+          "price": 75,
+          "quantity": 1
+        },
+        {
+          "itemId": "espresso",
+          "name": "Espresso",
+          "category": "beverages",
+          "price": 35,
+          "quantity": 1
+        }
+      ],
+      "subtotal": 170,
+      "tax": 25.5,
+      "total": 195.5,
+      "status": "completed",
+      "completedAt": "2025-01-27T11:12:00",
+      "prepTimeMinutes": 12
+    },
+    {
+      "id": "ORD-009",
+      "timestamp": "2025-01-27T11:25:00",
+      "items": [
+        {
+          "itemId": "frappe",
+          "name": "Frappé",
+          "category": "beverages",
+          "price": 70,
+          "quantity": 2
+        },
+        {
+          "itemId": "grain_salad",
+          "name": "Grain Salad",
+          "category": "bowls",
+          "price": 120,
+          "quantity": 1
+        }
+      ],
+      "subtotal": 260,
+      "tax": 39,
+      "total": 299,
+      "status": "completed",
+      "completedAt": "2025-01-27T11:35:00",
+      "prepTimeMinutes": 10
+    },
+    {
+      "id": "ORD-010",
+      "timestamp": "2025-01-27T11:50:00",
+      "items": [
+        {
+          "itemId": "latte",
+          "name": "Latte",
+          "category": "beverages",
+          "price": 55,
+          "quantity": 1
+        },
+        {
+          "itemId": "fruit_cup",
+          "name": "Fruit Cup",
+          "category": "extras",
+          "price": 40,
+          "quantity": 1
+        }
+      ],
+      "subtotal": 95,
+      "tax": 14.25,
+      "total": 109.25,
+      "status": "completed",
+      "completedAt": "2025-01-27T11:55:00",
+      "prepTimeMinutes": 5
+    },
+    {
+      "id": "ORD-011",
+      "timestamp": "2025-01-27T12:15:00",
+      "items": [
+        {
+          "itemId": "cheeseburger",
+          "name": "Cheeseburger",
+          "category": "weekend",
+          "price": 110,
+          "quantity": 2
+        },
+        {
+          "itemId": "loaded_fries",
+          "name": "Loaded Fries",
+          "category": "weekend",
+          "price": 80,
+          "quantity": 1
+        },
+        {
+          "itemId": "cold_brew",
+          "name": "Cold Brew",
+          "category": "beverages",
+          "price": 50,
+          "quantity": 2
+        }
+      ],
+      "subtotal": 350,
+      "tax": 52.5,
+      "total": 402.5,
+      "status": "completed",
+      "completedAt": "2025-01-27T12:30:00",
+      "prepTimeMinutes": 15
+    },
+    {
+      "id": "ORD-012",
+      "timestamp": "2025-01-27T12:45:00",
+      "items": [
+        {
+          "itemId": "chicken_fingers",
+          "name": "Chicken Fingers",
+          "category": "weekend",
+          "price": 95,
+          "quantity": 1
+        },
+        {
+          "itemId": "iced_latte",
+          "name": "Iced Latte",
+          "category": "beverages",
+          "price": 60,
+          "quantity": 1
+        }
+      ],
+      "subtotal": 155,
+      "tax": 23.25,
+      "total": 178.25,
+      "status": "completed",
+      "completedAt": "2025-01-27T12:55:00",
+      "prepTimeMinutes": 10
+    },
+    {
+      "id": "ORD-013",
+      "timestamp": "2025-01-27T13:10:00",
+      "items": [
+        {
+          "itemId": "latte",
+          "name": "Latte",
+          "category": "beverages",
+          "price": 55,
+          "quantity": 3
+        },
+        {
+          "itemId": "avocado_toast",
+          "name": "Avocado Toast",
+          "category": "grill",
+          "price": 85,
+          "quantity": 2
+        },
+        {
+          "itemId": "brownie",
+          "name": "Brownie",
+          "category": "extras",
+          "price": 35,
+          "quantity": 2
+        }
+      ],
+      "subtotal": 405,
+      "tax": 60.75,
+      "total": 465.75,
+      "status": "completed",
+      "completedAt": "2025-01-27T13:25:00",
+      "prepTimeMinutes": 15
+    },
+    {
+      "id": "ORD-014",
+      "timestamp": "2025-01-27T13:40:00",
+      "items": [
+        {
+          "itemId": "cappuccino",
+          "name": "Cappuccino",
+          "category": "beverages",
+          "price": 55,
+          "quantity": 2
+        },
+        {
+          "itemId": "crepe_savory",
+          "name": "Savory Crepe",
+          "category": "grill",
+          "price": 85,
+          "quantity": 1
+        }
+      ],
+      "subtotal": 195,
+      "tax": 29.25,
+      "total": 224.25,
+      "status": "completed",
+      "completedAt": "2025-01-27T13:52:00",
+      "prepTimeMinutes": 12
+    },
+    {
+      "id": "ORD-015",
+      "timestamp": "2025-01-27T14:05:00",
+      "items": [
+        {
+          "itemId": "mocha",
+          "name": "Mocha",
+          "category": "beverages",
+          "price": 65,
+          "quantity": 1
+        },
+        {
+          "itemId": "cookie",
+          "name": "Cookie",
+          "category": "extras",
+          "price": 25,
+          "quantity": 3
+        }
+      ],
+      "subtotal": 140,
+      "tax": 21,
+      "total": 161,
+      "status": "completed",
+      "completedAt": "2025-01-27T14:12:00",
+      "prepTimeMinutes": 7
+    },
+    {
+      "id": "ORD-016",
+      "timestamp": "2025-01-27T14:30:00",
+      "items": [
+        {
+          "itemId": "matcha_latte",
+          "name": "Matcha Latte",
+          "category": "beverages",
+          "price": 70,
+          "quantity": 1
+        },
+        {
+          "itemId": "acai_bowl",
+          "name": "Açaí Bowl",
+          "category": "bowls",
+          "price": 125,
+          "quantity": 1
+        }
+      ],
+      "subtotal": 195,
+      "tax": 29.25,
+      "total": 224.25,
+      "status": "completed",
+      "completedAt": "2025-01-27T14:40:00",
+      "prepTimeMinutes": 10
+    },
+    {
+      "id": "ORD-017",
+      "timestamp": "2025-01-27T15:00:00",
+      "items": [
+        {
+          "itemId": "frappe",
+          "name": "Frappé",
+          "category": "beverages",
+          "price": 70,
+          "quantity": 2
+        },
+        {
+          "itemId": "pastry",
+          "name": "Pastry of the Day",
+          "category": "extras",
+          "price": 45,
+          "quantity": 2
+        }
+      ],
+      "subtotal": 230,
+      "tax": 34.5,
+      "total": 264.5,
+      "status": "completed",
+      "completedAt": "2025-01-27T15:08:00",
+      "prepTimeMinutes": 8
+    },
+    {
+      "id": "ORD-018",
+      "timestamp": "2025-01-27T15:25:00",
+      "items": [
+        {
+          "itemId": "americano",
+          "name": "Americano",
+          "category": "beverages",
+          "price": 40,
+          "quantity": 2
+        },
+        {
+          "itemId": "breakfast_burrito",
+          "name": "Breakfast Burrito",
+          "category": "grill",
+          "price": 95,
+          "quantity": 1
+        }
+      ],
+      "subtotal": 175,
+      "tax": 26.25,
+      "total": 201.25,
+      "status": "completed",
+      "completedAt": "2025-01-27T15:35:00",
+      "prepTimeMinutes": 10
+    },
+    {
+      "id": "ORD-019",
+      "timestamp": "2025-01-27T16:00:00",
+      "items": [
+        {
+          "itemId": "espresso",
+          "name": "Espresso",
+          "category": "beverages",
+          "price": 35,
+          "quantity": 2
+        },
+        {
+          "itemId": "chicken_asado",
+          "name": "Chicken Asado Bowl",
+          "category": "bowls",
+          "price": 145,
+          "quantity": 1
+        }
+      ],
+      "subtotal": 215,
+      "tax": 32.25,
+      "total": 247.25,
+      "status": "completed",
+      "completedAt": "2025-01-27T16:12:00",
+      "prepTimeMinutes": 12
+    },
+    {
+      "id": "ORD-020",
+      "timestamp": "2025-01-27T16:30:00",
+      "items": [
+        {
+          "itemId": "cold_brew",
+          "name": "Cold Brew",
+          "category": "beverages",
+          "price": 50,
+          "quantity": 1
+        }
+      ],
+      "subtotal": 50,
+      "tax": 7.5,
+      "total": 57.5,
+      "status": "completed",
+      "completedAt": "2025-01-27T16:32:00",
+      "prepTimeMinutes": 2
+    },
+    {
+      "items": [
+        {
+          "id": "americano",
+          "name": "Americano",
+          "price": 40,
+          "qty": 1,
+          "mods": [
+            {
+              "id": "size",
+              "name": "Size Up",
+              "price": 15
+            }
+          ]
+        },
+        {
+          "id": "latte",
+          "name": "Latte",
+          "price": 55,
+          "qty": 1,
+          "mods": [
+            {
+              "id": "milk",
+              "name": "Alt Milk",
+              "price": 10
+            }
+          ]
+        }
+      ],
+      "subtotal": 120,
+      "tax": 18,
+      "total": 138,
+      "id": "ORD-0NaN",
+      "orderNumber": null,
+      "status": "completed",
+      "createdAt": "2026-01-28T05:52:31.090Z",
+      "completedAt": "2026-01-28T05:52:41.173Z"
+    },
+    {
+      "items": [
+        {
+          "id": "americano",
+          "name": "Americano",
+          "price": 40,
+          "qty": 1,
+          "mods": []
+        },
+        {
+          "id": "mocha",
+          "name": "Mocha",
+          "price": 65,
+          "qty": 1,
+          "mods": []
+        }
+      ],
+      "subtotal": 105,
+      "tax": 16,
+      "total": 121,
+      "id": "ORD-0001",
+      "orderNumber": 1,
+      "status": "completed",
+      "createdAt": "2026-01-28T06:07:04.840Z",
+      "completedAt": "2026-01-28T06:07:22.729Z"
+    },
+    {
+      "items": [
+        {
+          "id": "americano",
+          "name": "Americano",
+          "price": 40,
+          "qty": 1,
+          "mods": []
+        },
+        {
+          "id": "espresso",
+          "name": "Espresso",
+          "price": 35,
+          "qty": 1,
+          "mods": []
+        }
+      ],
+      "subtotal": 75,
+      "tax": 11,
+      "total": 86,
+      "source": "self-order",
+      "id": "ORD-0002",
+      "orderNumber": 2,
+      "status": "completed",
+      "createdAt": "2026-01-29T03:50:58.656Z",
+      "completedAt": "2026-01-29T03:51:32.966Z"
+    },
+    {
+      "items": [
+        {
+          "id": "espresso",
+          "name": "Espresso",
+          "price": 35,
+          "qty": 1,
+          "mods": []
+        }
+      ],
+      "subtotal": 35,
+      "tax": 5,
+      "total": 40,
+      "source": "self-order",
+      "id": "ORD-0003",
+      "orderNumber": 3,
+      "status": "completed",
+      "createdAt": "2026-01-29T03:51:16.407Z",
+      "completedAt": "2026-01-29T03:51:34.415Z"
+    },
+    {
+      "items": [
+        {
+          "id": "espresso",
+          "name": "Espresso",
+          "price": 35,
+          "qty": 1
+        },
+        {
+          "id": "americano",
+          "name": "Americano",
+          "price": 40,
+          "qty": 1
+        }
+      ],
+      "subtotal": 75,
+      "deliveryFee": 20,
+      "tax": 14,
+      "total": 109,
+      "orderType": "delivery",
+      "paymentMethod": "cash",
+      "pointsEarned": 10,
+      "customerId": "C006",
+      "customerPhone": "99999999",
+      "source": "mobile-order",
+      "id": "ORD-0004",
+      "orderNumber": 4,
+      "status": "completed",
+      "createdAt": "2026-01-29T04:18:46.211Z",
+      "completedAt": "2026-01-29T04:23:15.487Z"
+    },
+    {
+      "items": [
+        {
+          "id": "americano",
+          "name": "Americano",
+          "price": 40,
+          "qty": 1
+        },
+        {
+          "id": "cappuccino",
+          "name": "Cappuccino",
+          "price": 55,
+          "qty": 1
+        },
+        {
+          "id": "matcha_latte",
+          "name": "Matcha Latte",
+          "price": 70,
+          "qty": 1
+        }
+      ],
+      "subtotal": 165,
+      "deliveryFee": 20,
+      "tax": 28,
+      "total": 213,
+      "orderType": "delivery",
+      "paymentMethod": "cash",
+      "pointsEarned": 21,
+      "customerId": "C006",
+      "customerPhone": "99999999",
+      "source": "mobile-order",
+      "id": "ORD-0005",
+      "orderNumber": 5,
+      "status": "completed",
+      "createdAt": "2026-01-29T04:22:49.914Z",
+      "completedAt": "2026-01-29T04:23:16.820Z"
+    },
+    {
+      "items": [
+        {
+          "id": "espresso",
+          "name": "Espresso",
+          "price": 35,
+          "qty": 1
+        },
+        {
+          "id": "americano",
+          "name": "Americano",
+          "price": 40,
+          "qty": 1
+        }
+      ],
+      "subtotal": 75,
+      "deliveryFee": 20,
+      "tax": 14,
+      "total": 109,
+      "orderType": "delivery",
+      "paymentMethod": "cash",
+      "pointsEarned": 10,
+      "customerId": "C006",
+      "customerPhone": "99999999",
+      "source": "mobile-order",
+      "id": "ORD-0006",
+      "orderNumber": 6,
+      "status": "completed",
+      "createdAt": "2026-01-29T04:49:51.532Z",
+      "completedAt": "2026-01-29T14:03:44.144Z"
+    },
+    {
+      "items": [
+        {
+          "id": "espresso",
+          "name": "Espresso",
+          "price": 35,
+          "qty": 1,
+          "mods": []
+        },
+        {
+          "id": "latte",
+          "name": "Latte",
+          "price": 55,
+          "qty": 1,
+          "mods": [
+            {
+              "id": "milk",
+              "name": "Milk",
+              "price": 0
+            }
+          ]
+        }
+      ],
+      "subtotal": 90,
+      "tax": 14,
+      "total": 104,
+      "id": "ORD-0007",
+      "orderNumber": 7,
+      "status": "completed",
+      "createdAt": "2026-01-29T05:33:28.575Z",
+      "completedAt": "2026-01-29T14:03:44.893Z"
+    }
+  ],
+  "historicalSummary": {
+    "yesterday": {
+      "date": "2025-01-26",
+      "totalSales": 3850.5,
+      "orderCount": 18,
+      "avgTicket": 213.92
+    },
+    "lastWeekSameDay": {
+      "date": "2025-01-20",
+      "totalSales": 3420,
+      "orderCount": 16,
+      "avgTicket": 213.75
+    }
+  },
+  "lastOrderNumber": 7
+}

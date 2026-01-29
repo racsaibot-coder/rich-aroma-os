@@ -1,0 +1,22 @@
+{
+  "items": [
+    {"id": "espresso_beans", "name": "Espresso Beans (kg)", "unit": "kg", "currentStock": 15, "parLevel": 10, "reorderPoint": 5, "cost": 180},
+    {"id": "milk_whole", "name": "Whole Milk (L)", "unit": "L", "currentStock": 40, "parLevel": 30, "reorderPoint": 15, "cost": 25},
+    {"id": "milk_oat", "name": "Oat Milk (L)", "unit": "L", "currentStock": 20, "parLevel": 15, "reorderPoint": 8, "cost": 45},
+    {"id": "milk_almond", "name": "Almond Milk (L)", "unit": "L", "currentStock": 15, "parLevel": 12, "reorderPoint": 6, "cost": 50},
+    {"id": "chicken_breast", "name": "Chicken Breast (kg)", "unit": "kg", "currentStock": 8, "parLevel": 10, "reorderPoint": 4, "cost": 95},
+    {"id": "eggs", "name": "Eggs (unit)", "unit": "unit", "currentStock": 120, "parLevel": 100, "reorderPoint": 50, "cost": 5},
+    {"id": "avocados", "name": "Avocados", "unit": "unit", "currentStock": 25, "parLevel": 30, "reorderPoint": 15, "cost": 20},
+    {"id": "bread_sourdough", "name": "Sourdough Bread", "unit": "loaf", "currentStock": 8, "parLevel": 10, "reorderPoint": 4, "cost": 35},
+    {"id": "bacon", "name": "Bacon (kg)", "unit": "kg", "currentStock": 5, "parLevel": 6, "reorderPoint": 3, "cost": 120},
+    {"id": "cheese_cheddar", "name": "Cheddar Cheese (kg)", "unit": "kg", "currentStock": 4, "parLevel": 5, "reorderPoint": 2, "cost": 85},
+    {"id": "tortillas", "name": "Flour Tortillas (pack)", "unit": "pack", "currentStock": 15, "parLevel": 20, "reorderPoint": 8, "cost": 25},
+    {"id": "acai_packs", "name": "Açaí Packs", "unit": "pack", "currentStock": 30, "parLevel": 25, "reorderPoint": 12, "cost": 40},
+    {"id": "granola", "name": "Granola (kg)", "unit": "kg", "currentStock": 6, "parLevel": 5, "reorderPoint": 2, "cost": 60},
+    {"id": "matcha_powder", "name": "Matcha Powder (100g)", "unit": "100g", "currentStock": 8, "parLevel": 6, "reorderPoint": 3, "cost": 150},
+    {"id": "cups_12oz", "name": "12oz Cups", "unit": "sleeve", "currentStock": 20, "parLevel": 15, "reorderPoint": 8, "cost": 45},
+    {"id": "cups_16oz", "name": "16oz Cups", "unit": "sleeve", "currentStock": 18, "parLevel": 15, "reorderPoint": 8, "cost": 50},
+    {"id": "lids", "name": "Cup Lids", "unit": "sleeve", "currentStock": 25, "parLevel": 20, "reorderPoint": 10, "cost": 30},
+    {"id": "napkins", "name": "Napkins", "unit": "pack", "currentStock": 30, "parLevel": 25, "reorderPoint": 12, "cost": 20}
+  ]
+}

@@ -1,0 +1,20 @@
+{
+  "tiers": [
+    { "points": 30, "reward": "Free upgrade", "description": "Size up or extra shot", "icon": "⬆️" },
+    { "points": 50, "reward": "Free café", "description": "Any coffee drink", "icon": "☕" },
+    { "points": 100, "reward": "Free baleada", "description": "Baleada sencilla or full", "icon": "🫓" },
+    { "points": 200, "reward": "Free plato", "description": "Plato típico completo", "icon": "🍽️" }
+  ],
+  "earning": {
+    "cash": 1,
+    "card": 1,
+    "ricoBalance": 2
+  },
+  "pointsPerSpend": 10,
+  "balanceBonus": 0.10,
+  "multipliers": {
+    "birthday": 3,
+    "happyHour": 2,
+    "firstMobileOrder": 25
+  }
+}

@@ -1,0 +1,17 @@
+{
+  "employees": [
+    {"id": "001", "pin": "1234", "name": "Oscar", "role": "owner", "hourlyRate": 0},
+    {"id": "002", "pin": "2345", "name": "Maria", "role": "manager", "hourlyRate": 45},
+    {"id": "003", "pin": "3456", "name": "Carlos", "role": "barista", "hourlyRate": 30},
+    {"id": "004", "pin": "4567", "name": "Sofia", "role": "barista", "hourlyRate": 30},
+    {"id": "005", "pin": "5678", "name": "Diego", "role": "line", "hourlyRate": 28},
+    {"id": "006", "pin": "6789", "name": "Ana", "role": "cashier", "hourlyRate": 28}
+  ],
+  "roles": {
+    "owner": {"permissions": ["all"]},
+    "manager": {"permissions": ["pos", "kds", "timeclock", "scheduling", "inventory", "kpis", "loyalty"]},
+    "barista": {"permissions": ["pos", "kds", "timeclock"]},
+    "line": {"permissions": ["kds", "timeclock"]},
+    "cashier": {"permissions": ["pos", "timeclock", "loyalty"]}
+  }
+}

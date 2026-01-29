@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#1a1410">
+    <title>Loyalty | Rich Aroma</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --espresso: #5D4037;
+            --caramel: #D4A574;
+            --cream: #F5EDE4;
+            --dark-bg: #0f0d0b;
+            --card-bg: #1a1714;
+            --text: #f5f0eb;
+            --text-muted: #8a8078;
+            --gold: #fbbf24;
+            --silver: #9ca3af;
+            --bronze: #b45309;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html, body {
+            font-family: 'Inter', sans-serif;
+            background: var(--dark-bg);
+            color: var(--text);
+            min-height: 100vh;
+        }
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem;
+            background: var(--card-bg);
+        }
+        .header h1 { font-size: 1.25rem; }
+        .add-btn {
+            padding: 0.5rem 1rem;
+            background: var(--caramel);
+            border: none;
+            border-radius: 8px;
+            color: var(--dark-bg);
+            font-weight: 600;
+            cursor: pointer;
+        }
+        
+        .search {
+            padding: 1rem;
+        }
+        .search input {
+            width: 100%;
+            padding: 0.75rem 1rem;
+            background: var(--card-bg);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 10px;
+            color: var(--text);
+            font-size: 1rem;
+        }
+        
+        .stats {
+            padding: 0 1rem;
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+        }
+        .stat {
+            background: var(--card-bg);
+            border-radius: 10px;
+            padding: 0.75rem;
+            text-align: center;
+        }
+        .stat-value { font-size: 1.25rem; font-weight: 700; color: var(--caramel); }
+        .stat-label { font-size: 0.7rem; color: var(--text-muted); }
+        
+        .customers { padding: 0 1rem 1rem; }
+        .customer {
+            background: var(--card-bg);
+            border-radius: 12px;
+            padding: 1rem;
+            margin-bottom: 0.75rem;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+        .customer-avatar {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.25rem;
+            font-weight: 700;
+        }
+        .customer-avatar.gold { background: linear-gradient(135deg, #fbbf24, #d97706); color: #1a1410; }
+        .customer-avatar.silver { background: linear-gradient(135deg, #9ca3af, #6b7280); color: white; }
+        .customer-avatar.bronze { background: linear-gradient(135deg, #b45309, #92400e); color: white; }
+        
+        .customer-info { flex: 1; }
+        .customer-name { font-weight: 600; margin-bottom: 0.25rem; }
+        .customer-meta { font-size: 0.8rem; color: var(--text-muted); }
+        
+        .customer-points {
+            text-align: right;
+        }
+        .points-value { font-size: 1.25rem; font-weight: 700; color: var(--caramel); }
+        .points-label { font-size: 0.7rem; color: var(--text-muted); }
+        
+        .tier-badge {
+            font-size: 0.7rem;
+            padding: 0.125rem 0.5rem;
+            border-radius: 4px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+        .tier-badge.gold { background: rgba(251,191,36,0.2); color: var(--gold); }
+        .tier-badge.silver { background: rgba(156,163,175,0.2); color: var(--silver); }
+        .tier-badge.bronze { background: rgba(180,83,9,0.2); color: var(--bronze); }
+        
+        .empty {
+            text-align: center;
+            padding: 3rem;
+            color: var(--text-muted);
+        }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <h1>⭐ Loyalty</h1>
+        <button class="add-btn" onclick="addCustomer()">+ Add</button>
+    </header>
+    
+    <div class="search">
+        <input type="text" placeholder="Search by name or phone..." id="searchInput" oninput="filterCustomers()">
+    </div>
+    
+    <div class="stats">
+        <div class="stat">
+            <div class="stat-value" id="totalMembers">0</div>
+            <div class="stat-label">Members</div>
+        </div>
+        <div class="stat">
+            <div class="stat-value" id="goldMembers">0</div>
+            <div class="stat-label">Gold</div>
+        </div>
+        <div class="stat">
+            <div class="stat-value" id="totalPoints">0</div>
+            <div class="stat-label">Total Points</div>
+        </div>
+    </div>
+    
+    <div class="customers" id="customers"></div>
+
+    <script>
+        let customers = [];
+        let searchTerm = '';
+
+        async function loadData() {
+            const res = await fetch('/api/customers');
+            const data = await res.json();
+            customers = data.customers || [];
+            render();
+        }
+
+        function render() {
+            const filtered = customers.filter(c => 
+                c.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                (c.phone || '').includes(searchTerm)
+            );
+            
+            document.getElementById('totalMembers').textContent = customers.length;
+            document.getElementById('goldMembers').textContent = customers.filter(c => c.tier === 'gold').length;
+            document.getElementById('totalPoints').textContent = customers.reduce((s, c) => s + (c.points || 0), 0).toLocaleString();
+            
+            if (filtered.length === 0) {
+                document.getElementById('customers').innerHTML = '<div class="empty">No customers found</div>';
+                return;
+            }
+            
+            document.getElementById('customers').innerHTML = filtered.map(c => {
+                const initials = c.name.split(' ').map(n => n[0]).join('').slice(0, 2);
+                return `<div class="customer">
+                    <div class="customer-avatar ${c.tier}">${initials}</div>
+                    <div class="customer-info">
+                        <div class="customer-name">${c.name} <span class="tier-badge ${c.tier}">${c.tier}</span></div>
+                        <div class="customer-meta">${c.phone || 'No phone'} · ${c.visits || 0} visits</div>
+                    </div>
+                    <div class="customer-points">
+                        <div class="points-value">${(c.points || 0).toLocaleString()}</div>
+                        <div class="points-label">points</div>
+                    </div>
+                </div>`;
+            }).join('');
+        }
+
+        function filterCustomers() {
+            searchTerm = document.getElementById('searchInput').value;
+            render();
+        }
+
+        function addCustomer() {
+            const name = prompt('Customer name:');
+            if (!name) return;
+            const phone = prompt('Phone number:');
+            
+            fetch('/api/customers', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name, phone })
+            }).then(() => loadData());
+        }
+
+        loadData();
+    </script>
+</body>
+</html>

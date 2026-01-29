@@ -1,0 +1,23 @@
+{
+  "challenges": [
+    {"id": "follow", "name": "Follow @RichAromaCafe", "points": 50, "icon": "📱", "type": "one-time", "verifyNote": "We'll check our followers"},
+    {"id": "share_story", "name": "Share announcement to story", "points": 100, "icon": "📸", "type": "one-time", "verifyNote": "DM us a screenshot"},
+    {"id": "tag_friends", "name": "Tag 3 friends on a post", "points": 75, "icon": "👥", "type": "repeatable", "maxRepeats": 3, "verifyNote": "Tag on any of our posts"},
+    {"id": "guess_menu", "name": "Guess the mystery menu item", "points": 100, "icon": "🎯", "type": "one-time", "verifyNote": "First 10 correct win"},
+    {"id": "poll_answer", "name": "Answer a poll question", "points": 25, "icon": "📊", "type": "repeatable", "maxRepeats": 5, "verifyNote": "Participate in our story polls"},
+    {"id": "excitement_video", "name": "Share an 'I'm excited' video", "points": 200, "icon": "🎬", "type": "one-time", "verifyNote": "Post or DM us your video"},
+    {"id": "referral", "name": "Refer a friend who signs up", "points": 150, "icon": "🤝", "type": "repeatable", "maxRepeats": 10, "verifyNote": "Friend must mention your name"},
+    {"id": "flash_winner", "name": "Win 'I WANT THIS' flash sale", "points": 300, "icon": "⚡", "type": "repeatable", "maxRepeats": 5, "verifyNote": "Be first to DM on dish reveal"},
+    {"id": "coffee_order", "name": "Tell us your go-to coffee order", "points": 50, "icon": "☕", "type": "one-time", "verifyNote": "Comment on our coffee post"},
+    {"id": "complete_all", "name": "Complete ALL challenges", "points": 500, "icon": "🏆", "type": "bonus", "verifyNote": "Automatic when all done"}
+  ],
+  "rewards": [
+    {"id": "cookie", "name": "Free Cookie", "points": 100, "icon": "🍪"},
+    {"id": "coffee", "name": "Free Coffee", "points": 200, "icon": "☕"},
+    {"id": "specialty", "name": "Free Specialty Drink", "points": 400, "icon": "🧋"},
+    {"id": "bowl", "name": "Free Bowl", "points": 600, "icon": "🥗"},
+    {"id": "gold_month", "name": "1-Month Gold Membership", "points": 1000, "icon": "💳"},
+    {"id": "founding_platinum", "name": "Founding Platinum (1 Year)", "points": 2000, "icon": "👑", "grandPrize": true}
+  ],
+  "participants": []
+}

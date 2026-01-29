@@ -1,0 +1,47 @@
+{
+  "entries": [
+    {
+      "employeeId": "EMP001",
+      "employeeName": "Maria Santos",
+      "date": "2025-01-27",
+      "clockIn": "2025-01-27T07:00:00",
+      "clockOut": "2025-01-27T15:00:00",
+      "hoursWorked": 8,
+      "hourlyRate": 95
+    },
+    {
+      "employeeId": "EMP002",
+      "employeeName": "Carlos Reyes",
+      "date": "2025-01-27",
+      "clockIn": "2025-01-27T08:00:00",
+      "clockOut": "2025-01-27T16:00:00",
+      "hoursWorked": 8,
+      "hourlyRate": 85
+    },
+    {
+      "employeeId": "EMP003",
+      "employeeName": "Ana Lopez",
+      "date": "2025-01-27",
+      "clockIn": "2025-01-27T10:00:00",
+      "clockOut": null,
+      "hoursWorked": 6.5,
+      "hourlyRate": 80
+    },
+    {
+      "employeeId": "EMP004",
+      "employeeName": "Miguel Torres",
+      "date": "2025-01-27",
+      "clockIn": "2025-01-27T12:00:00",
+      "clockOut": null,
+      "hoursWorked": 4.5,
+      "hourlyRate": 90
+    }
+  ],
+  "historicalSummary": {
+    "yesterday": {
+      "date": "2025-01-26",
+      "totalLaborCost": 2120,
+      "totalHours": 24
+    }
+  }
+}

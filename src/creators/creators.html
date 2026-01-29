@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#1a1410">
+    <title>Creadores | Rich Aroma</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --espresso: #5D4037;
+            --caramel: #D4A574;
+            --dark-bg: #0f0d0b;
+            --card-bg: #1a1714;
+            --text: #f5f0eb;
+            --text-muted: #8a8078;
+            --success: #22c55e;
+            --warning: #eab308;
+            --danger: #ef4444;
+            --gold: #fbbf24;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--dark-bg);
+            color: var(--text);
+            min-height: 100vh;
+            padding: 1rem;
+        }
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+        .header h1 { font-size: 1.3rem; }
+        .back-link {
+            color: var(--text-muted);
+            text-decoration: none;
+            font-size: 0.9rem;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 1.5rem;
+        }
+        .tab {
+            flex: 1;
+            padding: 0.75rem;
+            background: var(--card-bg);
+            border: none;
+            border-radius: 10px;
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            cursor: pointer;
+        }
+        .tab.active {
+            background: var(--caramel);
+            color: #000;
+            font-weight: 600;
+        }
+
+        .section { display: none; }
+        .section.active { display: block; }
+
+        /* Submit Form */
+        .submit-card {
+            background: var(--card-bg);
+            border-radius: 16px;
+            padding: 1.5rem;
+            margin-bottom: 1rem;
+        }
+        .submit-card h2 {
+            font-size: 1.1rem;
+            margin-bottom: 1rem;
+            color: var(--caramel);
+        }
+        .form-group { margin-bottom: 1rem; }
+        .form-label {
+            display: block;
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            margin-bottom: 0.5rem;
+        }
+        .form-input {
+            width: 100%;
+            background: var(--dark-bg);
+            border: 1px solid var(--espresso);
+            border-radius: 8px;
+            padding: 0.75rem;
+            color: var(--text);
+            font-size: 1rem;
+        }
+        .form-input:focus {
+            outline: none;
+            border-color: var(--caramel);
+        }
+        .submit-btn {
+            width: 100%;
+            padding: 1rem;
+            background: var(--success);
+            border: none;
+            border-radius: 12px;
+            color: white;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        /* Creator Stats */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 0.75rem;
+            margin-bottom: 1.5rem;
+        }
+        .stat-card {
+            background: var(--card-bg);
+            border-radius: 12px;
+            padding: 1rem;
+            text-align: center;
+        }
+        .stat-value {
+            font-size: 1.5rem;
+            font-weight: 800;
+            color: var(--caramel);
+        }
+        .stat-value.gold { color: var(--gold); }
+        .stat-value.green { color: var(--success); }
+        .stat-label {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            margin-top: 0.25rem;
+        }
+
+        /* Submissions List */
+        .submission {
+            background: var(--card-bg);
+            border-radius: 12px;
+            padding: 1rem;
+            margin-bottom: 0.75rem;
+        }
+        .submission-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 0.5rem;
+        }
+        .submission-platform {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+        }
+        .submission-status {
+            padding: 0.25rem 0.5rem;
+            border-radius: 6px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+        .submission-status.pending { background: var(--warning); color: #000; }
+        .submission-status.approved { background: var(--success); color: #fff; }
+        .submission-status.denied { background: var(--danger); color: #fff; }
+        .submission-link {
+            color: var(--caramel);
+            font-size: 0.85rem;
+            word-break: break-all;
+        }
+        .submission-date {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            margin-top: 0.5rem;
+        }
+        .submission-reward {
+            margin-top: 0.5rem;
+            color: var(--gold);
+            font-weight: 600;
+        }
+
+        /* Review Actions */
+        .review-actions {
+            display: flex;
+            gap: 0.5rem;
+            margin-top: 0.75rem;
+        }
+        .review-btn {
+            flex: 1;
+            padding: 0.6rem;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+        .review-btn.approve { background: var(--success); color: white; }
+        .review-btn.deny { background: var(--danger); color: white; }
+
+        /* Code Performance */
+        .code-card {
+            background: linear-gradient(135deg, var(--espresso), var(--card-bg));
+            border: 1px solid var(--caramel);
+            border-radius: 16px;
+            padding: 1.5rem;
+            margin-bottom: 1rem;
+        }
+        .code-value {
+            font-size: 1.5rem;
+            font-weight: 800;
+            font-family: monospace;
+            color: var(--gold);
+            letter-spacing: 2px;
+        }
+        .code-stats {
+            display: flex;
+            gap: 1.5rem;
+            margin-top: 1rem;
+        }
+        .code-stat-label { font-size: 0.75rem; color: var(--text-muted); }
+        .code-stat-value { font-size: 1.2rem; font-weight: 700; }
+
+        .empty-state {
+            text-align: center;
+            padding: 2rem;
+            color: var(--text-muted);
+        }
+
+        /* Challenge Info */
+        .challenge-info {
+            background: linear-gradient(135deg, rgba(251,191,36,0.2), rgba(245,158,11,0.1));
+            border-radius: 12px;
+            padding: 1rem;
+            margin-bottom: 1.5rem;
+        }
+        .challenge-title {
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+        }
+        .challenge-reward {
+            color: var(--gold);
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🎬 Creadores Rico</h1>
+        <a href="/" class="back-link">← Volver</a>
+    </div>
+
+    <div class="tabs">
+        <button class="tab active" onclick="showTab('submit')">Enviar</button>
+        <button class="tab" onclick="showTab('status')">Mis Envíos</button>
+        <button class="tab" onclick="showTab('earnings')">Ganancias</button>
+    </div>
+
+    <!-- Submit Content -->
+    <div class="section active" id="submitSection">
+        <div class="challenge-info">
+            <div class="challenge-title">🔥 Challenge Activo: Muestra tu Rico</div>
+            <div>Publica una foto/video en tu café favorito</div>
+            <div class="challenge-reward">+100⭐ por contenido aprobado</div>
+        </div>
+
+        <div class="submit-card">
+            <h2>📤 Enviar Contenido</h2>
+            <div class="form-group">
+                <label class="form-label">Tu Teléfono (Rico Rewards)</label>
+                <input type="tel" class="form-input" id="creatorPhone" placeholder="9999-9999">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Plataforma</label>
+                <select class="form-input" id="platform">
+                    <option value="instagram">Instagram</option>
+                    <option value="tiktok">TikTok</option>
+                    <option value="facebook">Facebook</option>
+                    <option value="youtube">YouTube</option>
+                    <option value="twitter">X/Twitter</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Link a tu Post/Video</label>
+                <input type="url" class="form-input" id="contentLink" placeholder="https://instagram.com/p/...">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Descripción (opcional)</label>
+                <input type="text" class="form-input" id="description" placeholder="Ej: Story sobre el café latte">
+            </div>
+            <button class="submit-btn" onclick="submitContent()">✓ Enviar para Revisión</button>
+        </div>
+    </div>
+
+    <!-- My Submissions -->
+    <div class="section" id="statusSection">
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-value" id="totalSubmissions">0</div>
+                <div class="stat-label">Enviados</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value green" id="approvedCount">0</div>
+                <div class="stat-label">Aprobados</div>
+            </div>
+        </div>
+        <div id="submissionsList"></div>
+    </div>
+
+    <!-- Earnings -->
+    <div class="section" id="earningsSection">
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-value gold" id="totalPoints">0⭐</div>
+                <div class="stat-label">Puntos Ganados</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value green" id="totalCash">L0</div>
+                <div class="stat-label">Comisiones</div>
+            </div>
+        </div>
+
+        <div class="code-card" id="creatorCode" style="display:none">
+            <div style="font-size:0.8rem;color:var(--text-muted);margin-bottom:0.5rem">Tu Código de Descuento</div>
+            <div class="code-value" id="discountCode">RICO-XXX</div>
+            <div class="code-stats">
+                <div>
+                    <div class="code-stat-label">Usos</div>
+                    <div class="code-stat-value" id="codeUses">0</div>
+                </div>
+                <div>
+                    <div class="code-stat-label">Ventas</div>
+                    <div class="code-stat-value" id="codeSales">L0</div>
+                </div>
+                <div>
+                    <div class="code-stat-label">Comisión</div>
+                    <div class="code-stat-value" id="codeCommission">L0</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="empty-state" id="noCodeMsg">
+            Completa 3 contenidos aprobados para obtener tu código de descuento personalizado 🎯
+        </div>
+    </div>
+
+    <script>
+        let creatorData = null;
+
+        function showTab(tab) {
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+            document.querySelector(`[onclick="showTab('${tab}')"]`).classList.add('active');
+            document.getElementById(tab + 'Section').classList.add('active');
+
+            if (tab === 'status' || tab === 'earnings') {
+                loadCreatorData();
+            }
+        }
+
+        async function submitContent() {
+            const phone = document.getElementById('creatorPhone').value.replace(/\D/g, '');
+            const platform = document.getElementById('platform').value;
+            const link = document.getElementById('contentLink').value.trim();
+            const description = document.getElementById('description').value.trim();
+
+            if (phone.length < 8) return alert('Ingresa tu número de teléfono');
+            if (!link) return alert('Ingresa el link a tu contenido');
+            if (!link.startsWith('http')) return alert('El link debe empezar con http:// o https://');
+
+            try {
+                const res = await fetch('/api/creator-submissions', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ phone, platform, link, description })
+                });
+                const result = await res.json();
+
+                if (result.success) {
+                    alert('✅ ¡Enviado! Tu contenido será revisado pronto.');
+                    document.getElementById('contentLink').value = '';
+                    document.getElementById('description').value = '';
+                } else {
+                    alert('Error: ' + (result.error || 'No se pudo enviar'));
+                }
+            } catch (e) {
+                alert('Error enviando contenido');
+            }
+        }
+
+        async function loadCreatorData() {
+            const phone = document.getElementById('creatorPhone').value.replace(/\D/g, '');
+            if (phone.length < 8) return;
+
+            try {
+                const res = await fetch(`/api/creator-submissions/phone/${phone}`);
+                if (res.ok) {
+                    const data = await res.json();
+                    renderSubmissions(data.submissions || []);
+                    renderEarnings(data);
+                }
+            } catch (e) {
+                console.error('Error loading data');
+            }
+        }
+
+        function renderSubmissions(submissions) {
+            const approved = submissions.filter(s => s.status === 'approved').length;
+            document.getElementById('totalSubmissions').textContent = submissions.length;
+            document.getElementById('approvedCount').textContent = approved;
+
+            const list = document.getElementById('submissionsList');
+            if (submissions.length === 0) {
+                list.innerHTML = '<div class="empty-state">No has enviado contenido aún</div>';
+                return;
+            }
+
+            list.innerHTML = submissions.map(s => `
+                <div class="submission">
+                    <div class="submission-header">
+                        <span class="submission-platform">${getPlatformIcon(s.platform)} ${s.platform}</span>
+                        <span class="submission-status ${s.status}">${getStatusLabel(s.status)}</span>
+                    </div>
+                    <a href="${s.link}" target="_blank" class="submission-link">${s.link}</a>
+                    ${s.status === 'approved' ? `<div class="submission-reward">+${s.pointsAwarded || 100}⭐</div>` : ''}
+                    <div class="submission-date">${new Date(s.submittedAt).toLocaleDateString()}</div>
+                </div>
+            `).join('');
+        }
+
+        function renderEarnings(data) {
+            document.getElementById('totalPoints').textContent = (data.totalPoints || 0) + '⭐';
+            document.getElementById('totalCash').textContent = 'L' + (data.totalCommission || 0);
+
+            if (data.discountCode) {
+                document.getElementById('creatorCode').style.display = 'block';
+                document.getElementById('noCodeMsg').style.display = 'none';
+                document.getElementById('discountCode').textContent = data.discountCode;
+                document.getElementById('codeUses').textContent = data.codeUses || 0;
+                document.getElementById('codeSales').textContent = 'L' + (data.codeSales || 0);
+                document.getElementById('codeCommission').textContent = 'L' + (data.codeCommission || 0);
+            }
+        }
+
+        function getPlatformIcon(platform) {
+            const icons = {
+                instagram: '📸',
+                tiktok: '🎵',
+                facebook: '📘',
+                youtube: '▶️',
+                twitter: '🐦'
+            };
+            return icons[platform] || '📱';
+        }
+
+        function getStatusLabel(status) {
+            const labels = {
+                pending: 'Pendiente',
+                approved: 'Aprobado',
+                denied: 'Rechazado'
+            };
+            return labels[status] || status;
+        }
+    </script>
+</body>
+</html>

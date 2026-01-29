@@ -1,0 +1,481 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#1a1410">
+    <title>Cargar Rico Balance | Rich Aroma</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --espresso: #5D4037;
+            --caramel: #D4A574;
+            --cream: #F5EDE4;
+            --dark-bg: #0f0d0b;
+            --card-bg: #1a1714;
+            --text: #f5f0eb;
+            --text-muted: #8a8078;
+            --success: #22c55e;
+            --gold: #fbbf24;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--dark-bg);
+            color: var(--text);
+            min-height: 100vh;
+            padding: 1rem;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+        }
+        .header h1 { font-size: 1.5rem; }
+        .back-btn {
+            background: var(--card-bg);
+            border: 1px solid var(--espresso);
+            color: var(--text);
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            cursor: pointer;
+            text-decoration: none;
+        }
+
+        .container { max-width: 500px; margin: 0 auto; }
+
+        .section {
+            background: var(--card-bg);
+            border-radius: 16px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+        .section-title {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 1rem;
+        }
+
+        /* Phone Input */
+        .phone-row { display: flex; gap: 0.5rem; }
+        .phone-input {
+            flex: 1;
+            background: var(--dark-bg);
+            border: 1px solid var(--espresso);
+            border-radius: 8px;
+            padding: 1rem;
+            color: var(--text);
+            font-size: 1.2rem;
+            text-align: center;
+            letter-spacing: 2px;
+        }
+        .phone-btn {
+            background: var(--caramel);
+            border: none;
+            border-radius: 8px;
+            padding: 0 1.5rem;
+            color: #000;
+            font-weight: 700;
+            font-size: 1rem;
+            cursor: pointer;
+        }
+
+        /* Customer Card */
+        .customer-card {
+            display: none;
+            background: linear-gradient(135deg, var(--espresso), var(--card-bg));
+            border-radius: 16px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            border: 1px solid var(--caramel);
+        }
+        .customer-card.show { display: block; }
+        .customer-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 1rem;
+        }
+        .customer-name { font-size: 1.3rem; font-weight: 700; }
+        .customer-phone { color: var(--text-muted); font-size: 0.9rem; }
+        .customer-badge {
+            background: var(--gold);
+            color: #000;
+            padding: 0.3rem 0.8rem;
+            border-radius: 20px;
+            font-weight: 700;
+            font-size: 0.85rem;
+        }
+        .customer-stats {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1rem;
+            margin-top: 1rem;
+            padding-top: 1rem;
+            border-top: 1px solid rgba(255,255,255,0.1);
+        }
+        .stat { text-align: center; }
+        .stat-value { font-size: 1.5rem; font-weight: 800; color: var(--caramel); }
+        .stat-label { font-size: 0.75rem; color: var(--text-muted); margin-top: 0.25rem; }
+        .stat-value.gold { color: var(--gold); }
+        .stat-value.success { color: var(--success); }
+
+        /* Amount Selection */
+        .amount-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 0.75rem;
+            margin-bottom: 1rem;
+        }
+        .amount-btn {
+            background: var(--dark-bg);
+            border: 2px solid transparent;
+            border-radius: 12px;
+            padding: 1rem;
+            color: var(--text);
+            font-size: 1.1rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .amount-btn:hover { border-color: var(--espresso); }
+        .amount-btn.selected {
+            border-color: var(--caramel);
+            background: rgba(212,165,116,0.1);
+        }
+        .amount-btn .bonus {
+            display: block;
+            font-size: 0.75rem;
+            color: var(--success);
+            margin-top: 0.25rem;
+            font-weight: 600;
+        }
+
+        .custom-amount {
+            display: flex;
+            gap: 0.5rem;
+            margin-top: 1rem;
+        }
+        .custom-input {
+            flex: 1;
+            background: var(--dark-bg);
+            border: 1px solid var(--espresso);
+            border-radius: 8px;
+            padding: 0.75rem;
+            color: var(--text);
+            font-size: 1rem;
+            text-align: center;
+        }
+
+        /* Summary */
+        .summary {
+            background: linear-gradient(135deg, rgba(251,191,36,0.2), rgba(245,158,11,0.1));
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+        .summary-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 0.5rem 0;
+        }
+        .summary-row.total {
+            border-top: 1px solid rgba(255,255,255,0.1);
+            margin-top: 0.5rem;
+            padding-top: 0.75rem;
+            font-weight: 700;
+            font-size: 1.2rem;
+        }
+        .summary-bonus { color: var(--success); font-weight: 600; }
+        .summary-total { color: var(--gold); }
+
+        /* Confirm Button */
+        .confirm-btn {
+            width: 100%;
+            padding: 1.2rem;
+            background: linear-gradient(135deg, var(--success), #16a34a);
+            border: none;
+            border-radius: 14px;
+            color: #fff;
+            font-size: 1.2rem;
+            font-weight: 700;
+            cursor: pointer;
+            display: none;
+        }
+        .confirm-btn.show { display: block; }
+        .confirm-btn:disabled { background: var(--espresso); opacity: 0.5; }
+
+        /* Success Animation */
+        .success-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.9);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            z-index: 100;
+        }
+        .success-overlay.show { display: flex; }
+        .success-icon { font-size: 5rem; animation: pop 0.5s ease; }
+        .success-text { font-size: 1.5rem; margin-top: 1rem; }
+        .success-amount { font-size: 2.5rem; font-weight: 800; color: var(--gold); margin: 0.5rem 0; }
+        .success-balance { color: var(--success); font-size: 1.2rem; }
+        .success-close {
+            margin-top: 2rem;
+            padding: 1rem 2rem;
+            background: var(--card-bg);
+            border: 1px solid var(--espresso);
+            border-radius: 12px;
+            color: var(--text);
+            font-size: 1rem;
+            cursor: pointer;
+        }
+        @keyframes pop {
+            0% { transform: scale(0); }
+            50% { transform: scale(1.2); }
+            100% { transform: scale(1); }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🦧 Cargar Rico Balance</h1>
+        <a href="/" class="back-btn">← Volver</a>
+    </div>
+
+    <div class="container">
+        <!-- Phone Lookup -->
+        <div class="section">
+            <div class="section-title">Buscar Cliente</div>
+            <div class="phone-row">
+                <input type="tel" class="phone-input" id="phoneInput" placeholder="9999-9999" maxlength="9">
+                <button class="phone-btn" onclick="lookupCustomer()">Buscar</button>
+            </div>
+        </div>
+
+        <!-- Customer Card -->
+        <div class="customer-card" id="customerCard">
+            <div class="customer-header">
+                <div>
+                    <div class="customer-name" id="customerName">Cliente</div>
+                    <div class="customer-phone" id="customerPhone">9999-9999</div>
+                </div>
+                <div class="customer-badge" id="customerTier">BRONZE</div>
+            </div>
+            <div class="customer-stats">
+                <div class="stat">
+                    <div class="stat-value gold" id="customerPoints">0</div>
+                    <div class="stat-label">Puntos</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-value success" id="customerBalance">L0</div>
+                    <div class="stat-label">Balance</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-value" id="customerVisits">0</div>
+                    <div class="stat-label">Visitas</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Amount Selection -->
+        <div class="section" id="amountSection" style="display:none">
+            <div class="section-title">Monto a Cargar</div>
+            <div class="amount-grid">
+                <button class="amount-btn" data-amount="100" onclick="selectAmount(100)">
+                    L100
+                    <span class="bonus">+L10 bonus</span>
+                </button>
+                <button class="amount-btn" data-amount="200" onclick="selectAmount(200)">
+                    L200
+                    <span class="bonus">+L20 bonus</span>
+                </button>
+                <button class="amount-btn" data-amount="500" onclick="selectAmount(500)">
+                    L500
+                    <span class="bonus">+L50 bonus</span>
+                </button>
+                <button class="amount-btn" data-amount="1000" onclick="selectAmount(1000)">
+                    L1,000
+                    <span class="bonus">+L100 bonus</span>
+                </button>
+                <button class="amount-btn" data-amount="2000" onclick="selectAmount(2000)">
+                    L2,000
+                    <span class="bonus">+L200 bonus</span>
+                </button>
+                <button class="amount-btn" data-amount="5000" onclick="selectAmount(5000)">
+                    L5,000
+                    <span class="bonus">+L500 bonus</span>
+                </button>
+            </div>
+            <div class="custom-amount">
+                <input type="number" class="custom-input" id="customAmount" placeholder="Otro monto..." oninput="customAmountChanged()">
+            </div>
+        </div>
+
+        <!-- Summary -->
+        <div class="summary" id="summary" style="display:none">
+            <div class="summary-row">
+                <span>Monto a pagar</span>
+                <span>L<span id="summaryAmount">0</span></span>
+            </div>
+            <div class="summary-row">
+                <span>Bonus (10%)</span>
+                <span class="summary-bonus">+L<span id="summaryBonus">0</span></span>
+            </div>
+            <div class="summary-row total">
+                <span>Total en balance</span>
+                <span class="summary-total">L<span id="summaryTotal">0</span></span>
+            </div>
+        </div>
+
+        <button class="confirm-btn" id="confirmBtn" onclick="confirmLoad()">
+            ✓ Confirmar Carga
+        </button>
+    </div>
+
+    <!-- Success Overlay -->
+    <div class="success-overlay" id="successOverlay">
+        <div class="success-icon">✅</div>
+        <div class="success-text">¡Balance Cargado!</div>
+        <div class="success-amount" id="successAmount">+L0</div>
+        <div class="success-balance">Nuevo Balance: L<span id="successBalance">0</span></div>
+        <button class="success-close" onclick="resetForm()">Cargar Otro</button>
+    </div>
+
+    <script>
+        let customer = null;
+        let selectedAmount = 0;
+
+        function formatPhone(val) {
+            const digits = val.replace(/\D/g, '');
+            if (digits.length > 4) {
+                return digits.slice(0, 4) + '-' + digits.slice(4, 8);
+            }
+            return digits;
+        }
+
+        document.getElementById('phoneInput').addEventListener('input', function(e) {
+            e.target.value = formatPhone(e.target.value);
+        });
+
+        async function lookupCustomer() {
+            const phone = document.getElementById('phoneInput').value.replace(/\D/g, '');
+            if (phone.length < 8) {
+                alert('Ingresa un número válido de 8 dígitos');
+                return;
+            }
+
+            try {
+                const res = await fetch(`/api/customers/phone/${phone}`);
+                if (res.ok) {
+                    customer = await res.json();
+                    showCustomer();
+                } else {
+                    // Create new customer
+                    const name = prompt('Cliente nuevo. ¿Nombre?', 'Cliente');
+                    if (name) {
+                        const createRes = await fetch('/api/customers', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ phone, name })
+                        });
+                        customer = await createRes.json();
+                        showCustomer();
+                    }
+                }
+            } catch (e) {
+                console.error(e);
+                alert('Error buscando cliente');
+            }
+        }
+
+        function showCustomer() {
+            document.getElementById('customerCard').classList.add('show');
+            document.getElementById('amountSection').style.display = 'block';
+            document.getElementById('confirmBtn').classList.add('show');
+            
+            document.getElementById('customerName').textContent = customer.name || 'Cliente';
+            document.getElementById('customerPhone').textContent = formatPhone(customer.phone);
+            document.getElementById('customerTier').textContent = (customer.tier || 'bronze').toUpperCase();
+            document.getElementById('customerPoints').textContent = customer.points || 0;
+            document.getElementById('customerBalance').textContent = 'L' + (customer.ricoBalance || 0);
+            document.getElementById('customerVisits').textContent = customer.visits || 0;
+        }
+
+        function selectAmount(amount) {
+            selectedAmount = amount;
+            document.getElementById('customAmount').value = '';
+            document.querySelectorAll('.amount-btn').forEach(btn => {
+                btn.classList.toggle('selected', parseInt(btn.dataset.amount) === amount);
+            });
+            updateSummary();
+        }
+
+        function customAmountChanged() {
+            const val = parseInt(document.getElementById('customAmount').value) || 0;
+            selectedAmount = val;
+            document.querySelectorAll('.amount-btn').forEach(btn => btn.classList.remove('selected'));
+            updateSummary();
+        }
+
+        function updateSummary() {
+            if (selectedAmount > 0) {
+                document.getElementById('summary').style.display = 'block';
+                const bonus = Math.round(selectedAmount * 0.10);
+                const total = selectedAmount + bonus;
+                document.getElementById('summaryAmount').textContent = selectedAmount;
+                document.getElementById('summaryBonus').textContent = bonus;
+                document.getElementById('summaryTotal').textContent = total;
+            } else {
+                document.getElementById('summary').style.display = 'none';
+            }
+        }
+
+        async function confirmLoad() {
+            if (!customer || selectedAmount <= 0) {
+                alert('Selecciona un monto');
+                return;
+            }
+
+            try {
+                const res = await fetch(`/api/customers/${customer.id}/load-balance`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ amount: selectedAmount })
+                });
+                
+                const result = await res.json();
+                
+                if (result.success) {
+                    document.getElementById('successAmount').textContent = `+L${result.loaded + result.bonus}`;
+                    document.getElementById('successBalance').textContent = result.newBalance;
+                    document.getElementById('successOverlay').classList.add('show');
+                } else {
+                    alert('Error: ' + (result.error || 'No se pudo cargar'));
+                }
+            } catch (e) {
+                console.error(e);
+                alert('Error cargando balance');
+            }
+        }
+
+        function resetForm() {
+            customer = null;
+            selectedAmount = 0;
+            document.getElementById('phoneInput').value = '';
+            document.getElementById('customAmount').value = '';
+            document.getElementById('customerCard').classList.remove('show');
+            document.getElementById('amountSection').style.display = 'none';
+            document.getElementById('summary').style.display = 'none';
+            document.getElementById('confirmBtn').classList.remove('show');
+            document.getElementById('successOverlay').classList.remove('show');
+            document.querySelectorAll('.amount-btn').forEach(btn => btn.classList.remove('selected'));
+        }
+    </script>
+</body>
+</html>

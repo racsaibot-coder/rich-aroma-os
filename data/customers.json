@@ -1,0 +1,75 @@
+{
+  "customers": [
+    {
+      "id": "C001",
+      "phone": "99991234",
+      "name": "Juan Pérez",
+      "points": 150,
+      "totalSpent": 2500,
+      "visits": 25,
+      "memberSince": "2025-06-15",
+      "tier": "bronze"
+    },
+    {
+      "id": "C002",
+      "phone": "99995678",
+      "name": "Maria Lopez",
+      "points": 650,
+      "totalSpent": 8500,
+      "visits": 85,
+      "memberSince": "2025-03-10",
+      "tier": "silver"
+    },
+    {
+      "id": "C003",
+      "phone": "99998888",
+      "name": "Carlos Rivera",
+      "points": 1800,
+      "totalSpent": 22000,
+      "visits": 180,
+      "memberSince": "2024-11-01",
+      "tier": "gold"
+    },
+    {
+      "id": "C004",
+      "name": "Tesr",
+      "phone": "1234567890",
+      "points": 0,
+      "totalSpent": 0,
+      "visits": 0,
+      "memberSince": "2026-01-28",
+      "tier": "bronze"
+    },
+    {
+      "id": "C005",
+      "name": "test",
+      "phone": "123456789",
+      "points": 0,
+      "totalSpent": 0,
+      "visits": 0,
+      "memberSince": "2026-01-28",
+      "tier": "bronze"
+    },
+    {
+      "id": "C006",
+      "phone": "99999999",
+      "name": "Nuevo Cliente",
+      "points": 141,
+      "totalSpent": 431,
+      "visits": 3,
+      "memberSince": "2026-01-29",
+      "tier": "bronze",
+      "ricoBalance": 220,
+      "totalLoaded": 200,
+      "balanceHistory": [
+        {
+          "type": "load",
+          "amount": 200,
+          "bonus": 20,
+          "total": 220,
+          "timestamp": "2026-01-29T04:47:51.756Z"
+        }
+      ]
+    }
+  ]
+}

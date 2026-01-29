@@ -1,0 +1,818 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#1a1410">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <title>Ordenar | Rich Aroma</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --espresso: #5D4037;
+            --espresso-dark: #3E2723;
+            --caramel: #D4A574;
+            --cream: #F5EDE4;
+            --dark-bg: #0f0d0b;
+            --card-bg: #1a1714;
+            --card-hover: #252019;
+            --text: #f5f0eb;
+            --text-muted: #8a8078;
+            --success: #22c55e;
+            --gold: #fbbf24;
+            --safe-bottom: env(safe-area-inset-bottom, 0px);
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        body {
+            font-family: 'Inter', -apple-system, sans-serif;
+            background: var(--dark-bg);
+            color: var(--text);
+            min-height: 100vh;
+            min-height: 100dvh;
+        }
+
+        /* Header */
+        .header {
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            background: rgba(15,13,11,0.95);
+            backdrop-filter: blur(20px);
+            padding: 1rem;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+        }
+        .header-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .logo { display: flex; align-items: center; gap: 0.5rem; }
+        .logo-icon { font-size: 1.5rem; }
+        .logo h1 { font-size: 1.2rem; font-weight: 700; }
+        
+        /* Rico Rewards Badge */
+        .rewards-badge {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: linear-gradient(135deg, var(--gold), #f59e0b);
+            padding: 0.4rem 0.8rem;
+            border-radius: 20px;
+            color: #000;
+            font-weight: 600;
+            font-size: 0.85rem;
+            cursor: pointer;
+        }
+        .rewards-badge.guest {
+            background: var(--card-bg);
+            color: var(--text-muted);
+            border: 1px solid var(--espresso);
+        }
+
+        /* Categories */
+        .categories {
+            display: flex;
+            gap: 0.5rem;
+            overflow-x: auto;
+            padding: 1rem 0 0.5rem;
+            -webkit-overflow-scrolling: touch;
+        }
+        .categories::-webkit-scrollbar { display: none; }
+        .cat-btn {
+            flex-shrink: 0;
+            padding: 0.6rem 1rem;
+            background: var(--card-bg);
+            border: none;
+            border-radius: 20px;
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+        }
+        .cat-btn.active {
+            background: var(--caramel);
+            color: #000;
+            font-weight: 600;
+        }
+
+        /* Main */
+        main { padding: 1rem; padding-bottom: 180px; }
+
+        /* Menu Grid */
+        .menu-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 0.75rem;
+        }
+        .menu-item {
+            background: var(--card-bg);
+            border-radius: 16px;
+            padding: 1rem;
+            cursor: pointer;
+            transition: transform 0.1s;
+        }
+        .menu-item:active { transform: scale(0.98); }
+        .item-icon { font-size: 2rem; margin-bottom: 0.5rem; }
+        .item-name { font-weight: 600; font-size: 0.95rem; margin-bottom: 0.25rem; }
+        .item-price { color: var(--caramel); font-weight: 700; }
+        .item-badge {
+            display: inline-block;
+            background: var(--gold);
+            color: #000;
+            font-size: 0.7rem;
+            padding: 0.2rem 0.4rem;
+            border-radius: 4px;
+            margin-left: 0.5rem;
+            font-weight: 600;
+        }
+
+        /* Cart Bar */
+        .cart-bar {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: var(--card-bg);
+            border-top: 1px solid rgba(255,255,255,0.1);
+            padding: 1rem;
+            padding-bottom: calc(1rem + var(--safe-bottom));
+            transform: translateY(100%);
+            transition: transform 0.3s;
+            z-index: 200;
+        }
+        .cart-bar.show { transform: translateY(0); }
+
+        .cart-summary {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+        .cart-count { color: var(--text-muted); }
+        .cart-total { font-size: 1.5rem; font-weight: 800; color: var(--caramel); }
+
+        .checkout-btn {
+            width: 100%;
+            padding: 1rem;
+            background: linear-gradient(135deg, var(--caramel), var(--espresso));
+            border: none;
+            border-radius: 14px;
+            color: #fff;
+            font-size: 1.1rem;
+            font-weight: 700;
+            cursor: pointer;
+            display: flex;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+        .checkout-btn:active { transform: scale(0.98); }
+
+        /* Checkout Modal */
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.8);
+            z-index: 300;
+            display: none;
+            align-items: flex-end;
+        }
+        .modal-overlay.show { display: flex; }
+        
+        .checkout-modal {
+            background: var(--card-bg);
+            width: 100%;
+            max-height: 90vh;
+            border-radius: 24px 24px 0 0;
+            padding: 1.5rem;
+            overflow-y: auto;
+        }
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+        .modal-header h2 { font-size: 1.3rem; }
+        .close-btn {
+            background: var(--espresso);
+            border: none;
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            color: var(--text);
+            font-size: 1.2rem;
+            cursor: pointer;
+        }
+
+        /* Option Cards */
+        .option-section { margin-bottom: 1.5rem; }
+        .option-label {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            margin-bottom: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .option-cards { display: flex; gap: 0.75rem; }
+        .option-card {
+            flex: 1;
+            background: var(--dark-bg);
+            border: 2px solid transparent;
+            border-radius: 12px;
+            padding: 1rem;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .option-card.selected {
+            border-color: var(--caramel);
+            background: rgba(212,165,116,0.1);
+        }
+        .option-icon { font-size: 1.5rem; margin-bottom: 0.5rem; }
+        .option-title { font-weight: 600; font-size: 0.95rem; }
+        .option-desc { font-size: 0.75rem; color: var(--text-muted); margin-top: 0.25rem; }
+        .option-bonus {
+            background: var(--gold);
+            color: #000;
+            font-size: 0.7rem;
+            padding: 0.2rem 0.5rem;
+            border-radius: 10px;
+            margin-top: 0.5rem;
+            display: inline-block;
+            font-weight: 600;
+        }
+
+        /* Phone Input */
+        .phone-input-section {
+            background: var(--dark-bg);
+            border-radius: 12px;
+            padding: 1rem;
+            margin-bottom: 1.5rem;
+        }
+        .phone-row { display: flex; gap: 0.5rem; }
+        .phone-input {
+            flex: 1;
+            background: var(--card-bg);
+            border: 1px solid var(--espresso);
+            border-radius: 8px;
+            padding: 0.8rem;
+            color: var(--text);
+            font-size: 1rem;
+        }
+        .phone-btn {
+            background: var(--caramel);
+            border: none;
+            border-radius: 8px;
+            padding: 0 1rem;
+            color: #000;
+            font-weight: 600;
+            cursor: pointer;
+        }
+        .rewards-display {
+            margin-top: 1rem;
+            padding: 1rem;
+            background: linear-gradient(135deg, rgba(251,191,36,0.2), rgba(245,158,11,0.1));
+            border-radius: 12px;
+            display: none;
+        }
+        .rewards-display.show { display: block; }
+        .rewards-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .rewards-points {
+            font-size: 1.5rem;
+            font-weight: 800;
+            color: var(--gold);
+        }
+        .rewards-balance {
+            color: var(--success);
+            font-weight: 600;
+        }
+        .rewards-earning {
+            margin-top: 0.75rem;
+            padding-top: 0.75rem;
+            border-top: 1px solid rgba(255,255,255,0.1);
+            font-size: 0.9rem;
+            color: var(--text-muted);
+        }
+        .rewards-earning strong { color: var(--gold); }
+
+        /* Order Summary */
+        .order-summary {
+            background: var(--dark-bg);
+            border-radius: 12px;
+            padding: 1rem;
+            margin-bottom: 1.5rem;
+        }
+        .summary-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 0.5rem 0;
+        }
+        .summary-row.total {
+            border-top: 1px solid rgba(255,255,255,0.1);
+            margin-top: 0.5rem;
+            padding-top: 0.75rem;
+            font-weight: 700;
+            font-size: 1.1rem;
+        }
+        .summary-row .earning { color: var(--gold); }
+
+        /* Confirm Button */
+        .confirm-btn {
+            width: 100%;
+            padding: 1.2rem;
+            background: linear-gradient(135deg, var(--success), #16a34a);
+            border: none;
+            border-radius: 14px;
+            color: #fff;
+            font-size: 1.1rem;
+            font-weight: 700;
+            cursor: pointer;
+        }
+        .confirm-btn:disabled {
+            background: var(--espresso);
+            opacity: 0.5;
+        }
+
+        /* Success Screen */
+        .success-screen {
+            position: fixed;
+            inset: 0;
+            background: var(--dark-bg);
+            z-index: 400;
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem;
+            text-align: center;
+        }
+        .success-screen.show { display: flex; }
+        .success-icon { font-size: 5rem; margin-bottom: 1rem; }
+        .success-order { font-size: 2rem; font-weight: 800; color: var(--caramel); }
+        .success-msg { color: var(--text-muted); margin: 1rem 0 2rem; }
+        .success-points {
+            background: linear-gradient(135deg, var(--gold), #f59e0b);
+            padding: 1rem 2rem;
+            border-radius: 16px;
+            color: #000;
+            font-weight: 700;
+            font-size: 1.2rem;
+        }
+        .new-order-btn {
+            margin-top: 2rem;
+            padding: 1rem 2rem;
+            background: var(--card-bg);
+            border: 2px solid var(--espresso);
+            border-radius: 12px;
+            color: var(--text);
+            font-size: 1rem;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="header-top">
+            <div class="logo">
+                <span class="logo-icon">🦧</span>
+                <h1>Rich Aroma</h1>
+            </div>
+            <div class="rewards-badge guest" id="rewardsBadge" onclick="showLogin()">
+                <span>⭐</span>
+                <span id="badgeText">Iniciar Sesión</span>
+            </div>
+        </div>
+        <div class="categories" id="categories"></div>
+    </header>
+
+    <!-- Main Menu -->
+    <main>
+        <div class="menu-grid" id="menuGrid"></div>
+    </main>
+
+    <!-- Cart Bar -->
+    <div class="cart-bar" id="cartBar">
+        <div class="cart-summary">
+            <span class="cart-count"><span id="cartCount">0</span> items</span>
+            <span class="cart-total">L <span id="cartTotal">0</span></span>
+        </div>
+        <button class="checkout-btn" onclick="openCheckout()">
+            <span>Continuar</span>
+            <span>→</span>
+        </button>
+    </div>
+
+    <!-- Checkout Modal -->
+    <div class="modal-overlay" id="checkoutModal">
+        <div class="checkout-modal">
+            <div class="modal-header">
+                <h2>🧾 Finalizar Pedido</h2>
+                <button class="close-btn" onclick="closeCheckout()">×</button>
+            </div>
+
+            <!-- Order Type -->
+            <div class="option-section">
+                <div class="option-label">Tipo de Pedido</div>
+                <div class="option-cards">
+                    <div class="option-card selected" data-type="pickup" onclick="selectOrderType('pickup')">
+                        <div class="option-icon">📍</div>
+                        <div class="option-title">Pickup</div>
+                        <div class="option-desc">Recoger en tienda</div>
+                    </div>
+                    <div class="option-card" data-type="delivery" onclick="selectOrderType('delivery')">
+                        <div class="option-icon">🛵</div>
+                        <div class="option-title">Delivery</div>
+                        <div class="option-desc">+L20 envío</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Phone/Rewards -->
+            <div class="phone-input-section">
+                <div class="option-label">Rico Rewards ⭐</div>
+                <div class="phone-row">
+                    <input type="tel" class="phone-input" id="phoneInput" placeholder="Tu número (ej: 9999-9999)">
+                    <button class="phone-btn" onclick="lookupCustomer()">Buscar</button>
+                </div>
+                <div class="rewards-display" id="rewardsDisplay">
+                    <div class="rewards-header">
+                        <div>
+                            <div style="font-size:0.85rem;color:var(--text-muted)">Hola, <span id="customerName">Cliente</span>!</div>
+                            <div class="rewards-points"><span id="customerPoints">0</span> ⭐</div>
+                        </div>
+                        <div class="rewards-balance">L<span id="customerBalance">0</span></div>
+                    </div>
+                    <div class="rewards-earning">
+                        Ganarás <strong>+<span id="pointsToEarn">0</span>⭐</strong> con este pedido
+                    </div>
+                </div>
+            </div>
+
+            <!-- Payment Method -->
+            <div class="option-section">
+                <div class="option-label">Método de Pago</div>
+                <div class="option-cards" style="flex-wrap: wrap;">
+                    <div class="option-card selected" data-pay="cash" onclick="selectPayment('cash')" style="flex:1 1 45%">
+                        <div class="option-icon">💵</div>
+                        <div class="option-title">Efectivo</div>
+                        <div class="option-desc">1⭐ por L10</div>
+                    </div>
+                    <div class="option-card" data-pay="card" onclick="selectPayment('card')" style="flex:1 1 45%">
+                        <div class="option-icon">💳</div>
+                        <div class="option-title">Tarjeta</div>
+                        <div class="option-desc">1⭐ por L10</div>
+                    </div>
+                    <div class="option-card" data-pay="rico" onclick="selectPayment('rico')" style="flex:1 1 100%;display:none" id="ricoPayOption">
+                        <div class="option-icon">🦧</div>
+                        <div class="option-title">Rico Balance</div>
+                        <div class="option-desc">Saldo: L<span id="ricoBalanceAmt">0</span></div>
+                        <div class="option-bonus">2X PUNTOS ⭐</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Order Summary -->
+            <div class="order-summary">
+                <div class="summary-row">
+                    <span>Subtotal</span>
+                    <span>L<span id="summarySubtotal">0</span></span>
+                </div>
+                <div class="summary-row" id="deliveryRow" style="display:none">
+                    <span>Envío</span>
+                    <span>L20</span>
+                </div>
+                <div class="summary-row">
+                    <span>ISV (15%)</span>
+                    <span>L<span id="summaryTax">0</span></span>
+                </div>
+                <div class="summary-row total">
+                    <span>Total</span>
+                    <span>L<span id="summaryTotal">0</span></span>
+                </div>
+                <div class="summary-row earning">
+                    <span>Puntos a ganar</span>
+                    <span class="earning">+<span id="summaryPoints">0</span>⭐</span>
+                </div>
+            </div>
+
+            <button class="confirm-btn" onclick="confirmOrder()">
+                ✓ Confirmar Pedido
+            </button>
+        </div>
+    </div>
+
+    <!-- Success Screen -->
+    <div class="success-screen" id="successScreen">
+        <div class="success-icon">✅</div>
+        <div class="success-order" id="successOrderId">#0001</div>
+        <div class="success-msg">Tu pedido está siendo preparado</div>
+        <div class="success-points" id="successPoints">+0 ⭐ Ganados!</div>
+        <button class="new-order-btn" onclick="newOrder()">Hacer Otro Pedido</button>
+    </div>
+
+    <script>
+        let menu = { categories: [], taxRate: 0.15 };
+        let cart = {};
+        let customer = null;
+        let orderType = 'pickup';
+        let paymentMethod = 'cash';
+        const DELIVERY_FEE = 20;
+        const POINTS_PER_L10 = { cash: 1, card: 1, rico: 2 };
+
+        const itemIcons = {
+            'coffee': '☕', 'latte': '☕', 'espresso': '☕', 'cappuccino': '☕', 'americano': '☕',
+            'mocha': '☕', 'chai': '🍵', 'matcha': '🍵', 'cold': '🧊', 'iced': '🧊', 'frappe': '🧋',
+            'bowl': '🥗', 'chicken': '🍗', 'acai': '🫐', 'salad': '🥗', 'grain': '🌾',
+            'sandwich': '🥪', 'burger': '🍔', 'burrito': '🌯', 'toast': '🍞', 'crepe': '🥞',
+            'cake': '🍰', 'cookie': '🍪', 'brownie': '🍫', 'pastry': '🥐', 'fruit': '🍓',
+            'default': '🍽️'
+        };
+
+        function getIcon(name) {
+            const lower = name.toLowerCase();
+            for (const [k, v] of Object.entries(itemIcons)) {
+                if (lower.includes(k)) return v;
+            }
+            return itemIcons.default;
+        }
+
+        function init() {
+            fetch('/api/menu')
+                .then(r => r.json())
+                .then(data => {
+                    menu = data;
+                    menu.taxRate = menu.taxRate || 0.15;
+                    renderCategories();
+                    if (menu.categories.length) selectCategory(menu.categories[0].id);
+                })
+                .catch(e => console.error('Menu load error:', e));
+        }
+
+        function renderCategories() {
+            document.getElementById('categories').innerHTML = menu.categories.map(c => `
+                <button class="cat-btn" data-id="${c.id}" onclick="selectCategory('${c.id}')">
+                    <span>${c.icon || '📁'}</span>
+                    <span>${c.name}</span>
+                </button>
+            `).join('');
+        }
+
+        function selectCategory(id) {
+            document.querySelectorAll('.cat-btn').forEach(b => 
+                b.classList.toggle('active', b.dataset.id === id)
+            );
+            const cat = menu.categories.find(c => c.id === id);
+            renderMenu(cat ? cat.items : []);
+        }
+
+        function renderMenu(items) {
+            document.getElementById('menuGrid').innerHTML = items.map(item => `
+                <div class="menu-item" onclick="addToCart('${item.id}')">
+                    <div class="item-icon">${getIcon(item.name)}</div>
+                    <div class="item-name">${item.name}${cart[item.id] ? `<span class="item-badge">${cart[item.id]}</span>` : ''}</div>
+                    <div class="item-price">L${item.price}</div>
+                </div>
+            `).join('');
+        }
+
+        function findItem(id) {
+            for (const c of menu.categories) {
+                const item = (c.items || []).find(i => i.id === id);
+                if (item) return item;
+            }
+            return null;
+        }
+
+        function addToCart(id) {
+            cart[id] = (cart[id] || 0) + 1;
+            updateCartUI();
+            // Re-render current category to show badge
+            const activeBtn = document.querySelector('.cat-btn.active');
+            if (activeBtn) selectCategory(activeBtn.dataset.id);
+        }
+
+        function updateCartUI() {
+            const items = Object.entries(cart);
+            const count = items.reduce((s, [, q]) => s + q, 0);
+            const total = items.reduce((s, [id, q]) => {
+                const item = findItem(id);
+                return s + (item ? item.price * q : 0);
+            }, 0);
+
+            document.getElementById('cartCount').textContent = count;
+            document.getElementById('cartTotal').textContent = total;
+            document.getElementById('cartBar').classList.toggle('show', count > 0);
+        }
+
+        function openCheckout() {
+            updateSummary();
+            document.getElementById('checkoutModal').classList.add('show');
+        }
+
+        function closeCheckout() {
+            document.getElementById('checkoutModal').classList.remove('show');
+        }
+
+        function selectOrderType(type) {
+            orderType = type;
+            document.querySelectorAll('[data-type]').forEach(c => 
+                c.classList.toggle('selected', c.dataset.type === type)
+            );
+            document.getElementById('deliveryRow').style.display = type === 'delivery' ? 'flex' : 'none';
+            updateSummary();
+        }
+
+        function selectPayment(method) {
+            paymentMethod = method;
+            document.querySelectorAll('[data-pay]').forEach(c => 
+                c.classList.toggle('selected', c.dataset.pay === method)
+            );
+            updateSummary();
+        }
+
+        function lookupCustomer() {
+            const phone = document.getElementById('phoneInput').value.replace(/\D/g, '');
+            if (phone.length < 8) {
+                alert('Ingresa un número válido');
+                return;
+            }
+
+            fetch(`/api/customers/phone/${phone}`)
+                .then(r => r.ok ? r.json() : Promise.reject('Not found'))
+                .then(c => {
+                    customer = c;
+                    showCustomerRewards();
+                })
+                .catch(() => {
+                    // New customer - create account
+                    if (confirm('¡Bienvenido! ¿Crear cuenta Rico Rewards?')) {
+                        fetch('/api/customers', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ phone, name: 'Nuevo Cliente' })
+                        })
+                        .then(r => r.json())
+                        .then(c => {
+                            customer = c;
+                            showCustomerRewards();
+                        });
+                    }
+                });
+        }
+
+        function showCustomerRewards() {
+            document.getElementById('rewardsDisplay').classList.add('show');
+            document.getElementById('customerName').textContent = customer.name || 'Cliente';
+            document.getElementById('customerPoints').textContent = customer.points || 0;
+            document.getElementById('customerBalance').textContent = customer.ricoBalance || 0;
+            
+            // Show Rico Balance payment option if they have balance
+            const ricoOpt = document.getElementById('ricoPayOption');
+            if (customer.ricoBalance > 0) {
+                ricoOpt.style.display = 'block';
+                document.getElementById('ricoBalanceAmt').textContent = customer.ricoBalance;
+            }
+            
+            // Update header badge
+            document.getElementById('rewardsBadge').classList.remove('guest');
+            document.getElementById('badgeText').textContent = `${customer.points || 0}⭐`;
+            
+            updateSummary();
+        }
+
+        function updateSummary() {
+            const items = Object.entries(cart);
+            const subtotal = items.reduce((s, [id, q]) => {
+                const item = findItem(id);
+                return s + (item ? item.price * q : 0);
+            }, 0);
+            const delivery = orderType === 'delivery' ? DELIVERY_FEE : 0;
+            const tax = Math.round((subtotal + delivery) * menu.taxRate);
+            const total = subtotal + delivery + tax;
+            const pointsMultiplier = POINTS_PER_L10[paymentMethod];
+            const points = Math.floor(total / 10) * pointsMultiplier;
+
+            document.getElementById('summarySubtotal').textContent = subtotal;
+            document.getElementById('summaryTax').textContent = tax;
+            document.getElementById('summaryTotal').textContent = total;
+            document.getElementById('summaryPoints').textContent = points;
+            document.getElementById('pointsToEarn').textContent = points;
+        }
+
+        async function confirmOrder() {
+            const items = Object.entries(cart).map(([id, qty]) => {
+                const item = findItem(id);
+                return { id, name: item.name, price: item.price, qty };
+            });
+
+            if (items.length === 0) {
+                alert('Tu carrito está vacío');
+                return;
+            }
+
+            const subtotal = items.reduce((s, i) => s + i.price * i.qty, 0);
+            const delivery = orderType === 'delivery' ? DELIVERY_FEE : 0;
+            const tax = Math.round((subtotal + delivery) * menu.taxRate);
+            const total = subtotal + delivery + tax;
+            const points = Math.floor(total / 10) * POINTS_PER_L10[paymentMethod];
+
+            const order = {
+                items,
+                subtotal,
+                deliveryFee: delivery,
+                tax,
+                total,
+                orderType,
+                paymentMethod,
+                pointsEarned: points,
+                customerId: customer?.id || null,
+                customerPhone: document.getElementById('phoneInput').value || null,
+                source: 'mobile-order'
+            };
+
+            try {
+                // If paying with Rico Balance, deduct first
+                if (paymentMethod === 'rico' && customer) {
+                    if ((customer.ricoBalance || 0) < total) {
+                        alert('Saldo insuficiente. Tu saldo es L' + (customer.ricoBalance || 0));
+                        return;
+                    }
+                    
+                    const payRes = await fetch(`/api/customers/${customer.id}/pay-balance`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ amount: total, orderId: 'pending' })
+                    });
+                    
+                    if (!payRes.ok) {
+                        const err = await payRes.json();
+                        alert('Error: ' + (err.error || 'No se pudo procesar el pago'));
+                        return;
+                    }
+                    
+                    const payResult = await payRes.json();
+                    customer.ricoBalance = payResult.newBalance;
+                }
+                
+                const res = await fetch('/api/orders', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(order)
+                });
+                const result = await res.json();
+
+                // Update customer points if logged in
+                if (customer) {
+                    await fetch(`/api/customers/${customer.id}`, {
+                        method: 'PATCH',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            points: (customer.points || 0) + points,
+                            totalSpent: (customer.totalSpent || 0) + total,
+                            visits: (customer.visits || 0) + 1
+                        })
+                    });
+                }
+
+                // Show success
+                document.getElementById('successOrderId').textContent = result.id;
+                document.getElementById('successPoints').textContent = `+${points}⭐ Ganados!`;
+                document.getElementById('successScreen').classList.add('show');
+                closeCheckout();
+                
+                // Reset
+                cart = {};
+                updateCartUI();
+
+            } catch (e) {
+                console.error('Order error:', e);
+                alert('Error al enviar pedido. Intenta de nuevo.');
+            }
+        }
+
+        function newOrder() {
+            document.getElementById('successScreen').classList.remove('show');
+            customer = null;
+            document.getElementById('rewardsDisplay').classList.remove('show');
+            document.getElementById('rewardsBadge').classList.add('guest');
+            document.getElementById('badgeText').textContent = 'Iniciar Sesión';
+            document.getElementById('phoneInput').value = '';
+            document.getElementById('ricoPayOption').style.display = 'none';
+        }
+
+        function showLogin() {
+            openCheckout();
+            document.getElementById('phoneInput').focus();
+        }
+
+        init();
+    </script>
+</body>
+</html>

@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#1a1410">
+    <title>Inventory | Rich Aroma</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --espresso: #5D4037;
+            --caramel: #D4A574;
+            --dark-bg: #0f0d0b;
+            --card-bg: #1a1714;
+            --text: #f5f0eb;
+            --text-muted: #8a8078;
+            --success: #22c55e;
+            --warning: #eab308;
+            --danger: #ef4444;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html, body {
+            font-family: 'Inter', sans-serif;
+            background: var(--dark-bg);
+            color: var(--text);
+            min-height: 100vh;
+        }
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem;
+            background: var(--card-bg);
+        }
+        .header h1 { font-size: 1.25rem; }
+        .alerts-badge {
+            background: var(--danger);
+            color: white;
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.875rem;
+            font-weight: 600;
+        }
+        
+        .search {
+            padding: 1rem;
+        }
+        .search input {
+            width: 100%;
+            padding: 0.75rem 1rem;
+            background: var(--card-bg);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 10px;
+            color: var(--text);
+            font-size: 1rem;
+        }
+        .search input::placeholder { color: var(--text-muted); }
+        
+        .items { padding: 0 1rem 1rem; }
+        .item {
+            background: var(--card-bg);
+            border-radius: 12px;
+            padding: 1rem;
+            margin-bottom: 0.75rem;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+        .item-icon {
+            width: 48px;
+            height: 48px;
+            background: var(--espresso);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+        }
+        .item-info { flex: 1; }
+        .item-name { font-weight: 600; margin-bottom: 0.25rem; }
+        .item-stock { font-size: 0.875rem; color: var(--text-muted); }
+        .stock-bar {
+            height: 4px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 2px;
+            margin-top: 0.5rem;
+            overflow: hidden;
+        }
+        .stock-fill { height: 100%; border-radius: 2px; }
+        .stock-fill.good { background: var(--success); }
+        .stock-fill.low { background: var(--warning); }
+        .stock-fill.critical { background: var(--danger); }
+        
+        .item-status {
+            padding: 0.25rem 0.5rem;
+            border-radius: 6px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+        .item-status.good { background: rgba(34,197,94,0.2); color: var(--success); }
+        .item-status.low { background: rgba(234,179,8,0.2); color: var(--warning); }
+        .item-status.critical { background: rgba(239,68,68,0.2); color: var(--danger); }
+        
+        .empty {
+            text-align: center;
+            padding: 3rem;
+            color: var(--text-muted);
+        }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <h1>📦 Inventory</h1>
+        <span class="alerts-badge" id="alertsBadge">0 low</span>
+    </header>
+    
+    <div class="search">
+        <input type="text" placeholder="Search items..." id="searchInput" oninput="filterItems()">
+    </div>
+    
+    <div class="items" id="items"></div>
+
+    <script>
+        let inventory = { items: [] };
+        let searchTerm = '';
+
+        async function loadData() {
+            const res = await fetch('/api/inventory');
+            inventory = await res.json() || { items: [] };
+            render();
+        }
+
+        function render() {
+            const items = (inventory.items || []).filter(i => 
+                i.name.toLowerCase().includes(searchTerm.toLowerCase())
+            );
+            
+            const lowItems = items.filter(i => i.currentStock <= i.reorderPoint);
+            document.getElementById('alertsBadge').textContent = `${lowItems.length} low`;
+            
+            if (items.length === 0) {
+                document.getElementById('items').innerHTML = '<div class="empty">No items found</div>';
+                return;
+            }
+            
+            document.getElementById('items').innerHTML = items.map(item => {
+                const pct = Math.min(100, (item.currentStock / item.maxStock) * 100);
+                let status, statusClass;
+                if (pct <= 20) { status = 'Critical'; statusClass = 'critical'; }
+                else if (pct <= 40) { status = 'Low'; statusClass = 'low'; }
+                else { status = 'Good'; statusClass = 'good'; }
+                
+                return `<div class="item">
+                    <div class="item-icon">${item.icon || '📦'}</div>
+                    <div class="item-info">
+                        <div class="item-name">${item.name}</div>
+                        <div class="item-stock">${item.currentStock} / ${item.maxStock} ${item.unit}</div>
+                        <div class="stock-bar">
+                            <div class="stock-fill ${statusClass}" style="width: ${pct}%"></div>
+                        </div>
+                    </div>
+                    <div class="item-status ${statusClass}">${status}</div>
+                </div>`;
+            }).join('');
+        }
+
+        function filterItems() {
+            searchTerm = document.getElementById('searchInput').value;
+            render();
+        }
+
+        loadData();
+    </script>
+</body>
+</html>

@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#1a1410">
+    <title>Time Clock | Rich Aroma</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --espresso: #5D4037;
+            --caramel: #D4A574;
+            --cream: #F5EDE4;
+            --dark-bg: #0f0d0b;
+            --card-bg: #1a1714;
+            --text: #f5f0eb;
+            --text-muted: #8a8078;
+            --success: #22c55e;
+            --danger: #ef4444;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html, body {
+            font-family: 'Inter', sans-serif;
+            background: var(--dark-bg);
+            color: var(--text);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        .header {
+            text-align: center;
+            padding: 2rem 1rem 1rem;
+        }
+        .clock {
+            font-size: 3rem;
+            font-weight: 700;
+            color: var(--caramel);
+            font-family: monospace;
+        }
+        .date { color: var(--text-muted); margin-top: 0.5rem; }
+        
+        .main {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 1rem;
+        }
+        
+        /* PIN Entry */
+        .pin-section { text-align: center; width: 100%; max-width: 300px; }
+        .pin-label { color: var(--text-muted); margin-bottom: 1rem; }
+        .pin-display {
+            background: var(--card-bg);
+            border-radius: 12px;
+            padding: 1rem;
+            font-size: 2rem;
+            font-family: monospace;
+            letter-spacing: 0.5rem;
+            margin-bottom: 1.5rem;
+            min-height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .pin-dot {
+            width: 16px;
+            height: 16px;
+            background: var(--caramel);
+            border-radius: 50%;
+            margin: 0 6px;
+        }
+        .keypad {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 0.75rem;
+        }
+        .key {
+            aspect-ratio: 1;
+            background: var(--card-bg);
+            border: none;
+            border-radius: 50%;
+            color: var(--text);
+            font-size: 1.75rem;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .key:active { background: var(--espresso); }
+        .key.clear { background: var(--danger); color: white; font-size: 1.25rem; }
+        .key.enter { background: var(--success); color: white; font-size: 1.25rem; }
+        
+        /* Employee Screen */
+        .employee-section {
+            display: none;
+            text-align: center;
+            width: 100%;
+            max-width: 350px;
+        }
+        .employee-section.active { display: block; }
+        .employee-name {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+        }
+        .employee-status {
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            font-size: 0.875rem;
+            font-weight: 600;
+            display: inline-block;
+            margin-bottom: 2rem;
+        }
+        .employee-status.in { background: rgba(34,197,94,0.2); color: var(--success); }
+        .employee-status.out { background: rgba(239,68,68,0.2); color: var(--danger); }
+        
+        .action-buttons {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+        .action-btn {
+            padding: 1.25rem;
+            border: none;
+            border-radius: 12px;
+            font-size: 1.125rem;
+            font-weight: 600;
+            cursor: pointer;
+        }
+        .action-btn:active { transform: scale(0.98); }
+        .action-btn.clock-in { background: var(--success); color: white; }
+        .action-btn.clock-out { background: var(--danger); color: white; }
+        .action-btn.break { background: var(--caramel); color: var(--dark-bg); }
+        .action-btn.back { background: var(--card-bg); color: var(--text); margin-top: 1rem; }
+        
+        .hours-today {
+            margin-top: 2rem;
+            padding: 1rem;
+            background: var(--card-bg);
+            border-radius: 12px;
+        }
+        .hours-label { color: var(--text-muted); font-size: 0.875rem; }
+        .hours-value { font-size: 1.5rem; font-weight: 700; color: var(--caramel); }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <div class="clock" id="clock">--:--:--</div>
+        <div class="date" id="date">---</div>
+    </header>
+    
+    <main class="main">
+        <div class="pin-section" id="pinSection">
+            <div class="pin-label">Enter your PIN</div>
+            <div class="pin-display" id="pinDisplay"></div>
+            <div class="keypad">
+                <button class="key" onclick="addDigit('1')">1</button>
+                <button class="key" onclick="addDigit('2')">2</button>
+                <button class="key" onclick="addDigit('3')">3</button>
+                <button class="key" onclick="addDigit('4')">4</button>
+                <button class="key" onclick="addDigit('5')">5</button>
+                <button class="key" onclick="addDigit('6')">6</button>
+                <button class="key" onclick="addDigit('7')">7</button>
+                <button class="key" onclick="addDigit('8')">8</button>
+                <button class="key" onclick="addDigit('9')">9</button>
+                <button class="key clear" onclick="clearPin()">✕</button>
+                <button class="key" onclick="addDigit('0')">0</button>
+                <button class="key enter" onclick="submitPin()">✓</button>
+            </div>
+        </div>
+        
+        <div class="employee-section" id="employeeSection">
+            <div class="employee-name" id="employeeName">---</div>
+            <div class="employee-status" id="employeeStatus">---</div>
+            <div class="action-buttons" id="actionButtons"></div>
+            <div class="hours-today">
+                <div class="hours-label">Hours Today</div>
+                <div class="hours-value" id="hoursToday">0:00</div>
+            </div>
+            <button class="action-btn back" onclick="goBack()">← Back</button>
+        </div>
+    </main>
+
+    <script>
+        let pin = '';
+        let currentEmployee = null;
+        let employees = [];
+        let punches = [];
+
+        function updateClock() {
+            const now = new Date();
+            document.getElementById('clock').textContent = now.toLocaleTimeString();
+            document.getElementById('date').textContent = now.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
+        }
+        updateClock();
+        setInterval(updateClock, 1000);
+
+        async function loadData() {
+            const [empRes, punchRes] = await Promise.all([
+                fetch('/api/employees'),
+                fetch('/api/timeclock')
+            ]);
+            const empData = await empRes.json();
+            const punchData = await punchRes.json();
+            employees = empData.employees || [];
+            punches = punchData.punches || [];
+        }
+
+        function addDigit(d) {
+            if (pin.length < 4) {
+                pin += d;
+                renderPin();
+            }
+        }
+
+        function clearPin() {
+            pin = '';
+            renderPin();
+        }
+
+        function renderPin() {
+            document.getElementById('pinDisplay').innerHTML = 
+                pin.split('').map(() => '<div class="pin-dot"></div>').join('');
+        }
+
+        function submitPin() {
+            if (pin.length !== 4) return;
+            const emp = employees.find(e => e.pin === pin);
+            if (!emp) {
+                alert('Invalid PIN');
+                clearPin();
+                return;
+            }
+            currentEmployee = emp;
+            showEmployeeScreen();
+        }
+
+        function showEmployeeScreen() {
+            document.getElementById('pinSection').style.display = 'none';
+            document.getElementById('employeeSection').classList.add('active');
+            
+            document.getElementById('employeeName').textContent = currentEmployee.name;
+            
+            const lastPunch = punches.filter(p => p.employeeId === currentEmployee.id).pop();
+            const isClockedIn = lastPunch && lastPunch.type === 'in';
+            
+            const statusEl = document.getElementById('employeeStatus');
+            statusEl.textContent = isClockedIn ? 'Clocked In' : 'Clocked Out';
+            statusEl.className = 'employee-status ' + (isClockedIn ? 'in' : 'out');
+            
+            const buttons = document.getElementById('actionButtons');
+            if (isClockedIn) {
+                buttons.innerHTML = `
+                    <button class="action-btn break" onclick="punch('break')">☕ Start Break</button>
+                    <button class="action-btn clock-out" onclick="punch('out')">🚪 Clock Out</button>
+                `;
+            } else {
+                buttons.innerHTML = `
+                    <button class="action-btn clock-in" onclick="punch('in')">✓ Clock In</button>
+                `;
+            }
+            
+            calculateHours();
+        }
+
+        function calculateHours() {
+            const today = new Date().toDateString();
+            const todayPunches = punches.filter(p => 
+                p.employeeId === currentEmployee.id && 
+                new Date(p.timestamp).toDateString() === today
+            );
+            
+            let totalMs = 0;
+            for (let i = 0; i < todayPunches.length; i += 2) {
+                const inPunch = todayPunches[i];
+                const outPunch = todayPunches[i + 1];
+                if (inPunch && outPunch) {
+                    totalMs += new Date(outPunch.timestamp) - new Date(inPunch.timestamp);
+                } else if (inPunch) {
+                    totalMs += Date.now() - new Date(inPunch.timestamp);
+                }
+            }
+            
+            const hours = Math.floor(totalMs / 3600000);
+            const mins = Math.floor((totalMs % 3600000) / 60000);
+            document.getElementById('hoursToday').textContent = `${hours}:${String(mins).padStart(2, '0')}`;
+        }
+
+        async function punch(type) {
+            await fetch('/api/timeclock', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ employeeId: currentEmployee.id, type })
+            });
+            await loadData();
+            showEmployeeScreen();
+        }
+
+        function goBack() {
+            currentEmployee = null;
+            pin = '';
+            renderPin();
+            document.getElementById('employeeSection').classList.remove('active');
+            document.getElementById('pinSection').style.display = 'block';
+        }
+
+        loadData();
+    </script>
+</body>
+</html>

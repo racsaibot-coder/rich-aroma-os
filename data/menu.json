@@ -1,0 +1,318 @@
+{
+  "categories": [
+    {
+      "id": "beverages",
+      "name": "Beverages",
+      "icon": "☕",
+      "items": [
+        {"id": "espresso", "name": "Espresso", "price": 35, "modifiers": ["shots", "decaf", "sweetener", "temp"]},
+        {"id": "americano", "name": "Americano", "price": 40, "modifiers": ["shots", "decaf", "size", "sweetener", "temp"]},
+        {"id": "latte", "name": "Latte", "price": 55, "modifiers": ["shots", "decaf", "size", "milk", "milk_temp", "sweetener", "foam", "temp"]},
+        {"id": "cappuccino", "name": "Cappuccino", "price": 55, "modifiers": ["shots", "decaf", "size", "milk", "sweetener", "foam"]},
+        {"id": "mocha", "name": "Mocha", "price": 65, "modifiers": ["shots", "size", "milk", "sweetener", "whip", "temp"]},
+        {"id": "matcha_latte", "name": "Matcha Latte", "price": 70, "modifiers": ["size", "milk", "sweetener", "temp"]},
+        {"id": "chai_latte", "name": "Chai Latte", "price": 60, "modifiers": ["size", "milk", "sweetener", "temp"]},
+        {"id": "cold_brew", "name": "Cold Brew", "price": 50, "modifiers": ["size", "milk", "sweetener", "ice"]},
+        {"id": "iced_latte", "name": "Iced Latte", "price": 60, "modifiers": ["shots", "size", "milk", "sweetener", "ice"]},
+        {"id": "frappe", "name": "Frappé", "price": 70, "modifiers": ["flavor", "size", "whip", "sweetener"]}
+      ]
+    },
+    {
+      "id": "bowls",
+      "name": "Bowls",
+      "icon": "🥗",
+      "items": [
+        {"id": "chicken_asado", "name": "Chicken Asado Bowl", "price": 145, "modifiers": ["protein_extra", "no_rice", "extra_salsa", "spice_level"]},
+        {"id": "acai_bowl", "name": "Açaí Bowl", "price": 125, "modifiers": ["extra_granola", "extra_fruit", "add_honey", "add_peanut_butter"]},
+        {"id": "grain_salad", "name": "Grain Salad", "price": 120, "modifiers": ["add_chicken", "no_cheese", "dressing"]}
+      ]
+    },
+    {
+      "id": "grill",
+      "name": "Grill & Toast",
+      "icon": "🌯",
+      "items": [
+        {"id": "breakfast_burrito", "name": "Breakfast Burrito", "price": 95, "modifiers": ["add_bacon", "no_cheese", "extra_egg", "salsa_type", "spice_level"]},
+        {"id": "avocado_toast", "name": "Avocado Toast", "price": 85, "modifiers": ["add_egg", "add_bacon", "everything_seasoning"]},
+        {"id": "grilled_sandwich", "name": "Grilled Sandwich", "price": 90, "modifiers": ["cheese_type", "bread_type"]},
+        {"id": "crepe_sweet", "name": "Sweet Crepe", "price": 75, "modifiers": ["sweet_filling", "add_whip"]},
+        {"id": "crepe_savory", "name": "Savory Crepe", "price": 85, "modifiers": ["savory_filling", "add_egg"]}
+      ]
+    },
+    {
+      "id": "weekend",
+      "name": "Weekend Specials",
+      "icon": "🍔",
+      "items": [
+        {"id": "cheeseburger", "name": "Cheeseburger", "price": 110, "modifiers": ["add_bacon", "no_onion", "extra_cheese", "doneness"]},
+        {"id": "chicken_fingers", "name": "Chicken Fingers", "price": 95, "modifiers": ["dipping_sauce"]},
+        {"id": "loaded_fries", "name": "Loaded Fries", "price": 80, "modifiers": ["add_cheese", "add_bacon", "add_jalapeno"]}
+      ]
+    },
+    {
+      "id": "extras",
+      "name": "Extras",
+      "icon": "➕",
+      "items": [
+        {"id": "pastry", "name": "Pastry of the Day", "price": 45, "modifiers": ["warm_it"]},
+        {"id": "cookie", "name": "Cookie", "price": 25, "modifiers": ["warm_it"]},
+        {"id": "brownie", "name": "Brownie", "price": 35, "modifiers": ["warm_it", "add_ice_cream"]},
+        {"id": "fruit_cup", "name": "Fruit Cup", "price": 40, "modifiers": []}
+      ]
+    }
+  ],
+  "modifiers": {
+    "shots": {
+      "name": "Espresso Shots",
+      "type": "quantity",
+      "default": 1,
+      "min": 1,
+      "max": 5,
+      "pricePerExtra": 15
+    },
+    "decaf": {"name": "Decaf", "type": "toggle", "price": 0},
+    "size": {
+      "name": "Size",
+      "type": "select",
+      "options": [
+        {"value": "regular", "label": "Regular", "price": 0},
+        {"value": "large", "label": "Large", "price": 15}
+      ],
+      "default": "regular"
+    },
+    "milk": {
+      "name": "Milk",
+      "type": "select",
+      "options": [
+        {"value": "whole", "label": "Whole Milk", "price": 0},
+        {"value": "skim", "label": "Skim Milk", "price": 0},
+        {"value": "oat", "label": "Oat Milk", "price": 10},
+        {"value": "almond", "label": "Almond Milk", "price": 10},
+        {"value": "coconut", "label": "Coconut Milk", "price": 10},
+        {"value": "soy", "label": "Soy Milk", "price": 10}
+      ],
+      "default": "whole"
+    },
+    "milk_temp": {
+      "name": "Milk Amount",
+      "type": "select",
+      "options": [
+        {"value": "light", "label": "Light Milk", "price": 0},
+        {"value": "regular", "label": "Regular", "price": 0},
+        {"value": "extra", "label": "Extra Milk", "price": 0}
+      ],
+      "default": "regular"
+    },
+    "sweetener": {
+      "name": "Sweetener",
+      "type": "multi",
+      "options": [
+        {"value": "sugar", "label": "Sugar", "pricePerUnit": 0, "max": 10},
+        {"value": "splenda", "label": "Splenda", "pricePerUnit": 0, "max": 10},
+        {"value": "stevia", "label": "Stevia", "pricePerUnit": 0, "max": 10},
+        {"value": "honey", "label": "Honey", "pricePerUnit": 5, "max": 3},
+        {"value": "vanilla_syrup", "label": "Vanilla Syrup", "pricePerUnit": 10, "max": 5},
+        {"value": "caramel_syrup", "label": "Caramel Syrup", "pricePerUnit": 10, "max": 5},
+        {"value": "hazelnut_syrup", "label": "Hazelnut Syrup", "pricePerUnit": 10, "max": 5},
+        {"value": "mocha_syrup", "label": "Mocha Syrup", "pricePerUnit": 10, "max": 5}
+      ]
+    },
+    "temp": {
+      "name": "Temperature",
+      "type": "select",
+      "options": [
+        {"value": "hot", "label": "Hot", "price": 0},
+        {"value": "iced", "label": "Iced", "price": 0},
+        {"value": "extra_hot", "label": "Extra Hot", "price": 0}
+      ],
+      "default": "hot"
+    },
+    "foam": {
+      "name": "Foam",
+      "type": "select",
+      "options": [
+        {"value": "regular", "label": "Regular Foam", "price": 0},
+        {"value": "light", "label": "Light Foam", "price": 0},
+        {"value": "extra", "label": "Extra Foam", "price": 0},
+        {"value": "no_foam", "label": "No Foam", "price": 0}
+      ],
+      "default": "regular"
+    },
+    "ice": {
+      "name": "Ice",
+      "type": "select",
+      "options": [
+        {"value": "regular", "label": "Regular Ice", "price": 0},
+        {"value": "light", "label": "Light Ice", "price": 0},
+        {"value": "extra", "label": "Extra Ice", "price": 0},
+        {"value": "no_ice", "label": "No Ice", "price": 0}
+      ],
+      "default": "regular"
+    },
+    "whip": {
+      "name": "Whipped Cream",
+      "type": "select",
+      "options": [
+        {"value": "yes", "label": "With Whip", "price": 0},
+        {"value": "extra", "label": "Extra Whip", "price": 5},
+        {"value": "no", "label": "No Whip", "price": 0}
+      ],
+      "default": "yes"
+    },
+    "flavor": {
+      "name": "Flavor",
+      "type": "select",
+      "options": [
+        {"value": "mocha", "label": "Mocha", "price": 0},
+        {"value": "caramel", "label": "Caramel", "price": 0},
+        {"value": "vanilla", "label": "Vanilla", "price": 0},
+        {"value": "hazelnut", "label": "Hazelnut", "price": 0}
+      ],
+      "default": "mocha"
+    },
+    "protein_extra": {"name": "Extra Protein", "type": "toggle", "price": 40},
+    "no_rice": {"name": "No Rice", "type": "toggle", "price": 0},
+    "extra_salsa": {"name": "Extra Salsa", "type": "toggle", "price": 0},
+    "spice_level": {
+      "name": "Spice Level",
+      "type": "select",
+      "options": [
+        {"value": "mild", "label": "Mild", "price": 0},
+        {"value": "medium", "label": "Medium", "price": 0},
+        {"value": "hot", "label": "Hot", "price": 0},
+        {"value": "extra_hot", "label": "Extra Hot", "price": 0}
+      ],
+      "default": "medium"
+    },
+    "extra_granola": {"name": "Extra Granola", "type": "toggle", "price": 15},
+    "extra_fruit": {"name": "Extra Fruit", "type": "toggle", "price": 20},
+    "add_honey": {"name": "Add Honey", "type": "toggle", "price": 10},
+    "add_peanut_butter": {"name": "Add Peanut Butter", "type": "toggle", "price": 15},
+    "add_chicken": {"name": "Add Chicken", "type": "toggle", "price": 35},
+    "no_cheese": {"name": "No Cheese", "type": "toggle", "price": 0},
+    "dressing": {
+      "name": "Dressing",
+      "type": "select",
+      "options": [
+        {"value": "ranch", "label": "Ranch", "price": 0},
+        {"value": "vinaigrette", "label": "Vinaigrette", "price": 0},
+        {"value": "caesar", "label": "Caesar", "price": 0},
+        {"value": "none", "label": "No Dressing", "price": 0}
+      ],
+      "default": "vinaigrette"
+    },
+    "add_bacon": {"name": "Add Bacon", "type": "toggle", "price": 25},
+    "add_egg": {"name": "Add Egg", "type": "toggle", "price": 15},
+    "extra_egg": {"name": "Extra Egg", "type": "toggle", "price": 15},
+    "salsa_type": {
+      "name": "Salsa",
+      "type": "select",
+      "options": [
+        {"value": "verde", "label": "Salsa Verde", "price": 0},
+        {"value": "roja", "label": "Salsa Roja", "price": 0},
+        {"value": "both", "label": "Both", "price": 0},
+        {"value": "none", "label": "No Salsa", "price": 0}
+      ],
+      "default": "roja"
+    },
+    "everything_seasoning": {"name": "Everything Seasoning", "type": "toggle", "price": 0},
+    "cheese_type": {
+      "name": "Cheese",
+      "type": "select",
+      "options": [
+        {"value": "cheddar", "label": "Cheddar", "price": 0},
+        {"value": "swiss", "label": "Swiss", "price": 0},
+        {"value": "pepper_jack", "label": "Pepper Jack", "price": 0},
+        {"value": "provolone", "label": "Provolone", "price": 0}
+      ],
+      "default": "cheddar"
+    },
+    "bread_type": {
+      "name": "Bread",
+      "type": "select",
+      "options": [
+        {"value": "sourdough", "label": "Sourdough", "price": 0},
+        {"value": "wheat", "label": "Wheat", "price": 0},
+        {"value": "white", "label": "White", "price": 0}
+      ],
+      "default": "sourdough"
+    },
+    "sweet_filling": {
+      "name": "Filling",
+      "type": "select",
+      "options": [
+        {"value": "nutella_banana", "label": "Nutella + Banana", "price": 0},
+        {"value": "strawberry_cream", "label": "Strawberry + Cream", "price": 0},
+        {"value": "mixed_berry", "label": "Mixed Berry", "price": 0},
+        {"value": "cinnamon_sugar", "label": "Cinnamon Sugar", "price": 0}
+      ],
+      "default": "nutella_banana"
+    },
+    "savory_filling": {
+      "name": "Filling",
+      "type": "select",
+      "options": [
+        {"value": "ham_cheese", "label": "Ham + Cheese", "price": 0},
+        {"value": "chicken_peppers", "label": "Chicken + Peppers", "price": 0},
+        {"value": "spinach_feta", "label": "Spinach + Feta", "price": 0}
+      ],
+      "default": "ham_cheese"
+    },
+    "add_whip": {"name": "Add Whipped Cream", "type": "toggle", "price": 5},
+    "no_onion": {"name": "No Onion", "type": "toggle", "price": 0},
+    "extra_cheese": {"name": "Extra Cheese", "type": "toggle", "price": 15},
+    "doneness": {
+      "name": "Doneness",
+      "type": "select",
+      "options": [
+        {"value": "medium", "label": "Medium", "price": 0},
+        {"value": "medium_well", "label": "Medium Well", "price": 0},
+        {"value": "well_done", "label": "Well Done", "price": 0}
+      ],
+      "default": "medium"
+    },
+    "dipping_sauce": {
+      "name": "Dipping Sauce",
+      "type": "select",
+      "options": [
+        {"value": "ranch", "label": "Ranch", "price": 0},
+        {"value": "bbq", "label": "BBQ", "price": 0},
+        {"value": "honey_mustard", "label": "Honey Mustard", "price": 0},
+        {"value": "buffalo", "label": "Buffalo", "price": 0}
+      ],
+      "default": "ranch"
+    },
+    "add_jalapeno": {"name": "Add Jalapeños", "type": "toggle", "price": 5},
+    "warm_it": {"name": "Warm It Up", "type": "toggle", "price": 0},
+    "add_ice_cream": {"name": "Add Ice Cream", "type": "toggle", "price": 20}
+  },
+  "memberships": {
+    "basic": {
+      "name": "Basic (Free)",
+      "monthlyPrice": 0,
+      "pointsMultiplier": 1,
+      "perks": ["1 point per L10 spent", "Birthday reward"]
+    },
+    "gold": {
+      "name": "Gold Member",
+      "monthlyPrice": 99,
+      "pointsMultiplier": 2,
+      "perks": ["2x points on all purchases", "Free size upgrade", "Birthday reward", "Monthly free drink"]
+    },
+    "platinum": {
+      "name": "Platinum Member",
+      "monthlyPrice": 199,
+      "pointsMultiplier": 3,
+      "perks": ["3x points on all purchases", "Free size upgrade", "Birthday reward", "Weekly free drink", "Priority service", "Exclusive events"]
+    }
+  },
+  "rewards": [
+    {"id": "free_coffee", "name": "Free Coffee", "points": 50, "icon": "☕"},
+    {"id": "free_pastry", "name": "Free Pastry", "points": 75, "icon": "🥐"},
+    {"id": "free_specialty", "name": "Free Specialty Drink", "points": 100, "icon": "🧋"},
+    {"id": "free_bowl", "name": "Free Bowl", "points": 150, "icon": "🥗"},
+    {"id": "free_meal", "name": "Free Meal Combo", "points": 200, "icon": "🍽️"},
+    {"id": "merchandise", "name": "Rich Aroma Merchandise", "points": 300, "icon": "👕"}
+  ],
+  "taxRate": 0.15
+}

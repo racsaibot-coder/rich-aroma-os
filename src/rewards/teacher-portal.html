@@ -1,0 +1,561 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#1a1410">
+    <title>Captain Rico Rewards ⭐ | Portal Maestros</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Fredoka+One&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --espresso: #5D4037;
+            --caramel: #D4A574;
+            --cream: #F5EDE4;
+            --dark-bg: #0f0d0b;
+            --card-bg: #1a1714;
+            --text: #f5f0eb;
+            --text-muted: #8a8078;
+            --success: #22c55e;
+            --gold: #fbbf24;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--dark-bg);
+            color: var(--text);
+            min-height: 100vh;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, var(--espresso), var(--dark-bg));
+            padding: 1.5rem;
+            text-align: center;
+            border-bottom: 1px solid rgba(212,165,116,0.2);
+        }
+        .header-content {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 1rem;
+        }
+        .rico-avatar {
+            width: 50px;
+            height: 50px;
+            background: linear-gradient(135deg, var(--caramel), var(--espresso));
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.75rem;
+        }
+        .header h1 {
+            font-family: 'Fredoka One', cursive;
+            font-size: 1.5rem;
+            color: var(--caramel);
+        }
+        .header p { color: var(--text-muted); font-size: 0.875rem; }
+        
+        .main { padding: 1rem; max-width: 600px; margin: 0 auto; }
+        
+        /* Stats Cards */
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 0.75rem;
+            margin-bottom: 1.5rem;
+        }
+        .stat-card {
+            background: var(--card-bg);
+            border-radius: 16px;
+            padding: 1.25rem;
+            text-align: center;
+        }
+        .stat-card.highlight {
+            background: linear-gradient(135deg, var(--espresso), var(--card-bg));
+            border: 1px solid var(--caramel);
+        }
+        .stat-icon { font-size: 2rem; margin-bottom: 0.5rem; }
+        .stat-value {
+            font-size: 2rem;
+            font-weight: 800;
+            color: var(--caramel);
+        }
+        .stat-label {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        /* Give Reward Button */
+        .give-reward-btn {
+            width: 100%;
+            padding: 1.25rem;
+            background: linear-gradient(135deg, var(--success), #16a34a);
+            border: none;
+            border-radius: 16px;
+            color: white;
+            font-size: 1.25rem;
+            font-weight: 700;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.75rem;
+            margin-bottom: 1.5rem;
+            box-shadow: 0 4px 20px rgba(34,197,94,0.3);
+        }
+        .give-reward-btn:active { transform: scale(0.98); }
+        .give-reward-btn:disabled {
+            background: #444;
+            cursor: not-allowed;
+        }
+        
+        /* Section */
+        .section {
+            margin-bottom: 1.5rem;
+        }
+        .section-title {
+            font-size: 0.875rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 0.75rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        /* Reward History */
+        .rewards-list {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+        }
+        .reward-item {
+            background: var(--card-bg);
+            border-radius: 12px;
+            padding: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+        .reward-icon {
+            width: 44px;
+            height: 44px;
+            background: var(--espresso);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.25rem;
+        }
+        .reward-icon.redeemed { background: var(--success); }
+        .reward-icon.pending { background: var(--gold); }
+        .reward-info { flex: 1; }
+        .reward-student { font-weight: 600; }
+        .reward-meta { font-size: 0.8rem; color: var(--text-muted); }
+        .reward-code {
+            font-family: monospace;
+            font-size: 0.8rem;
+            color: var(--caramel);
+            background: rgba(212,165,116,0.1);
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+        }
+        
+        /* Membership Card */
+        .membership-card {
+            background: linear-gradient(145deg, #2d2520, var(--card-bg));
+            border: 2px solid var(--caramel);
+            border-radius: 16px;
+            padding: 1.5rem;
+            position: relative;
+            overflow: hidden;
+        }
+        .membership-card::before {
+            content: '⭐';
+            position: absolute;
+            top: 10px;
+            right: 15px;
+            font-size: 3rem;
+            opacity: 0.1;
+        }
+        .membership-label {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        .membership-name {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin: 0.5rem 0;
+        }
+        .membership-school { color: var(--caramel); }
+        .membership-stats {
+            display: flex;
+            gap: 2rem;
+            margin-top: 1rem;
+            padding-top: 1rem;
+            border-top: 1px solid rgba(255,255,255,0.1);
+        }
+        .membership-stat-value { font-weight: 700; font-size: 1.25rem; }
+        .membership-stat-label { font-size: 0.75rem; color: var(--text-muted); }
+        
+        /* Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.8);
+            z-index: 100;
+            align-items: center;
+            justify-content: center;
+            padding: 1rem;
+        }
+        .modal.active { display: flex; }
+        .modal-content {
+            background: var(--card-bg);
+            border-radius: 20px;
+            padding: 1.5rem;
+            width: 100%;
+            max-width: 400px;
+        }
+        .modal-header {
+            text-align: center;
+            margin-bottom: 1.5rem;
+        }
+        .modal-header h2 {
+            font-size: 1.25rem;
+            margin-top: 0.5rem;
+        }
+        .modal-header .icon { font-size: 3rem; }
+        
+        .form-group { margin-bottom: 1rem; }
+        .form-group label {
+            display: block;
+            font-size: 0.875rem;
+            color: var(--text-muted);
+            margin-bottom: 0.5rem;
+        }
+        .form-group input, .form-group select {
+            width: 100%;
+            padding: 0.875rem 1rem;
+            background: var(--dark-bg);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 10px;
+            color: var(--text);
+            font-size: 1rem;
+        }
+        .form-group input:focus {
+            border-color: var(--caramel);
+            outline: none;
+        }
+        
+        .modal-buttons {
+            display: flex;
+            gap: 0.75rem;
+            margin-top: 1.5rem;
+        }
+        .modal-btn {
+            flex: 1;
+            padding: 1rem;
+            border: none;
+            border-radius: 10px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+        .modal-btn.cancel {
+            background: var(--dark-bg);
+            color: var(--text);
+        }
+        .modal-btn.confirm {
+            background: var(--success);
+            color: white;
+        }
+        
+        /* Success Modal */
+        .success-content {
+            text-align: center;
+        }
+        .success-code {
+            font-family: 'Fredoka One', cursive;
+            font-size: 2.5rem;
+            color: var(--caramel);
+            background: var(--dark-bg);
+            padding: 1rem;
+            border-radius: 12px;
+            margin: 1rem 0;
+            letter-spacing: 4px;
+        }
+        .success-instruction {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            margin-bottom: 1.5rem;
+        }
+        .print-btn {
+            width: 100%;
+            padding: 1rem;
+            background: var(--caramel);
+            border: none;
+            border-radius: 10px;
+            color: var(--dark-bg);
+            font-weight: 700;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <div class="header-content">
+            <div class="rico-avatar">🐒</div>
+            <div>
+                <h1>Captain Rico Rewards ⭐</h1>
+                <p>Portal para Maestros</p>
+            </div>
+        </div>
+    </header>
+    
+    <main class="main">
+        <!-- Membership Card -->
+        <div class="membership-card" id="membershipCard">
+            <div class="membership-label">Membresía Activa</div>
+            <div class="membership-name" id="teacherName">Cargando...</div>
+            <div class="membership-school" id="schoolName">---</div>
+            <div class="membership-stats">
+                <div>
+                    <div class="membership-stat-value" id="discountPct">20%</div>
+                    <div class="membership-stat-label">Descuento</div>
+                </div>
+                <div>
+                    <div class="membership-stat-value" id="memberSince">---</div>
+                    <div class="membership-stat-label">Miembro desde</div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Stats -->
+        <div class="stats" style="margin-top: 1.5rem;">
+            <div class="stat-card highlight">
+                <div class="stat-icon">🎁</div>
+                <div class="stat-value" id="rewardsRemaining">10</div>
+                <div class="stat-label">Rewards Disponibles</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon">👨‍🎓</div>
+                <div class="stat-value" id="rewardsGiven">0</div>
+                <div class="stat-label">Dados Este Año</div>
+            </div>
+        </div>
+        
+        <!-- Give Reward Button -->
+        <button class="give-reward-btn" id="giveRewardBtn" onclick="openGiveRewardModal()">
+            <span>⭐</span>
+            <span>Dar Reward a Estudiante</span>
+        </button>
+        
+        <!-- Recent Rewards -->
+        <section class="section">
+            <div class="section-title">
+                <span>📋</span>
+                <span>Rewards Recientes</span>
+            </div>
+            <div class="rewards-list" id="rewardsList">
+                <div class="reward-item">
+                    <div class="reward-icon redeemed">✓</div>
+                    <div class="reward-info">
+                        <div class="reward-student">María García</div>
+                        <div class="reward-meta">Hace 3 días • Canjeado</div>
+                    </div>
+                    <div class="reward-code">RICO-A7X2</div>
+                </div>
+                <div class="reward-item">
+                    <div class="reward-icon pending">⏳</div>
+                    <div class="reward-info">
+                        <div class="reward-student">Carlos López</div>
+                        <div class="reward-meta">Hace 1 semana • Pendiente</div>
+                    </div>
+                    <div class="reward-code">RICO-B4K9</div>
+                </div>
+            </div>
+        </section>
+    </main>
+    
+    <!-- Give Reward Modal -->
+    <div class="modal" id="giveRewardModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="icon">🎓</div>
+                <h2>Dar Reward a Estudiante</h2>
+            </div>
+            
+            <div class="form-group">
+                <label>Nombre del Estudiante</label>
+                <input type="text" id="studentNameInput" placeholder="Ej: María García">
+            </div>
+            
+            <div class="form-group">
+                <label>Razón del Reconocimiento</label>
+                <select id="reasonSelect">
+                    <option value="Excelente desempeño académico">Excelente desempeño académico</option>
+                    <option value="Mejor comportamiento del mes">Mejor comportamiento del mes</option>
+                    <option value="Ayuda a compañeros">Ayuda a compañeros</option>
+                    <option value="Participación destacada">Participación destacada</option>
+                    <option value="Mejora notable">Mejora notable</option>
+                    <option value="Otro">Otro (especificar)</option>
+                </select>
+            </div>
+            
+            <div class="form-group" id="customReasonGroup" style="display: none;">
+                <label>Especificar razón</label>
+                <input type="text" id="customReasonInput" placeholder="Escriba la razón">
+            </div>
+            
+            <div class="modal-buttons">
+                <button class="modal-btn cancel" onclick="closeModal()">Cancelar</button>
+                <button class="modal-btn confirm" onclick="generateReward()">Generar Código</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Success Modal -->
+    <div class="modal" id="successModal">
+        <div class="modal-content success-content">
+            <div class="icon">🎉</div>
+            <h2>¡Reward Generado!</h2>
+            
+            <div class="success-code" id="generatedCode">RICO-XXXX</div>
+            
+            <p class="success-instruction">
+                Escribe este código en el certificado o sticker de Captain Rico y entrégalo al estudiante.
+            </p>
+            
+            <button class="print-btn" onclick="printCertificate()">
+                <span>🖨️</span>
+                <span>Imprimir Certificado</span>
+            </button>
+            
+            <button class="modal-btn cancel" style="width: 100%; margin-top: 0.75rem;" onclick="closeSuccessModal()">
+                Cerrar
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // Mock data - replace with API calls
+        let teacherData = {
+            name: 'Prof. Ana Martínez',
+            school: 'Escuela José Trinidad Reyes',
+            memberSince: 'Enero 2026',
+            rewardsTotal: 10,
+            rewardsUsed: 2,
+            discount: 20
+        };
+        
+        let rewards = [];
+        
+        function init() {
+            // Load teacher data
+            document.getElementById('teacherName').textContent = teacherData.name;
+            document.getElementById('schoolName').textContent = teacherData.school;
+            document.getElementById('memberSince').textContent = teacherData.memberSince;
+            document.getElementById('discountPct').textContent = teacherData.discount + '%';
+            document.getElementById('rewardsRemaining').textContent = teacherData.rewardsTotal - teacherData.rewardsUsed;
+            document.getElementById('rewardsGiven').textContent = teacherData.rewardsUsed;
+            
+            // Disable button if no rewards left
+            if (teacherData.rewardsUsed >= teacherData.rewardsTotal) {
+                document.getElementById('giveRewardBtn').disabled = true;
+                document.getElementById('giveRewardBtn').innerHTML = '<span>❌</span><span>Sin Rewards Disponibles</span>';
+            }
+        }
+        
+        function openGiveRewardModal() {
+            document.getElementById('giveRewardModal').classList.add('active');
+        }
+        
+        function closeModal() {
+            document.getElementById('giveRewardModal').classList.remove('active');
+        }
+        
+        function closeSuccessModal() {
+            document.getElementById('successModal').classList.remove('active');
+        }
+        
+        // Show/hide custom reason
+        document.getElementById('reasonSelect').addEventListener('change', function() {
+            const customGroup = document.getElementById('customReasonGroup');
+            customGroup.style.display = this.value === 'Otro' ? 'block' : 'none';
+        });
+        
+        function generateCode() {
+            const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+            let code = 'RICO-';
+            for (let i = 0; i < 4; i++) {
+                code += chars.charAt(Math.floor(Math.random() * chars.length));
+            }
+            return code;
+        }
+        
+        function generateReward() {
+            const studentName = document.getElementById('studentNameInput').value.trim();
+            if (!studentName) {
+                alert('Por favor ingrese el nombre del estudiante');
+                return;
+            }
+            
+            let reason = document.getElementById('reasonSelect').value;
+            if (reason === 'Otro') {
+                reason = document.getElementById('customReasonInput').value.trim();
+                if (!reason) {
+                    alert('Por favor especifique la razón');
+                    return;
+                }
+            }
+            
+            const code = generateCode();
+            
+            // Save reward
+            rewards.push({
+                studentName,
+                reason,
+                code,
+                date: new Date().toISOString(),
+                redeemed: false
+            });
+            
+            // Update counts
+            teacherData.rewardsUsed++;
+            
+            // Show success modal
+            document.getElementById('generatedCode').textContent = code;
+            closeModal();
+            document.getElementById('successModal').classList.add('active');
+            
+            // Update UI
+            init();
+            
+            // Clear form
+            document.getElementById('studentNameInput').value = '';
+            document.getElementById('reasonSelect').value = 'Excelente desempeño académico';
+        }
+        
+        function printCertificate() {
+            const code = document.getElementById('generatedCode').textContent;
+            const studentName = rewards[rewards.length - 1]?.studentName || '';
+            const reason = rewards[rewards.length - 1]?.reason || '';
+            
+            // Open certificate in new window
+            const url = `/src/rewards/certificate.html?code=${code}&student=${encodeURIComponent(studentName)}&reason=${encodeURIComponent(reason)}&teacher=${encodeURIComponent(teacherData.name)}&school=${encodeURIComponent(teacherData.school)}`;
+            window.open(url, '_blank');
+        }
+        
+        init();
+    </script>
+</body>
+</html>

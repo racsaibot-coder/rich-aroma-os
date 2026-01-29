@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#0f0d0b">
+    <title>☀️ Morning Dashboard | Racs</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #0f0d0b;
+            --card: #1a1714;
+            --card-hover: #252019;
+            --text: #f5f0eb;
+            --muted: #8a8078;
+            --caramel: #D4A574;
+            --gold: #fbbf24;
+            --success: #22c55e;
+            --danger: #ef4444;
+            --blue: #3b82f6;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            padding: 1rem;
+        }
+        
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+        .header h1 { font-size: 1.5rem; }
+        .header .time { color: var(--muted); font-size: 0.9rem; }
+        
+        .greeting {
+            background: linear-gradient(135deg, var(--card), #2a2420);
+            border-radius: 16px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            border-left: 4px solid var(--gold);
+        }
+        .greeting h2 { font-size: 1.3rem; margin-bottom: 0.5rem; }
+        .greeting p { color: var(--muted); }
+        
+        .section { margin-bottom: 1.5rem; }
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.75rem;
+        }
+        .section-title {
+            font-size: 1rem;
+            font-weight: 600;
+            color: var(--caramel);
+        }
+        .section-badge {
+            background: var(--gold);
+            color: #000;
+            padding: 0.2rem 0.5rem;
+            border-radius: 10px;
+            font-size: 0.75rem;
+            font-weight: 700;
+        }
+        
+        .card {
+            background: var(--card);
+            border-radius: 12px;
+            padding: 1rem;
+            margin-bottom: 0.75rem;
+        }
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 0.5rem;
+        }
+        .card-title { font-weight: 600; font-size: 0.95rem; }
+        .card-meta { font-size: 0.8rem; color: var(--muted); }
+        .card-body { font-size: 0.9rem; color: var(--muted); }
+        .card-stats {
+            display: flex;
+            gap: 1rem;
+            margin-top: 0.75rem;
+            font-size: 0.85rem;
+        }
+        .stat { display: flex; align-items: center; gap: 0.25rem; }
+        .stat.likes { color: var(--danger); }
+        .stat.replies { color: var(--blue); }
+        
+        .x-opportunity {
+            border-left: 3px solid var(--blue);
+        }
+        .x-opportunity .engagement {
+            display: flex;
+            gap: 0.75rem;
+            margin-top: 0.5rem;
+            font-size: 0.85rem;
+        }
+        .x-opportunity .reply-draft {
+            background: var(--bg);
+            padding: 0.75rem;
+            border-radius: 8px;
+            margin-top: 0.75rem;
+            font-size: 0.85rem;
+            border-left: 2px solid var(--caramel);
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 0.75rem;
+        }
+        .stat-card {
+            background: var(--card);
+            border-radius: 12px;
+            padding: 1rem;
+            text-align: center;
+        }
+        .stat-value {
+            font-size: 1.5rem;
+            font-weight: 800;
+        }
+        .stat-value.gold { color: var(--gold); }
+        .stat-value.green { color: var(--success); }
+        .stat-value.red { color: var(--danger); }
+        .stat-value.blue { color: var(--blue); }
+        .stat-label {
+            font-size: 0.75rem;
+            color: var(--muted);
+            margin-top: 0.25rem;
+        }
+        
+        .pending-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.75rem 0;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+        }
+        .pending-item:last-child { border-bottom: none; }
+        .pending-info { flex: 1; }
+        .pending-title { font-weight: 500; font-size: 0.9rem; }
+        .pending-meta { font-size: 0.8rem; color: var(--muted); }
+        .pending-action {
+            background: var(--caramel);
+            color: #000;
+            border: none;
+            padding: 0.4rem 0.75rem;
+            border-radius: 6px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            cursor: pointer;
+        }
+        
+        .quick-actions {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 0.75rem;
+        }
+        .action-btn {
+            background: var(--card);
+            border: 1px solid var(--caramel);
+            border-radius: 12px;
+            padding: 1rem;
+            color: var(--text);
+            font-size: 0.9rem;
+            text-decoration: none;
+            text-align: center;
+            transition: background 0.2s;
+        }
+        .action-btn:hover { background: var(--card-hover); }
+        .action-icon { font-size: 1.5rem; display: block; margin-bottom: 0.5rem; }
+        
+        .overnight-log {
+            background: var(--card);
+            border-radius: 12px;
+            padding: 1rem;
+        }
+        .log-item {
+            display: flex;
+            gap: 0.75rem;
+            padding: 0.5rem 0;
+            font-size: 0.85rem;
+        }
+        .log-time { color: var(--muted); min-width: 60px; }
+        .log-text { color: var(--text); }
+        
+        .loading { text-align: center; padding: 2rem; color: var(--muted); }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>☀️ Good Morning</h1>
+        <span class="time" id="currentTime"></span>
+    </div>
+    
+    <div class="greeting">
+        <h2>🦧 Here's what happened overnight</h2>
+        <p id="summaryText">Loading...</p>
+    </div>
+    
+    <!-- X Opportunities -->
+    <div class="section">
+        <div class="section-header">
+            <span class="section-title">🐦 X Reply Opportunities</span>
+            <span class="section-badge" id="xCount">0</span>
+        </div>
+        <div id="xOpportunities"><div class="loading">Loading...</div></div>
+    </div>
+    
+    <!-- Paper Trading -->
+    <div class="section">
+        <div class="section-header">
+            <span class="section-title">📈 Paper Trading Status</span>
+        </div>
+        <div class="stats-grid" id="tradingStats">
+            <div class="stat-card">
+                <div class="stat-value" id="polyBalance">$100</div>
+                <div class="stat-label">Polymarket</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="polyPnl">+$0</div>
+                <div class="stat-label">P&L</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="openPositions">0</div>
+                <div class="stat-label">Open Positions</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="closedTrades">0</div>
+                <div class="stat-label">Closed Trades</div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Rich Aroma -->
+    <div class="section">
+        <div class="section-header">
+            <span class="section-title">☕ Rich Aroma Status</span>
+        </div>
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-value gold" id="pendingReviews">0</div>
+                <div class="stat-label">Creator Reviews</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value green" id="rewardsMembers">0</div>
+                <div class="stat-label">Rico Members</div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Overnight Activity -->
+    <div class="section">
+        <div class="section-header">
+            <span class="section-title">🌙 Overnight Activity</span>
+        </div>
+        <div class="overnight-log" id="overnightLog">
+            <div class="loading">Loading...</div>
+        </div>
+    </div>
+    
+    <!-- Quick Actions -->
+    <div class="section">
+        <div class="section-header">
+            <span class="section-title">⚡ Quick Actions</span>
+        </div>
+        <div class="quick-actions">
+            <a href="/src/creators/review.html" class="action-btn">
+                <span class="action-icon">🎬</span>
+                Review Content
+            </a>
+            <a href="/src/pos/pos.html" class="action-btn">
+                <span class="action-icon">💵</span>
+                Open POS
+            </a>
+            <a href="/src/kpis/kpis.html" class="action-btn">
+                <span class="action-icon">📊</span>
+                View KPIs
+            </a>
+            <a href="/order" class="action-btn">
+                <span class="action-icon">📱</span>
+                Test Order
+            </a>
+        </div>
+    </div>
+
+    <script>
+        // Update time
+        function updateTime() {
+            const now = new Date();
+            document.getElementById('currentTime').textContent = 
+                now.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' }) + 
+                ' • ' + now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+        }
+        updateTime();
+        setInterval(updateTime, 60000);
+        
+        // Load X opportunities from file (via API)
+        async function loadXOpportunities() {
+            try {
+                const res = await fetch('/api/x-opportunities');
+                const data = await res.json();
+                
+                document.getElementById('xCount').textContent = data.opportunities?.length || 0;
+                
+                if (data.opportunities?.length > 0) {
+                    document.getElementById('xOpportunities').innerHTML = data.opportunities.map(opp => `
+                        <div class="card x-opportunity">
+                            <div class="card-header">
+                                <div>
+                                    <div class="card-title">@${opp.author}</div>
+                                    <div class="card-meta">${opp.timeAgo}</div>
+                                </div>
+                            </div>
+                            <div class="card-body">${opp.text}</div>
+                            <div class="engagement">
+                                <span class="stat likes">❤️ ${opp.likes}</span>
+                                <span class="stat replies">💬 ${opp.replies}</span>
+                            </div>
+                            ${opp.draftReply ? `<div class="reply-draft">${opp.draftReply}</div>` : ''}
+                        </div>
+                    `).join('');
+                } else {
+                    document.getElementById('xOpportunities').innerHTML = 
+                        '<div class="card">No hot opportunities right now</div>';
+                }
+            } catch (e) {
+                document.getElementById('xOpportunities').innerHTML = 
+                    '<div class="card">Check /projects/x-content/reply_opportunities.md</div>';
+            }
+        }
+        
+        // Load trading status
+        async function loadTradingStatus() {
+            try {
+                const res = await fetch('/api/trading-status');
+                const data = await res.json();
+                
+                document.getElementById('polyBalance').textContent = '$' + (data.balance || 100);
+                const pnl = (data.balance || 100) - 100;
+                document.getElementById('polyPnl').textContent = (pnl >= 0 ? '+$' : '-$') + Math.abs(pnl).toFixed(2);
+                document.getElementById('polyPnl').className = 'stat-value ' + (pnl >= 0 ? 'green' : 'red');
+                document.getElementById('openPositions').textContent = data.positions?.length || 0;
+                document.getElementById('closedTrades').textContent = data.closedTrades?.length || 0;
+            } catch (e) {
+                console.log('Trading status not available');
+            }
+        }
+        
+        // Load Rich Aroma stats
+        async function loadRichAromaStats() {
+            try {
+                const [submissions, customers] = await Promise.all([
+                    fetch('/api/creator-submissions').then(r => r.json()),
+                    fetch('/api/customers').then(r => r.json())
+                ]);
+                
+                const pending = submissions.filter(s => s.status === 'pending').length;
+                document.getElementById('pendingReviews').textContent = pending;
+                document.getElementById('rewardsMembers').textContent = customers.customers?.length || 0;
+            } catch (e) {
+                console.log('Rich Aroma stats not available');
+            }
+        }
+        
+        // Load overnight activity
+        async function loadOvernightActivity() {
+            try {
+                const res = await fetch('/api/overnight-activity');
+                const data = await res.json();
+                
+                if (data.activity?.length > 0) {
+                    document.getElementById('overnightLog').innerHTML = data.activity.map(a => `
+                        <div class="log-item">
+                            <span class="log-time">${a.time}</span>
+                            <span class="log-text">${a.text}</span>
+                        </div>
+                    `).join('');
+                } else {
+                    document.getElementById('overnightLog').innerHTML = 
+                        '<div class="log-item"><span class="log-text">Check command center for details</span></div>';
+                }
+            } catch (e) {
+                document.getElementById('overnightLog').innerHTML = `
+                    <div class="log-item"><span class="log-time">23:03</span><span class="log-text">Added discount codes to POS</span></div>
+                    <div class="log-item"><span class="log-time">23:05</span><span class="log-text">Made Polymarket trader more aggressive</span></div>
+                    <div class="log-item"><span class="log-time">00:00</span><span class="log-text">Found 3 X reply opportunities</span></div>
+                    <div class="log-item"><span class="log-time">03:00</span><span class="log-text">Built this morning dashboard</span></div>
+                `;
+            }
+        }
+        
+        // Summary
+        document.getElementById('summaryText').textContent = 
+            'Built creator discount codes, found X opportunities, Polymarket trader running with aggressive settings.';
+        
+        // Load all
+        loadXOpportunities();
+        loadTradingStatus();
+        loadRichAromaStats();
+        loadOvernightActivity();
+    </script>
+</body>
+</html>

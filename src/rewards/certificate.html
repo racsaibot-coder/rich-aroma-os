@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Captain Rico Rewards ⭐ Certificate</title>
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: 'Nunito', sans-serif;
+            background: #f5f0eb;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        
+        .certificate {
+            width: 800px;
+            height: 600px;
+            background: linear-gradient(145deg, #1a1410 0%, #2d2520 100%);
+            border-radius: 20px;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+        
+        /* Decorative border */
+        .certificate::before {
+            content: '';
+            position: absolute;
+            inset: 12px;
+            border: 3px solid #D4A574;
+            border-radius: 14px;
+            pointer-events: none;
+        }
+        
+        /* Gold corner accents */
+        .corner {
+            position: absolute;
+            width: 60px;
+            height: 60px;
+            border: 4px solid #D4A574;
+        }
+        .corner.tl { top: 20px; left: 20px; border-right: none; border-bottom: none; border-radius: 10px 0 0 0; }
+        .corner.tr { top: 20px; right: 20px; border-left: none; border-bottom: none; border-radius: 0 10px 0 0; }
+        .corner.bl { bottom: 20px; left: 20px; border-right: none; border-top: none; border-radius: 0 0 0 10px; }
+        .corner.br { bottom: 20px; right: 20px; border-left: none; border-top: none; border-radius: 0 0 10px 0; }
+        
+        /* Stars background */
+        .stars {
+            position: absolute;
+            inset: 0;
+            background-image: 
+                radial-gradient(2px 2px at 100px 50px, #D4A574 50%, transparent 50%),
+                radial-gradient(2px 2px at 200px 150px, #D4A574 50%, transparent 50%),
+                radial-gradient(2px 2px at 300px 80px, #D4A574 50%, transparent 50%),
+                radial-gradient(2px 2px at 500px 120px, #D4A574 50%, transparent 50%),
+                radial-gradient(2px 2px at 600px 60px, #D4A574 50%, transparent 50%),
+                radial-gradient(2px 2px at 700px 180px, #D4A574 50%, transparent 50%),
+                radial-gradient(2px 2px at 150px 400px, #D4A574 50%, transparent 50%),
+                radial-gradient(2px 2px at 650px 450px, #D4A574 50%, transparent 50%);
+            opacity: 0.3;
+        }
+        
+        .content {
+            position: relative;
+            z-index: 1;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 40px;
+            color: #F5EDE4;
+        }
+        
+        /* Header */
+        .header {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .rico-avatar {
+            width: 80px;
+            height: 80px;
+            background: linear-gradient(135deg, #D4A574, #8B6914);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 3rem;
+            border: 4px solid #D4A574;
+            box-shadow: 0 4px 20px rgba(212,165,116,0.4);
+        }
+        
+        .title-group {
+            text-align: center;
+        }
+        
+        .program-name {
+            font-family: 'Fredoka One', cursive;
+            font-size: 2rem;
+            color: #D4A574;
+            text-shadow: 0 2px 10px rgba(212,165,116,0.3);
+        }
+        
+        .subtitle {
+            font-size: 0.9rem;
+            color: #8a8078;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+        }
+        
+        /* Main content */
+        .award-text {
+            font-size: 1.1rem;
+            color: #D4A574;
+            margin: 10px 0;
+            letter-spacing: 3px;
+            text-transform: uppercase;
+        }
+        
+        .student-name {
+            font-family: 'Fredoka One', cursive;
+            font-size: 3rem;
+            color: #F5EDE4;
+            margin: 10px 0;
+            text-shadow: 0 4px 20px rgba(0,0,0,0.5);
+            min-height: 60px;
+            border-bottom: 3px solid #D4A574;
+            padding: 0 40px 10px;
+        }
+        
+        .reason {
+            font-size: 1.2rem;
+            color: #c9b8a8;
+            margin: 15px 0;
+            text-align: center;
+            max-width: 500px;
+            line-height: 1.6;
+        }
+        
+        /* Reward badge */
+        .reward-badge {
+            background: linear-gradient(135deg, #22c55e, #16a34a);
+            padding: 12px 30px;
+            border-radius: 30px;
+            margin: 20px 0;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            box-shadow: 0 4px 20px rgba(34,197,94,0.4);
+        }
+        
+        .reward-badge span {
+            font-weight: 800;
+            font-size: 1.1rem;
+        }
+        
+        /* Code section */
+        .code-section {
+            background: rgba(255,255,255,0.05);
+            border: 2px dashed #D4A574;
+            border-radius: 12px;
+            padding: 15px 30px;
+            margin: 15px 0;
+            text-align: center;
+        }
+        
+        .code-label {
+            font-size: 0.8rem;
+            color: #8a8078;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+        
+        .code {
+            font-family: 'Fredoka One', cursive;
+            font-size: 2rem;
+            color: #D4A574;
+            letter-spacing: 4px;
+            margin-top: 5px;
+        }
+        
+        /* Footer */
+        .footer {
+            margin-top: auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+            width: 100%;
+        }
+        
+        .teacher-info {
+            text-align: left;
+        }
+        
+        .teacher-label {
+            font-size: 0.75rem;
+            color: #8a8078;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .teacher-name {
+            font-weight: 700;
+            color: #D4A574;
+        }
+        
+        .school-name {
+            font-size: 0.85rem;
+            color: #c9b8a8;
+        }
+        
+        .date-info {
+            text-align: right;
+        }
+        
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            justify-content: center;
+            margin-top: 10px;
+        }
+        
+        .brand-logo {
+            font-size: 1.5rem;
+        }
+        
+        .brand-text {
+            font-family: 'Fredoka One', cursive;
+            color: #D4A574;
+        }
+        
+        /* Print styles */
+        @media print {
+            body { background: white; padding: 0; }
+            .certificate { box-shadow: none; }
+        }
+        
+        /* Form for generating */
+        .generator {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            z-index: 100;
+            width: 280px;
+        }
+        
+        .generator h3 {
+            margin-bottom: 15px;
+            color: #1a1410;
+        }
+        
+        .generator input, .generator select {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 10px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 14px;
+        }
+        
+        .generator button {
+            width: 100%;
+            padding: 12px;
+            background: #D4A574;
+            border: none;
+            border-radius: 8px;
+            color: white;
+            font-weight: 700;
+            cursor: pointer;
+            margin-top: 5px;
+        }
+        
+        .generator button:hover {
+            background: #c49664;
+        }
+        
+        .generator button.print {
+            background: #22c55e;
+        }
+        
+        @media print {
+            .generator { display: none; }
+        }
+    </style>
+</head>
+<body>
+    <div class="generator">
+        <h3>🎓 Generate Certificate</h3>
+        <input type="text" id="studentName" placeholder="Student Name" value="">
+        <input type="text" id="reason" placeholder="Reason (e.g., Excellent grades)" value="Por su excelente desempeño académico">
+        <input type="text" id="teacherName" placeholder="Teacher Name" value="">
+        <input type="text" id="schoolName" placeholder="School Name" value="">
+        <input type="text" id="rewardCode" placeholder="Reward Code (auto)" readonly>
+        <button onclick="generateCode()">Generate Code</button>
+        <button class="print" onclick="window.print()">🖨️ Print Certificate</button>
+    </div>
+
+    <div class="certificate">
+        <div class="stars"></div>
+        <div class="corner tl"></div>
+        <div class="corner tr"></div>
+        <div class="corner bl"></div>
+        <div class="corner br"></div>
+        
+        <div class="content">
+            <div class="header">
+                <div class="rico-avatar">🐒</div>
+                <div class="title-group">
+                    <div class="program-name">Captain Rico Rewards ⭐</div>
+                    <div class="subtitle">Programa de Reconocimiento Estudiantil</div>
+                </div>
+            </div>
+            
+            <div class="award-text">Este certificado se otorga a</div>
+            
+            <div class="student-name" id="displayStudentName">_______________</div>
+            
+            <div class="reason" id="displayReason">Por su excelente desempeño académico y dedicación en el aula</div>
+            
+            <div class="reward-badge">
+                <span>🎁</span>
+                <span>1 COMIDA GRATIS EN RICH AROMA</span>
+            </div>
+            
+            <div class="code-section">
+                <div class="code-label">Código de Recompensa</div>
+                <div class="code" id="displayCode">RICO-XXXX</div>
+            </div>
+            
+            <div class="footer">
+                <div class="teacher-info">
+                    <div class="teacher-label">Otorgado por</div>
+                    <div class="teacher-name" id="displayTeacher">Profesor(a)</div>
+                    <div class="school-name" id="displaySchool">Escuela</div>
+                </div>
+                
+                <div class="brand">
+                    <span class="brand-logo">☕</span>
+                    <span class="brand-text">Rich Aroma</span>
+                </div>
+                
+                <div class="date-info">
+                    <div class="teacher-label">Fecha</div>
+                    <div class="teacher-name" id="displayDate"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Set today's date
+        document.getElementById('displayDate').textContent = new Date().toLocaleDateString('es-HN', {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric'
+        });
+
+        // Generate random code
+        function generateCode() {
+            const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+            let code = 'RICO-';
+            for (let i = 0; i < 4; i++) {
+                code += chars.charAt(Math.floor(Math.random() * chars.length));
+            }
+            document.getElementById('rewardCode').value = code;
+            updateCertificate();
+        }
+
+        // Update certificate display
+        function updateCertificate() {
+            const studentName = document.getElementById('studentName').value || '_______________';
+            const reason = document.getElementById('reason').value || 'Por su excelente desempeño académico';
+            const teacherName = document.getElementById('teacherName').value || 'Profesor(a)';
+            const schoolName = document.getElementById('schoolName').value || 'Escuela';
+            const code = document.getElementById('rewardCode').value || 'RICO-XXXX';
+
+            document.getElementById('displayStudentName').textContent = studentName;
+            document.getElementById('displayReason').textContent = reason;
+            document.getElementById('displayTeacher').textContent = teacherName;
+            document.getElementById('displaySchool').textContent = schoolName;
+            document.getElementById('displayCode').textContent = code;
+        }
+
+        // Live update on input
+        document.querySelectorAll('.generator input').forEach(input => {
+            input.addEventListener('input', updateCertificate);
+        });
+
+        // Generate initial code
+        generateCode();
+    </script>
+</body>
+</html>
