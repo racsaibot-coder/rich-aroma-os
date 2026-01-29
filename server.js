@@ -264,13 +264,23 @@ app.post('/api/orders', async (req, res) => {
 
 app.patch('/api/orders/:id', ensureAuthenticated, async (req, res) => {
     // Only auth'd staff can update orders
+    const client = req.supabase || supabase;
+
+    // 1. Fetch current order status to prevent double-awarding
+    const { data: currentOrder, error: fetchError } = await client
+        .from('orders')
+        .select('status, customer_id, total, payment_method')
+        .eq('id', req.params.id)
+        .single();
+
+    if (fetchError || !currentOrder) return res.status(404).json({ error: 'Order not found' });
+
     const updates = { ...req.body };
-    if (req.body.status === 'completed') {
+    if (req.body.status === 'completed' && currentOrder.status !== 'completed') {
         updates.completed_at = new Date().toISOString();
     }
     
-    const client = req.supabase || supabase;
-    const { data, error } = await client
+    const { data: updatedOrder, error } = await client
         .from('orders')
         .update(updates)
         .eq('id', req.params.id)
@@ -278,7 +288,66 @@ app.patch('/api/orders/:id', ensureAuthenticated, async (req, res) => {
         .single();
     
     if (error) return res.status(404).json({ error: 'Order not found' });
-    res.json(data);
+
+    // 2. Loyalty Logic: Award points if completing an order
+    if (req.body.status === 'completed' && currentOrder.status !== 'completed' && updatedOrder.customer_id) {
+        try {
+            const { data: customer } = await client
+                .from('customers')
+                .select('*')
+                .eq('id', updatedOrder.customer_id)
+                .single();
+
+            if (customer) {
+                // Calculate Points
+                let pointsBase = Math.floor(parseFloat(updatedOrder.total) || 0);
+                let multiplier = 1;
+
+                // Bonus: Rico Balance (2x)
+                if (updatedOrder.payment_method === 'rico_balance') {
+                    multiplier *= 2;
+                }
+
+                // Bonus: VIP (2x)
+                if (customer.is_vip) {
+                    multiplier *= 2;
+                }
+
+                const pointsEarned = pointsBase * multiplier;
+                
+                // Update Customer Stats
+                const newPoints = (customer.points || 0) + pointsEarned;
+                const newTotalSpent = (parseFloat(customer.total_spent) || 0) + parseFloat(updatedOrder.total);
+                const newVisits = (customer.visits || 0) + 1;
+
+                // Check Tier Upgrade
+                let newTier = customer.tier || 'bronze';
+                if (newPoints >= 1500) newTier = 'gold';
+                else if (newPoints >= 500) newTier = 'silver';
+                else newTier = 'bronze'; // Downgrade possible if points spent? Usually points accumulate for tier, but 'points' field is typically spendable balance. 
+                // If 'points' is spendable balance, tier should track 'lifetime_points'. 
+                // However, based on existing logic: "if (updates.points >= 1500) updates.tier = 'gold'", it seems tier IS based on current spendable points. 
+                // I will follow existing pattern.
+
+                await client
+                    .from('customers')
+                    .update({
+                        points: newPoints,
+                        total_spent: newTotalSpent,
+                        visits: newVisits,
+                        tier: newTier
+                    })
+                    .eq('id', customer.id);
+                
+                console.log(`[Loyalty] Awarded ${pointsEarned} points to ${customer.id} for Order ${updatedOrder.id}`);
+            }
+        } catch (e) {
+            console.error("Loyalty update failed:", e);
+            // Don't fail the request, just log it.
+        }
+    }
+
+    res.json(updatedOrder);
 });
 
 // EMPLOYEES (Protected)
