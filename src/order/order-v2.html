@@ -7,6 +7,7 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <title>Ordenar | Rich Aroma</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
     <style>
         :root {
             --espresso: #5D4037;
@@ -390,6 +391,30 @@
         <div class="wizard-footer">
             <div class="wizard-total">L<span id="wizardPriceDisplay">0</span></div>
             <button class="wizard-action-btn" id="wizardNextBtn" onclick="wizardNext()">Siguiente</button>
+        </div>
+    </div>
+
+    <!-- Login Modal -->
+    <div class="modal-overlay" id="loginModal">
+        <div class="checkout-modal">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem">
+                <h2>Customer Login</h2>
+                <button onclick="closeLogin()" style="background:none; border:none; font-size:1.5rem; color:var(--text)">×</button>
+            </div>
+            
+            <div style="text-align:center; margin-bottom:1.5rem">
+                 <div id="qr-reader" style="width: 100%; max-width: 300px; margin: 0 auto; display:none;"></div>
+                 <button id="btnScanQr" onclick="startQrScanner()" style="background:var(--card-bg); border:1px solid var(--caramel); color:var(--caramel); padding:0.8rem 1.5rem; border-radius:12px; font-weight:600; margin-bottom:1rem; display:flex; align-items:center; gap:0.5rem; margin-inline:auto;">
+                    <span>📸</span> Scan QR
+                 </button>
+            </div>
+
+            <div style="margin-bottom:1rem; text-align:center; color:var(--text-muted)">— OR —</div>
+
+            <div style="margin-bottom: 1rem;">
+                <input type="tel" id="loginPhoneInput" class="phone-input" placeholder="Phone Number (e.g. 99999999)">
+                <button class="confirm-btn" onclick="manualLogin()">Lookup</button>
+            </div>
         </div>
     </div>
 
@@ -975,8 +1000,116 @@
             }
         }
 
+        // --- LOGIN & QR ---
+        let html5QrcodeScanner = null;
+
         function showLogin() {
-            alert('Login implementation here');
+            document.getElementById('loginModal').classList.add('show');
+        }
+
+        function closeLogin() {
+            document.getElementById('loginModal').classList.remove('show');
+            if (html5QrcodeScanner) {
+                html5QrcodeScanner.clear().catch(error => {
+                    console.error("Failed to clear html5QrcodeScanner. ", error);
+                });
+                html5QrcodeScanner = null;
+                document.getElementById('qr-reader').style.display = 'none';
+                document.getElementById('btnScanQr').style.display = 'flex';
+            }
+        }
+
+        function startQrScanner() {
+            document.getElementById('btnScanQr').style.display = 'none';
+            document.getElementById('qr-reader').style.display = 'block';
+
+            html5QrcodeScanner = new Html5QrcodeScanner(
+                "qr-reader", 
+                { fps: 10, qrbox: {width: 250, height: 250} },
+                /* verbose= */ false
+            );
+            html5QrcodeScanner.render(onScanSuccess, onScanFailure);
+        }
+
+        function onScanSuccess(decodedText, decodedResult) {
+            // Handle the scanned code
+            console.log(`Code matched = ${decodedText}`, decodedResult);
+            
+            // Stop scanning
+            if (html5QrcodeScanner) {
+                html5QrcodeScanner.clear().then(() => {
+                    html5QrcodeScanner = null;
+                    document.getElementById('qr-reader').style.display = 'none';
+                    document.getElementById('btnScanQr').style.display = 'flex';
+                }).catch(err => console.error(err));
+            }
+
+            // Parse result
+            let lookupValue = decodedText;
+            try {
+                // Attempt to parse if it's a JSON QR
+                const data = JSON.parse(decodedText);
+                if (data.phone) lookupValue = data.phone;
+                else if (data.id) lookupValue = data.id; // API might need adjustment for ID lookup
+            } catch (e) {
+                // Not JSON, use raw text (presumably phone or simple ID)
+            }
+
+            lookupCustomer(lookupValue);
+        }
+
+        function onScanFailure(error) {
+            // handle scan failure, usually better to ignore and keep scanning.
+            // for example:
+            // console.warn(`Code scan error = ${error}`);
+        }
+
+        function manualLogin() {
+            const phone = document.getElementById('loginPhoneInput').value;
+            if(phone) lookupCustomer(phone);
+        }
+
+        async function lookupCustomer(identifier) {
+            // Try to look up by ID or Phone
+            // Since the current API seems to be phone-based, we'll try that first.
+            // If the QR code contains a JSON or specific format, we might need to parse it.
+            // Assuming identifier is a phone number or ID.
+
+            try {
+                // Try phone endpoint first
+                let res = await fetch(`/api/customers/phone/${identifier}`);
+                if (!res.ok) {
+                    // Fallback: try generic lookup or ID if endpoint existed
+                    // For now, assume it's a phone number or exact match needed
+                    throw new Error('Customer not found');
+                }
+                
+                const cust = await res.json();
+                loginCustomer(cust);
+
+            } catch (e) {
+                alert('Customer not found: ' + identifier);
+                console.error(e);
+            }
+        }
+
+        function loginCustomer(customer) {
+            checkoutState.customer = customer;
+            
+            // Update UI
+            const badge = document.getElementById('rewardsBadge');
+            const badgeText = document.getElementById('badgeText');
+            
+            badge.classList.remove('guest');
+            badgeText.textContent = customer.name || customer.phone;
+            
+            // Auto-fill checkout fields if needed
+            if(document.getElementById('customerPhone')) {
+                document.getElementById('customerPhone').value = customer.phone;
+            }
+
+            closeLogin();
+            alert(`Welcome back, ${customer.name || 'Customer'}!`);
         }
 
         init();
