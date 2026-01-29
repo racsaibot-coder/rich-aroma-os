@@ -473,10 +473,7 @@ app.patch('/api/orders/:id', ensureAuthenticated, async (req, res) => {
                 let newTier = customer.tier || 'bronze';
                 if (newPoints >= 1500) newTier = 'gold';
                 else if (newPoints >= 500) newTier = 'silver';
-                else newTier = 'bronze'; // Downgrade possible if points spent? Usually points accumulate for tier, but 'points' field is typically spendable balance. 
-                // If 'points' is spendable balance, tier should track 'lifetime_points'. 
-                // However, based on existing logic: "if (updates.points >= 1500) updates.tier = 'gold'", it seems tier IS based on current spendable points. 
-                // I will follow existing pattern.
+                else newTier = 'bronze'; 
 
                 await client
                     .from('customers')
@@ -489,6 +486,67 @@ app.patch('/api/orders/:id', ensureAuthenticated, async (req, res) => {
                     .eq('id', customer.id);
                 
                 console.log(`[Loyalty] Awarded ${pointsEarned} points to ${customer.id} for Order ${updatedOrder.id}`);
+
+                // --- BADGE ENGINE ---
+                try {
+                    const { data: allBadges } = await client.from('badges').select('*');
+                    const { data: myBadges } = await client.from('customer_badges').select('badge_id').eq('customer_id', customer.id);
+                    const earnedIds = new Set((myBadges || []).map(b => b.badge_id));
+
+                    for (const badge of allBadges || []) {
+                        if (earnedIds.has(badge.id)) continue;
+                        
+                        const criteria = badge.criteria_json || {};
+                        let award = false;
+
+                        // 1. Founder
+                        if (criteria.type === 'founder') {
+                            const numId = parseInt(customer.id.replace(/\D/g, ''));
+                            if (numId <= (criteria.max_id || 100)) award = true;
+                        }
+                        
+                        // 2. Early Bird
+                        if (criteria.type === 'early_bird') {
+                            const { data: hist } = await client
+                                .from('orders')
+                                .select('created_at')
+                                .eq('customer_id', customer.id)
+                                .limit(100); 
+                            
+                            const earlyCount = (hist || []).filter(o => {
+                                // Timezone issue? created_at is UTC. 
+                                // Honduras is UTC-6. 8AM UTC-6 is 14:00 UTC.
+                                // But let's assume local time handling or offset. 
+                                // Simpler: use getHours() which uses local server time (if configured) or UTC.
+                                // If server is UTC, we need to adjust.
+                                // Let's try simple UTC check first. 8AM local = 14:00 UTC.
+                                // But if "server" is local dev machine, it uses system time?
+                                // Let's use getUTCHours() and offset -6.
+                                const date = new Date(o.created_at);
+                                const utc = date.getUTCHours();
+                                const local = (utc - 6 + 24) % 24; 
+                                return local < 8; 
+                            }).length;
+
+                            if (earlyCount >= (criteria.count || 5)) award = true;
+                        }
+                        
+                        // 3. Big Spender
+                        if (criteria.type === 'big_spender') {
+                            if (newTotalSpent >= (criteria.amount || 2000)) award = true;
+                        }
+
+                        if (award) {
+                            await client.from('customer_badges').insert({
+                                customer_id: customer.id,
+                                badge_id: badge.id
+                            });
+                            console.log(`[Badge] Awarded ${badge.name} to ${customer.id}`);
+                        }
+                    }
+                } catch (bErr) {
+                    console.error("Badge Engine Error:", bErr);
+                }
             }
         } catch (e) {
             console.error("Loyalty update failed:", e);
@@ -660,6 +718,30 @@ app.patch('/api/customers/:id', ensureAuthenticated, async (req, res) => {
     
     if (error) return res.status(404).json({ error: 'Customer not found' });
     res.json(data);
+});
+
+// Reorder: Get past orders
+app.get('/api/customers/:id/past-orders', async (req, res) => {
+    const client = req.supabase || supabase;
+    const { data: orders } = await client
+        .from('orders')
+        .select('*')
+        .eq('customer_id', req.params.id)
+        .order('created_at', { ascending: false })
+        .limit(5);
+    res.json({ orders: orders || [] });
+});
+
+// Get badges
+app.get('/api/customers/:id/badges', async (req, res) => {
+    const { data: badges } = await supabase
+        .from('customer_badges')
+        .select('*, badges(*)')
+        .eq('customer_id', req.params.id);
+    
+    const { data: allBadges } = await supabase.from('badges').select('*');
+    
+    res.json({ earned: badges || [], all: allBadges || [] });
 });
 
 // Rico Balance - Load funds

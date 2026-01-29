@@ -336,6 +336,17 @@
         }
         .phone-input { width: 100%; padding: 0.8rem; border-radius: 8px; margin-bottom: 1rem; font-size:1rem; }
         .confirm-btn { width: 100%; padding: 1.2rem; background: var(--success); border: none; border-radius: 14px; color: white; font-weight: 700; font-size:1.1rem; }
+        .profile-tab {
+            background: none; border: none; color: var(--text-muted); font-size: 1rem; font-weight: 600; padding: 0.5rem 1rem; cursor: pointer;
+        }
+        .profile-tab.active { color: var(--caramel); border-bottom: 2px solid var(--caramel); }
+        .badge-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; }
+        .badge-item { text-align: center; opacity: 0.3; filter: grayscale(1); }
+        .badge-item.unlocked { opacity: 1; filter: none; }
+        .badge-icon { font-size: 2.5rem; margin-bottom: 0.5rem; }
+        .badge-name { font-size: 0.8rem; font-weight: 600; }
+        .history-item { background: rgba(255,255,255,0.05); padding: 1rem; border-radius: 12px; margin-bottom: 0.8rem; display: flex; justify-content: space-between; align-items: center; }
+        .reorder-btn { background: var(--caramel); color: black; border: none; padding: 0.4rem 0.8rem; border-radius: 8px; font-weight: 600; cursor: pointer; }
     </style>
 </head>
 <body>
@@ -391,6 +402,41 @@
         <div class="wizard-footer">
             <div class="wizard-total">L<span id="wizardPriceDisplay">0</span></div>
             <button class="wizard-action-btn" id="wizardNextBtn" onclick="wizardNext()">Siguiente</button>
+        </div>
+    </div>
+
+    <!-- Profile Modal -->
+    <div class="modal-overlay" id="profileModal">
+        <div class="checkout-modal" style="height: 80vh; display: flex; flex-direction: column;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem">
+                <h2 id="profileName">Profile</h2>
+                <button onclick="closeProfile()" style="background:none; border:none; font-size:1.5rem; color:var(--text)">×</button>
+            </div>
+            
+            <div class="profile-summary" style="background:var(--card-bg); padding:1rem; border-radius:12px; margin-bottom:1rem; display:flex; justify-content:space-between; align-items:center;">
+                <div>
+                    <div style="font-size:0.9rem; color:var(--text-muted)">Points</div>
+                    <div style="font-size:1.5rem; font-weight:700; color:var(--gold)" id="profilePoints">0</div>
+                </div>
+                <div>
+                    <div style="font-size:0.9rem; color:var(--text-muted)">Tier</div>
+                    <div style="font-size:1.5rem; font-weight:700; text-transform:capitalize" id="profileTier">Bronze</div>
+                </div>
+            </div>
+
+            <!-- Tabs -->
+            <div style="display:flex; gap:0.5rem; margin-bottom:1rem; border-bottom:1px solid rgba(255,255,255,0.1); padding-bottom:0.5rem">
+                <button onclick="switchProfileTab('history')" class="profile-tab active" id="tabHistory">History</button>
+                <button onclick="switchProfileTab('badges')" class="profile-tab" id="tabBadges">Badges</button>
+            </div>
+
+            <div id="profileContent" style="flex:1; overflow-y:auto;">
+                <!-- Content loaded dynamically -->
+            </div>
+            
+            <div style="margin-top:1rem; text-align:center">
+                <button onclick="logout()" style="background:none; border:1px solid var(--text-muted); color:var(--text-muted); padding:0.5rem 1rem; border-radius:8px;">Log Out</button>
+            </div>
         </div>
     </div>
 
@@ -1049,7 +1095,11 @@
         let html5QrcodeScanner = null;
 
         function showLogin() {
-            document.getElementById('loginModal').classList.add('show');
+            if (checkoutState.customer) {
+                showProfile();
+            } else {
+                document.getElementById('loginModal').classList.add('show');
+            }
         }
 
         function closeLogin() {
@@ -1245,6 +1295,111 @@
 
             closeLogin();
             alert(`Welcome back, ${customer.name || 'Customer'}!`);
+        }
+
+        // --- PROFILE & BADGES ---
+        function showProfile() {
+            const cust = checkoutState.customer;
+            if (!cust) return showLogin();
+            
+            document.getElementById('profileName').textContent = cust.name;
+            document.getElementById('profilePoints').textContent = cust.points || 0;
+            document.getElementById('profileTier').textContent = cust.tier || 'bronze';
+            
+            document.getElementById('profileModal').classList.add('show');
+            switchProfileTab('history'); // Default
+        }
+
+        function closeProfile() {
+            document.getElementById('profileModal').classList.remove('show');
+        }
+
+        function switchProfileTab(tab) {
+            document.getElementById('tabHistory').classList.toggle('active', tab === 'history');
+            document.getElementById('tabBadges').classList.toggle('active', tab === 'badges');
+            
+            const container = document.getElementById('profileContent');
+            container.innerHTML = '<div style="text-align:center; padding:2rem">Loading...</div>';
+            
+            if (tab === 'history') loadHistory(container);
+            if (tab === 'badges') loadBadges(container);
+        }
+
+        async function loadHistory(container) {
+            try {
+                const res = await fetch(`/api/customers/${checkoutState.customer.id}/past-orders`);
+                const data = await res.json();
+                
+                if (!data.orders || data.orders.length === 0) {
+                    container.innerHTML = '<div style="text-align:center; color:var(--text-muted); padding:2rem">No past orders</div>';
+                    return;
+                }
+                
+                container.innerHTML = data.orders.map(order => `
+                    <div class="history-item">
+                        <div>
+                            <div style="font-weight:600">Order #${order.order_number}</div>
+                            <div style="font-size:0.85rem; color:var(--text-muted)">${new Date(order.created_at).toLocaleDateString()}</div>
+                            <div style="font-size:0.9rem">L ${order.total}</div>
+                        </div>
+                        <button class="reorder-btn" onclick='reorder(${JSON.stringify(order).replace(/'/g, "&#39;")})'>
+                            🔄 Order Again
+                        </button>
+                    </div>
+                `).join('');
+            } catch (e) {
+                console.error(e);
+                container.innerHTML = 'Error loading history';
+            }
+        }
+
+        async function loadBadges(container) {
+            try {
+                const res = await fetch(`/api/customers/${checkoutState.customer.id}/badges`);
+                const data = await res.json();
+                
+                const earnedIds = new Set(data.earned.map(b => b.badge_id));
+                
+                container.innerHTML = `<div class="badge-grid">
+                    ${data.all.map(badge => {
+                        const unlocked = earnedIds.has(badge.id);
+                        return `
+                        <div class="badge-item ${unlocked ? 'unlocked' : ''}">
+                            <div class="badge-icon">${badge.icon || '🏅'}</div>
+                            <div class="badge-name">${badge.name}</div>
+                            <div style="font-size:0.7rem; color:var(--text-muted)">${badge.description}</div>
+                        </div>
+                        `;
+                    }).join('')}
+                </div>`;
+            } catch (e) {
+                container.innerHTML = 'Error loading badges';
+            }
+        }
+
+        function reorder(order) {
+            if (!confirm('Add all items from Order #' + order.order_number + ' to cart?')) return;
+            
+            let items = order.items;
+            if (typeof items === 'string') items = JSON.parse(items);
+            
+            items.forEach(item => {
+                cart.push({
+                    ...item,
+                    instanceId: Date.now() + Math.random()
+                });
+            });
+            
+            closeProfile();
+            updateCartUI();
+            openCheckout();
+        }
+        
+        function logout() {
+            checkoutState.customer = null;
+            document.getElementById('rewardsBadge').classList.add('guest');
+            document.getElementById('badgeText').textContent = 'Login';
+            closeProfile();
         }
 
         init();

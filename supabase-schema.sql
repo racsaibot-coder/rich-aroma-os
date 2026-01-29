@@ -299,3 +299,34 @@ CREATE POLICY "Allow all" ON training_modules FOR ALL USING (true);
 CREATE POLICY "Allow all" ON training_completions FOR ALL USING (true);
 CREATE POLICY "Allow all" ON daily_tasks FOR ALL USING (true);
 CREATE POLICY "Allow all" ON task_logs FOR ALL USING (true);
+
+-- --- BADGES & REORDER MODULE ---
+
+-- Badges
+CREATE TABLE badges (
+    id SERIAL PRIMARY KEY,
+    name TEXT NOT NULL,
+    icon TEXT, -- URL or emoji/class
+    description TEXT,
+    criteria_json JSONB, -- Logic for awarding
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Customer Badges (Earned)
+CREATE TABLE customer_badges (
+    id SERIAL PRIMARY KEY,
+    customer_id TEXT REFERENCES customers(id),
+    badge_id INTEGER REFERENCES badges(id),
+    awarded_at TIMESTAMPTZ DEFAULT NOW(),
+    UNIQUE(customer_id, badge_id) -- Prevent duplicate badges
+);
+
+-- Policies
+CREATE POLICY "Allow all" ON badges FOR ALL USING (true);
+CREATE POLICY "Allow all" ON customer_badges FOR ALL USING (true);
+
+-- Seed Badges
+INSERT INTO badges (name, icon, description, criteria_json) VALUES
+('Founder', '🏆', 'One of the first 100 members', '{"type": "founder", "max_id": 100}'),
+('Early Bird', '🌅', '5 visits before 8 AM', '{"type": "early_bird", "time": "08:00", "count": 5}'),
+('Big Spender', '💰', 'Spent over 2000 HNL', '{"type": "big_spender", "amount": 2000}');
