@@ -321,12 +321,77 @@ CREATE TABLE customer_badges (
     UNIQUE(customer_id, badge_id) -- Prevent duplicate badges
 );
 
+-- Ingredients / Recipe Management
+CREATE TABLE menu_item_ingredients (
+    id SERIAL PRIMARY KEY,
+    menu_item_id TEXT REFERENCES menu_items(id),
+    inventory_item_id TEXT REFERENCES inventory(id),
+    quantity DECIMAL(10,4) NOT NULL,
+    unit TEXT NOT NULL, -- e.g. 'g', 'ml', 'unit'
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    UNIQUE(menu_item_id, inventory_item_id)
+);
+
+CREATE TABLE modifier_ingredients (
+    id SERIAL PRIMARY KEY,
+    modifier_id TEXT REFERENCES menu_modifiers(id),
+    inventory_item_id TEXT REFERENCES inventory(id),
+    quantity DECIMAL(10,4) NOT NULL,
+    unit TEXT NOT NULL,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    UNIQUE(modifier_id, inventory_item_id)
+);
+
+-- Helper for decrementing inventory safely
+CREATE OR REPLACE FUNCTION decrement_inventory(item_id TEXT, amount DECIMAL)
+RETURNS VOID AS $$
+BEGIN
+  UPDATE inventory
+  SET current_stock = current_stock - amount
+  WHERE id = item_id;
+END;
+$$ LANGUAGE plpgsql;
+
 -- Policies
 CREATE POLICY "Allow all" ON badges FOR ALL USING (true);
 CREATE POLICY "Allow all" ON customer_badges FOR ALL USING (true);
+CREATE POLICY "Allow all" ON menu_item_ingredients FOR ALL USING (true);
+CREATE POLICY "Allow all" ON modifier_ingredients FOR ALL USING (true);
 
 -- Seed Badges
 INSERT INTO badges (name, icon, description, criteria_json) VALUES
 ('Founder', '🏆', 'One of the first 100 members', '{"type": "founder", "max_id": 100}'),
 ('Early Bird', '🌅', '5 visits before 8 AM', '{"type": "early_bird", "time": "08:00", "count": 5}'),
 ('Big Spender', '💰', 'Spent over 2000 HNL', '{"type": "big_spender", "amount": 2000}');
+
+-- Cash Management (Shift Close & Petty Cash)
+
+-- Cash Shifts
+CREATE TABLE cash_shifts (
+    id SERIAL PRIMARY KEY,
+    employee_id TEXT REFERENCES employees(id),
+    opened_at TIMESTAMPTZ DEFAULT NOW(),
+    closed_at TIMESTAMPTZ,
+    opening_amount DECIMAL(10,2) NOT NULL,
+    closing_amount_declared DECIMAL(10,2),
+    expected_amount DECIMAL(10,2),
+    discrepancy DECIMAL(10,2), -- closing - expected
+    status TEXT DEFAULT 'open', -- 'open', 'closed'
+    notes TEXT,
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Cash Transactions (Payouts/Drops)
+CREATE TABLE cash_transactions (
+    id SERIAL PRIMARY KEY,
+    shift_id INTEGER REFERENCES cash_shifts(id),
+    amount DECIMAL(10,2) NOT NULL, -- Negative for payouts, Positive for drops/adds
+    reason TEXT NOT NULL,
+    receipt_url TEXT,
+    performed_by TEXT REFERENCES employees(id),
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Policies
+CREATE POLICY "Allow all" ON cash_shifts FOR ALL USING (true);
+CREATE POLICY "Allow all" ON cash_transactions FOR ALL USING (true);

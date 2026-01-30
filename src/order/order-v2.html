@@ -447,9 +447,14 @@
                 <span class="logo-icon">🦧</span>
                 <h1>Rich Aroma</h1>
             </div>
-            <div class="rewards-badge guest" id="rewardsBadge" onclick="showLogin()">
-                <span>⭐</span>
-                <span id="badgeText">Login</span>
+            <div style="display:flex; gap:0.5rem; align-items: center;">
+                <div class="rewards-badge guest" onclick="openManager()" style="background:var(--card-bg); border:1px solid rgba(255,255,255,0.2); color:var(--text-muted); cursor:pointer;">
+                    <span>⚙️</span>
+                </div>
+                <div class="rewards-badge guest" id="rewardsBadge" onclick="showLogin()">
+                    <span>⭐</span>
+                    <span id="badgeText">Login</span>
+                </div>
             </div>
         </div>
         <div class="categories" id="categories"></div>
@@ -488,6 +493,20 @@
         <div class="wizard-footer">
             <div class="wizard-total">L<span id="wizardPriceDisplay">0</span></div>
             <button class="wizard-action-btn" id="wizardNextBtn" onclick="wizardNext()">Siguiente</button>
+        </div>
+    </div>
+
+    <!-- Manager Modal -->
+    <div class="modal-overlay" id="managerModal">
+        <div class="checkout-modal" style="display: flex; flex-direction: column; max-height: 85vh;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem">
+                <h2>Cash Management</h2>
+                <button onclick="closeManager()" style="background:none; border:none; font-size:1.5rem; color:var(--text)">×</button>
+            </div>
+
+            <div id="managerContent" style="flex:1; overflow-y:auto;">
+                <div style="text-align:center; padding:2rem">Loading...</div>
+            </div>
         </div>
     </div>
 
@@ -1591,6 +1610,247 @@
             document.getElementById('rewardsBadge').classList.add('guest');
             document.getElementById('badgeText').textContent = 'Login';
             closeProfile();
+        }
+
+
+        // --- MANAGER / CASH MANAGEMENT ---
+        let managerToken = null;
+        let currentShift = null;
+
+        function openManager() {
+            if (!managerToken) {
+                // Prompt for PIN
+                const pin = prompt("Enter Manager PIN:");
+                if (!pin) return;
+                
+                // Login
+                fetch('/api/employee/login', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ pin })
+                })
+                .then(r => r.json())
+                .then(data => {
+                    if (data.success) {
+                        managerToken = data.token;
+                        document.getElementById('managerModal').classList.add('show');
+                        loadManagerDashboard();
+                    } else {
+                        alert('Invalid PIN');
+                    }
+                })
+                .catch(e => alert('Login Error'));
+            } else {
+                document.getElementById('managerModal').classList.add('show');
+                loadManagerDashboard();
+            }
+        }
+
+        function closeManager() {
+            document.getElementById('managerModal').classList.remove('show');
+        }
+
+        async function loadManagerDashboard() {
+            const container = document.getElementById('managerContent');
+            container.innerHTML = '<div style="text-align:center">Loading...</div>';
+            
+            try {
+                const res = await fetch('/api/cash/current-shift', {
+                    headers: { 'Authorization': 'Bearer ' + managerToken }
+                });
+                const data = await res.json();
+                
+                if (data.shift) {
+                    currentShift = data.shift;
+                    renderActiveShift(data.shift);
+                } else {
+                    currentShift = null;
+                    renderOpenShiftForm();
+                }
+            } catch (e) {
+                container.innerHTML = 'Error loading dashboard';
+            }
+        }
+
+        function renderOpenShiftForm() {
+            document.getElementById('managerContent').innerHTML = `
+                <div style="text-align:center; padding:1rem">
+                    <h3>Open New Shift</h3>
+                    <p style="color:var(--text-muted); margin-bottom:1.5rem">Start a new cash drawer session.</p>
+                    
+                    <div class="form-group" style="margin-bottom:1rem; text-align:left">
+                        <label>Opening Amount (L)</label>
+                        <input type="number" id="openAmount" class="phone-input" placeholder="0.00" value="1000">
+                    </div>
+                    
+                    <button class="confirm-btn" onclick="submitOpenShift()">Start Shift</button>
+                </div>
+            `;
+        }
+
+        function renderActiveShift(shift) {
+            const started = new Date(shift.opened_at).toLocaleTimeString();
+            document.getElementById('managerContent').innerHTML = `
+                <div style="padding:1rem">
+                    <div style="background:rgba(34, 197, 94, 0.1); border:1px solid var(--success); padding:1rem; border-radius:12px; margin-bottom:1.5rem">
+                        <div style="color:var(--success); font-weight:700; margin-bottom:0.5rem">● SHIFT OPEN</div>
+                        <div style="display:flex; justify-content:space-between">
+                            <span>Started:</span>
+                            <span>${started}</span>
+                        </div>
+                        <div style="display:flex; justify-content:space-between">
+                            <span>Opening:</span>
+                            <span>L ${shift.opening_amount}</span>
+                        </div>
+                    </div>
+                    
+                    <div style="display:grid; gap:1rem">
+                        <button class="option-btn" onclick="showPayoutModal()" style="width:100%; flex-direction:row; padding:1rem">
+                            <span style="font-size:1.5rem">💸</span>
+                            <div style="text-align:left">
+                                <div style="font-weight:600">Payout / Drop</div>
+                                <div style="font-size:0.8rem; color:var(--text-muted)">Record cash movement</div>
+                            </div>
+                        </button>
+                        
+                        <button class="option-btn" onclick="showCloseShiftModal()" style="width:100%; flex-direction:row; padding:1rem; border-color:var(--text-muted)">
+                            <span style="font-size:1.5rem">🔒</span>
+                            <div style="text-align:left">
+                                <div style="font-weight:600">Close Shift</div>
+                                <div style="font-size:0.8rem; color:var(--text-muted)">End session & Report</div>
+                            </div>
+                        </button>
+                    </div>
+                </div>
+            `;
+        }
+
+        async function submitOpenShift() {
+            const amount = document.getElementById('openAmount').value;
+            if (!amount) return alert('Enter amount');
+            
+            try {
+                const res = await fetch('/api/cash/open-shift', {
+                    method: 'POST',
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer ' + managerToken 
+                    },
+                    body: JSON.stringify({ openingAmount: amount })
+                });
+                
+                if (res.ok) loadManagerDashboard();
+                else alert('Error opening shift');
+            } catch (e) { alert('Network error'); }
+        }
+
+        function showPayoutModal() {
+            const html = `
+                <div style="padding:1rem">
+                    <h3>Record Transaction</h3>
+                    <div class="form-group" style="margin:1rem 0">
+                        <label>Amount (Negative for Payout)</label>
+                        <input type="number" id="txAmount" class="phone-input" placeholder="-50.00">
+                    </div>
+                    <div class="form-group" style="margin:1rem 0">
+                        <label>Reason</label>
+                        <input type="text" id="txReason" class="phone-input" placeholder="Ice purchase">
+                    </div>
+                    <button class="confirm-btn" onclick="submitTransaction()">Save</button>
+                    <button onclick="loadManagerDashboard()" style="width:100%; padding:1rem; margin-top:0.5rem; background:none; border:none; color:var(--text-muted)">Cancel</button>
+                </div>
+            `;
+            document.getElementById('managerContent').innerHTML = html;
+        }
+
+        async function submitTransaction() {
+            const amount = document.getElementById('txAmount').value;
+            const reason = document.getElementById('txReason').value;
+            
+            if (!amount || !reason) return alert('Fill all fields');
+            
+            await fetch('/api/cash/transaction', {
+                method: 'POST',
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'Authorization': 'Bearer ' + managerToken 
+                },
+                body: JSON.stringify({ 
+                    shiftId: currentShift.id,
+                    amount, reason 
+                })
+            });
+            loadManagerDashboard();
+        }
+
+        function showCloseShiftModal() {
+            const html = `
+                <div style="padding:1rem">
+                    <h3>Close Shift</h3>
+                    <p style="margin-bottom:1rem; color:var(--text-muted)">Count cash in drawer.</p>
+                    <div class="form-group" style="margin:1rem 0">
+                        <label>Closing Count (L)</label>
+                        <input type="number" id="closeAmount" class="phone-input" placeholder="0.00">
+                    </div>
+                    <div class="form-group" style="margin:1rem 0">
+                        <label>Notes</label>
+                        <textarea id="closeNotes" class="phone-input" style="height:80px"></textarea>
+                    </div>
+                    <button class="confirm-btn" onclick="submitCloseShift()">End Shift</button>
+                    <button onclick="loadManagerDashboard()" style="width:100%; padding:1rem; margin-top:0.5rem; background:none; border:none; color:var(--text-muted)">Cancel</button>
+                </div>
+            `;
+            document.getElementById('managerContent').innerHTML = html;
+        }
+
+        async function submitCloseShift() {
+            const amount = document.getElementById('closeAmount').value;
+            const notes = document.getElementById('closeNotes').value;
+            
+            if (!amount) return alert('Enter closing amount');
+            
+            const res = await fetch('/api/cash/close-shift', {
+                method: 'POST',
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'Authorization': 'Bearer ' + managerToken 
+                },
+                body: JSON.stringify({ 
+                    shiftId: currentShift.id,
+                    closingAmount: amount,
+                    notes 
+                })
+            });
+            
+            const data = await res.json();
+            if (data.success) {
+                renderReport(data.report);
+            } else {
+                alert('Error: ' + data.error);
+            }
+        }
+
+        function renderReport(report) {
+            const color = report.discrepancy < 0 ? 'red' : (report.discrepancy > 0 ? 'var(--success)' : 'var(--text-muted)');
+            const html = `
+                <div style="padding:1rem">
+                    <h3>Shift Report</h3>
+                    <div style="background:var(--card-bg); padding:1rem; border-radius:12px; margin:1rem 0; font-family:monospace">
+                        <div style="display:flex; justify-content:space-between"><span>Opening:</span> <span>${report.opening}</span></div>
+                        <div style="display:flex; justify-content:space-between"><span>Cash Sales:</span> <span>+${report.sales}</span></div>
+                        <div style="display:flex; justify-content:space-between"><span>Payouts:</span> <span>${report.transactions}</span></div>
+                        <div style="border-top:1px dashed #555; margin:0.5rem 0"></div>
+                        <div style="display:flex; justify-content:space-between; font-weight:bold"><span>Expected:</span> <span>${report.expected}</span></div>
+                        <div style="display:flex; justify-content:space-between"><span>Declared:</span> <span>${report.declared}</span></div>
+                        <div style="border-top:1px dashed #555; margin:0.5rem 0"></div>
+                        <div style="display:flex; justify-content:space-between; color:${color}; font-weight:bold">
+                            <span>Over/Short:</span> <span>${report.discrepancy.toFixed(2)}</span>
+                        </div>
+                    </div>
+                    <button class="confirm-btn" onclick="loadManagerDashboard()">Done</button>
+                </div>
+            `;
+            document.getElementById('managerContent').innerHTML = html;
         }
 
         init();

@@ -892,6 +892,40 @@
                     <label>Description</label>
                     <textarea id="menuItemDesc" placeholder="Rich and bold..."></textarea>
                 </div>
+
+                <!-- RECIPE SECTION -->
+                <div id="recipeSection" style="display:none; margin-top: 1.5rem; padding-top: 1rem; border-top: 1px solid rgba(255,255,255,0.1);">
+                    <h4 style="margin-bottom: 0.8rem; font-size: 0.95rem;">🥘 Recipe / Ingredients</h4>
+                    
+                    <div class="table-wrapper" style="margin-bottom: 1rem; background: var(--dark-bg); border-radius: 8px;">
+                        <table style="font-size: 0.85rem;">
+                            <thead>
+                                <tr>
+                                    <th style="padding:0.5rem">Ingredient</th>
+                                    <th style="padding:0.5rem">Qty</th>
+                                    <th style="padding:0.5rem">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody id="recipeTableBody"></tbody>
+                        </table>
+                    </div>
+                    
+                    <div class="form-grid" style="grid-template-columns: 2fr 1fr 1fr auto; gap: 0.5rem; align-items: end;">
+                        <div class="form-group" style="margin-bottom:0">
+                            <label style="font-size:0.75rem">Ingredient</label>
+                            <select id="recipeIngSelect" style="padding: 0.5rem; font-size: 0.85rem;"></select>
+                        </div>
+                        <div class="form-group" style="margin-bottom:0">
+                            <label style="font-size:0.75rem">Qty</label>
+                            <input type="number" id="recipeIngQty" placeholder="0" step="0.001" style="padding: 0.5rem; font-size: 0.85rem;">
+                        </div>
+                        <div class="form-group" style="margin-bottom:0">
+                            <label style="font-size:0.75rem">Unit</label>
+                            <input type="text" id="recipeIngUnit" placeholder="g" style="padding: 0.5rem; font-size: 0.85rem;">
+                        </div>
+                        <button class="btn btn-sm btn-success" onclick="addIngredient()" style="height: 36px;">+</button>
+                    </div>
+                </div>
             </div>
             <div class="modal-footer">
                 <button class="btn btn-ghost" onclick="closeModal('menuModal')">Cancel</button>
@@ -1321,12 +1355,88 @@
             document.getElementById('menuItemCategory').value = item?.category || 'coffee';
             document.getElementById('menuItemPrice').value = item?.price || '';
             document.getElementById('menuItemDesc').value = item?.description || '';
+            
+            // Recipe Logic
+            const recipeSection = document.getElementById('recipeSection');
+            if (item) {
+                recipeSection.style.display = 'block';
+                loadRecipe(item.id);
+                // Populate ingredient dropdown
+                const select = document.getElementById('recipeIngSelect');
+                select.innerHTML = inventoryItems.map(i => `<option value="${i.id}">${i.name} (${i.unit})</option>`).join('');
+            } else {
+                recipeSection.style.display = 'none';
+            }
+
             openModal('menuModal');
         }
         
         function editMenuItem(id) {
             const item = menuItems.find(i => i.id === id);
             if (item) openMenuModal(item);
+        }
+
+        // === RECIPE MANAGEMENT ===
+        async function loadRecipe(menuItemId) {
+            try {
+                const res = await fetch(`${API_BASE}/admin/menu/${menuItemId}/ingredients`);
+                const data = await res.json();
+                renderRecipeTable(data.ingredients || []);
+            } catch (e) {
+                console.error("Failed to load recipe", e);
+            }
+        }
+
+        function renderRecipeTable(ingredients) {
+            const tbody = document.getElementById('recipeTableBody');
+            if (ingredients.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="3" style="text-align:center; color:var(--text-muted); padding:0.5rem">No ingredients linked</td></tr>';
+                return;
+            }
+            tbody.innerHTML = ingredients.map(ing => `
+                <tr>
+                    <td style="padding:0.5rem">${ing.inventory?.name || 'Unknown'}</td>
+                    <td style="padding:0.5rem">${ing.quantity} ${ing.unit}</td>
+                    <td style="padding:0.5rem">
+                        <button class="action-btn delete" style="width:24px; height:24px;" onclick="deleteIngredient('${ing.id}', '${ing.menu_item_id}')">×</button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        async function addIngredient() {
+            const menuItemId = document.getElementById('menuItemId').value;
+            const inventoryId = document.getElementById('recipeIngSelect').value;
+            const qty = document.getElementById('recipeIngQty').value;
+            const unit = document.getElementById('recipeIngUnit').value;
+
+            if (!menuItemId || !inventoryId || !qty) return;
+
+            try {
+                await fetch(`${API_BASE}/admin/menu/${menuItemId}/ingredients`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        inventory_item_id: inventoryId,
+                        quantity: parseFloat(qty),
+                        unit: unit
+                    })
+                });
+                document.getElementById('recipeIngQty').value = '';
+                loadRecipe(menuItemId);
+            } catch (e) {
+                showToast('Failed to add ingredient', true);
+            }
+        }
+
+        async function deleteIngredient(ingId, menuItemId) {
+            if (!confirm('Remove ingredient?')) return;
+            try {
+                await fetch(`${API_BASE}/admin/menu/${menuItemId}/ingredients/${ingId}`, { method: 'DELETE' });
+                loadRecipe(menuItemId);
+            } catch (e) {
+                showToast('Failed to remove ingredient', true);
+            }
         }
         
         async function saveMenuItem() {
