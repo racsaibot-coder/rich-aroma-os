@@ -489,6 +489,9 @@
         <button class="nav-tab" data-section="delivery">
             <span class="icon">🛵</span> Delivery
         </button>
+        <button class="nav-tab" data-section="margins">
+            <span class="icon">💸</span> Margins
+        </button>
         <button class="nav-tab" data-section="loyalty-design">
             <span class="icon">🎨</span> Loyalty Design
         </button>
@@ -853,6 +856,36 @@
             </div>
         </section>
         
+        <!-- MARGINS SECTION -->
+        <section id="section-margins" class="section">
+            <div class="section-header">
+                <h2>💸 Profit Margin Analysis</h2>
+                <div style="text-align: right">
+                    <div style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 0.25rem;">Live Calculation</div>
+                    <button class="btn btn-primary btn-sm" onclick="loadMargins()">🔄 Refresh</button>
+                </div>
+            </div>
+            
+            <div class="card">
+                <div class="table-wrapper">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Item</th>
+                                <th>Price</th>
+                                <th>Cost</th>
+                                <th>Profit</th>
+                                <th>Margin %</th>
+                                <th>Status</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="marginsTableBody"></tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
         <!-- LOYALTY DESIGN SECTION (placeholder if needed or if not present) -->
     
     <!-- MODALS -->
@@ -1253,6 +1286,7 @@
                 case 'promos': loadPromoCodes(); break;
                 case 'rewards': loadRewards(); break;
                 case 'delivery': loadDeliveryZones(); break;
+                case 'margins': loadMargins(); break;
                 case 'business': loadBusinessSettings(); break;
             }
         }
@@ -2109,6 +2143,51 @@
             }
         }
         
+        // === MARGINS ===
+        async function loadMargins() {
+            try {
+                const res = await fetch(`${API_BASE}/admin/margins`);
+                if (!res.ok) throw new Error('Failed to load margins');
+                const data = await res.json();
+                const analysis = data.analysis || [];
+                
+                const tbody = document.getElementById('marginsTableBody');
+                if (analysis.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; color:var(--text-muted)">No data available. Add ingredients to menu items.</td></tr>';
+                    return;
+                }
+
+                tbody.innerHTML = analysis.map(item => {
+                    let statusBadge = '<span class="badge badge-warning">Healthy</span>';
+                    if (item.margin >= 70) {
+                        statusBadge = '<span class="badge badge-success">Cash Cow 🐮</span>';
+                    } else if (item.margin < 40) {
+                        statusBadge = '<span class="badge badge-danger">Low Margin ⚠️</span>';
+                    }
+
+                    return `
+                        <tr>
+                            <td>
+                                <div style="font-weight:600">${item.name}</div>
+                                <div style="font-size:0.8em; color:var(--text-muted)">${item.category}</div>
+                            </td>
+                            <td>L ${item.price.toFixed(2)}</td>
+                            <td>L ${item.cost.toFixed(2)}</td>
+                            <td style="color:var(--success); font-weight:600">L ${item.profit.toFixed(2)}</td>
+                            <td style="font-weight:bold">${item.margin}%</td>
+                            <td>${statusBadge}</td>
+                            <td>
+                                <button class="btn btn-sm btn-ghost" onclick="editMenuItem('${item.id}')">Edit Price</button>
+                            </td>
+                        </tr>
+                    `;
+                }).join('');
+            } catch (e) {
+                console.error(e);
+                showToast('Error loading margins', true);
+            }
+        }
+
         // === INIT ===
         loadBusinessSettings();
     </script>

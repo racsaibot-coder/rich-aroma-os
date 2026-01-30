@@ -1394,6 +1394,63 @@ app.delete('/api/admin/menu/:id', requireAdmin, async (req, res) => {
     res.json({ success: true });
 });
 
+// ADMIN: Profit Margin Analysis
+app.get('/api/admin/margins', requireAdmin, async (req, res) => {
+    const client = req.supabase || supabase;
+    
+    // 1. Fetch all menu items
+    const { data: menuItems, error: menuError } = await client
+        .from('menu_items')
+        .select('id, name, price, category')
+        .eq('available', true);
+
+    if (menuError) return res.status(500).json({ error: menuError.message });
+
+    // 2. Fetch all ingredients with inventory costs
+    const { data: allIngredients, error: ingError } = await client
+        .from('menu_item_ingredients')
+        .select('menu_item_id, quantity, inventory(cost_per_unit)');
+
+    if (ingError) return res.status(500).json({ error: ingError.message });
+
+    // 3. Map ingredients to items
+    const ingredientsMap = {};
+    allIngredients.forEach(ing => {
+        if (!ingredientsMap[ing.menu_item_id]) ingredientsMap[ing.menu_item_id] = [];
+        ingredientsMap[ing.menu_item_id].push(ing);
+    });
+
+    // 4. Calculate Margins
+    const analysis = menuItems.map(item => {
+        const itemIngs = ingredientsMap[item.id] || [];
+        let totalCost = 0;
+
+        itemIngs.forEach(ing => {
+            const costPerUnit = parseFloat(ing.inventory?.cost_per_unit || 0);
+            totalCost += (parseFloat(ing.quantity) * costPerUnit);
+        });
+
+        const price = parseFloat(item.price) || 0;
+        const profit = price - totalCost;
+        const marginPercent = price > 0 ? ((profit / price) * 100) : 0;
+
+        return {
+            id: item.id,
+            name: item.name,
+            category: item.category,
+            price: price,
+            cost: parseFloat(totalCost.toFixed(2)),
+            profit: parseFloat(profit.toFixed(2)),
+            margin: parseFloat(marginPercent.toFixed(1))
+        };
+    });
+
+    // 5. Sort by Margin (Ascending - Low margins first)
+    analysis.sort((a, b) => a.margin - b.margin);
+
+    res.json({ analysis });
+});
+
 // ADMIN: Menu Ingredients
 app.get('/api/admin/menu/:id/ingredients', requireAdmin, async (req, res) => {
     const client = req.supabase || supabase;
