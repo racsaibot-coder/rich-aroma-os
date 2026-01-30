@@ -174,7 +174,10 @@
 </head>
 <body>
     <header class="header">
-        <h1>🍳 Kitchen Display</h1>
+        <div>
+            <h1>🍳 Kitchen Display</h1>
+            <div id="lastUpdated" style="font-size: 0.75rem; color: var(--text-muted); margin-top: 4px;">Connecting...</div>
+        </div>
         <span class="pending-count" id="pendingCount">0 orders</span>
     </header>
     <div class="orders" id="orders"></div>
@@ -228,10 +231,21 @@
         }
 
         async function loadOrders() {
-            const res = await fetch('/api/orders');
-            const data = await res.json();
-            orders = (data.orders || []).filter(o => o.status === 'pending');
-            render();
+            try {
+                const res = await fetch('/api/orders');
+                const data = await res.json();
+                // Fix: Include 'paid' status for prepaid orders
+                orders = (data.orders || []).filter(o => o.status === 'pending' || o.status === 'paid');
+                
+                // Debug Mode: Update timestamp
+                const time = new Date().toLocaleTimeString();
+                const el = document.getElementById('lastUpdated');
+                if(el) el.textContent = `Last Updated: ${time}`;
+
+                render();
+            } catch (e) {
+                console.error("Error fetching orders:", e);
+            }
         }
 
         function render() {
@@ -341,7 +355,10 @@
 
         loadOrders();
         loadDrivers(); // Preload
-        // setInterval(loadOrders, 5000); // Removed in favor of Realtime
+        
+        // Fix: Add Polling Fallback (every 5s) to ensure orders appear even if WS fails
+        setInterval(loadOrders, 5000);
+        
         setInterval(render, 1000);
     </script>
 </body>
