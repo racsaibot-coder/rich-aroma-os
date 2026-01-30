@@ -347,6 +347,57 @@
         .badge-name { font-size: 0.8rem; font-weight: 600; }
         .history-item { background: rgba(255,255,255,0.05); padding: 1rem; border-radius: 12px; margin-bottom: 0.8rem; display: flex; justify-content: space-between; align-items: center; }
         .reorder-btn { background: var(--caramel); color: black; border: none; padding: 0.4rem 0.8rem; border-radius: 8px; font-weight: 600; cursor: pointer; }
+        
+        /* Digital Card Styles */
+        .digital-card {
+            width: 100%;
+            aspect-ratio: 1.586;
+            border-radius: 16px;
+            padding: 1.5rem;
+            position: relative;
+            margin-bottom: 1.5rem;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            overflow: hidden;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+        .digital-card.bronze { background: linear-gradient(135deg, #8E5A3C, #5D3A24); }
+        .digital-card.silver { background: linear-gradient(135deg, #E0E0E0, #9E9E9E); color: #000; }
+        .digital-card.gold { background: linear-gradient(135deg, #FFD700, #F59E0B); color: #000; }
+        .digital-card.vip::after {
+            content: "VIP";
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            background: black;
+            color: var(--gold);
+            padding: 0.2rem 0.6rem;
+            border-radius: 4px;
+            font-weight: 800;
+            font-size: 0.8rem;
+            letter-spacing: 1px;
+        }
+        .card-chip {
+            width: 40px;
+            height: 30px;
+            background: linear-gradient(135deg, #e0e0e0, #bdbdbd);
+            border-radius: 6px;
+            margin-bottom: 1rem;
+            opacity: 0.8;
+        }
+        .card-number { font-family: monospace; font-size: 1.2rem; letter-spacing: 2px; margin-bottom: 0.5rem; opacity: 0.9; }
+        .card-qr {
+            position: absolute;
+            bottom: 1.5rem;
+            right: 1.5rem;
+            width: 64px;
+            height: 64px;
+            background: white;
+            padding: 4px;
+            border-radius: 4px;
+        }
     </style>
 </head>
 <body>
@@ -1294,7 +1345,8 @@
             }
 
             closeLogin();
-            alert(`Welcome back, ${customer.name || 'Customer'}!`);
+            // Show the digital card immediately
+            showProfile();
         }
 
         // --- PROFILE & BADGES ---
@@ -1303,8 +1355,45 @@
             if (!cust) return showLogin();
             
             document.getElementById('profileName').textContent = cust.name;
-            document.getElementById('profilePoints').textContent = cust.points || 0;
-            document.getElementById('profileTier').textContent = cust.tier || 'bronze';
+            
+            // Render Digital Card
+            const tier = (cust.tier || 'bronze').toLowerCase();
+            const isVip = cust.is_vip;
+            const points = cust.points || 0;
+            
+            const cardHtml = `
+                <div class="digital-card ${tier} ${isVip ? 'vip' : ''}">
+                    <div style="display:flex; justify-content:space-between; align-items:flex-start">
+                        <div class="card-chip"></div>
+                        <div style="text-align:right">
+                            <div style="font-size:0.8rem; opacity:0.8">Rico Pass</div>
+                            <div style="font-weight:800; text-transform:uppercase; letter-spacing:1px">${tier}</div>
+                        </div>
+                    </div>
+                    
+                    <div style="text-align:center; padding:1rem 0;">
+                        <div style="font-size:2.5rem; font-weight:800">${points}</div>
+                        <div style="font-size:0.8rem; opacity:0.8">POINTS</div>
+                    </div>
+
+                    <div style="display:flex; justify-content:space-between; align-items:flex-end">
+                        <div>
+                            <div class="card-number">${cust.phone}</div>
+                            <div style="font-size:0.9rem">${cust.name}</div>
+                        </div>
+                        <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${cust.phone}" 
+                             style="width:64px; height:64px; background:white; padding:4px; border-radius:4px">
+                    </div>
+                </div>
+            `;
+            
+            // Replace old summary with card
+            const summaryEl = document.querySelector('.profile-summary');
+            if(summaryEl) summaryEl.outerHTML = `<div id="digitalCardContainer">${cardHtml}</div>`;
+            else {
+                const existingCard = document.getElementById('digitalCardContainer');
+                if(existingCard) existingCard.innerHTML = cardHtml;
+            }
             
             document.getElementById('profileModal').classList.add('show');
             switchProfileTab('history'); // Default
