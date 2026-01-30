@@ -1225,7 +1225,8 @@
                 customerId: checkoutState.customer?.id,
                 deliveryZoneId,
                 deliveryFee,
-                deliveryAddress
+                deliveryAddress,
+                status: checkoutState.payment === 'cash' ? 'pending' : 'paid'
             };
 
             const btn = document.getElementById('confirmOrderBtn');
