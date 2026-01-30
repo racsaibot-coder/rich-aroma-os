@@ -1616,6 +1616,7 @@
 
         // --- MANAGER / CASH MANAGEMENT ---
         let managerToken = null;
+        let currentManager = null;
         let currentShift = null;
 
         function openManager() {
@@ -1634,6 +1635,7 @@
                 .then(data => {
                     if (data.success) {
                         managerToken = data.token;
+                        currentManager = data.employee;
                         document.getElementById('managerModal').classList.add('show');
                         loadManagerDashboard();
                     } else {
@@ -1737,11 +1739,17 @@
                         'Content-Type': 'application/json',
                         'Authorization': 'Bearer ' + managerToken 
                     },
-                    body: JSON.stringify({ openingAmount: amount })
+                    body: JSON.stringify({ 
+                        openingAmount: amount,
+                        employeeId: currentManager ? currentManager.id : null
+                    })
                 });
                 
                 if (res.ok) loadManagerDashboard();
-                else alert('Error opening shift');
+                else {
+                    const err = await res.json();
+                    alert('Error opening shift: ' + (err.error || 'Unknown error'));
+                }
             } catch (e) { alert('Network error'); }
         }
 
@@ -1778,7 +1786,8 @@
                 },
                 body: JSON.stringify({ 
                     shiftId: currentShift.id,
-                    amount, reason 
+                    amount, reason,
+                    employeeId: currentManager ? currentManager.id : null
                 })
             });
             loadManagerDashboard();
