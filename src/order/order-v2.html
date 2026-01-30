@@ -348,6 +348,41 @@
         .history-item { background: rgba(255,255,255,0.05); padding: 1rem; border-radius: 12px; margin-bottom: 0.8rem; display: flex; justify-content: space-between; align-items: center; }
         .reorder-btn { background: var(--caramel); color: black; border: none; padding: 0.4rem 0.8rem; border-radius: 8px; font-weight: 600; cursor: pointer; }
         
+        /* Cart Review List */
+        #cartItemsList {
+            width: 100%;
+            margin-bottom: 1.5rem;
+            background: var(--card-bg);
+            border-radius: 12px;
+            overflow: hidden;
+        }
+        .cart-review-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.8rem 1rem;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+        }
+        .cart-review-item:last-child { border-bottom: none; }
+        .cart-item-details { flex: 1; }
+        .cart-item-name { font-weight: 600; font-size: 0.95rem; }
+        .cart-item-mods { font-size: 0.8rem; color: var(--text-muted); }
+        .cart-item-price { font-weight: 600; color: var(--caramel); margin-right: 1rem; }
+        .cart-remove-btn {
+            background: rgba(255,255,255,0.1);
+            border: none;
+            color: var(--text-muted);
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1rem;
+            cursor: pointer;
+        }
+        .cart-remove-btn:hover { background: rgba(255,50,50,0.2); color: #ff5555; }
+
         /* Digital Card Styles */
         .digital-card {
             width: 100%;
@@ -582,6 +617,7 @@
             <div style="width:40px"></div>
         </div>
         <div class="wizard-body" style="align-items: stretch;">
+            <div id="cartItemsList"></div>
             <div class="form-group" style="margin-bottom:1.5rem">
                 <label style="color:var(--text-muted); font-size:0.9rem; display:block; margin-bottom:0.5rem">Order Type</label>
                 <div style="display:grid; grid-template-columns:1fr 1fr; gap:0.5rem; background:var(--card-bg); padding:0.25rem; border-radius:12px;">
@@ -980,30 +1016,81 @@
         };
         let deliveryZones = [];
 
+        function renderCartItems() {
+            const container = document.getElementById('cartItemsList');
+            if (!container) return;
+            
+            if (cart.length === 0) {
+                container.innerHTML = '<div style="padding:1rem; text-align:center; color:var(--text-muted)">Cart is empty</div>';
+                return;
+            }
+            
+            container.innerHTML = cart.map((item, index) => {
+                const mods = [];
+                if (item.selections && item.modifiers) {
+                    for (const [key, val] of Object.entries(item.selections)) {
+                        const step = item.modifiers.find(m => m.id === key);
+                        if (step) {
+                            const opt = step.options.find(o => o.id === val);
+                            if (opt) mods.push(opt.name);
+                        }
+                    }
+                }
+                const modString = mods.length ? mods.join(', ') : '';
+                
+                return `
+                <div class="cart-review-item">
+                    <div class="cart-item-details">
+                        <div class="cart-item-name">${item.name} <span style="color:var(--text-muted); font-size:0.8em">x1</span></div>
+                        ${modString ? `<div class="cart-item-mods">${modString}</div>` : ''}
+                    </div>
+                    <div class="cart-item-price">L${item.finalPrice || item.price}</div>
+                    <button class="cart-remove-btn" onclick="removeItem(${index})">×</button>
+                </div>
+                `;
+            }).join('');
+        }
+
+        function removeItem(index) {
+            cart.splice(index, 1);
+            renderCartItems();
+            updateCartUI();
+            updateCheckoutTotal();
+            if (cart.length === 0) closeCheckout();
+        }
+
         async function openCheckout() {
+            renderCartItems();
             // Fetch delivery zones if empty
             if (deliveryZones.length === 0) {
                 try {
                     const res = await fetch('/api/delivery-zones');
-                    const data = await res.json();
-                    deliveryZones = data.zones || [];
-                    const sel = document.getElementById('deliveryZoneSelect');
-                    if (sel) {
-                        sel.innerHTML = '<option value="">Select Zone...</option>' + 
-                            deliveryZones.map(z => `<option value="${z.id}" data-fee="${z.fee}">${z.name} (L ${z.fee})</option>`).join('');
+                    if (res.ok) {
+                        const data = await res.json();
+                        deliveryZones = data.zones || [];
+                        const sel = document.getElementById('deliveryZoneSelect');
+                        if (sel) {
+                            sel.innerHTML = '<option value="">Select Zone...</option>' + 
+                                deliveryZones.map(z => `<option value="${z.id}" data-fee="${z.fee}">${z.name} (L ${z.fee})</option>`).join('');
+                        }
+                    } else {
+                        console.warn('Delivery zones API returned ' + res.status);
                     }
-                } catch(e) { console.error(e); }
+                } catch(e) { 
+                    console.error('Failed to load delivery zones', e);
+                    // Graceful degradation: continue without zones (delivery might be broken but pickup works)
+                }
             }
             
             updateCheckoutTotal();
-            document.getElementById('checkoutModal').classList.add('show');
+            document.getElementById('checkoutWizard').classList.add('show');
             document.getElementById('cartBar').classList.remove('show'); // Hide cart bar
             setOrderType('pickup'); // Reset to default
             setPaymentMethod('cash');
         }
 
         function closeCheckout() {
-            document.getElementById('checkoutModal').classList.remove('show');
+            document.getElementById('checkoutWizard').classList.remove('show');
             // Re-show cart bar if cart not empty
             if (cart.length > 0) document.getElementById('cartBar').classList.add('show');
         }
@@ -1086,12 +1173,23 @@
             
             if (checkoutState.type === 'delivery') {
                 deliveryZoneId = document.getElementById('deliveryZoneSelect').value;
-                if (!deliveryZoneId) return alert('Please select a delivery zone');
+                if (!deliveryZoneId) {
+                    console.warn('Validation failed: Missing delivery zone');
+                    return alert('Please select a delivery zone');
+                }
+                
                 const zone = deliveryZones.find(z => z.id == deliveryZoneId);
+                if (!zone) {
+                    console.error('Validation failed: Selected zone not found in loaded zones');
+                    return alert('Invalid delivery zone selected. Please try refreshing.');
+                }
                 deliveryFee = parseFloat(zone.fee);
                 
                 deliveryAddress = document.getElementById('deliveryAddress').value;
-                if (!deliveryAddress) return alert('Please enter delivery address');
+                if (!deliveryAddress) {
+                    console.warn('Validation failed: Missing delivery address');
+                    return alert('Please enter delivery address');
+                }
             }
             
             const total = subtotal + deliveryFee;
@@ -1122,7 +1220,11 @@
                     body: JSON.stringify(orderData)
                 });
                 
-                if (!res.ok) throw new Error('Order failed');
+                if (!res.ok) {
+                    const errorText = await res.text();
+                    throw new Error(errorText || 'Server responded with ' + res.status);
+                }
+                
                 const result = await res.json();
                 
                 alert('Order Placed! #' + result.order_number);
@@ -1135,8 +1237,8 @@
                 btn.textContent = 'Confirm Order';
 
             } catch (e) {
-                console.error(e);
-                alert('Failed to place order');
+                console.error('Submit Order Error:', e);
+                alert('Failed to place order: ' + e.message);
                 btn.disabled = false;
                 btn.textContent = 'Confirm Order';
             }
