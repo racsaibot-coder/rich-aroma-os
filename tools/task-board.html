@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rich Aroma 2.0 — Task Board</title>
+    <style>
+        :root {
+            --gold: #C9A66B;
+            --black: #1E1610;
+            --white: #FAFAFA;
+            --green: #2ecc71;
+            --yellow: #f1c40f;
+            --red: #e74c3c;
+            --blue: #3498db;
+        }
+        
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        
+        body {
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            background: linear-gradient(135deg, #1E1610 0%, #2a1f18 100%);
+            min-height: 100vh;
+            color: var(--white);
+            padding: 20px;
+        }
+        
+        h1 {
+            text-align: center;
+            color: var(--gold);
+            margin-bottom: 5px;
+        }
+        
+        .subtitle {
+            text-align: center;
+            color: #888;
+            margin-bottom: 20px;
+            font-size: 0.9rem;
+        }
+        
+        .board {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 20px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        .column {
+            background: rgba(255,255,255,0.05);
+            border-radius: 12px;
+            padding: 15px;
+            border: 1px solid rgba(201,166,107,0.2);
+        }
+        
+        .column h2 {
+            font-size: 1rem;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid var(--gold);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .task {
+            background: rgba(0,0,0,0.3);
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 10px;
+            border-left: 4px solid var(--gold);
+        }
+        
+        .task.oscar { border-left-color: var(--blue); }
+        .task.neenee { border-left-color: #e91e63; }
+        .task.shared { border-left-color: var(--gold); }
+        
+        .task-title {
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+        
+        .task-owner {
+            font-size: 0.75rem;
+            color: #888;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        
+        .task-owner.oscar { color: var(--blue); }
+        .task-owner.neenee { color: #e91e63; }
+        
+        .badge {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 0.7rem;
+            font-weight: 600;
+        }
+        
+        .badge.done { background: var(--green); color: white; }
+        .badge.progress { background: var(--yellow); color: black; }
+        .badge.pending { background: #555; color: white; }
+        
+        .legend {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+        
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            font-size: 0.85rem;
+        }
+        
+        .legend-color {
+            width: 12px;
+            height: 12px;
+            border-radius: 3px;
+        }
+        
+        .legend-color.oscar { background: var(--blue); }
+        .legend-color.neenee { background: #e91e63; }
+        .legend-color.shared { background: var(--gold); }
+        
+        .refresh-note {
+            text-align: center;
+            color: #666;
+            font-size: 0.8rem;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <h1>📋 Rich Aroma 2.0 — Task Board</h1>
+    <p class="subtitle">Last updated: February 3, 2026</p>
+    
+    <div class="legend">
+        <div class="legend-item">
+            <div class="legend-color oscar"></div>
+            <span>Oscar</span>
+        </div>
+        <div class="legend-item">
+            <div class="legend-color neenee"></div>
+            <span>NeeNee</span>
+        </div>
+        <div class="legend-item">
+            <div class="legend-color shared"></div>
+            <span>Shared</span>
+        </div>
+    </div>
+    
+    <div class="board">
+        <!-- DONE Column -->
+        <div class="column">
+            <h2>✅ Done</h2>
+            
+            <div class="task oscar">
+                <div class="task-title">Rich Aroma OS (POS/KDS)</div>
+                <div class="task-owner oscar">👨‍💻 Oscar</div>
+            </div>
+            
+            <div class="task oscar">
+                <div class="task-title">Captain Rico Branding</div>
+                <div class="task-owner oscar">👨‍💻 Oscar</div>
+            </div>
+            
+            <div class="task oscar">
+                <div class="task-title">Contract Generator (Plaza Rosa)</div>
+                <div class="task-owner oscar">👨‍💻 Oscar</div>
+            </div>
+            
+            <div class="task neenee">
+                <div class="task-title">Financial Tracker Template</div>
+                <div class="task-owner neenee">👩‍💼 NeeNee</div>
+            </div>
+            
+            <div class="task neenee">
+                <div class="task-title">Role Definitions</div>
+                <div class="task-owner neenee">👩‍💼 NeeNee</div>
+            </div>
+            
+            <div class="task neenee">
+                <div class="task-title">Opening Checklist SOP</div>
+                <div class="task-owner neenee">👩‍💼 NeeNee</div>
+            </div>
+            
+            <div class="task neenee">
+                <div class="task-title">Closing Checklist SOP</div>
+                <div class="task-owner neenee">👩‍💼 NeeNee</div>
+            </div>
+            
+            <div class="task neenee">
+                <div class="task-title">Inventory Management System</div>
+                <div class="task-owner neenee">👩‍💼 NeeNee</div>
+            </div>
+            
+            <div class="task neenee">
+                <div class="task-title">Weekly Report Template</div>
+                <div class="task-owner neenee">👩‍💼 NeeNee</div>
+            </div>
+            
+            <div class="task neenee">
+                <div class="task-title">Communication/Escalation Rules</div>
+                <div class="task-owner neenee">👩‍💼 NeeNee</div>
+            </div>
+            
+            <div class="task neenee">
+                <div class="task-title">Lessons Learned Doc</div>
+                <div class="task-owner neenee">👩‍💼 NeeNee</div>
+            </div>
+        </div>
+        
+        <!-- IN PROGRESS Column -->
+        <div class="column">
+            <h2>🔄 In Progress</h2>
+            
+            <div class="task oscar">
+                <div class="task-title">Content Calendar (21-day challenge)</div>
+                <div class="task-owner oscar">👨‍💻 Oscar</div>
+            </div>
+            
+            <div class="task oscar">
+                <div class="task-title">Cloudflare Tunnel Setup</div>
+                <div class="task-owner oscar">👨‍💻 Oscar</div>
+            </div>
+            
+            <div class="task neenee">
+                <div class="task-title">Review & Edit All SOPs</div>
+                <div class="task-owner neenee">👩‍💼 NeeNee</div>
+            </div>
+        </div>
+        
+        <!-- TO DO Column -->
+        <div class="column">
+            <h2>⏳ To Do</h2>
+            
+            <div class="task neenee">
+                <div class="task-title">Google Sheets Versions</div>
+                <div class="task-owner neenee">👩‍💼 NeeNee</div>
+            </div>
+            
+            <div class="task neenee">
+                <div class="task-title">Staff Training Materials</div>
+                <div class="task-owner neenee">👩‍💼 NeeNee</div>
+            </div>
+            
+            <div class="task neenee">
+                <div class="task-title">Supplier List & Contacts</div>
+                <div class="task-owner neenee">👩‍💼 NeeNee</div>
+            </div>
+            
+            <div class="task oscar">
+                <div class="task-title">Menu Finalization</div>
+                <div class="task-owner oscar">👨‍💻 Oscar</div>
+            </div>
+            
+            <div class="task oscar">
+                <div class="task-title">Social Media Launch</div>
+                <div class="task-owner oscar">👨‍💻 Oscar</div>
+            </div>
+            
+            <div class="task shared">
+                <div class="task-title">Grand Opening Event Plan</div>
+                <div class="task-owner">👥 Oscar & NeeNee</div>
+            </div>
+        </div>
+        
+        <!-- OWNERSHIP Column -->
+        <div class="column">
+            <h2>📌 Who Owns What</h2>
+            
+            <div class="task oscar" style="border-left-width: 8px;">
+                <div class="task-title">Oscar's Areas</div>
+                <div style="font-size: 0.85rem; color: #aaa; margin-top: 8px;">
+                    🔧 Technology (POS, apps)<br>
+                    🎨 Brand & Marketing<br>
+                    🏢 Real Estate (Plaza Rosa)<br>
+                    💰 Finance & Strategy
+                </div>
+            </div>
+            
+            <div class="task neenee" style="border-left-width: 8px;">
+                <div class="task-title">NeeNee's Areas</div>
+                <div style="font-size: 0.85rem; color: #aaa; margin-top: 8px;">
+                    📋 Operations & SOPs<br>
+                    📊 Reporting & Metrics<br>
+                    👥 HR & Training<br>
+                    📦 Inventory Systems<br>
+                    📞 Communication Rules
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <p class="refresh-note">Tell Racs "update task board" to refresh • "add task [name] for [owner]" to add new tasks</p>
+</body>
+</html>
