@@ -1,0 +1,572 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Generador de Contratos - Plaza Rosa de Castillo</title>
+    <style>
+        :root {
+            --gold: #C9A66B;
+            --black: #1E1610;
+            --white: #FAFAFA;
+            --gray: #666;
+        }
+        
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        
+        body {
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            background: linear-gradient(135deg, #1E1610 0%, #2a1f18 100%);
+            min-height: 100vh;
+            color: var(--white);
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        
+        h1 {
+            text-align: center;
+            color: var(--gold);
+            margin-bottom: 10px;
+            font-size: 1.8rem;
+        }
+        
+        .subtitle {
+            text-align: center;
+            color: var(--gray);
+            margin-bottom: 30px;
+        }
+        
+        .form-section {
+            background: rgba(255,255,255,0.05);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+            border: 1px solid rgba(201,166,107,0.2);
+        }
+        
+        .form-section h2 {
+            color: var(--gold);
+            font-size: 1.1rem;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .form-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+        
+        .form-group {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        label {
+            font-size: 0.85rem;
+            color: var(--gray);
+            margin-bottom: 5px;
+        }
+        
+        input, select, textarea {
+            background: rgba(0,0,0,0.3);
+            border: 1px solid rgba(201,166,107,0.3);
+            border-radius: 8px;
+            padding: 12px;
+            color: var(--white);
+            font-size: 1rem;
+            transition: border-color 0.2s;
+        }
+        
+        input:focus, select:focus, textarea:focus {
+            outline: none;
+            border-color: var(--gold);
+        }
+        
+        textarea {
+            resize: vertical;
+            min-height: 80px;
+        }
+        
+        .btn {
+            background: linear-gradient(135deg, var(--gold), #b8956a);
+            color: var(--black);
+            border: none;
+            padding: 15px 30px;
+            border-radius: 8px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            width: 100%;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(201,166,107,0.3);
+        }
+        
+        .preview-btn {
+            background: transparent;
+            border: 2px solid var(--gold);
+            color: var(--gold);
+            margin-bottom: 10px;
+        }
+        
+        /* Print styles for contract */
+        @media print {
+            body {
+                background: white;
+                color: black;
+                padding: 0;
+            }
+            
+            .no-print {
+                display: none !important;
+            }
+            
+            .contract-preview {
+                display: block !important;
+                background: white;
+                color: black;
+                padding: 40px;
+                font-family: 'Times New Roman', serif;
+                font-size: 12pt;
+                line-height: 1.6;
+            }
+        }
+        
+        .contract-preview {
+            display: none;
+            background: white;
+            color: black;
+            padding: 40px;
+            border-radius: 8px;
+            font-family: 'Times New Roman', serif;
+            font-size: 11pt;
+            line-height: 1.5;
+            margin-top: 20px;
+        }
+        
+        .contract-preview.show {
+            display: block;
+        }
+        
+        .contract-preview h1 {
+            color: black;
+            font-size: 14pt;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        
+        .contract-preview p {
+            text-align: justify;
+            margin-bottom: 12px;
+        }
+        
+        .contract-preview .clause-title {
+            font-weight: bold;
+            margin-top: 15px;
+        }
+        
+        .contract-preview .signature-block {
+            margin-top: 50px;
+            text-align: center;
+        }
+        
+        .contract-preview .signature-line {
+            margin-top: 60px;
+            border-top: 1px solid black;
+            width: 300px;
+            display: inline-block;
+            padding-top: 5px;
+        }
+        
+        .calculated {
+            background: rgba(201,166,107,0.1);
+            padding: 10px;
+            border-radius: 8px;
+            margin-top: 10px;
+            font-size: 0.9rem;
+            color: var(--gold);
+        }
+    </style>
+</head>
+<body>
+    <div class="container no-print">
+        <h1>📋 Generador de Contratos</h1>
+        <p class="subtitle">Plaza Rosa de Castillo — Quimistán, Santa Bárbara</p>
+        
+        <!-- Section 1: Tenant Info -->
+        <div class="form-section">
+            <h2>👤 1. Información del Arrendatario</h2>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Nombre Completo</label>
+                    <input type="text" id="tenantName" placeholder="NOMBRE APELLIDO APELLIDO">
+                </div>
+                <div class="form-group">
+                    <label>Estado Civil</label>
+                    <select id="civilStatus">
+                        <option value="">Seleccionar...</option>
+                        <option value="SOLTERO(A)">Soltero(a)</option>
+                        <option value="CASADO(A)">Casado(a)</option>
+                        <option value="DIVORCIADO(A)">Divorciado(a)</option>
+                        <option value="VIUDO(A)">Viudo(a)</option>
+                        <option value="UNIÓN LIBRE">Unión Libre</option>
+                    </select>
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>DNI (Identidad)</label>
+                    <input type="text" id="tenantDNI" placeholder="0000-0000-00000">
+                </div>
+                <div class="form-group">
+                    <label>RTN (opcional)</label>
+                    <input type="text" id="tenantRTN" placeholder="0000-0000-000000">
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Nombre del Negocio</label>
+                    <input type="text" id="businessName" placeholder="Ej: Tienda XYZ">
+                </div>
+            </div>
+        </div>
+        
+        <!-- Section 2: Space Details -->
+        <div class="form-section">
+            <h2>🏢 2. Detalles del Local</h2>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Número de Local(es)</label>
+                    <input type="text" id="localNumber" placeholder="Ej: Local 1, o Local 1 & 2">
+                </div>
+                <div class="form-group">
+                    <label>Ubicación/Descripción</label>
+                    <input type="text" id="localLocation" value="primera planta, lado norte, frente a la calle principal">
+                </div>
+            </div>
+        </div>
+        
+        <!-- Section 3: Terms -->
+        <div class="form-section">
+            <h2>💰 3. Términos del Contrato</h2>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Renta Mensual Base (Lempiras)</label>
+                    <input type="number" id="rentLPS" placeholder="20000" oninput="calculateTotals()">
+                </div>
+                <div class="form-group">
+                    <label>Tipo de Cambio (L. por $1 USD)</label>
+                    <input type="number" id="exchangeRate" placeholder="25.00" step="0.01" oninput="calculateTotals()">
+                </div>
+            </div>
+            <div class="calculated" id="calculations">
+                <strong>Cálculos automáticos:</strong><br>
+                ISV (15%): L. <span id="isvAmount">0</span><br>
+                Total Mensual: L. <span id="totalRent">0</span><br>
+                Equivalente en USD: $<span id="rentUSD">0</span><br>
+                Depósito (2 meses): L. <span id="deposit">0</span>
+            </div>
+            <div class="form-row" style="margin-top: 15px;">
+                <div class="form-group">
+                    <label>Día de Pago Mensual</label>
+                    <select id="paymentDay">
+                        <option value="1">1 de cada mes</option>
+                        <option value="5">5 de cada mes</option>
+                        <option value="10">10 de cada mes</option>
+                        <option value="15" selected>15 de cada mes</option>
+                        <option value="último">Último día del mes</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Duración (años)</label>
+                    <select id="duration" oninput="calculateEndDate()">
+                        <option value="1">1 año</option>
+                        <option value="2">2 años</option>
+                        <option value="3">3 años</option>
+                        <option value="5" selected>5 años</option>
+                        <option value="10">10 años</option>
+                    </select>
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Fecha de Inicio</label>
+                    <input type="date" id="startDate" oninput="calculateEndDate()">
+                </div>
+                <div class="form-group">
+                    <label>Fecha de Vencimiento (automático)</label>
+                    <input type="date" id="endDate" readonly style="opacity: 0.7;">
+                </div>
+            </div>
+        </div>
+        
+        <!-- Section 4: Special Clauses -->
+        <div class="form-section">
+            <h2>📝 4. Cláusulas Especiales (opcional)</h2>
+            <div class="form-group">
+                <label>Agregar cláusulas adicionales o modificaciones</label>
+                <textarea id="specialClauses" placeholder="Ej: El arrendatario tendrá derecho exclusivo de venta de café en la plaza..."></textarea>
+            </div>
+        </div>
+        
+        <!-- Section 5: Signature Date -->
+        <div class="form-section">
+            <h2>✍️ 5. Fecha de Firma</h2>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Día</label>
+                    <input type="number" id="signDay" min="1" max="31" placeholder="15">
+                </div>
+                <div class="form-group">
+                    <label>Mes</label>
+                    <select id="signMonth">
+                        <option value="enero">Enero</option>
+                        <option value="febrero" selected>Febrero</option>
+                        <option value="marzo">Marzo</option>
+                        <option value="abril">Abril</option>
+                        <option value="mayo">Mayo</option>
+                        <option value="junio">Junio</option>
+                        <option value="julio">Julio</option>
+                        <option value="agosto">Agosto</option>
+                        <option value="septiembre">Septiembre</option>
+                        <option value="octubre">Octubre</option>
+                        <option value="noviembre">Noviembre</option>
+                        <option value="diciembre">Diciembre</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Año</label>
+                    <input type="number" id="signYear" value="2026" min="2024" max="2030">
+                </div>
+            </div>
+        </div>
+        
+        <button class="btn preview-btn" onclick="generatePreview()">👁️ Vista Previa</button>
+        <button class="btn" onclick="printContract()">🖨️ Generar PDF / Imprimir</button>
+    </div>
+    
+    <!-- Contract Preview -->
+    <div class="contract-preview" id="contractPreview">
+        <!-- Contract will be generated here -->
+    </div>
+    
+    <script>
+        function calculateTotals() {
+            const rent = parseFloat(document.getElementById('rentLPS').value) || 0;
+            const rate = parseFloat(document.getElementById('exchangeRate').value) || 25;
+            
+            const isv = rent * 0.15;
+            const total = rent + isv;
+            const usd = (rent / rate).toFixed(2);
+            const deposit = rent * 2;
+            
+            document.getElementById('isvAmount').textContent = isv.toLocaleString();
+            document.getElementById('totalRent').textContent = total.toLocaleString();
+            document.getElementById('rentUSD').textContent = usd;
+            document.getElementById('deposit').textContent = deposit.toLocaleString();
+        }
+        
+        function calculateEndDate() {
+            const startDate = document.getElementById('startDate').value;
+            const duration = parseInt(document.getElementById('duration').value);
+            
+            if (startDate) {
+                const start = new Date(startDate);
+                const end = new Date(start);
+                end.setFullYear(end.getFullYear() + duration);
+                document.getElementById('endDate').value = end.toISOString().split('T')[0];
+            }
+        }
+        
+        function numberToWords(num) {
+            const units = ['', 'UN', 'DOS', 'TRES', 'CUATRO', 'CINCO', 'SEIS', 'SIETE', 'OCHO', 'NUEVE'];
+            const teens = ['DIEZ', 'ONCE', 'DOCE', 'TRECE', 'CATORCE', 'QUINCE', 'DIECISÉIS', 'DIECISIETE', 'DIECIOCHO', 'DIECINUEVE'];
+            const tens = ['', '', 'VEINTE', 'TREINTA', 'CUARENTA', 'CINCUENTA', 'SESENTA', 'SETENTA', 'OCHENTA', 'NOVENTA'];
+            const hundreds = ['', 'CIEN', 'DOSCIENTOS', 'TRESCIENTOS', 'CUATROCIENTOS', 'QUINIENTOS', 'SEISCIENTOS', 'SETECIENTOS', 'OCHOCIENTOS', 'NOVECIENTOS'];
+            
+            if (num === 0) return 'CERO';
+            if (num < 10) return units[num];
+            if (num < 20) return teens[num - 10];
+            if (num < 100) {
+                const t = Math.floor(num / 10);
+                const u = num % 10;
+                if (num === 20) return 'VEINTE';
+                if (num < 30) return 'VEINTI' + units[u];
+                return tens[t] + (u ? ' Y ' + units[u] : '');
+            }
+            if (num < 1000) {
+                const h = Math.floor(num / 100);
+                const rest = num % 100;
+                if (num === 100) return 'CIEN';
+                return hundreds[h] + (rest ? ' ' + numberToWords(rest) : '');
+            }
+            if (num < 1000000) {
+                const th = Math.floor(num / 1000);
+                const rest = num % 1000;
+                const prefix = th === 1 ? 'MIL' : numberToWords(th) + ' MIL';
+                return prefix + (rest ? ' ' + numberToWords(rest) : '');
+            }
+            return num.toString();
+        }
+        
+        function generatePreview() {
+            const data = {
+                tenantName: document.getElementById('tenantName').value.toUpperCase() || '[NOMBRE DEL ARRENDATARIO]',
+                civilStatus: document.getElementById('civilStatus').value || '[ESTADO CIVIL]',
+                tenantDNI: document.getElementById('tenantDNI').value || '[DNI]',
+                tenantRTN: document.getElementById('tenantRTN').value,
+                businessName: document.getElementById('businessName').value || '[NOMBRE DEL NEGOCIO]',
+                localNumber: document.getElementById('localNumber').value || '1',
+                localLocation: document.getElementById('localLocation').value,
+                rentLPS: parseFloat(document.getElementById('rentLPS').value) || 20000,
+                exchangeRate: parseFloat(document.getElementById('exchangeRate').value) || 25,
+                paymentDay: document.getElementById('paymentDay').value,
+                duration: document.getElementById('duration').value,
+                startDate: document.getElementById('startDate').value,
+                endDate: document.getElementById('endDate').value,
+                specialClauses: document.getElementById('specialClauses').value,
+                signDay: document.getElementById('signDay').value || '__',
+                signMonth: document.getElementById('signMonth').value,
+                signYear: document.getElementById('signYear').value
+            };
+            
+            const isv = data.rentLPS * 0.15;
+            const totalRent = data.rentLPS + isv;
+            const rentUSD = (data.rentLPS / data.exchangeRate).toFixed(2);
+            const deposit = data.rentLPS * 2;
+            
+            const rentWords = numberToWords(data.rentLPS);
+            const totalWords = numberToWords(Math.round(totalRent));
+            const depositWords = numberToWords(deposit);
+            
+            // Format dates
+            const formatDate = (dateStr) => {
+                if (!dateStr) return '[FECHA]';
+                const d = new Date(dateStr);
+                return d.toLocaleDateString('es-HN', { day: 'numeric', month: 'long', year: 'numeric' });
+            };
+            
+            const html = `
+                <h1>CONTRATO DE ARRENDAMIENTO DE LOCAL COMERCIAL</h1>
+                
+                <p><strong>NOSOTROS:</strong></p>
+                
+                <p>Por una parte, <strong>OSCAR RENE CASTILLO PACHECO</strong>, mayor de edad, estado civil CASADO, hondureño, con Documento Nacional de Identificación (DNI) N° 1618-1969-00075 y RTN N° 1618-1969-000750, con domicilio en QUIMISTÁN, SANTA BÁRBARA, quien en adelante se denominará "EL ARRENDADOR".</p>
+                
+                <p>Por otra parte, <strong>${data.tenantName}</strong>, mayor de edad, estado civil ${data.civilStatus}, hondureño(a), con DNI N° ${data.tenantDNI}${data.tenantRTN ? ' y RTN N° ' + data.tenantRTN : ''}, en adelante denominado(a) "EL ARRENDATARIO".</p>
+                
+                <p>Hemos convenido celebrar el presente CONTRATO DE ARRENDAMIENTO, sujeto a las siguientes cláusulas y condiciones:</p>
+                
+                <p class="clause-title">PRIMERA: DEL INMUEBLE Y DESTINO.</p>
+                <p>EL ARRENDADOR es propietario del inmueble denominado PLAZA ROSA DE CASTILLO, ubicado en el municipio de Quimistán, departamento de Santa Bárbara. Por medio del presente, cede en arrendamiento ${data.localNumber.includes('&') || data.localNumber.includes('y') ? 'los locales comerciales' : 'un (1) local comercial'} (${data.localNumber}) situado(s) en ${data.localLocation}. EL ARRENDATARIO declara recibir el local en perfectas condiciones de funcionamiento, incluyendo pintura, cielo falso, piso de cerámica, sistema eléctrico, servicios sanitarios, puertas y ventanas, obligándose a devolverlo en el mismo estado, salvo el deterioro normal por el uso prudente. El local será destinado exclusivamente para actividades comerciales lícitas${data.businessName ? ' (' + data.businessName + ')' : ''}.</p>
+                
+                <p class="clause-title">SEGUNDA: PRECIO, ISV Y PROTECCIÓN CAMBIARIA.</p>
+                <p>El valor del arrendamiento mensual base se pacta en la cantidad de <strong>${rentWords} LEMPIRAS EXACTOS (L. ${data.rentLPS.toLocaleString()}.00)</strong>.</p>
+                <ul style="margin-left: 20px; margin-bottom: 12px;">
+                    <li><strong>Impuesto Sobre Ventas (ISV):</strong> Al valor base de la renta se le sumará el 15% del Impuesto Sobre Ventas, siendo el monto total a pagar mensualmente de <strong>${totalWords} LEMPIRAS EXACTOS (L. ${totalRent.toLocaleString()}.00)</strong>. Si el Estado de Honduras modificara la tasa del impuesto, el pago total se ajustará automáticamente.</li>
+                    <li><strong>Indexación al Dólar:</strong> Para proteger el valor adquisitivo de la renta, las partes acuerdan que la renta base de L. ${data.rentLPS.toLocaleString()}.00 es equivalente a <strong>$${rentUSD} USD</strong> (Tasa de Cambio BCH: L. ${data.exchangeRate} por $1 USD a la fecha de firma). Si la moneda nacional (Lempira) sufriera una devaluación frente al Dólar, la renta base en Lempiras se ajustará proporcionalmente para mantener el mismo valor equivalente en Dólares pactado originalmente.</li>
+                    <li><strong>Fecha de Pago:</strong> La renta se pagará por anticipado el día ${data.paymentDay} de cada mes.</li>
+                    <li><strong>Incremento Anual:</strong> El canon de arrendamiento (Renta Base) sufrirá un incremento automático del 3% anual sobre el valor del año inmediato anterior.</li>
+                </ul>
+                
+                <p class="clause-title">TERCERA: MORA Y SANCIONES.</p>
+                <p>Se concede un período de gracia de cinco (5) días calendario después de la fecha de pago establecida. Si el pago no se efectúa dentro de este plazo, se aplicará automáticamente un recargo del 5% sobre la mensualidad adeudada. La falta de pago de dos (2) mensualidades consecutivas dará derecho a EL ARRENDADOR a rescindir el contrato y exigir la desocupación inmediata.</p>
+                
+                <p class="clause-title">CUARTA: DEPÓSITO DE GARANTÍA.</p>
+                <p>A la firma de este contrato, EL ARRENDATARIO entrega la cantidad de <strong>${depositWords} LEMPIRAS EXACTOS (L. ${deposit.toLocaleString()}.00)</strong> en concepto de Depósito de Garantía. Este depósito NO podrá utilizarse para pagar mensualidades de renta. Será devuelto treinta (30) días después de la finalización del contrato, previa deducción de posibles daños al local o deudas de servicios públicos.</p>
+                
+                <p class="clause-title">QUINTA: DURACIÓN.</p>
+                <p>El plazo es de <strong>${data.duration === '1' ? 'UN (1) AÑO' : data.duration + ' (' + numberToWords(parseInt(data.duration)) + ') AÑOS'}</strong>, iniciando el ${formatDate(data.startDate)} y finalizando el ${formatDate(data.endDate)}. EL ARRENDATARIO se obliga forzosamente por el término de un (1) año mínimo. En caso de retiro anticipado sin preaviso de dos meses, pagará una penalización de dos (2) meses de renta.</p>
+                
+                <p class="clause-title">SEXTA: SERVICIOS PÚBLICOS Y LIMPIEZA.</p>
+                <p>Serán por cuenta de EL ARRENDATARIO: energía eléctrica, agua, internet, recolección de basura y otros. Asimismo, es responsable de la limpieza del área frente a su local.</p>
+                
+                <p class="clause-title">SÉPTIMA: MEJORAS Y RESTAURACIÓN.</p>
+                <p>EL ARRENDATARIO podrá realizar instalaciones (aires acondicionados, divisiones). Al finalizar el contrato, podrá retirarlas, pero tiene la obligación estricta de resanar, sellar y pintar cualquier daño en paredes, techos o pisos para devolver el local a su Estado Original.</p>
+                
+                <p class="clause-title">OCTAVA: ESTACIONAMIENTO.</p>
+                <p>Los espacios de estacionamiento son para uso rotativo de clientes. EL ARRENDATARIO y su personal podrán utilizar un máximo de un (1) espacio, debiendo estacionarse en las áreas designadas para no obstaculizar el flujo comercial. EL ARRENDADOR no se hace responsable por daños o robos en vehículos.</p>
+                
+                <p class="clause-title">NOVENA: RÓTULOS Y PUBLICIDAD.</p>
+                <p>EL ARRENDATARIO podrá instalar rótulos previa aprobación de EL ARRENDADOR sobre tamaño y ubicación. Los costos, impuestos municipales y el mantenimiento del rótulo son responsabilidad de EL ARRENDATARIO. Al retirarlos, deberá reparar la fachada.</p>
+                
+                <p class="clause-title">DÉCIMA: PROHIBICIONES.</p>
+                <p>Queda prohibido subarrendar sin autorización, almacenar materiales peligrosos o ilícitos, y utilizar el local para fines ajenos al comercio.</p>
+                
+                <p class="clause-title">DÉCIMA PRIMERA: ACEPTACIÓN.</p>
+                <p>EL ARRENDATARIO renuncia al fuero de su domicilio y se somete a los tribunales de la ciudad de Quimistán o Santa Bárbara.</p>
+                
+                ${data.specialClauses ? `
+                <p class="clause-title">DÉCIMA SEGUNDA: CLÁUSULAS ESPECIALES.</p>
+                <p>${data.specialClauses}</p>
+                ` : ''}
+                
+                <p style="margin-top: 30px;">En fe de lo cual, firmamos en Quimistán, Santa Bárbara, a los <strong>${data.signDay}</strong> días del mes de <strong>${data.signMonth}</strong> del año <strong>${data.signYear}</strong>.</p>
+                
+                <div class="signature-block">
+                    <div class="signature-line">
+                        OSCAR RENE CASTILLO PACHECO<br>
+                        "EL ARRENDADOR"
+                    </div>
+                    
+                    <div class="signature-line" style="margin-left: 50px;">
+                        ${data.tenantName}<br>
+                        "EL ARRENDATARIO"
+                    </div>
+                </div>
+            `;
+            
+            document.getElementById('contractPreview').innerHTML = html;
+            document.getElementById('contractPreview').classList.add('show');
+            document.getElementById('contractPreview').scrollIntoView({ behavior: 'smooth' });
+        }
+        
+        function printContract() {
+            generatePreview();
+            
+            // Set dynamic filename for PDF
+            const businessName = document.getElementById('businessName').value || 
+                                 document.getElementById('tenantName').value || 
+                                 'Contrato';
+            const duration = document.getElementById('duration').value;
+            const cleanName = businessName.replace(/[^a-zA-Z0-9áéíóúñÁÉÍÓÚÑ\s]/g, '').replace(/\s+/g, '');
+            const filename = `${cleanName}_${duration}años`;
+            
+            // Update document title for PDF filename
+            const originalTitle = document.title;
+            document.title = filename;
+            
+            setTimeout(() => {
+                window.print();
+                // Restore original title after print dialog
+                setTimeout(() => { document.title = originalTitle; }, 1000);
+            }, 500);
+        }
+        
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            calculateTotals();
+            
+            // Set default start date to today
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('startDate').value = today;
+            calculateEndDate();
+        });
+    </script>
+</body>
+</html>
