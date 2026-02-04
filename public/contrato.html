@@ -311,7 +311,7 @@
             <div class="form-row">
                 <div class="form-group">
                     <label>Renta Mensual Base (Lempiras)</label>
-                    <input type="number" id="rentLPS" placeholder="20000" oninput="calculateTotals()">
+                    <input type="number" id="rentLPS" placeholder="Ej: 5000" oninput="calculateTotals()">
                 </div>
                 <div class="form-group">
                     <label>Tipo de Cambio (L. por $1 USD)</label>
@@ -477,7 +477,7 @@
                 businessName: document.getElementById('businessName').value || '[NOMBRE DEL NEGOCIO]',
                 localNumber: document.getElementById('localNumber').value || '1',
                 localLocation: document.getElementById('localLocation').value,
-                rentLPS: parseFloat(document.getElementById('rentLPS').value) || 20000,
+                rentLPS: parseFloat(document.getElementById('rentLPS').value) || 0,
                 exchangeRate: parseFloat(document.getElementById('exchangeRate').value) || 25,
                 paymentDay: document.getElementById('paymentDay').value,
                 duration: document.getElementById('duration').value,
