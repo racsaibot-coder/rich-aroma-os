@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>⭐ Loyalty - Rich Aroma</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --dark-bg: #0f0d0b;
+            --card-bg: #1a1714;
+            --caramel: #D4A574;
+            --cream: #F5EDE4;
+            --success: #22c55e;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--dark-bg);
+            color: var(--cream);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 25px;
+        }
+        .title { font-size: 1.5rem; color: var(--caramel); }
+        .search-box {
+            background: var(--card-bg);
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        .search-input {
+            width: 100%;
+            padding: 15px;
+            background: #252220;
+            border: none;
+            border-radius: 10px;
+            color: var(--cream);
+            font-size: 1rem;
+            margin-bottom: 15px;
+        }
+        .search-btn {
+            width: 100%;
+            padding: 15px;
+            background: var(--caramel);
+            border: none;
+            border-radius: 10px;
+            color: #000;
+            font-weight: 600;
+            cursor: pointer;
+        }
+        .customer-card {
+            background: var(--card-bg);
+            border-radius: 15px;
+            padding: 20px;
+            display: none;
+        }
+        .customer-card.show { display: block; }
+        .customer-header {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        .customer-avatar {
+            width: 60px;
+            height: 60px;
+            background: var(--caramel);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+        }
+        .customer-name { font-size: 1.3rem; font-weight: 600; }
+        .customer-phone { color: #888; }
+        .points-display {
+            background: linear-gradient(135deg, #C9A66B, #8B7355);
+            border-radius: 15px;
+            padding: 25px;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .points-value {
+            font-size: 3rem;
+            font-weight: 700;
+        }
+        .points-label { opacity: 0.8; }
+        .progress-bar {
+            height: 10px;
+            background: rgba(0,0,0,0.3);
+            border-radius: 5px;
+            margin-top: 15px;
+            overflow: hidden;
+        }
+        .progress-fill {
+            height: 100%;
+            background: #fff;
+            border-radius: 5px;
+        }
+        .next-reward { font-size: 0.85rem; margin-top: 10px; opacity: 0.8; }
+        .actions {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+        .action-btn {
+            padding: 15px;
+            border: none;
+            border-radius: 10px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+        .action-add { background: var(--success); color: #000; }
+        .action-redeem { background: #333; color: var(--cream); }
+        .history {
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid #333;
+        }
+        .history-title { color: var(--caramel); margin-bottom: 15px; }
+        .history-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 0;
+            border-bottom: 1px solid #252220;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="title">⭐ Loyalty Program</div>
+    </div>
+
+    <div class="search-box">
+        <input type="tel" class="search-input" id="phoneInput" placeholder="📱 Enter phone number...">
+        <button class="search-btn" onclick="lookupCustomer()">Find Customer</button>
+    </div>
+
+    <div class="customer-card" id="customerCard">
+        <div class="customer-header">
+            <div class="customer-avatar">☕</div>
+            <div>
+                <div class="customer-name" id="custName">Maria López</div>
+                <div class="customer-phone" id="custPhone">+504 9999-1234</div>
+            </div>
+        </div>
+
+        <div class="points-display">
+            <div class="points-value" id="points">85</div>
+            <div class="points-label">Rico Points</div>
+            <div class="progress-bar">
+                <div class="progress-fill" id="progressFill" style="width: 85%"></div>
+            </div>
+            <div class="next-reward">15 more points for a FREE drink!</div>
+        </div>
+
+        <div class="actions">
+            <button class="action-btn action-add" onclick="addPoints()">+ Add Points</button>
+            <button class="action-btn action-redeem" onclick="redeemReward()">🎁 Redeem</button>
+        </div>
+
+        <div class="history">
+            <div class="history-title">Recent Activity</div>
+            <div class="history-item">
+                <span>Latte purchase</span>
+                <span style="color: var(--success)">+10 pts</span>
+            </div>
+            <div class="history-item">
+                <span>Croissant purchase</span>
+                <span style="color: var(--success)">+5 pts</span>
+            </div>
+            <div class="history-item">
+                <span>Free drink redeemed</span>
+                <span style="color: #ef4444">-100 pts</span>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function lookupCustomer() {
+            const phone = document.getElementById('phoneInput').value;
+            if (phone.length >= 4) {
+                document.getElementById('customerCard').classList.add('show');
+            }
+        }
+
+        function addPoints() {
+            const current = parseInt(document.getElementById('points').textContent);
+            document.getElementById('points').textContent = current + 10;
+            document.getElementById('progressFill').style.width = Math.min(100, current + 10) + '%';
+            alert('Added 10 Rico Points! ⭐');
+        }
+
+        function redeemReward() {
+            const current = parseInt(document.getElementById('points').textContent);
+            if (current >= 100) {
+                document.getElementById('points').textContent = current - 100;
+                document.getElementById('progressFill').style.width = (current - 100) + '%';
+                alert('🎉 FREE DRINK REDEEMED!');
+            } else {
+                alert('Need 100 points to redeem. Current: ' + current);
+            }
+        }
+    </script>
+</body>
+</html>

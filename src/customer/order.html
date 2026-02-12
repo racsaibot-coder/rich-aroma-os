@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#1E1610">
+    <title>Rich Aroma Menu</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #1E1610;
+            --card: #2A201C;
+            --gold: #C9A66B;
+            --text: #F5F0EB;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', sans-serif; }
+        body { background: var(--bg); color: var(--text); padding-bottom: 80px; }
+        
+        .hero {
+            background: linear-gradient(rgba(30,22,16,0.3), var(--bg)), url('https://images.unsplash.com/photo-1497935586351-b67a49e012bf?auto=format&fit=crop&w=800&q=80');
+            background-size: cover;
+            background-position: center;
+            height: 200px;
+            display: flex;
+            align-items: flex-end;
+            padding: 1.5rem;
+        }
+        .hero h1 { font-size: 2rem; font-weight: 800; text-shadow: 0 2px 10px rgba(0,0,0,0.5); }
+        .hero span { color: var(--gold); }
+
+        .categories {
+            display: flex; gap: 1rem; overflow-x: auto; padding: 1.5rem;
+            position: sticky; top: 0; background: var(--bg); z-index: 10;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+        }
+        .cat-btn {
+            background: var(--card); color: rgba(255,255,255,0.6);
+            padding: 0.6rem 1.2rem; border-radius: 20px; border: 1px solid rgba(255,255,255,0.1);
+            white-space: nowrap; font-weight: 600; font-size: 0.9rem;
+        }
+        .cat-btn.active { background: var(--gold); color: #000; border-color: var(--gold); }
+
+        .menu-list { padding: 0 1.5rem; }
+        .item-card {
+            display: flex; justify-content: space-between; align-items: center;
+            background: var(--card); border-radius: 16px; padding: 1rem;
+            margin-bottom: 1rem; border: 1px solid rgba(255,255,255,0.05);
+        }
+        .item-info h3 { font-size: 1.1rem; margin-bottom: 0.3rem; }
+        .item-info p { font-size: 0.85rem; color: rgba(255,255,255,0.5); }
+        .item-price { font-weight: 800; color: var(--gold); font-size: 1.1rem; }
+
+        .fab {
+            position: fixed; bottom: 20px; right: 20px;
+            background: var(--gold); color: #000;
+            width: 60px; height: 60px; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.5rem; box-shadow: 0 4px 20px rgba(201,166,107,0.4);
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <div class="hero">
+        <h1>Rich Aroma<br><span>Menu</span></h1>
+    </div>
+
+    <div class="categories" id="categories">
+        <!-- Injected via JS -->
+    </div>
+
+    <div class="menu-list" id="menuList">
+        <!-- Injected via JS -->
+    </div>
+
+    <div class="fab" onclick="alert('Waiter called! 🔔')">🔔</div>
+
+    <script>
+        let menuData = [];
+
+        async function init() {
+            try {
+                const res = await fetch('/api/menu');
+                const data = await res.json();
+                menuData = data.categories;
+                renderCategories();
+                renderItems(menuData[0].id);
+            } catch (e) {
+                console.error("Menu load failed", e);
+            }
+        }
+
+        function renderCategories() {
+            const container = document.getElementById('categories');
+            container.innerHTML = menuData.map((cat, idx) => `
+                <div class="cat-btn ${idx === 0 ? 'active' : ''}" 
+                     onclick="renderItems('${cat.id}'); setActive(this)">
+                    ${cat.icon} ${cat.name}
+                </div>
+            `).join('');
+        }
+
+        function setActive(el) {
+            document.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('active'));
+            el.classList.add('active');
+        }
+
+        function renderItems(catId) {
+            const category = menuData.find(c => c.id === catId);
+            const container = document.getElementById('menuList');
+            
+            container.innerHTML = category.items.map(item => `
+                <div class="item-card">
+                    <div class="item-info">
+                        <h3>${item.name}</h3>
+                        <p>Rich & Delicious</p>
+                    </div>
+                    <div class="item-price">L ${item.price}</div>
+                </div>
+            `).join('');
+        }
+
+        init();
+    </script>
+</body>
+</html>

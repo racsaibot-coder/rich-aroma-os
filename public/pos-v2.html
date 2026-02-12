@@ -1,0 +1,581 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rich Aroma POS v2.0 (Smart Upgrade)</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        .blink-urgent { animation: pulse-red 2s infinite; }
+        @keyframes pulse-red {
+            0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); }
+            70% { box-shadow: 0 0 0 10px rgba(239, 68, 68, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+        }
+        .mic-active {
+            background-color: #ef4444 !important;
+            animation: pulse-mic 1s infinite;
+        }
+        @keyframes pulse-mic {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); }
+        }
+    </style>
+</head>
+<body class="bg-gray-100 h-screen flex overflow-hidden">
+
+    <!-- PIN SETUP MODAL -->
+    <div id="pin-modal" class="hidden fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50">
+        <div class="bg-white w-1/3 rounded-2xl shadow-2xl p-8 text-center">
+            <div class="mb-4">
+                <span class="text-6xl">👻</span>
+            </div>
+            <h2 class="text-2xl font-bold text-gray-800 mb-2">Ghost Account Detected!</h2>
+            <p class="text-gray-600 mb-6">This player won rewards but hasn't set up their security PIN yet. Ask them to choose a 4-digit PIN.</p>
+            
+            <input type="password" id="new-pin" maxlength="4" class="text-center text-4xl tracking-widest w-full border-2 border-gray-300 rounded-xl p-4 mb-6 focus:border-blue-500 outline-none" placeholder="0000">
+            
+            <button onclick="savePin()" class="w-full bg-blue-600 text-white py-4 rounded-xl font-bold text-xl shadow-lg hover:bg-blue-700">
+                Set PIN & Activate
+            </button>
+        </div>
+    </div>
+
+    <!-- MODIFIER MODAL (Hidden by default) -->
+    <div id="modifier-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div class="bg-white w-2/3 h-3/4 rounded-2xl shadow-2xl flex flex-col overflow-hidden">
+            <!-- Header -->
+            <div class="p-6 border-b border-gray-200 flex justify-between items-center bg-gray-50">
+                <div>
+                    <h2 class="text-2xl font-bold" id="mod-item-name">Latte</h2>
+                    <p class="text-green-600 font-mono text-xl" id="mod-item-price">L. 55.00</p>
+                </div>
+                <button onclick="closeModal()" class="text-gray-400 hover:text-red-500 text-3xl">&times;</button>
+            </div>
+
+            <!-- Scrollable Options -->
+            <div class="flex-1 overflow-y-auto p-6 space-y-8">
+                
+                <!-- Milk Section -->
+                <div>
+                    <h3 class="font-bold text-gray-500 uppercase text-sm mb-3">Milk / Leche</h3>
+                    <div class="grid grid-cols-4 gap-3" id="mod-milk">
+                        <button onclick="selectMod('milk', 'Whole', 0, this)" class="mod-btn selected border-2 border-blue-500 bg-blue-50 p-4 rounded-xl font-bold">Whole (Std)</button>
+                        <button onclick="selectMod('milk', 'Oat', 15, this)" class="mod-btn border border-gray-200 p-4 rounded-xl hover:bg-gray-50">Oat (+15)</button>
+                        <button onclick="selectMod('milk', 'Almond', 15, this)" class="mod-btn border border-gray-200 p-4 rounded-xl hover:bg-gray-50">Almond (+15)</button>
+                        <button onclick="selectMod('milk', 'Soy', 15, this)" class="mod-btn border border-gray-200 p-4 rounded-xl hover:bg-gray-50">Soy (+15)</button>
+                    </div>
+                </div>
+
+                <!-- Syrup Section -->
+                <div>
+                    <h3 class="font-bold text-gray-500 uppercase text-sm mb-3">Flavor / Sabor</h3>
+                    <div class="grid grid-cols-4 gap-3" id="mod-syrup">
+                        <button onclick="selectMod('syrup', 'None', 0, this)" class="mod-btn selected border-2 border-blue-500 bg-blue-50 p-4 rounded-xl font-bold">None</button>
+                        <button onclick="selectMod('syrup', 'Vanilla', 10, this)" class="mod-btn border border-gray-200 p-4 rounded-xl hover:bg-gray-50">Vanilla (+10)</button>
+                        <button onclick="selectMod('syrup', 'Caramel', 10, this)" class="mod-btn border border-gray-200 p-4 rounded-xl hover:bg-gray-50">Caramel (+10)</button>
+                        <button onclick="selectMod('syrup', 'Hazelnut', 10, this)" class="mod-btn border border-gray-200 p-4 rounded-xl hover:bg-gray-50">Hazelnut (+10)</button>
+                    </div>
+                </div>
+
+                <!-- Shots Section -->
+                <div>
+                    <h3 class="font-bold text-gray-500 uppercase text-sm mb-3">Espresso Shots</h3>
+                    <div class="flex items-center gap-4 bg-gray-100 p-2 rounded-xl w-max">
+                        <button onclick="adjustShots(-1)" class="w-12 h-12 bg-white rounded-lg shadow font-bold text-xl hover:bg-gray-50">-</button>
+                        <span id="shot-count" class="text-2xl font-bold w-8 text-center">1</span>
+                        <button onclick="adjustShots(1)" class="w-12 h-12 bg-white rounded-lg shadow font-bold text-xl hover:bg-gray-50">+</button>
+                    </div>
+                </div>
+
+                <!-- Custom Note -->
+                <div>
+                    <h3 class="font-bold text-gray-500 uppercase text-sm mb-3">Custom Note / Nota</h3>
+                    <input type="text" id="mod-note" placeholder="e.g. Extra hot, no foam..." class="w-full p-4 border border-gray-300 rounded-xl text-lg">
+                </div>
+
+            </div>
+
+            <!-- Footer Action -->
+            <div class="p-6 border-t border-gray-200 bg-gray-50">
+                <button onclick="confirmItem()" class="w-full bg-blue-600 text-white py-4 rounded-xl font-bold text-xl shadow-lg hover:bg-blue-700 flex justify-between px-8">
+                    <span>Add to Order</span>
+                    <span id="mod-final-price">L. 55.00</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- LEFT: MENU & CART -->
+    <div class="w-2/3 flex flex-col border-r border-gray-300">
+        
+        <!-- Header -->
+        <div class="bg-white p-4 flex justify-between items-center shadow-sm">
+            <h1 class="text-2xl font-bold text-gray-800">☕️ POS v2.0</h1>
+            <div class="flex gap-3">
+                <button onclick="toggleVoice()" id="mic-btn" class="bg-blue-600 text-white px-6 py-2 rounded-full font-bold shadow-lg hover:bg-blue-700 transition flex items-center gap-2">
+                    <i class="fas fa-microphone"></i> Voice Order
+                </button>
+                <div class="bg-green-100 text-green-800 px-4 py-2 rounded-lg font-mono">
+                    System: ONLINE 🟢
+                </div>
+            </div>
+        </div>
+
+        <!-- Smart Upsell Banner (Dynamic) -->
+        <div id="upsell-banner" class="hidden bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-4 mx-4 mt-4 rounded shadow-md flex justify-between items-center">
+            <div>
+                <p class="font-bold"><i class="fas fa-lightbulb"></i> Smart Suggestion:</p>
+                <p id="upsell-text">We have excess 🍌 Bananas. Upsell Banana Bread @ 50% OFF?</p>
+            </div>
+            <button onclick="addUpsell()" class="bg-yellow-500 text-white px-4 py-2 rounded font-bold hover:bg-yellow-600">
+                Add to Cart (+L.45)
+            </button>
+        </div>
+
+        <!-- Menu Grid -->
+        <div class="p-4 overflow-y-auto grid grid-cols-4 gap-4" id="menu-grid">
+            <!-- Items injected via JS -->
+        </div>
+    </div>
+
+    <!-- RIGHT: CART & WHATSAPP BOT SIM -->
+    <div class="w-1/3 bg-white flex flex-col shadow-xl z-10">
+        
+        <!-- Customer Info -->
+        <div class="p-4 border-b border-gray-200 bg-gray-50">
+            <div class="flex gap-2 mb-2">
+                <input type="text" placeholder="Phone / Loyalty ID" class="w-full p-2 border rounded" id="cust-id">
+                <button onclick="lookupCustomer()" class="bg-gray-800 text-white px-4 rounded"><i class="fas fa-search"></i></button>
+            </div>
+            <div id="cust-profile" class="hidden">
+                <h3 class="font-bold text-lg text-blue-600">Oscar Castillo ⭐️ VIP</h3>
+                <p class="text-sm text-gray-500">Usual: Double Espresso • Balance: L. 500</p>
+            </div>
+        </div>
+
+        <!-- Cart Items -->
+        <div class="flex-1 overflow-y-auto p-4" id="cart-items">
+            <!-- Cart items go here -->
+            <div class="text-center text-gray-400 mt-10">Cart is empty</div>
+        </div>
+
+        <!-- Totals -->
+        <div class="p-6 bg-gray-50 border-t border-gray-200">
+            <div class="flex justify-between text-xl font-bold mb-4">
+                <span>Total:</span>
+                <span id="cart-total">L. 0.00</span>
+            </div>
+            <button class="w-full bg-green-600 text-white py-4 rounded-xl font-bold text-xl shadow hover:bg-green-700">
+                CHARGE (Enter)
+            </button>
+        </div>
+
+        <!-- WhatsApp Bot Simulator Tab -->
+        <div class="bg-gray-800 text-white p-2 text-center cursor-pointer hover:bg-gray-700" onclick="toggleBotPanel()">
+            <i class="fab fa-whatsapp"></i> Incoming WhatsApp Orders (2)
+        </div>
+        
+        <!-- Bot Panel (Overlay) -->
+        <div id="bot-panel" class="hidden absolute bottom-0 right-0 w-full h-1/2 bg-white border-t-4 border-green-500 shadow-2xl flex flex-col">
+            <div class="bg-green-600 text-white p-3 flex justify-between">
+                <span class="font-bold">🤖 Captain Rico Bot</span>
+                <button onclick="toggleBotPanel()">✕</button>
+            </div>
+            <div class="flex-1 overflow-y-auto p-4 bg-gray-100 space-y-3" id="whatsapp-feed">
+                <!-- Messages go here -->
+            </div>
+        </div>
+
+    </div>
+
+<script>
+    // --- DATA ---
+    // Updated with Stock Images
+    const menu = [
+        { id: 1, name: "Espresso", price: 35, category: "coffee", icon: "☕️", image: "https://images.unsplash.com/photo-1510591509098-f4fdc6d0ff04?w=400&q=80" },
+        { id: 2, name: "Latte", price: 55, category: "coffee", icon: "🥛", image: "https://images.unsplash.com/photo-1570968992272-1512fdad694d?w=400&q=80" },
+        { id: 3, name: "Cappuccino", price: 55, category: "coffee", icon: "🌫️", image: "https://images.unsplash.com/photo-1572442388796-11668a67e53d?w=400&q=80" },
+        { id: 4, name: "Cold Brew", price: 65, category: "cold", icon: "🧊", image: "https://images.unsplash.com/photo-1517701604599-bb29b5c7fa69?w=400&q=80" },
+        { id: 5, name: "Mocha", price: 70, category: "coffee", icon: "🍫", image: "https://images.unsplash.com/photo-1578314675249-a6910f80cc4e?w=400&q=80" },
+        { id: 6, name: "Banana Bread", price: 45, category: "food", icon: "🍌", image: "https://images.unsplash.com/photo-1603532648955-039310d9ed75?w=400&q=80" },
+        { id: 7, name: "Chicken Panini", price: 120, category: "food", icon: "🥪", image: "https://images.unsplash.com/photo-1528735602780-2552fd46c7af?w=400&q=80" },
+        { id: 8, name: "Avocado Toast", price: 95, category: "food", icon: "🥑", image: "https://images.unsplash.com/photo-1588137372308-15f75323ca8d?w=400&q=80" },
+        { id: 9, name: "Açaí Bowl", price: 140, category: "food", icon: "🫐", image: "https://images.unsplash.com/photo-1590301157890-4810ed352733?w=400&q=80" },
+    ];
+
+    let cart = [];
+    let recognition;
+
+    // --- INIT ---
+    window.onload = () => {
+        renderMenu();
+        checkInventoryUpsell();
+        simulateWhatsAppTraffic();
+    };
+
+    let currentItem = null;
+    let currentMods = {
+        milk: { name: 'Whole', price: 0 },
+        syrup: { name: 'None', price: 0 },
+        shots: 1,
+        note: ''
+    };
+
+    // --- RENDER MENU ---
+    function renderMenu() {
+        const grid = document.getElementById('menu-grid');
+        grid.innerHTML = menu.map(item => `
+            <div onclick="openModifier(${item.id})" class="bg-white rounded-xl shadow cursor-pointer hover:shadow-md hover:ring-4 hover:ring-blue-50 transition border border-gray-100 flex flex-col h-48 overflow-hidden group">
+                <div class="h-32 w-full overflow-hidden bg-gray-100">
+                    <img src="${item.image}" alt="${item.name}" class="w-full h-full object-cover group-hover:scale-110 transition duration-500">
+                </div>
+                <div class="p-3 flex justify-between items-center bg-white flex-1">
+                    <div class="font-bold text-gray-800 leading-tight">${item.name}</div>
+                    <div class="text-sm bg-green-100 text-green-700 px-2 py-1 rounded font-bold">L. ${item.price}</div>
+                </div>
+            </div>
+        `).join('');
+    }
+
+    // --- MODIFIER LOGIC ---
+    function openModifier(id) {
+        currentItem = menu.find(i => i.id === id);
+        
+        // Skip modal for simple items (food)
+        if(currentItem.category === 'food') {
+            addToCart(currentItem);
+            return;
+        }
+
+        // Reset mods
+        currentMods = { milk: { name: 'Whole', price: 0 }, syrup: { name: 'None', price: 0 }, shots: 1, note: '' };
+        document.getElementById('shot-count').innerText = "1";
+        document.getElementById('mod-note').value = "";
+        
+        // Reset UI selection
+        document.querySelectorAll('.mod-btn').forEach(btn => {
+            btn.classList.remove('selected', 'border-2', 'border-blue-500', 'bg-blue-50');
+            btn.classList.add('border', 'border-gray-200');
+            if(btn.innerText.includes('Whole') || btn.innerText.includes('None')) {
+                btn.classList.add('selected', 'border-2', 'border-blue-500', 'bg-blue-50');
+            }
+        });
+
+        document.getElementById('mod-item-name').innerText = currentItem.name;
+        updateModPrice();
+        document.getElementById('modifier-modal').classList.remove('hidden');
+    }
+
+    function closeModal() {
+        document.getElementById('modifier-modal').classList.add('hidden');
+    }
+
+    function selectMod(type, name, price, btnElement) {
+        currentMods[type] = { name, price };
+        
+        // UI Update
+        const parent = btnElement.parentElement;
+        parent.querySelectorAll('button').forEach(b => {
+            b.classList.remove('selected', 'border-2', 'border-blue-500', 'bg-blue-50');
+            b.classList.add('border', 'border-gray-200');
+        });
+        btnElement.classList.remove('border', 'border-gray-200');
+        btnElement.classList.add('selected', 'border-2', 'border-blue-500', 'bg-blue-50');
+        
+        updateModPrice();
+    }
+
+    function adjustShots(delta) {
+        currentMods.shots += delta;
+        if(currentMods.shots < 1) currentMods.shots = 1;
+        document.getElementById('shot-count').innerText = currentMods.shots;
+        updateModPrice();
+    }
+
+    function updateModPrice() {
+        let total = currentItem.price;
+        total += currentMods.milk.price;
+        total += currentMods.syrup.price;
+        // Logic: Extra shots cost +10 (Shot 1 included in base price)
+        if(currentMods.shots > 1) total += (currentMods.shots - 1) * 10;
+        
+        document.getElementById('mod-item-price').innerText = `L. ${total.toFixed(2)}`;
+        document.getElementById('mod-final-price').innerText = `L. ${total.toFixed(2)}`;
+    }
+
+    function confirmItem() {
+        const finalItem = {
+            ...currentItem,
+            mods: { ...currentMods }, // Clone
+            finalPrice: parseFloat(document.getElementById('mod-final-price').innerText.replace('L. ', '')),
+            note: document.getElementById('mod-note').value
+        };
+        addToCart(finalItem);
+        closeModal();
+    }
+
+    // --- CART LOGIC ---
+    function addToCart(itemOrId) {
+        // Handle direct ID call (from upsell/voice) vs object (from modal)
+        let item;
+        if (typeof itemOrId === 'number') {
+            item = { ...menu.find(i => i.id === itemOrId), finalPrice: menu.find(i => i.id === itemOrId).price };
+        } else {
+            item = itemOrId;
+        }
+        
+        cart.push(item);
+        renderCart();
+    }
+
+    function renderCart() {
+        const container = document.getElementById('cart-items');
+        if (cart.length === 0) {
+            container.innerHTML = '<div class="text-center text-gray-400 mt-10">Cart is empty</div>';
+            document.getElementById('cart-total').innerText = 'L. 0.00';
+            return;
+        }
+
+        container.innerHTML = cart.map((item, index) => {
+            // Build modifier string
+            let modString = "";
+            if (item.mods) {
+                if (item.mods.milk.name !== 'Whole') modString += `• ${item.mods.milk.name} `;
+                if (item.mods.syrup.name !== 'None') modString += `• ${item.mods.syrup.name} `;
+                if (item.mods.shots > 1) modString += `• ${item.mods.shots} shots `;
+                if (item.note) modString += `• 📝 "${item.note}"`;
+            }
+
+            return `
+            <div class="flex justify-between items-start mb-3 bg-gray-50 p-3 rounded">
+                <div>
+                    <div class="flex items-center gap-2">
+                        <span>${item.icon}</span>
+                        <span class="font-bold">${item.name}</span>
+                    </div>
+                    ${modString ? `<div class="text-xs text-gray-500 mt-1 ml-6">${modString}</div>` : ''}
+                </div>
+                <div class="flex items-center gap-3">
+                    <span class="font-mono">L. ${item.finalPrice.toFixed(2)}</span>
+                    <button onclick="removeFromCart(${index})" class="text-red-500 hover:text-red-700">✕</button>
+                </div>
+            </div>
+        `}).join('');
+
+        const total = cart.reduce((sum, item) => sum + item.finalPrice, 0);
+        document.getElementById('cart-total').innerText = `L. ${total.toFixed(2)}`;
+    }
+
+    function removeFromCart(index) {
+        cart.splice(index, 1);
+        renderCart();
+    }
+
+    // --- FEATURE 1: SMART UPSELL (INVENTORY LOGIC) ---
+    function checkInventoryUpsell() {
+        // Mocking an inventory check. In real app, fetch from /api/inventory
+        const expiringItem = "Banana Bread"; // Logic: High stock + near expiry
+        const discountPrice = 45; // Logic: 50% off
+        
+        setTimeout(() => {
+            const banner = document.getElementById('upsell-banner');
+            document.getElementById('upsell-text').innerHTML = `Only <b>5</b> ${expiringItem}s left! Suggest <b>Upsell</b>?`;
+            banner.classList.remove('hidden');
+            banner.classList.add('flex');
+        }, 2000);
+    }
+
+    function addUpsell() {
+        addToCart(6); // Add Banana Bread
+        document.getElementById('upsell-banner').classList.add('hidden');
+    }
+
+    // --- FEATURE 2: VOICE ORDER (WEB SPEECH API) ---
+    function toggleVoice() {
+        if (!('webkitSpeechRecognition' in window)) {
+            alert("Voice API not supported in this browser. Use Chrome.");
+            return;
+        }
+
+        const btn = document.getElementById('mic-btn');
+        
+        if (recognition && recognition.active) {
+            recognition.stop();
+            return;
+        }
+
+        recognition = new webkitSpeechRecognition();
+        recognition.lang = 'es-ES'; // Spanish default for Honduras
+        recognition.continuous = false;
+        recognition.interimResults = false;
+
+        recognition.onstart = () => {
+            recognition.active = true;
+            btn.classList.add('mic-active');
+            btn.innerHTML = '<i class="fas fa-wave-square"></i> Listening...';
+        };
+
+        recognition.onend = () => {
+            recognition.active = false;
+            btn.classList.remove('mic-active');
+            btn.innerHTML = '<i class="fas fa-microphone"></i> Voice Order';
+        };
+
+        recognition.onresult = (event) => {
+            const transcript = event.results[0][0].transcript.toLowerCase();
+            console.log("Heard:", transcript);
+            processVoiceCommand(transcript);
+        };
+
+        recognition.start();
+    }
+
+    function processVoiceCommand(text) {
+        // Simple keyword matching (NLP Light)
+        // "Quiero un latte y dos mocas"
+        
+        // Map Spanish/English words to IDs
+        const keywords = {
+            "espresso": 1, "café": 1, "expreso": 1,
+            "latte": 2, "late": 2, "leche": 2,
+            "cappuccino": 3, "capuchino": 3,
+            "cold brew": 4, "frío": 4,
+            "mocha": 5, "moca": 5, "chocolate": 5,
+            "banana": 6, "pan": 6,
+            "panini": 7, "pollo": 7, "sandwich": 7,
+            "avocado": 8, "tostada": 8, "aguacate": 8,
+            "açaí": 9, "acai": 9, "bowl": 9
+        };
+
+        let found = false;
+        for (const [word, id] of Object.entries(keywords)) {
+            if (text.includes(word)) {
+                addToCart(id);
+                found = true;
+            }
+        }
+
+        if (!found) alert(`Didn't catch that. Heard: "${text}"`);
+    }
+
+    // --- FEATURE 3: WHATSAPP BOT SIMULATION ---
+    function toggleBotPanel() {
+        const panel = document.getElementById('bot-panel');
+        panel.classList.toggle('hidden');
+    }
+
+    function simulateWhatsAppTraffic() {
+        const feed = document.getElementById('whatsapp-feed');
+        const messages = [
+            { name: "Maria L.", text: "Quiero un Latte Grande", time: "10:02 AM" },
+            { name: "Carlos R.", text: "2 Cold Brews para llevar", time: "10:05 AM" }
+        ];
+
+        let i = 0;
+        setInterval(() => {
+            if (i >= messages.length) return;
+            const msg = messages[i];
+            
+            const div = document.createElement('div');
+            div.className = "bg-white p-3 rounded shadow-sm border-l-4 border-green-500";
+            div.innerHTML = `
+                <div class="flex justify-between text-xs text-gray-500">
+                    <span class="font-bold text-gray-800">${msg.name}</span>
+                    <span>${msg.time}</span>
+                </div>
+                <div class="text-sm mt-1">"${msg.text}"</div>
+                <button onclick="autoFillOrder('${msg.text}')" class="mt-2 text-xs bg-blue-100 text-blue-600 px-2 py-1 rounded hover:bg-blue-200 w-full text-left">
+                    ⚡️ Auto-Create Order
+                </button>
+            `;
+            feed.prepend(div);
+            
+            // Notification sound logic here
+            i++;
+        }, 5000);
+    }
+
+    function autoFillOrder(text) {
+        processVoiceCommand(text.toLowerCase()); // Reuse the NLP logic
+        alert("Order created from WhatsApp message!");
+    }
+
+    // --- FEATURE 4: CUSTOMER LOOKUP ---
+    let currentCustomerId = null;
+
+    async function lookupCustomer() {
+        const query = document.getElementById('cust-id').value;
+        if (!query) return;
+
+        try {
+            const res = await fetch(`/api/customers/phone/${query}`);
+            const data = await res.json();
+
+            if (res.ok) {
+                currentCustomerId = data.id;
+                const profile = document.getElementById('cust-profile');
+                profile.innerHTML = `
+                    <h3 class="font-bold text-lg text-blue-600">${data.name} ${data.is_vip ? '⭐️ VIP' : ''}</h3>
+                    <p class="text-sm text-gray-500">Balance: L. ${data.cash_balance || 0} • Pts: ${data.points || 0}</p>
+                `;
+                profile.classList.remove('hidden');
+
+                // Check Ghost Account Status
+                if (data.pin === null || (data.notes && data.notes.includes('GHOST_ACCOUNT'))) {
+                    openPinModal();
+                }
+
+            } else {
+                if(confirm("Customer not found. Create new profile?")) {
+                    // Simple quick create logic could go here
+                    alert("Quick create not implemented in V2 prototype yet.");
+                }
+            }
+        } catch (e) {
+            console.error(e);
+            alert("Error looking up customer");
+        }
+    }
+
+    function openPinModal() {
+        document.getElementById('pin-modal').classList.remove('hidden');
+        document.getElementById('new-pin').focus();
+    }
+
+    async function savePin() {
+        const pin = document.getElementById('new-pin').value;
+        if (pin.length !== 4) {
+            alert("PIN must be 4 digits");
+            return;
+        }
+
+        try {
+            const res = await fetch(`/api/customers/${currentCustomerId}`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ 
+                    pin: pin,
+                    notes: 'Active Account (PIN Set)' // Clear the ghost flag
+                })
+            });
+
+            if (res.ok) {
+                document.getElementById('pin-modal').classList.add('hidden');
+                alert("✅ PIN Set! Account Activated.");
+                lookupCustomer(); // Refresh display
+            } else {
+                alert("Error saving PIN");
+            }
+        } catch (e) {
+            console.error(e);
+            alert("Network error");
+        }
+    }
+
+</script>
+</body>
+</html>

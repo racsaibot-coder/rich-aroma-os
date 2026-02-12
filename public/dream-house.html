@@ -1,0 +1,966 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>✨ My Dream House ✨</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-touch-callout: none;
+            -webkit-user-select: none;
+            user-select: none;
+        }
+
+        body {
+            font-family: 'Comic Sans MS', cursive, sans-serif;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        h1 {
+            font-size: 1.3rem;
+            color: #FF69B4;
+            text-align: center;
+            padding: 8px;
+            background: rgba(255,255,255,0.9);
+        }
+
+        .game {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .room {
+            width: 100%;
+            max-width: 380px;
+            height: 320px;
+            position: relative;
+            display: none;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        .room.active { display: block; }
+
+        /* Living Room */
+        .living-room {
+            background: linear-gradient(180deg, #FFEFD5 0%, #FFE4C4 100%);
+        }
+
+        .couch {
+            position: absolute;
+            bottom: 60px;
+            left: 20px;
+            width: 150px;
+            height: 70px;
+            background: linear-gradient(180deg, #8B4513, #A0522D);
+            border-radius: 15px 15px 5px 5px;
+        }
+
+        .couch-cushion {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            width: 60px;
+            height: 40px;
+            background: #CD853F;
+            border-radius: 10px;
+        }
+
+        .couch-cushion:nth-child(2) { left: 80px; }
+
+        .tv {
+            position: absolute;
+            right: 30px;
+            bottom: 80px;
+            width: 80px;
+            height: 60px;
+            background: #333;
+            border-radius: 5px;
+        }
+
+        .tv-screen {
+            width: 70px;
+            height: 45px;
+            background: linear-gradient(135deg, #87CEEB, #4169E1);
+            margin: 5px auto;
+            border-radius: 3px;
+        }
+
+        .tv-stand {
+            width: 90px;
+            height: 50px;
+            background: #8B4513;
+            position: absolute;
+            right: 25px;
+            bottom: 30px;
+            border-radius: 5px;
+        }
+
+        /* Kitchen */
+        .kitchen {
+            background: linear-gradient(180deg, #E0F7FA 0%, #B2EBF2 100%);
+        }
+
+        .fridge {
+            position: absolute;
+            left: 20px;
+            bottom: 40px;
+            width: 70px;
+            height: 130px;
+            background: linear-gradient(180deg, #E0E0E0, #BDBDBD);
+            border-radius: 8px;
+            cursor: pointer;
+        }
+
+        .fridge-handle {
+            position: absolute;
+            right: 8px;
+            top: 30px;
+            width: 5px;
+            height: 30px;
+            background: #666;
+            border-radius: 3px;
+        }
+
+        .fridge.open .fridge-door {
+            transform: rotateY(-60deg);
+        }
+
+        .fridge-inside {
+            position: absolute;
+            left: 5px;
+            top: 5px;
+            width: 60px;
+            height: 120px;
+            background: #FFF;
+            border-radius: 5px;
+            display: none;
+            flex-direction: column;
+            padding: 5px;
+            font-size: 1.5rem;
+        }
+
+        .fridge.open .fridge-inside { display: flex; }
+
+        .stove {
+            position: absolute;
+            right: 20px;
+            bottom: 40px;
+            width: 100px;
+            height: 100px;
+            background: linear-gradient(180deg, #424242, #212121);
+            border-radius: 8px;
+            cursor: pointer;
+        }
+
+        .burner {
+            width: 30px;
+            height: 30px;
+            background: #333;
+            border-radius: 50%;
+            border: 3px solid #555;
+            position: absolute;
+        }
+
+        .burner:nth-child(1) { top: 15px; left: 15px; }
+        .burner:nth-child(2) { top: 15px; right: 15px; }
+        .burner:nth-child(3) { bottom: 25px; left: 15px; }
+        .burner:nth-child(4) { bottom: 25px; right: 15px; }
+
+        .burner.on {
+            background: radial-gradient(circle, #FF6B6B, #FF0000);
+            animation: glow 0.5s infinite alternate;
+        }
+
+        @keyframes glow {
+            from { box-shadow: 0 0 10px #FF6B6B; }
+            to { box-shadow: 0 0 20px #FF0000; }
+        }
+
+        .pan {
+            position: absolute;
+            right: 45px;
+            bottom: 130px;
+            font-size: 2.5rem;
+            display: none;
+        }
+
+        .pan.show { display: block; }
+
+        .counter {
+            position: absolute;
+            left: 100px;
+            bottom: 40px;
+            width: 100px;
+            height: 80px;
+            background: linear-gradient(180deg, #8B4513, #A0522D);
+            border-radius: 5px;
+        }
+
+        .counter-top {
+            width: 110px;
+            height: 15px;
+            background: #D2B48C;
+            position: absolute;
+            top: -5px;
+            left: -5px;
+            border-radius: 3px;
+        }
+
+        .food-item {
+            font-size: 2rem;
+            cursor: pointer;
+        }
+
+        /* Bedroom */
+        .bedroom {
+            background: linear-gradient(180deg, #E8F5E9 0%, #C8E6C9 100%);
+        }
+
+        .bed-frame {
+            position: absolute;
+            left: 20px;
+            bottom: 40px;
+            width: 150px;
+            height: 100px;
+        }
+
+        .bed-headboard {
+            width: 150px;
+            height: 60px;
+            background: linear-gradient(180deg, #6D4C41, #5D4037);
+            border-radius: 10px 10px 0 0;
+        }
+
+        .bed-mattress {
+            width: 150px;
+            height: 40px;
+            background: linear-gradient(180deg, #F8BBD9, #F48FB1);
+            border-radius: 5px;
+            position: relative;
+        }
+
+        .bed-pillow {
+            position: absolute;
+            top: 5px;
+            right: 10px;
+            width: 40px;
+            height: 25px;
+            background: white;
+            border-radius: 8px;
+        }
+
+        .bed-blanket {
+            position: absolute;
+            bottom: 5px;
+            left: 5px;
+            width: 120px;
+            height: 25px;
+            background: linear-gradient(90deg, #CE93D8, #BA68C8);
+            border-radius: 3px 15px 8px 3px;
+        }
+
+        .lamb-bed {
+            position: absolute;
+            left: 15px;
+            top: 8px;
+            font-size: 1.5rem;
+        }
+
+        .dresser {
+            position: absolute;
+            right: 20px;
+            bottom: 40px;
+            width: 80px;
+            height: 100px;
+            background: linear-gradient(180deg, #8D6E63, #6D4C41);
+            border-radius: 5px;
+        }
+
+        .drawer {
+            width: 70px;
+            height: 25px;
+            background: #A1887F;
+            margin: 8px auto;
+            border-radius: 3px;
+            position: relative;
+        }
+
+        .drawer-knob {
+            position: absolute;
+            top: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 15px;
+            height: 8px;
+            background: #FFD700;
+            border-radius: 3px;
+        }
+
+        /* Makeup Room */
+        .makeup-room {
+            background: linear-gradient(180deg, #FCE4EC 0%, #F8BBD9 100%);
+        }
+
+        .vanity-table {
+            position: absolute;
+            left: 50%;
+            transform: translateX(-50%);
+            bottom: 40px;
+            text-align: center;
+        }
+
+        .vanity-mirror {
+            width: 100px;
+            height: 120px;
+            background: linear-gradient(145deg, #E3F2FD, #BBDEFB);
+            border: 12px solid #FFD700;
+            border-radius: 50px 50px 10px 10px;
+            margin: 0 auto;
+        }
+
+        .vanity-surface {
+            width: 140px;
+            height: 20px;
+            background: #FF69B4;
+            border-radius: 5px;
+            margin-top: 10px;
+        }
+
+        .makeup-items {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            margin-top: 10px;
+            font-size: 1.8rem;
+        }
+
+        .makeup-item {
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        .makeup-item:active { transform: scale(1.3); }
+
+        .vanity-chair {
+            width: 60px;
+            height: 30px;
+            background: #FF69B4;
+            border-radius: 30px 30px 5px 5px;
+            margin: 20px auto 0;
+        }
+
+        /* Outside */
+        .outside {
+            background: linear-gradient(180deg, #87CEEB 0%, #98FB98 60%, #90EE90 100%);
+        }
+
+        .sun {
+            position: absolute;
+            top: 20px;
+            right: 30px;
+            font-size: 3rem;
+        }
+
+        .cloud {
+            position: absolute;
+            font-size: 2rem;
+        }
+
+        .cloud:nth-child(1) { top: 30px; left: 20px; }
+        .cloud:nth-child(2) { top: 50px; left: 120px; }
+
+        .tree {
+            position: absolute;
+            bottom: 40px;
+            font-size: 4rem;
+        }
+
+        .tree:nth-child(4) { left: 20px; }
+        .tree:nth-child(5) { right: 20px; }
+
+        .flowers {
+            position: absolute;
+            bottom: 50px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 2rem;
+        }
+
+        .house-door {
+            position: absolute;
+            bottom: 40px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 60px;
+            height: 90px;
+            background: linear-gradient(180deg, #8B4513, #A0522D);
+            border-radius: 5px 5px 0 0;
+            cursor: pointer;
+        }
+
+        .doorknob {
+            position: absolute;
+            right: 10px;
+            top: 50%;
+            width: 10px;
+            height: 10px;
+            background: #FFD700;
+            border-radius: 50%;
+        }
+
+        /* Character */
+        .character {
+            position: absolute;
+            bottom: 50px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 60px;
+            height: 120px;
+            z-index: 50;
+            transition: left 0.3s;
+        }
+
+        .char-head {
+            width: 40px;
+            height: 45px;
+            margin: 0 auto;
+            position: relative;
+        }
+
+        .char-hair {
+            position: absolute;
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 45px;
+            height: 40px;
+            background: var(--hair-color, #4A3728);
+            border-radius: 50% 50% 30% 30%;
+            z-index: 1;
+        }
+
+        .char-face {
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 35px;
+            height: 38px;
+            background: #FFDAB9;
+            border-radius: 50% 50% 45% 45%;
+            z-index: 10;
+        }
+
+        .char-eyes {
+            position: absolute;
+            top: 15px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 10px;
+        }
+
+        .char-eye {
+            width: 6px;
+            height: 8px;
+            background: #333;
+            border-radius: 50%;
+        }
+
+        .char-mouth {
+            position: absolute;
+            bottom: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 10px;
+            height: 5px;
+            background: #FF6B8A;
+            border-radius: 0 0 10px 10px;
+        }
+
+        .char-hat {
+            position: absolute;
+            top: -15px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 1.5rem;
+            z-index: 20;
+        }
+
+        .char-body {
+            width: 30px;
+            height: 40px;
+            background: var(--shirt-color, #FF69B4);
+            border-radius: 10px 10px 5px 5px;
+            margin: -3px auto 0;
+        }
+
+        .char-legs {
+            display: flex;
+            gap: 4px;
+            justify-content: center;
+        }
+
+        .char-leg {
+            width: 12px;
+            height: 30px;
+            background: var(--pants-color, #4169E1);
+            border-radius: 5px;
+        }
+
+        .char-gloves {
+            position: absolute;
+            top: 50px;
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .char-glove {
+            width: 15px;
+            height: 15px;
+            background: var(--glove-color, transparent);
+            border-radius: 50%;
+        }
+
+        /* Navigation */
+        .nav {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            justify-content: center;
+            padding: 10px;
+            background: white;
+        }
+
+        .nav-btn {
+            padding: 10px 15px;
+            background: linear-gradient(180deg, #FF69B4, #FF1493);
+            color: white;
+            border: none;
+            border-radius: 15px;
+            font-size: 0.9rem;
+            font-family: inherit;
+            cursor: pointer;
+            box-shadow: 0 3px 10px rgba(255,105,180,0.3);
+        }
+
+        .nav-btn.active {
+            background: linear-gradient(180deg, #9C27B0, #7B1FA2);
+        }
+
+        /* Walk Controls */
+        .walk-controls {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            padding: 10px;
+            background: white;
+        }
+
+        .walk-btn {
+            width: 50px;
+            height: 50px;
+            background: white;
+            border: 3px solid #FF69B4;
+            border-radius: 50%;
+            font-size: 1.5rem;
+            cursor: pointer;
+        }
+
+        .walk-btn:active {
+            background: #FFE4EC;
+        }
+
+        /* Actions */
+        .actions {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            justify-content: center;
+            padding: 10px;
+            background: #FFF;
+        }
+
+        .action-btn {
+            padding: 8px 12px;
+            background: #E1BEE7;
+            border: none;
+            border-radius: 10px;
+            font-size: 0.85rem;
+            font-family: inherit;
+            cursor: pointer;
+        }
+
+        .action-btn:active {
+            background: #CE93D8;
+        }
+
+        /* Message */
+        .message {
+            position: fixed;
+            top: 40%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: white;
+            padding: 15px 25px;
+            border-radius: 20px;
+            color: #FF69B4;
+            font-size: 1.1rem;
+            box-shadow: 0 5px 25px rgba(0,0,0,0.2);
+            z-index: 200;
+            display: none;
+        }
+
+        .sparkle {
+            position: fixed;
+            pointer-events: none;
+            font-size: 1.5rem;
+            animation: sparkle 0.8s forwards;
+            z-index: 100;
+        }
+
+        @keyframes sparkle {
+            0% { transform: scale(0); opacity: 1; }
+            100% { transform: scale(1.5); opacity: 0; }
+        }
+    </style>
+</head>
+<body>
+    <h1>✨ My Dream House ✨</h1>
+
+    <div class="game">
+        <!-- Living Room -->
+        <div class="room living-room active" id="room-living">
+            <div class="tv-stand"></div>
+            <div class="tv"><div class="tv-screen"></div></div>
+            <div class="couch">
+                <div class="couch-cushion"></div>
+                <div class="couch-cushion"></div>
+            </div>
+            <div class="character" id="char-living">
+                <div class="char-head">
+                    <div class="char-hair" id="hair-living"></div>
+                    <div class="char-hat" id="hat-living">🎀</div>
+                    <div class="char-face">
+                        <div class="char-eyes">
+                            <div class="char-eye"></div>
+                            <div class="char-eye"></div>
+                        </div>
+                        <div class="char-mouth"></div>
+                    </div>
+                </div>
+                <div class="char-gloves">
+                    <div class="char-glove" id="glove-living-l"></div>
+                    <div class="char-glove" id="glove-living-r"></div>
+                </div>
+                <div class="char-body" id="body-living"></div>
+                <div class="char-legs">
+                    <div class="char-leg" id="leg-living-l"></div>
+                    <div class="char-leg" id="leg-living-r"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Kitchen -->
+        <div class="room kitchen" id="room-kitchen">
+            <div class="fridge" id="fridge" onclick="toggleFridge()">
+                <div class="fridge-handle"></div>
+                <div class="fridge-inside">
+                    <span>🥛</span>
+                    <span>🍎</span>
+                    <span>🧀</span>
+                    <span>🥚</span>
+                </div>
+            </div>
+            <div class="counter">
+                <div class="counter-top"></div>
+            </div>
+            <div class="stove" id="stove" onclick="toggleStove()">
+                <div class="burner" id="burner1"></div>
+                <div class="burner" id="burner2"></div>
+                <div class="burner" id="burner3"></div>
+                <div class="burner" id="burner4"></div>
+            </div>
+            <div class="pan" id="pan">🍳</div>
+            <div class="character" id="char-kitchen">
+                <div class="char-head">
+                    <div class="char-hair" id="hair-kitchen"></div>
+                    <div class="char-hat" id="hat-kitchen">🎀</div>
+                    <div class="char-face">
+                        <div class="char-eyes">
+                            <div class="char-eye"></div>
+                            <div class="char-eye"></div>
+                        </div>
+                        <div class="char-mouth"></div>
+                    </div>
+                </div>
+                <div class="char-body" id="body-kitchen"></div>
+                <div class="char-legs">
+                    <div class="char-leg" id="leg-kitchen-l"></div>
+                    <div class="char-leg" id="leg-kitchen-r"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Bedroom -->
+        <div class="room bedroom" id="room-bedroom">
+            <div class="bed-frame">
+                <div class="bed-headboard"></div>
+                <div class="bed-mattress">
+                    <div class="bed-pillow"></div>
+                    <div class="bed-blanket"></div>
+                    <div class="lamb-bed">🐑</div>
+                </div>
+            </div>
+            <div class="dresser">
+                <div class="drawer"><div class="drawer-knob"></div></div>
+                <div class="drawer"><div class="drawer-knob"></div></div>
+                <div class="drawer"><div class="drawer-knob"></div></div>
+            </div>
+            <div class="character" id="char-bedroom">
+                <div class="char-head">
+                    <div class="char-hair" id="hair-bedroom"></div>
+                    <div class="char-hat" id="hat-bedroom">🎀</div>
+                    <div class="char-face">
+                        <div class="char-eyes">
+                            <div class="char-eye"></div>
+                            <div class="char-eye"></div>
+                        </div>
+                        <div class="char-mouth"></div>
+                    </div>
+                </div>
+                <div class="char-body" id="body-bedroom"></div>
+                <div class="char-legs">
+                    <div class="char-leg" id="leg-bedroom-l"></div>
+                    <div class="char-leg" id="leg-bedroom-r"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Makeup Room -->
+        <div class="room makeup-room" id="room-makeup">
+            <div class="vanity-table">
+                <div class="vanity-mirror"></div>
+                <div class="vanity-surface"></div>
+                <div class="makeup-items">
+                    <span class="makeup-item" onclick="useMakeup('💄')">💄</span>
+                    <span class="makeup-item" onclick="useMakeup('💅')">💅</span>
+                    <span class="makeup-item" onclick="useMakeup('👄')">👄</span>
+                    <span class="makeup-item" onclick="useMakeup('✨')">✨</span>
+                </div>
+                <div class="vanity-chair"></div>
+            </div>
+            <div class="character" id="char-makeup">
+                <div class="char-head">
+                    <div class="char-hair" id="hair-makeup"></div>
+                    <div class="char-hat" id="hat-makeup">🎀</div>
+                    <div class="char-face">
+                        <div class="char-eyes">
+                            <div class="char-eye"></div>
+                            <div class="char-eye"></div>
+                        </div>
+                        <div class="char-mouth"></div>
+                    </div>
+                </div>
+                <div class="char-body" id="body-makeup"></div>
+                <div class="char-legs">
+                    <div class="char-leg" id="leg-makeup-l"></div>
+                    <div class="char-leg" id="leg-makeup-r"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Outside -->
+        <div class="room outside" id="room-outside">
+            <div class="cloud">☁️</div>
+            <div class="cloud">☁️</div>
+            <div class="sun">☀️</div>
+            <div class="tree">🌳</div>
+            <div class="tree">🌲</div>
+            <div class="flowers">🌸🌷🌻🌺</div>
+            <div class="house-door" onclick="goToRoom('living')">
+                <div class="doorknob"></div>
+            </div>
+            <div class="character" id="char-outside">
+                <div class="char-head">
+                    <div class="char-hair" id="hair-outside"></div>
+                    <div class="char-hat" id="hat-outside">🎀</div>
+                    <div class="char-face">
+                        <div class="char-eyes">
+                            <div class="char-eye"></div>
+                            <div class="char-eye"></div>
+                        </div>
+                        <div class="char-mouth"></div>
+                    </div>
+                </div>
+                <div class="char-body" id="body-outside"></div>
+                <div class="char-legs">
+                    <div class="char-leg" id="leg-outside-l"></div>
+                    <div class="char-leg" id="leg-outside-r"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Navigation -->
+        <div class="nav">
+            <button class="nav-btn active" onclick="goToRoom('living')">🛋️ Living</button>
+            <button class="nav-btn" onclick="goToRoom('kitchen')">🍳 Kitchen</button>
+            <button class="nav-btn" onclick="goToRoom('bedroom')">🛏️ Bedroom</button>
+            <button class="nav-btn" onclick="goToRoom('makeup')">💄 Makeup</button>
+            <button class="nav-btn" onclick="goToRoom('outside')">🌳 Outside</button>
+        </div>
+
+        <!-- Walk Controls -->
+        <div class="walk-controls">
+            <button class="walk-btn" onclick="walk('left')">⬅️</button>
+            <button class="walk-btn" onclick="walk('right')">➡️</button>
+        </div>
+
+        <!-- Style Actions -->
+        <div class="actions">
+            <button class="action-btn" onclick="changeHair()">💇 Hair</button>
+            <button class="action-btn" onclick="changeShirt()">👚 Shirt</button>
+            <button class="action-btn" onclick="changePants()">👖 Pants</button>
+            <button class="action-btn" onclick="changeHat()">👑 Hat</button>
+            <button class="action-btn" onclick="changeGloves()">🧤 Gloves</button>
+        </div>
+    </div>
+
+    <div class="message" id="message"></div>
+
+    <script>
+        let currentRoom = 'living';
+        let charPos = 50;
+        let hairColors = ['#4A3728', '#FFD700', '#FF6B6B', '#9B59B6', '#FF69B4', '#3498DB'];
+        let shirtColors = ['#FF69B4', '#87CEEB', '#98FB98', '#FFD700', '#DDA0DD', '#FF6347'];
+        let pantsColors = ['#4169E1', '#FF69B4', '#333', '#9370DB', '#20B2AA'];
+        let hats = ['🎀', '👑', '🌸', '🎩', '⭐', ''];
+        let gloveColors = ['', '#FFF', '#FF69B4', '#9B59B6', '#FFD700'];
+        
+        let currentHair = 0;
+        let currentShirt = 0;
+        let currentPants = 0;
+        let currentHat = 0;
+        let currentGlove = 0;
+
+        let fridgeOpen = false;
+        let stoveOn = false;
+
+        function goToRoom(room) {
+            document.querySelectorAll('.room').forEach(r => r.classList.remove('active'));
+            document.getElementById('room-' + room).classList.add('active');
+            document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+            event.target.classList.add('active');
+            currentRoom = room;
+            charPos = 50;
+            updateCharPos();
+            sparkle();
+            showMessage('🚪 ' + room.charAt(0).toUpperCase() + room.slice(1) + ' room!');
+        }
+
+        function walk(dir) {
+            if (dir === 'left') {
+                charPos = Math.max(10, charPos - 15);
+            } else {
+                charPos = Math.min(90, charPos + 15);
+            }
+            updateCharPos();
+        }
+
+        function updateCharPos() {
+            const char = document.getElementById('char-' + currentRoom);
+            if (char) {
+                char.style.left = charPos + '%';
+            }
+        }
+
+        function changeHair() {
+            currentHair = (currentHair + 1) % hairColors.length;
+            updateAllChars('hair', '--hair-color', hairColors[currentHair]);
+            sparkle(); showMessage('💇 New hair color!');
+        }
+
+        function changeShirt() {
+            currentShirt = (currentShirt + 1) % shirtColors.length;
+            updateAllChars('body', '--shirt-color', shirtColors[currentShirt]);
+            sparkle(); showMessage('👚 Cute shirt!');
+        }
+
+        function changePants() {
+            currentPants = (currentPants + 1) % pantsColors.length;
+            ['l', 'r'].forEach(side => {
+                document.querySelectorAll(`[id^="leg-"][id$="-${side}"]`).forEach(el => {
+                    el.style.setProperty('--pants-color', pantsColors[currentPants]);
+                });
+            });
+            sparkle(); showMessage('👖 Cool pants!');
+        }
+
+        function changeHat() {
+            currentHat = (currentHat + 1) % hats.length;
+            document.querySelectorAll('[id^="hat-"]').forEach(el => {
+                el.textContent = hats[currentHat];
+            });
+            sparkle(); showMessage(hats[currentHat] ? '👑 Pretty!' : '🎩 Hat off!');
+        }
+
+        function changeGloves() {
+            currentGlove = (currentGlove + 1) % gloveColors.length;
+            document.querySelectorAll('[id^="glove-"]').forEach(el => {
+                el.style.setProperty('--glove-color', gloveColors[currentGlove] || 'transparent');
+            });
+            sparkle(); showMessage(gloveColors[currentGlove] ? '🧤 Fancy!' : '🧤 Gloves off!');
+        }
+
+        function updateAllChars(prefix, prop, value) {
+            document.querySelectorAll(`[id^="${prefix}-"]`).forEach(el => {
+                el.style.setProperty(prop, value);
+            });
+        }
+
+        function toggleFridge() {
+            fridgeOpen = !fridgeOpen;
+            document.getElementById('fridge').classList.toggle('open', fridgeOpen);
+            sparkle(); showMessage(fridgeOpen ? '🧊 Fridge open!' : '🧊 Fridge closed!');
+        }
+
+        function toggleStove() {
+            stoveOn = !stoveOn;
+            document.querySelectorAll('.burner').forEach(b => b.classList.toggle('on', stoveOn));
+            document.getElementById('pan').classList.toggle('show', stoveOn);
+            sparkle(); showMessage(stoveOn ? '🔥 Cooking!' : '🍳 Stove off!');
+        }
+
+        function useMakeup(item) {
+            sparkle(); showMessage(item + ' So pretty!');
+        }
+
+        function sparkle() {
+            const emojis = ['✨', '💖', '⭐', '💫'];
+            for (let i = 0; i < 4; i++) {
+                const s = document.createElement('div');
+                s.className = 'sparkle';
+                s.textContent = emojis[Math.floor(Math.random() * emojis.length)];
+                s.style.left = (50 + Math.random() * 250) + 'px';
+                s.style.top = (100 + Math.random() * 200) + 'px';
+                document.body.appendChild(s);
+                setTimeout(() => s.remove(), 800);
+            }
+        }
+
+        function showMessage(text) {
+            const msg = document.getElementById('message');
+            msg.textContent = text;
+            msg.style.display = 'block';
+            setTimeout(() => msg.style.display = 'none', 1000);
+        }
+    </script>
+</body>
+</html>

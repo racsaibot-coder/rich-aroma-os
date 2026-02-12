@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🦧 Rico Balance - Rich Aroma</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --dark-bg: #0f0d0b;
+            --card-bg: #1a1714;
+            --caramel: #D4A574;
+            --cream: #F5EDE4;
+            --success: #22c55e;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--dark-bg);
+            color: var(--cream);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 25px;
+        }
+        .title { font-size: 1.5rem; color: var(--caramel); }
+        .subtitle { color: #888; margin-top: 5px; }
+        .promo-banner {
+            background: linear-gradient(135deg, #C9A66B, #8B7355);
+            border-radius: 20px;
+            padding: 25px;
+            text-align: center;
+            margin-bottom: 25px;
+        }
+        .promo-value { font-size: 3rem; font-weight: 700; }
+        .promo-text { opacity: 0.9; margin-top: 5px; }
+        .amounts {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+        .amount-btn {
+            background: var(--card-bg);
+            border: 2px solid #333;
+            border-radius: 15px;
+            padding: 25px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .amount-btn:hover, .amount-btn.selected {
+            border-color: var(--caramel);
+            background: rgba(201, 166, 107, 0.1);
+        }
+        .amount-value { font-size: 1.5rem; font-weight: 700; color: var(--caramel); }
+        .amount-bonus { color: var(--success); font-size: 0.9rem; margin-top: 5px; }
+        .customer-section {
+            background: var(--card-bg);
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        .section-label { color: #888; font-size: 0.85rem; margin-bottom: 10px; }
+        .phone-input {
+            width: 100%;
+            padding: 15px;
+            background: #252220;
+            border: none;
+            border-radius: 10px;
+            color: var(--cream);
+            font-size: 1.2rem;
+            text-align: center;
+        }
+        .summary {
+            background: var(--card-bg);
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        .summary-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 0;
+            border-bottom: 1px solid #252220;
+        }
+        .summary-row:last-child { border-bottom: none; }
+        .summary-total { font-weight: 700; color: var(--caramel); font-size: 1.2rem; }
+        .load-btn {
+            width: 100%;
+            padding: 20px;
+            background: var(--success);
+            border: none;
+            border-radius: 15px;
+            color: #000;
+            font-weight: 700;
+            font-size: 1.2rem;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="title">🦧 Rico Balance</div>
+        <div class="subtitle">Prepaid Store Credit</div>
+    </div>
+
+    <div class="promo-banner">
+        <div class="promo-value">+10% BONUS</div>
+        <div class="promo-text">On all balance loads!</div>
+    </div>
+
+    <div class="amounts" id="amounts">
+        <div class="amount-btn" onclick="selectAmount(100, 10)">
+            <div class="amount-value">L 100</div>
+            <div class="amount-bonus">+L 10 free</div>
+        </div>
+        <div class="amount-btn" onclick="selectAmount(200, 20)">
+            <div class="amount-value">L 200</div>
+            <div class="amount-bonus">+L 20 free</div>
+        </div>
+        <div class="amount-btn" onclick="selectAmount(500, 50)">
+            <div class="amount-value">L 500</div>
+            <div class="amount-bonus">+L 50 free</div>
+        </div>
+        <div class="amount-btn" onclick="selectAmount(1000, 100)">
+            <div class="amount-value">L 1,000</div>
+            <div class="amount-bonus">+L 100 free</div>
+        </div>
+    </div>
+
+    <div class="customer-section">
+        <div class="section-label">Customer Phone</div>
+        <input type="tel" class="phone-input" id="phone" placeholder="9999-1234">
+    </div>
+
+    <div class="summary">
+        <div class="summary-row">
+            <span>Amount</span>
+            <span id="amountDisplay">L 0</span>
+        </div>
+        <div class="summary-row">
+            <span>Bonus (10%)</span>
+            <span id="bonusDisplay" style="color: var(--success)">+L 0</span>
+        </div>
+        <div class="summary-row summary-total">
+            <span>Total Credit</span>
+            <span id="totalDisplay">L 0</span>
+        </div>
+    </div>
+
+    <button class="load-btn" onclick="loadBalance()">💳 Load Balance</button>
+
+    <script>
+        let selectedAmount = 0;
+        let selectedBonus = 0;
+
+        function selectAmount(amount, bonus) {
+            selectedAmount = amount;
+            selectedBonus = bonus;
+            
+            document.querySelectorAll('.amount-btn').forEach(b => b.classList.remove('selected'));
+            event.target.closest('.amount-btn').classList.add('selected');
+            
+            document.getElementById('amountDisplay').textContent = 'L ' + amount.toLocaleString();
+            document.getElementById('bonusDisplay').textContent = '+L ' + bonus;
+            document.getElementById('totalDisplay').textContent = 'L ' + (amount + bonus).toLocaleString();
+        }
+
+        function loadBalance() {
+            const phone = document.getElementById('phone').value;
+            if (!phone) {
+                alert('Please enter customer phone');
+                return;
+            }
+            if (selectedAmount === 0) {
+                alert('Please select an amount');
+                return;
+            }
+            alert(`✅ Loaded L ${(selectedAmount + selectedBonus).toLocaleString()} to ${phone}!`);
+        }
+    </script>
+</body>
+</html>

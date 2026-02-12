@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Passport Photo Tool</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        body { background: #000; overflow: hidden; }
+        
+        /* The Overlay Guide */
+        .overlay-guide {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 300px; /* Scaled for mobile */
+            height: 300px;
+            pointer-events: none;
+            z-index: 10;
+        }
+        
+        /* US State Dept Template */
+        .head-oval {
+            position: absolute;
+            top: 15%;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 140px; /* ~50-69% of height */
+            height: 190px;
+            border: 2px dashed rgba(0, 255, 0, 0.7);
+            border-radius: 50% 50% 45% 45%;
+            box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.5); /* Dim outside */
+        }
+        
+        .eye-line {
+            position: absolute;
+            top: 45%; /* Eyes should be here */
+            left: 0;
+            width: 100%;
+            height: 2px;
+            background: rgba(255, 255, 0, 0.5);
+        }
+        
+        .center-line {
+            position: absolute;
+            top: 0;
+            left: 50%;
+            width: 1px;
+            height: 100%;
+            background: rgba(255, 255, 0, 0.3);
+        }
+
+        #video-feed {
+            width: 100%;
+            height: 100vh;
+            object-fit: cover;
+            transform: scaleX(-1); /* Mirror effect */
+        }
+
+        .flash {
+            animation: flash 0.3s;
+        }
+        @keyframes flash {
+            0% { opacity: 1; background: white; }
+            100% { opacity: 0; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Camera Feed -->
+    <video id="video-feed" autoplay playsinline></video>
+    <canvas id="canvas" class="hidden"></canvas>
+
+    <!-- Guide Overlay -->
+    <div class="overlay-guide" id="guide">
+        <div class="head-oval"></div>
+        <div class="eye-line"></div>
+        <div class="center-line"></div>
+        <div class="absolute bottom-2 w-full text-center text-green-400 text-xs font-bold uppercase tracking-widest shadow-black drop-shadow-md">
+            Place Face Here
+        </div>
+    </div>
+
+    <!-- UI Controls -->
+    <div class="absolute top-0 w-full p-4 flex justify-between items-start z-20">
+        <div class="bg-black/50 backdrop-blur rounded-lg p-2 text-white text-xs max-w-[200px]">
+            <p class="font-bold text-yellow-400 mb-1">🇺🇸 US Requirements:</p>
+            <ul class="list-disc pl-4 opacity-80 space-y-1">
+                <li>White background</li>
+                <li>Neutral expression</li>
+                <li>Eyes on yellow line</li>
+                <li>No glasses</li>
+                <li>No shadows</li>
+            </ul>
+        </div>
+        <button onclick="switchCamera()" class="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center text-white backdrop-blur">
+            <i class="fas fa-sync-alt"></i>
+        </button>
+    </div>
+
+    <div class="absolute bottom-10 w-full flex justify-center items-center gap-8 z-20">
+        <!-- Brightness Slider -->
+        <div class="flex flex-col items-center">
+             <i class="fas fa-sun text-white/50 text-xs mb-2"></i>
+             <input type="range" min="0.5" max="2" step="0.1" value="1" oninput="adjustBrightness(this.value)" class="w-24 h-1 bg-white/20 rounded-lg appearance-none cursor-pointer">
+        </div>
+
+        <!-- Shutter Button -->
+        <button onclick="takePhoto()" class="w-20 h-20 rounded-full border-4 border-white bg-white/20 flex items-center justify-center relative active:scale-95 transition-transform">
+            <div class="w-16 h-16 rounded-full bg-white"></div>
+        </button>
+        
+        <!-- Gallery Preview -->
+        <div class="w-12 h-12 rounded-lg bg-gray-800 border border-white/20 overflow-hidden" id="last-photo" onclick="downloadLast()">
+            <!-- Photo goes here -->
+        </div>
+    </div>
+
+    <!-- Flash Overlay -->
+    <div id="flash-overlay" class="absolute inset-0 pointer-events-none opacity-0 z-50"></div>
+
+    <script>
+        let stream;
+        let currentFacingMode = 'user'; // Start with selfie
+        const video = document.getElementById('video-feed');
+        const canvas = document.getElementById('canvas');
+        
+        async function startCamera() {
+            try {
+                if (stream) {
+                    stream.getTracks().forEach(track => track.stop());
+                }
+                
+                const constraints = {
+                    video: { 
+                        facingMode: currentFacingMode,
+                        width: { ideal: 1920 },
+                        height: { ideal: 1080 }
+                    }
+                };
+                
+                stream = await navigator.mediaDevices.getUserMedia(constraints);
+                video.srcObject = stream;
+            } catch (err) {
+                alert("Camera access denied or error: " + err);
+            }
+        }
+
+        function switchCamera() {
+            currentFacingMode = currentFacingMode === 'user' ? 'environment' : 'user';
+            // Mirror flip only for user
+            video.style.transform = currentFacingMode === 'user' ? 'scaleX(-1)' : 'none';
+            startCamera();
+        }
+
+        function adjustBrightness(val) {
+            video.style.filter = `brightness(${val})`;
+        }
+
+        function takePhoto() {
+            // Flash Effect
+            const flash = document.getElementById('flash-overlay');
+            flash.classList.add('flash');
+            setTimeout(() => flash.classList.remove('flash'), 300);
+
+            // Capture
+            canvas.width = 600;
+            canvas.height = 600;
+            const ctx = canvas.getContext('2d');
+
+            // Draw Video Frame (Center Crop)
+            // We need to crop to the GUIDE area (approx center square)
+            // Video is typically 16:9, we want 1:1 square from center
+            
+            const vidW = video.videoWidth;
+            const vidH = video.videoHeight;
+            const size = Math.min(vidW, vidH);
+            const startX = (vidW - size) / 2;
+            const startY = (vidH - size) / 2;
+
+            // Handle Mirroring
+            if (currentFacingMode === 'user') {
+                ctx.translate(canvas.width, 0);
+                ctx.scale(-1, 1);
+            }
+            
+            // Draw cropped image
+            ctx.drawImage(video, startX, startY, size, size, 0, 0, 600, 600);
+            
+            // Apply Brightness Filter
+            const brightness = video.style.filter.replace('brightness(', '').replace(')', '') || 1;
+            // (Canvas filter support varies, simple approach is re-draw or just save raw)
+            
+            // Convert to URL
+            const dataUrl = canvas.toDataURL('image/jpeg', 0.9);
+            
+            // Show Preview
+            const preview = document.getElementById('last-photo');
+            preview.innerHTML = `<img src="${dataUrl}" class="w-full h-full object-cover">`;
+            
+            // Auto Download
+            downloadImage(dataUrl);
+        }
+
+        function downloadImage(dataUrl) {
+            const link = document.createElement('a');
+            link.download = 'passport-photo-us-2x2.jpg';
+            link.href = dataUrl;
+            link.click();
+        }
+        
+        function downloadLast() {
+            const img = document.querySelector('#last-photo img');
+            if(img) downloadImage(img.src);
+        }
+
+        // Init
+        startCamera();
+    </script>
+</body>
+</html>

@@ -1,0 +1,153 @@
+{
+  "name": "Rich Aroma",
+  "tagline": "Café & Comida",
+  "location": "Quimistán, Honduras",
+  "colors": {
+    "gold": "#C9A66B",
+    "espresso": "#1E1610",
+    "cream": "#F5F0E8"
+  },
+  "mascot": {
+    "name": "Captain Rico",
+    "species": "Leopard-print monkey",
+    "outfit": "Captain's hat (black), tropical Hawaiian shirt (toucans, parrots, leaves), khaki shorts, black boots",
+    "personality": "Chaotic, high energy, playful, slightly unhinged but loveable, motivational but savage",
+    "catchphrases": [
+      "Captain Rico didn't fly all the way from Honduras for this.",
+      "That's a skill issue.",
+      "Be ungovernable.",
+      "Rico's orders.",
+      "Do better. Drink better."
+    ]
+  },
+  "voice": {
+    "tone": "Chaotic, high energy, playful, Gen-Z/millennial blend",
+    "style": "Short punchy sentences. Meme-aware. Self-aware. Never corporate.",
+    "donts": ["Don't say 'artisanal'", "Don't be preachy", "Don't use corporate buzzwords", "Never boring"]
+  },
+  "products": [
+    {
+      "name": "Rico's Cold Brew",
+      "size": "12oz bottle",
+      "description": "100% Honduran Arabica cold brew. Rocket fuel.",
+      "price": "L.75",
+      "tags": ["signature", "cold", "bottled"]
+    },
+    {
+      "name": "Espresso",
+      "size": "Single/Double",
+      "description": "Strong. Bold. No mercy.",
+      "price": "L.35/45",
+      "tags": ["hot", "classic"]
+    },
+    {
+      "name": "Café con Leche",
+      "size": "12oz",
+      "description": "The Honduran classic. Espresso + steamed milk.",
+      "price": "L.50",
+      "tags": ["hot", "classic", "bestseller"]
+    },
+    {
+      "name": "Latte",
+      "size": "12oz/16oz",
+      "description": "Smooth espresso with velvety milk.",
+      "price": "L.55/65",
+      "tags": ["hot", "popular"]
+    },
+    {
+      "name": "Baleada",
+      "size": "Regular",
+      "description": "Flour tortilla, beans, cream, cheese. The Honduran staple.",
+      "price": "L.35",
+      "tags": ["food", "breakfast", "bestseller"]
+    },
+    {
+      "name": "Pastelito",
+      "size": "Each",
+      "description": "Fried pastry with meat or cheese filling.",
+      "price": "L.25",
+      "tags": ["food", "snack"]
+    }
+  ],
+  "values": [
+    "100% Honduran Arabica",
+    "Locally roasted",
+    "Community-first",
+    "Fuel for hustlers, students, nurses, teachers"
+  ],
+  "targetAudience": [
+    {
+      "segment": "High Schoolers",
+      "angle": "Hype, memes, energy, study fuel"
+    },
+    {
+      "segment": "Nurses/Teachers",
+      "angle": "Survival juice, respect for the grind, shift fuel"
+    },
+    {
+      "segment": "Young Professionals",
+      "angle": "Local pride, quality coffee, productivity"
+    },
+    {
+      "segment": "Coffee Enthusiasts",
+      "angle": "Origin story, bean quality, education"
+    }
+  ],
+  "hashtags": {
+    "always": ["#RichAroma", "#CaptainRico", "#HonduranCoffee", "#CafeYComida"],
+    "product": ["#ColdBrew", "#CoffeeLover", "#MorningFuel"],
+    "community": ["#SupportLocal", "#CommunityFirst"],
+    "hype": ["#LimitedEdition", "#SoldOut", "#GetItBeforeItsGone"]
+  },
+  "contentPillars": [
+    {
+      "id": "product",
+      "name": "Product Showcase",
+      "emoji": "☕",
+      "frequency": "3x/week",
+      "description": "Hero shots, new items, menu highlights"
+    },
+    {
+      "id": "behind",
+      "name": "Behind the Scenes",
+      "emoji": "🎬",
+      "frequency": "2x/week",
+      "description": "Prep, team, process, raw moments"
+    },
+    {
+      "id": "community",
+      "name": "Community Love",
+      "emoji": "👥",
+      "frequency": "2x/week",
+      "description": "Customers, regulars, local shoutouts"
+    },
+    {
+      "id": "education",
+      "name": "Coffee Education",
+      "emoji": "📚",
+      "frequency": "1x/week",
+      "description": "Bean facts, brewing tips, Honduras coffee story"
+    },
+    {
+      "id": "hype",
+      "name": "Hype & Scarcity",
+      "emoji": "🔥",
+      "frequency": "1x/week",
+      "description": "Limited drops, low stock, urgency"
+    },
+    {
+      "id": "rico",
+      "name": "Captain Rico",
+      "emoji": "🦜",
+      "frequency": "2x/week",
+      "description": "Mascot content, hot takes, memes"
+    }
+  ],
+  "successfulPosts": [],
+  "assets": {
+    "logos": [],
+    "mascotImages": [],
+    "productPhotos": [],
+    "teamPhotos": []
+  }
+}

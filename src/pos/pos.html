@@ -78,8 +78,26 @@
         .cat-btn.active { background: var(--caramel); color: var(--dark-bg); }
         .cat-btn .icon { font-size: 1rem; }
         
-        /* Menu Grid */
-        .menu-area {
+        /* Recipe Whisperer Button */
+        .recipe-btn {
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            background: rgba(0,0,0,0.5);
+            color: #fff;
+            border: none;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            font-size: 0.8rem;
+            cursor: pointer;
+            z-index: 10;
+        }
+        
+        /* Recipe Modal */
+        .recipe-content { padding: 1rem; color: #fff; }
+        .recipe-title { font-size: 1.2rem; font-weight: 700; color: var(--caramel); margin-bottom: 0.5rem; }
+        .recipe-text { white-space: pre-wrap; line-height: 1.5; font-size: 0.95rem; }
             flex: 1;
             overflow-y: auto;
             padding: 0.75rem;
@@ -98,10 +116,15 @@
             cursor: pointer;
             border: 2px solid transparent;
             transition: border-color 0.15s;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            height: 100px;
         }
-        .menu-item:active { border-color: var(--caramel); }
-        .menu-item .name { font-weight: 600; font-size: 0.9rem; margin-bottom: 0.25rem; }
-        .menu-item .price { color: var(--caramel); font-weight: 700; }
+        .menu-item:active { border-color: var(--caramel); transform: scale(0.98); }
+        .menu-item .name { font-weight: 600; font-size: 0.9rem; margin-bottom: 0.25rem; color: var(--text); }
+        .menu-item .price { color: var(--caramel); font-weight: 700; font-size: 1rem; }
         
         /* Cart Sheet */
         .cart-sheet {
@@ -440,6 +463,13 @@
             </div>
         </div>
         <div class="cart-items" id="cartItems"></div>
+        
+        <!-- Kitchen Notes Field (In-N-Out Style) -->
+        <div class="notes-row" style="padding: 0.5rem 1rem;">
+             <input type="text" id="orderNotes" placeholder="📝 Notas Cocina (e.g. Alérgico, Extra Crujiente...)" 
+             style="width:100%; padding:0.75rem; background:var(--dark-bg); border:1px solid var(--espresso); border-radius:8px; color:white;">
+        </div>
+
         <div class="discount-row" id="discountRow">
             <input type="text" class="discount-input" id="discountCode" placeholder="Código descuento" style="text-transform:uppercase">
             <button class="discount-apply" onclick="applyDiscount()">Aplicar</button>
@@ -456,6 +486,17 @@
         </div>
     </div>
     
+    <!-- Recipe Modal -->
+    <div class="modal-overlay" id="recipeModal">
+        <div class="modal">
+            <h3 class="recipe-title" id="recipeTitle">Recipe</h3>
+            <div class="recipe-content" id="recipeText"></div>
+            <div class="modal-actions">
+                <button class="confirm" onclick="document.getElementById('recipeModal').style.display='none'">Close</button>
+            </div>
+        </div>
+    </div>
+
     <div class="modal-overlay" id="modModal">
         <div class="modal">
             <h3 id="modItemName">Modifiers</h3>
@@ -513,11 +554,50 @@
         let appliedDiscount = null; // { code, percent, creatorId }
 
         async function init() {
-            const res = await fetch('/api/menu');
-            menu = await res.json();
-            const ordersRes = await fetch('/api/orders');
-            const orders = await ordersRes.json();
-            nextOrderNum = (orders.lastOrderNumber || 0) + 1;
+            try {
+                // Try Network first
+                const res = await fetch('/api/menu');
+                if (!res.ok) throw new Error('Network error');
+                menu = await res.json();
+
+                // Add Longevity (Temporary)
+                if (!menu.categories.find(c => c.id === 'longevity')) {
+                    menu.categories.push({
+                        id: 'longevity',
+                        name: 'Longevity',
+                        icon: '🥦',
+                        items: [
+                            { id: 'super_veggie', name: 'Super Veggie Bowl', price: 150, modifiers: [] },
+                            { id: 'power_smoothie', name: 'Nutty Power Smoothie', price: 85, modifiers: [] },
+                            { id: 'green_giant', name: 'Green Giant Juice', price: 65, modifiers: [] }
+                        ]
+                    });
+                }
+                
+                // Cache it
+                if (window.parent.OfflineManager) {
+                    window.parent.OfflineManager.cacheMenu(menu);
+                }
+            } catch (e) {
+                console.log('Offline mode: Loading cached menu');
+                if (window.parent.OfflineManager) {
+                    const cached = await window.parent.OfflineManager.getCachedMenu();
+                    if (cached) menu = cached;
+                    else alert('No offline menu available. Please connect to internet once.');
+                }
+            }
+
+            try {
+                const ordersRes = await fetch('/api/orders');
+                const data = await ordersRes.json();
+                // Robustly find max order number
+                const maxNum = (data.orders || []).reduce((max, o) => Math.max(max, o.order_number || 0), 0);
+                nextOrderNum = maxNum + 1;
+            } catch (e) {
+                console.error("Order fetch failed", e);
+                nextOrderNum = 1; 
+            }
+
             document.getElementById('orderNum').textContent = `#${String(nextOrderNum).padStart(4, '0')}`;
             renderCategories();
             if (menu.categories.length) selectCategory(menu.categories[0].id);
@@ -543,10 +623,31 @@
         function renderMenu(items) {
             document.getElementById('menuGrid').innerHTML = items.map(item =>
                 `<div class="menu-item" onclick="addItem('${item.id}')">
+                    <button class="recipe-btn" onclick="showRecipe(event, '${item.id}')">🧠</button>
                     <div class="name">${item.name}</div>
                     <div class="price">L ${item.price}</div>
                 </div>`
             ).join('');
+        }
+
+        function showRecipe(e, itemId) {
+            e.stopPropagation();
+            const item = findItem(itemId);
+            if (!item) return;
+            
+            // Hardcoded recipes for demo if description is missing
+            const recipe = item.description || getDefaultRecipe(item.id, item.name);
+            
+            document.getElementById('recipeTitle').innerText = item.name;
+            document.getElementById('recipeText').innerText = recipe;
+            document.getElementById('recipeModal').style.display = 'flex';
+        }
+
+        function getDefaultRecipe(id, name) {
+            if (name.includes("Latte")) return "1. Steam Milk to 140°F.\n2. Pull 2 shots Espresso.\n3. Pour milk over espresso.\n4. Top with thin layer of foam.";
+            if (name.includes("Super Veggie")) return "1. 1 Scoop Black Lentils.\n2. 3 Florets Broccoli (Steamed).\n3. 1 Spoon Olive Oil.\n4. Add Ginger & Lime.";
+            if (name.includes("Power Smoothie")) return "1. 1 Scoop Protein.\n2. 1 Banana.\n3. Fill Milk to Line 2.\n4. Blend 30s.";
+            return "Recipe not found. Ask manager.";
         }
 
         function findItem(itemId) {
@@ -587,8 +688,15 @@
             const idx = selectedMods.indexOf(modId);
             if (idx >= 0) selectedMods.splice(idx, 1);
             else selectedMods.push(modId);
-            document.querySelectorAll('.mod-option').forEach(opt =>
-                opt.classList.toggle('selected', selectedMods.includes(opt.dataset.id)));
+            
+            // Re-render immediately
+            document.querySelectorAll('.mod-option').forEach(opt => {
+                const isSelected = selectedMods.includes(opt.dataset.id);
+                opt.classList.toggle('selected', isSelected);
+                // Force repaint for touch devices
+                if (isSelected) opt.style.borderColor = 'var(--caramel)';
+                else opt.style.borderColor = 'transparent';
+            });
         }
 
         function closeModal() {
@@ -734,34 +842,118 @@
                 discount: discountAmt,
                 discountCode: appliedDiscount?.code || null,
                 tax,
-                total
+                total,
+                notes: document.getElementById('orderNotes').value, // Capture Notes
+                paymentMethod: 'cash' // Default for now
             };
-            await fetch('/api/orders', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(order)
-            });
-            
-            // Track discount code usage
-            if (appliedDiscount) {
-                await fetch(`/api/discount-codes/${appliedDiscount.code}/use`, {
+
+            try {
+                const res = await fetch('/api/orders', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ orderTotal: total, discountAmount: discountAmt })
+                    body: JSON.stringify(order)
                 });
+                if (!res.ok) throw new Error('Network error');
+                
+                // Track discount code usage if online
+                if (appliedDiscount) {
+                    await fetch(`/api/discount-codes/${appliedDiscount.code}/use`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ orderTotal: total, discountAmount: discountAmt })
+                    });
+                }
+                alert('Order sent to kitchen! 🍳');
+            } catch (e) {
+                console.log('Offline: Saving order locally');
+                if (window.parent.OfflineManager) {
+                    await window.parent.OfflineManager.saveOrderOffline(order);
+                    alert('Offline: Order saved! Will sync when online. 🟠');
+                } else {
+                    alert('Error: Could not save order.');
+                    return;
+                }
             }
             
             cart = [];
             removeDiscount();
+            document.getElementById('orderNotes').value = ''; // Clear Notes
             nextOrderNum++;
             document.getElementById('orderNum').textContent = `#${String(nextOrderNum).padStart(4, '0')}`;
             renderCart();
             alert('Order sent to kitchen! 🍳');
         }
 
-        function pay(method) {
+        async function pay(method) {
             if (cart.length === 0) return alert('Cart is empty!');
-            alert(`Payment (${method}) - Integrate payment processor`);
+            
+            // Calculate totals
+            const subtotal = cart.reduce((sum, item) => {
+                const modCost = item.mods.reduce((s, m) => s + (menu.modifiers[m]?.price || 0), 0);
+                return sum + (item.price + modCost) * item.qty;
+            }, 0);
+            
+            let discountAmt = 0;
+            if (appliedDiscount) {
+                discountAmt = Math.round(subtotal * (appliedDiscount.percent / 100));
+            }
+            const afterDiscount = subtotal - discountAmt;
+            const tax = Math.round(afterDiscount * menu.taxRate);
+            const total = afterDiscount + tax;
+
+            // Prepare Order Object
+            const order = {
+                items: cart.map(item => ({
+                    id: item.id, name: item.name, price: item.price, qty: item.qty,
+                    mods: item.mods.map(m => ({ id: m, name: menu.modifiers[m]?.name, price: menu.modifiers[m]?.price || 0 }))
+                })),
+                subtotal,
+                discount: discountAmt,
+                discountCode: appliedDiscount?.code || null,
+                tax,
+                total,
+                notes: document.getElementById('orderNotes').value, // Capture Notes
+                paymentMethod: method,
+                status: method === 'cash' || method === 'card' ? 'paid' : 'pending' // Auto-complete for cash/card
+            };
+
+            // Confirm
+            if (!confirm(`Confirm ${method.toUpperCase()} payment of L ${total}?`)) return;
+
+            // Send to API
+            try {
+                const res = await fetch('/api/orders', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(order)
+                });
+                
+                if (!res.ok) throw new Error('Payment failed');
+                
+                // Track discount
+                if (appliedDiscount) {
+                    await fetch(`/api/discount-codes/${appliedDiscount.code}/use`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ orderTotal: total, discountAmount: discountAmt })
+                    });
+                }
+
+                alert(`✅ Payment Successful! (${method.toUpperCase()})`);
+                
+                // Clear Cart & Reset
+                cart = [];
+                removeDiscount();
+                document.getElementById('orderNotes').value = ''; // Clear Notes
+                nextOrderNum++;
+                document.getElementById('orderNum').textContent = `#${String(nextOrderNum).padStart(4, '0')}`;
+                renderCart();
+                toggleCart(); // Close sheet
+
+            } catch (e) {
+                console.error(e);
+                alert('Error processing payment. Check connection.');
+            }
         }
 
         // Rico Balance Modal

@@ -1,6 +1,263 @@
 {
   "orders": [
     {
+      "id": "ORD-0034",
+      "order_number": 34,
+      "items": [
+        {
+          "id": "power_smoothie",
+          "name": "Nutty Power Smoothie",
+          "price": 85,
+          "qty": 1,
+          "mods": []
+        },
+        {
+          "id": "green_giant",
+          "name": "Green Giant Juice",
+          "price": 65,
+          "qty": 1,
+          "mods": []
+        },
+        {
+          "id": "green_giant",
+          "name": "Green Giant Juice",
+          "price": 65,
+          "qty": 1,
+          "mods": []
+        }
+      ],
+      "subtotal": 215,
+      "tax": 32,
+      "discount": 0,
+      "total": 247,
+      "status": "pending",
+      "payment_method": "cash",
+      "discount_code": null
+    },
+    {
+      "id": "ORD-0033",
+      "order_number": 33,
+      "items": [
+        {
+          "id": "power_smoothie",
+          "name": "Nutty Power Smoothie",
+          "price": 85,
+          "qty": 1,
+          "mods": []
+        },
+        {
+          "id": "super_veggie",
+          "name": "Super Veggie Bowl",
+          "price": 150,
+          "qty": 1,
+          "mods": []
+        },
+        {
+          "id": "power_smoothie",
+          "name": "Nutty Power Smoothie",
+          "price": 85,
+          "qty": 1,
+          "mods": []
+        },
+        {
+          "id": "green_giant",
+          "name": "Green Giant Juice",
+          "price": 65,
+          "qty": 1,
+          "mods": []
+        },
+        {
+          "id": "super_veggie",
+          "name": "Super Veggie Bowl",
+          "price": 150,
+          "qty": 1,
+          "mods": []
+        }
+      ],
+      "subtotal": 535,
+      "tax": 80,
+      "discount": 0,
+      "total": 615,
+      "status": "pending",
+      "payment_method": "card",
+      "discount_code": null
+    },
+    {
+      "id": "ORD-0032",
+      "order_number": 32,
+      "items": [
+        {
+          "id": "super_veggie",
+          "name": "Super Veggie Bowl",
+          "price": 150,
+          "qty": 1,
+          "mods": []
+        },
+        {
+          "id": "super_veggie",
+          "name": "Super Veggie Bowl",
+          "price": 150,
+          "qty": 1,
+          "mods": []
+        }
+      ],
+      "subtotal": 300,
+      "tax": 45,
+      "discount": 0,
+      "total": 345,
+      "status": "pending",
+      "payment_method": "card",
+      "discount_code": null
+    },
+    {
+      "id": "ORD-0031",
+      "order_number": 31,
+      "items": [
+        {
+          "id": "item_esp_1",
+          "name": "Classic Latte",
+          "price": 65,
+          "qty": 1,
+          "mods": []
+        },
+        {
+          "id": "item_esp_1",
+          "name": "Classic Latte",
+          "price": 65,
+          "qty": 1,
+          "mods": []
+        },
+        {
+          "id": "item_grill_1",
+          "name": "Chipotle Burrito",
+          "price": 180,
+          "qty": 1,
+          "mods": []
+        }
+      ],
+      "subtotal": 310,
+      "tax": 47,
+      "discount": 0,
+      "total": 357,
+      "status": "pending",
+      "payment_method": "cash",
+      "discount_code": null
+    },
+    {
+      "id": "ORD-0030",
+      "order_number": 30,
+      "items": [
+        {
+          "id": "test",
+          "name": "Test Latte",
+          "price": 50,
+          "qty": 1,
+          "mods": []
+        }
+      ],
+      "subtotal": 50,
+      "tax": 0,
+      "discount": 0,
+      "total": 50,
+      "status": "pending",
+      "payment_method": "cash"
+    },
+    {
+      "id": "ORD-0029",
+      "order_number": 29,
+      "items": [
+        {
+          "id": "item_esp_1",
+          "name": "Classic Latte",
+          "price": 65,
+          "qty": 1,
+          "mods": []
+        },
+        {
+          "id": "item_esp_1",
+          "name": "Classic Latte",
+          "price": 65,
+          "qty": 1,
+          "mods": []
+        }
+      ],
+      "subtotal": 130,
+      "tax": 20,
+      "discount": 0,
+      "total": 150,
+      "status": "pending",
+      "payment_method": "cash",
+      "discount_code": null
+    },
+    {
+      "id": "ORD-0028",
+      "order_number": 28,
+      "items": [
+        {
+          "id": "item_esp_2",
+          "name": "Cappuccino",
+          "price": 65,
+          "qty": 1,
+          "mods": []
+        },
+        {
+          "id": "item_esp_2",
+          "name": "Cappuccino",
+          "price": 65,
+          "qty": 1,
+          "mods": []
+        }
+      ],
+      "subtotal": 130,
+      "tax": 20,
+      "discount": 0,
+      "total": 150,
+      "status": "pending",
+      "payment_method": "cash",
+      "discount_code": null
+    },
+    {
+      "id": "ORD-0027",
+      "order_number": 27,
+      "items": [
+        {
+          "id": "item_esp_1",
+          "name": "Classic Latte",
+          "price": 65,
+          "qty": 1,
+          "mods": []
+        },
+        {
+          "id": "item_esp_2",
+          "name": "Cappuccino",
+          "price": 65,
+          "qty": 1,
+          "mods": []
+        },
+        {
+          "id": "item_esp_3",
+          "name": "Americano",
+          "price": 60,
+          "qty": 1,
+          "mods": []
+        },
+        {
+          "id": "item_esp_4",
+          "name": "Espresso",
+          "price": 40,
+          "qty": 1,
+          "mods": []
+        }
+      ],
+      "subtotal": 230,
+      "tax": 35,
+      "discount": 0,
+      "total": 265,
+      "status": "pending",
+      "payment_method": "cash",
+      "discount_code": null
+    },
+    {
       "id": "ORD-001",
       "timestamp": "2025-01-27T08:15:00",
       "items": [

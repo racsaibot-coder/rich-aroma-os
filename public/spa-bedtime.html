@@ -1,0 +1,787 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>✨ Spa & Bedtime ✨</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-touch-callout: none;
+            -webkit-user-select: none;
+            user-select: none;
+        }
+
+        body {
+            font-family: 'Comic Sans MS', cursive, sans-serif;
+            background: linear-gradient(135deg, #E8F5E9 0%, #F3E5F5 50%, #FFF3E0 100%);
+            min-height: 100vh;
+            overflow-x: hidden;
+            padding-bottom: 20px;
+        }
+
+        h1 {
+            font-size: 1.4rem;
+            color: #FF69B4;
+            text-align: center;
+            padding: 8px;
+            text-shadow: 2px 2px 4px rgba(255,255,255,0.8);
+        }
+
+        .room {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 5px;
+        }
+
+        .scene {
+            position: relative;
+            width: 340px;
+            height: 300px;
+            background: linear-gradient(180deg, #FFE4E1 0%, #FFF0F5 100%);
+            border-radius: 20px;
+            overflow: hidden;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+        }
+
+        /* Bed */
+        .bed {
+            position: absolute;
+            right: 20px;
+            bottom: 20px;
+            width: 130px;
+            height: 90px;
+            display: none;
+        }
+
+        .bed.show { display: block; }
+
+        .mattress {
+            position: absolute;
+            bottom: 0;
+            width: 130px;
+            height: 40px;
+            background: linear-gradient(180deg, #DDA0DD, #BA55D3);
+            border-radius: 10px;
+        }
+
+        .pillow {
+            position: absolute;
+            bottom: 35px;
+            right: 5px;
+            width: 40px;
+            height: 25px;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+
+        .blanket {
+            position: absolute;
+            bottom: 5px;
+            left: 5px;
+            width: 100px;
+            height: 30px;
+            background: linear-gradient(90deg, #FFB6C1, #FF69B4);
+            border-radius: 5px 20px 10px 5px;
+        }
+
+        .headboard {
+            position: absolute;
+            bottom: 35px;
+            width: 130px;
+            height: 50px;
+            background: linear-gradient(180deg, #8B4513, #A0522D);
+            border-radius: 10px 10px 0 0;
+        }
+
+        .lamb {
+            position: absolute;
+            bottom: 45px;
+            left: 10px;
+            font-size: 2rem;
+        }
+
+        /* Spa Chair */
+        .spa-area {
+            position: absolute;
+            left: 20px;
+            bottom: 20px;
+        }
+
+        .spa-area.hide { display: none; }
+
+        .chair-seat {
+            width: 100px;
+            height: 25px;
+            background: linear-gradient(180deg, #FF69B4, #FF1493);
+            border-radius: 15px;
+        }
+
+        .chair-back {
+            width: 90px;
+            height: 50px;
+            background: linear-gradient(180deg, #FF69B4, #FF1493);
+            border-radius: 15px 15px 0 0;
+            margin: 0 auto -5px;
+        }
+
+        .vanity {
+            position: absolute;
+            left: 130px;
+            bottom: 70px;
+            text-align: center;
+        }
+
+        .mirror {
+            width: 40px;
+            height: 50px;
+            background: linear-gradient(145deg, #E0FFFF, #B0E0E6);
+            border: 5px solid #FFD700;
+            border-radius: 20px 20px 5px 5px;
+            margin: 0 auto;
+        }
+
+        .table {
+            width: 50px;
+            height: 10px;
+            background: #DEB887;
+            border-radius: 3px;
+            margin-top: 5px;
+        }
+
+        /* Character */
+        .character {
+            position: absolute;
+            left: 35px;
+            bottom: 45px;
+            width: 80px;
+            height: 180px;
+            transition: all 0.5s ease;
+        }
+
+        .character.at-bed {
+            left: 55px;
+            bottom: 30px;
+            transform: rotate(-90deg);
+        }
+
+        .head {
+            position: relative;
+            width: 50px;
+            height: 60px;
+            margin: 0 auto;
+        }
+
+        .hair {
+            position: absolute;
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 55px;
+            height: 55px;
+            background: var(--hair-color, #4A3728);
+            border-radius: 50% 50% 30% 30%;
+            z-index: 1;
+        }
+
+        .hair.braids::before,
+        .hair.braids::after {
+            content: '';
+            position: absolute;
+            bottom: -30px;
+            width: 12px;
+            height: 40px;
+            background: var(--hair-color, #4A3728);
+            border-radius: 6px;
+        }
+
+        .hair.braids::before { left: 5px; }
+        .hair.braids::after { right: 5px; }
+
+        .hair.ponytail::before {
+            content: '';
+            position: absolute;
+            top: 10px;
+            right: -15px;
+            width: 15px;
+            height: 35px;
+            background: var(--hair-color, #4A3728);
+            border-radius: 8px;
+            transform: rotate(30deg);
+        }
+
+        .hair.bun::before {
+            content: '';
+            position: absolute;
+            top: -15px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 25px;
+            height: 25px;
+            background: var(--hair-color, #4A3728);
+            border-radius: 50%;
+        }
+
+        .face {
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 45px;
+            height: 50px;
+            background: linear-gradient(180deg, #FFDAB9, #FFE4C4);
+            border-radius: 50% 50% 45% 45%;
+            z-index: 10;
+        }
+
+        .eyes {
+            position: absolute;
+            top: 18px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 12px;
+        }
+
+        .eye {
+            width: 8px;
+            height: 10px;
+            background: #333;
+            border-radius: 50%;
+        }
+
+        .mouth {
+            position: absolute;
+            bottom: 12px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 12px;
+            height: 6px;
+            background: #FF6B8A;
+            border-radius: 0 0 10px 10px;
+        }
+
+        .hat {
+            position: absolute;
+            top: -20px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 1.8rem;
+            z-index: 20;
+            display: none;
+        }
+
+        .body {
+            width: 35px;
+            height: 50px;
+            background: var(--shirt-color, #FF69B4);
+            border-radius: 15px 15px 5px 5px;
+            margin: -5px auto 0;
+            position: relative;
+            z-index: 5;
+        }
+
+        .costume-princess .body {
+            width: 50px;
+            height: 60px;
+            background: linear-gradient(180deg, #FFD700, #FFA500);
+            border-radius: 10px 10px 25px 25px;
+        }
+
+        .costume-fairy .body {
+            background: linear-gradient(180deg, #E0BBE4, #D4A5D9);
+        }
+
+        .costume-fairy .body::after {
+            content: '🦋';
+            position: absolute;
+            top: -10px;
+            right: -20px;
+            font-size: 1.5rem;
+        }
+
+        .arms {
+            position: relative;
+            margin-top: -45px;
+        }
+
+        .arm {
+            position: absolute;
+            width: 12px;
+            height: 35px;
+            background: #FFDAB9;
+            border-radius: 6px;
+        }
+
+        .arm.left { left: -5px; transform: rotate(20deg); }
+        .arm.right { right: -5px; transform: rotate(-20deg); }
+
+        .hand {
+            position: absolute;
+            bottom: -3px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 14px;
+            height: 14px;
+            background: #FFDAB9;
+            border-radius: 50%;
+        }
+
+        .nails {
+            display: flex;
+            gap: 1px;
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+
+        .nail {
+            width: 3px;
+            height: 4px;
+            background: var(--nail-color, transparent);
+            border-radius: 1px 1px 2px 2px;
+        }
+
+        .legs {
+            display: flex;
+            gap: 5px;
+            justify-content: center;
+            margin-top: 45px;
+        }
+
+        .leg {
+            width: 14px;
+            height: 45px;
+            background: var(--pants-color, #4169E1);
+            border-radius: 7px;
+            position: relative;
+        }
+
+        .shoe {
+            position: absolute;
+            bottom: -8px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 18px;
+            height: 12px;
+            background: var(--shoe-color, #333);
+            border-radius: 9px 9px 4px 4px;
+        }
+
+        .shoe.heels {
+            height: 18px;
+            border-radius: 9px 9px 2px 2px;
+        }
+
+        .shoe.slippers {
+            background: #FFB6C1;
+            border-radius: 10px;
+        }
+
+        /* Action Button */
+        .action-btn {
+            position: absolute;
+            bottom: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 10px 20px;
+            background: linear-gradient(180deg, #FF69B4, #FF1493);
+            color: white;
+            border: none;
+            border-radius: 20px;
+            font-size: 1rem;
+            font-family: inherit;
+            cursor: pointer;
+            box-shadow: 0 4px 15px rgba(255,105,180,0.4);
+        }
+
+        /* Controls */
+        .controls {
+            margin-top: 10px;
+            width: 100%;
+            max-width: 340px;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 5px;
+            justify-content: center;
+            margin-bottom: 10px;
+            flex-wrap: wrap;
+        }
+
+        .tab {
+            padding: 8px 12px;
+            background: white;
+            border-radius: 15px;
+            font-size: 0.8rem;
+            cursor: pointer;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .tab.active {
+            background: #FF69B4;
+            color: white;
+        }
+
+        .panel {
+            display: none;
+            padding: 10px;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 3px 15px rgba(0,0,0,0.1);
+        }
+
+        .panel.active { display: block; }
+
+        .options {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .option {
+            width: 45px;
+            height: 45px;
+            background: #f5f5f5;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            border: 2px solid transparent;
+        }
+
+        .option:active { transform: scale(0.95); }
+        .option.selected { border-color: #FF69B4; }
+        .option-icon { font-size: 1.4rem; }
+
+        .color-opt {
+            width: 35px;
+            height: 35px;
+            border-radius: 50%;
+            border: 3px solid white;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+            cursor: pointer;
+        }
+
+        .sparkle {
+            position: fixed;
+            pointer-events: none;
+            font-size: 1.5rem;
+            animation: sparkle 0.8s forwards;
+            z-index: 100;
+        }
+
+        @keyframes sparkle {
+            0% { transform: scale(0); opacity: 1; }
+            100% { transform: scale(1.5); opacity: 0; }
+        }
+
+        .message {
+            position: fixed;
+            top: 40%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: white;
+            padding: 12px 20px;
+            border-radius: 15px;
+            color: #FF69B4;
+            font-size: 1.1rem;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.2);
+            z-index: 200;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <h1>✨ Spa & Bedtime ✨</h1>
+    
+    <div class="room">
+        <div class="scene">
+            <!-- Bed Area -->
+            <div class="bed" id="bed">
+                <div class="headboard"></div>
+                <div class="pillow"></div>
+                <div class="mattress"></div>
+                <div class="blanket"></div>
+                <div class="lamb">🐑</div>
+            </div>
+
+            <!-- Spa Area -->
+            <div class="spa-area" id="spaArea">
+                <div class="chair-back"></div>
+                <div class="chair-seat"></div>
+            </div>
+
+            <div class="vanity">
+                <div class="mirror"></div>
+                <div class="table"></div>
+            </div>
+
+            <!-- Character -->
+            <div class="character" id="character">
+                <div class="head">
+                    <div class="hair" id="hair"></div>
+                    <div class="hat" id="hat">👑</div>
+                    <div class="face">
+                        <div class="eyes">
+                            <div class="eye"></div>
+                            <div class="eye"></div>
+                        </div>
+                        <div class="mouth"></div>
+                    </div>
+                </div>
+                <div class="body" id="body"></div>
+                <div class="arms">
+                    <div class="arm left">
+                        <div class="hand">
+                            <div class="nails">
+                                <div class="nail"></div>
+                                <div class="nail"></div>
+                                <div class="nail"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="arm right">
+                        <div class="hand">
+                            <div class="nails">
+                                <div class="nail"></div>
+                                <div class="nail"></div>
+                                <div class="nail"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="legs">
+                    <div class="leg" id="legL"><div class="shoe" id="shoeL"></div></div>
+                    <div class="leg" id="legR"><div class="shoe" id="shoeR"></div></div>
+                </div>
+            </div>
+
+            <button class="action-btn" id="actionBtn" onclick="togglePosition()">🛏️ Go to Bed</button>
+        </div>
+
+        <div class="controls">
+            <div class="tabs">
+                <div class="tab active" onclick="showPanel('hair')">💇</div>
+                <div class="tab" onclick="showPanel('clothes')">👚</div>
+                <div class="tab" onclick="showPanel('nails')">💅</div>
+                <div class="tab" onclick="showPanel('shoes')">👠</div>
+                <div class="tab" onclick="showPanel('hats')">👑</div>
+                <div class="tab" onclick="showPanel('costumes')">👗</div>
+            </div>
+
+            <div class="panel active" id="panel-hair">
+                <div class="options">
+                    <div class="option" onclick="setHairStyle('')"><span class="option-icon">💇</span></div>
+                    <div class="option" onclick="setHairStyle('braids')"><span class="option-icon">👧</span></div>
+                    <div class="option" onclick="setHairStyle('ponytail')"><span class="option-icon">💁</span></div>
+                    <div class="option" onclick="setHairStyle('bun')"><span class="option-icon">👩</span></div>
+                </div>
+                <div class="options" style="margin-top:10px">
+                    <div class="color-opt" style="background:#4A3728" onclick="setHairColor('#4A3728')"></div>
+                    <div class="color-opt" style="background:#FFD700" onclick="setHairColor('#FFD700')"></div>
+                    <div class="color-opt" style="background:#FF6B6B" onclick="setHairColor('#FF6B6B')"></div>
+                    <div class="color-opt" style="background:#9B59B6" onclick="setHairColor('#9B59B6')"></div>
+                    <div class="color-opt" style="background:#FF69B4" onclick="setHairColor('#FF69B4')"></div>
+                    <div class="color-opt" style="background:#3498DB" onclick="setHairColor('#3498DB')"></div>
+                </div>
+            </div>
+
+            <div class="panel" id="panel-clothes">
+                <div class="options">
+                    <div class="color-opt" style="background:#FF69B4" onclick="setShirt('#FF69B4')"></div>
+                    <div class="color-opt" style="background:#87CEEB" onclick="setShirt('#87CEEB')"></div>
+                    <div class="color-opt" style="background:#98FB98" onclick="setShirt('#98FB98')"></div>
+                    <div class="color-opt" style="background:#FFD700" onclick="setShirt('#FFD700')"></div>
+                    <div class="color-opt" style="background:#DDA0DD" onclick="setShirt('#DDA0DD')"></div>
+                </div>
+                <div class="options" style="margin-top:10px">
+                    <div class="color-opt" style="background:#4169E1" onclick="setPants('#4169E1')"></div>
+                    <div class="color-opt" style="background:#FF69B4" onclick="setPants('#FF69B4')"></div>
+                    <div class="color-opt" style="background:#333" onclick="setPants('#333')"></div>
+                    <div class="color-opt" style="background:#9370DB" onclick="setPants('#9370DB')"></div>
+                </div>
+            </div>
+
+            <div class="panel" id="panel-nails">
+                <div class="options">
+                    <div class="option" onclick="setNails('')"><span class="option-icon">❌</span></div>
+                    <div class="color-opt" style="background:#FF69B4" onclick="setNails('#FF69B4')"></div>
+                    <div class="color-opt" style="background:#FF0000" onclick="setNails('#FF0000')"></div>
+                    <div class="color-opt" style="background:#9B59B6" onclick="setNails('#9B59B6')"></div>
+                    <div class="color-opt" style="background:#FFD700" onclick="setNails('#FFD700')"></div>
+                    <div class="color-opt" style="background:#00CED1" onclick="setNails('#00CED1')"></div>
+                    <div class="color-opt" style="background:#FFF" onclick="setNails('#FFF')"></div>
+                </div>
+            </div>
+
+            <div class="panel" id="panel-shoes">
+                <div class="options">
+                    <div class="option" onclick="setShoes('normal','#333')"><span class="option-icon">👟</span></div>
+                    <div class="option" onclick="setShoes('heels','#FF1493')"><span class="option-icon">👠</span></div>
+                    <div class="option" onclick="setShoes('slippers','#FFB6C1')"><span class="option-icon">🥿</span></div>
+                </div>
+                <div class="options" style="margin-top:10px">
+                    <div class="color-opt" style="background:#333" onclick="setShoeColor('#333')"></div>
+                    <div class="color-opt" style="background:#FF1493" onclick="setShoeColor('#FF1493')"></div>
+                    <div class="color-opt" style="background:#FFD700" onclick="setShoeColor('#FFD700')"></div>
+                    <div class="color-opt" style="background:#9B59B6" onclick="setShoeColor('#9B59B6')"></div>
+                </div>
+            </div>
+
+            <div class="panel" id="panel-hats">
+                <div class="options">
+                    <div class="option" onclick="setHat('')"><span class="option-icon">❌</span></div>
+                    <div class="option" onclick="setHat('👑')"><span class="option-icon">👑</span></div>
+                    <div class="option" onclick="setHat('🎀')"><span class="option-icon">🎀</span></div>
+                    <div class="option" onclick="setHat('🌸')"><span class="option-icon">🌸</span></div>
+                    <div class="option" onclick="setHat('🦋')"><span class="option-icon">🦋</span></div>
+                    <div class="option" onclick="setHat('⭐')"><span class="option-icon">⭐</span></div>
+                    <div class="option" onclick="setHat('🎩')"><span class="option-icon">🎩</span></div>
+                </div>
+            </div>
+
+            <div class="panel" id="panel-costumes">
+                <div class="options">
+                    <div class="option" onclick="setCostume('')"><span class="option-icon">👚</span></div>
+                    <div class="option" onclick="setCostume('princess')"><span class="option-icon">👸</span></div>
+                    <div class="option" onclick="setCostume('fairy')"><span class="option-icon">🧚</span></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="message" id="message"></div>
+
+    <script>
+        let atBed = false;
+        let shoeStyle = 'normal';
+
+        function showPanel(name) {
+            document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.getElementById('panel-' + name).classList.add('active');
+            event.target.classList.add('active');
+        }
+
+        function setHairStyle(style) {
+            const hair = document.getElementById('hair');
+            hair.className = 'hair ' + style;
+            sparkle(); showMessage('💇 Cute hair!');
+        }
+
+        function setHairColor(color) {
+            document.getElementById('hair').style.setProperty('--hair-color', color);
+            sparkle(); showMessage('🎨 Pretty color!');
+        }
+
+        function setShirt(color) {
+            document.getElementById('body').style.setProperty('--shirt-color', color);
+            sparkle(); showMessage('👚 Nice shirt!');
+        }
+
+        function setPants(color) {
+            document.getElementById('legL').style.setProperty('--pants-color', color);
+            document.getElementById('legR').style.setProperty('--pants-color', color);
+            sparkle(); showMessage('👖 Cool pants!');
+        }
+
+        function setNails(color) {
+            document.querySelectorAll('.nail').forEach(n => {
+                n.style.setProperty('--nail-color', color || 'transparent');
+            });
+            sparkle(); showMessage(color ? '💅 Pretty nails!' : '💅 Nails off!');
+        }
+
+        function setShoes(style, color) {
+            shoeStyle = style;
+            const shoes = document.querySelectorAll('.shoe');
+            shoes.forEach(s => {
+                s.className = 'shoe ' + style;
+                s.style.setProperty('--shoe-color', color);
+            });
+            sparkle(); showMessage('👠 Fancy shoes!');
+        }
+
+        function setShoeColor(color) {
+            document.querySelectorAll('.shoe').forEach(s => {
+                s.style.setProperty('--shoe-color', color);
+            });
+            sparkle();
+        }
+
+        function setHat(emoji) {
+            const hat = document.getElementById('hat');
+            if (emoji) {
+                hat.textContent = emoji;
+                hat.style.display = 'block';
+                showMessage('✨ So pretty!');
+            } else {
+                hat.style.display = 'none';
+            }
+            sparkle();
+        }
+
+        function setCostume(type) {
+            const char = document.getElementById('character');
+            char.className = 'character' + (type ? ' costume-' + type : '') + (atBed ? ' at-bed' : '');
+            sparkle(); showMessage(type ? '👗 Beautiful costume!' : '👚 Regular clothes!');
+        }
+
+        function togglePosition() {
+            atBed = !atBed;
+            const char = document.getElementById('character');
+            const bed = document.getElementById('bed');
+            const spa = document.getElementById('spaArea');
+            const btn = document.getElementById('actionBtn');
+
+            if (atBed) {
+                char.classList.add('at-bed');
+                char.style.left = '75px';
+                char.style.bottom = '55px';
+                bed.classList.add('show');
+                spa.classList.add('hide');
+                btn.textContent = '💺 Go to Spa';
+                showMessage('😴 Sleepy time with lamb!');
+            } else {
+                char.classList.remove('at-bed');
+                char.style.left = '35px';
+                char.style.bottom = '45px';
+                bed.classList.remove('show');
+                spa.classList.remove('hide');
+                btn.textContent = '🛏️ Go to Bed';
+                showMessage('💅 Spa time!');
+            }
+            sparkle();
+        }
+
+        function sparkle() {
+            const emojis = ['✨', '💖', '⭐', '💫'];
+            for (let i = 0; i < 4; i++) {
+                const s = document.createElement('div');
+                s.className = 'sparkle';
+                s.textContent = emojis[Math.floor(Math.random() * emojis.length)];
+                s.style.left = (80 + Math.random() * 180) + 'px';
+                s.style.top = (80 + Math.random() * 150) + 'px';
+                document.body.appendChild(s);
+                setTimeout(() => s.remove(), 800);
+            }
+        }
+
+        function showMessage(text) {
+            const msg = document.getElementById('message');
+            msg.textContent = text;
+            msg.style.display = 'block';
+            setTimeout(() => msg.style.display = 'none', 1000);
+        }
+    </script>
+</body>
+</html>

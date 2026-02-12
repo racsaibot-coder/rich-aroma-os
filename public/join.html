@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Únete al Squad Rico</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css" rel="stylesheet">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;800&display=swap');
+        body { font-family: 'Poppins', sans-serif; }
+        .gold-gradient { background: linear-gradient(135deg, #C9A66B 0%, #F4E2C0 50%, #C9A66B 100%); }
+    </style>
+</head>
+<body class="bg-gray-900 text-white min-h-screen flex flex-col items-center justify-center p-6 relative overflow-hidden">
+
+    <!-- Background Image -->
+    <div class="absolute inset-0 z-0 opacity-30">
+        <img src="https://images.unsplash.com/photo-1509042239860-f550ce710b93?w=800&q=80" class="w-full h-full object-cover">
+    </div>
+
+    <!-- MAIN CONTAINER -->
+    <div id="card-container" class="relative z-10 w-full max-w-sm bg-white text-gray-800 rounded-3xl shadow-2xl overflow-hidden min-h-[600px] flex flex-col">
+        
+        <!-- STEP 1: THE HOOK -->
+        <div id="step-1" class="step h-full flex flex-col p-8 text-center animate__animated animate__fadeIn">
+            <div class="mb-6">
+                <span class="text-6xl">🐵</span>
+            </div>
+            <h1 class="text-3xl font-extrabold mb-2 text-gray-900">Únete al Squad</h1>
+            <p class="text-gray-500 mb-8">La comunidad más exclusiva de Quimistán.</p>
+            
+            <div class="bg-yellow-50 border-2 border-yellow-400 p-6 rounded-2xl mb-8 transform rotate-1 hover:rotate-0 transition">
+                <p class="text-xs font-bold uppercase text-yellow-600 tracking-widest">Regalo de Bienvenida</p>
+                <p class="text-4xl font-extrabold text-gray-900 my-2">L. 50</p>
+                <p class="text-sm text-gray-600">En saldo Rico Cash 💰</p>
+            </div>
+
+            <button onclick="nextStep(2)" class="mt-auto w-full bg-black text-white py-4 rounded-xl font-bold text-lg shadow-lg hover:scale-105 transition transform">
+                ¡Lo Quiero! 🔥
+            </button>
+        </div>
+
+        <!-- STEP 2: IDENTITY -->
+        <div id="step-2" class="step hidden h-full flex flex-col p-8 animate__animated animate__fadeInRight">
+            <h2 class="text-2xl font-bold mb-6">Crea tu Perfil</h2>
+            
+            <div class="space-y-4 mb-8">
+                <div>
+                    <label class="block text-xs font-bold text-gray-400 uppercase mb-1">Tu Nombre</label>
+                    <input type="text" id="input-name" placeholder="Ej: Juan Perez" class="w-full p-4 bg-gray-50 border border-gray-200 rounded-xl focus:border-yellow-500 outline-none font-bold text-lg" oninput="updateCard()">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-gray-400 uppercase mb-1">Celular (WhatsApp)</label>
+                    <input type="tel" id="input-phone" placeholder="9988-1122" class="w-full p-4 bg-gray-50 border border-gray-200 rounded-xl focus:border-yellow-500 outline-none font-bold text-lg tracking-widest" oninput="updateCard()">
+                </div>
+            </div>
+
+            <!-- Live Card Preview -->
+            <div class="gold-gradient p-4 rounded-xl shadow-lg text-gray-900 mb-8 transform scale-95 origin-center">
+                <div class="flex justify-between items-start">
+                    <div>
+                        <p class="text-xs font-bold opacity-60">MIEMBRO OFICIAL</p>
+                        <p class="text-xl font-extrabold" id="card-name">Tu Nombre...</p>
+                    </div>
+                    <span class="text-2xl">🐵</span>
+                </div>
+                <div class="mt-8 flex justify-between items-end">
+                    <p class="font-mono tracking-widest opacity-70" id="card-phone">0000-0000</p>
+                    <p class="text-xs font-bold border border-black px-2 py-1 rounded">NIVEL 1</p>
+                </div>
+            </div>
+
+            <button onclick="nextStep(3)" class="mt-auto w-full bg-black text-white py-4 rounded-xl font-bold text-lg shadow-lg">
+                Siguiente ➡️
+            </button>
+        </div>
+
+        <!-- STEP 3: SOCIAL LOCK -->
+        <div id="step-3" class="step hidden h-full flex flex-col p-8 animate__animated animate__fadeInRight">
+            <div class="text-center mb-6">
+                <span class="text-5xl" id="lock-icon">🔒</span>
+            </div>
+            <h2 class="text-2xl font-bold text-center mb-2">¿Quieres más premios?</h2>
+            <p class="text-center text-gray-500 text-sm mb-8">Conecta tu Instagram para desbloquear Misiones de Fotos y ganar comida gratis.</p>
+
+            <div class="bg-gray-50 p-6 rounded-2xl border border-gray-200 mb-8 relative">
+                <label class="block text-xs font-bold text-gray-400 uppercase mb-1">Usuario de Instagram (Opcional)</label>
+                <div class="flex items-center">
+                    <span class="text-gray-400 text-lg mr-2">@</span>
+                    <input type="text" id="input-ig" placeholder="tu_usuario" class="w-full bg-transparent outline-none font-bold text-lg" oninput="checkLock()">
+                </div>
+                <div class="absolute top-2 right-2">
+                    <i class="fab fa-instagram text-pink-500 text-xl"></i>
+                </div>
+            </div>
+
+            <div class="mt-auto space-y-3">
+                <button onclick="finish()" class="w-full bg-gradient-to-r from-purple-600 to-pink-600 text-white py-4 rounded-xl font-bold text-lg shadow-lg hover:shadow-xl transition">
+                    Desbloquear VIP 🔓
+                </button>
+                <button onclick="finish()" class="w-full bg-transparent text-gray-400 py-3 rounded-xl font-bold text-sm">
+                    No, gracias. Solo quiero mi café.
+                </button>
+            </div>
+        </div>
+
+        <!-- STEP 4: SUCCESS -->
+        <div id="step-4" class="step hidden h-full flex flex-col items-center justify-center p-8 text-center animate__animated animate__zoomIn">
+            <div class="mb-6 animate__animated animate__tada animate__delay-1s">
+                <span class="text-7xl">🎉</span>
+            </div>
+            <h1 class="text-3xl font-extrabold mb-2">¡Bienvenido!</h1>
+            <p class="text-gray-500 mb-8">Ya eres parte de la familia.</p>
+
+            <div class="bg-green-50 border border-green-200 p-6 rounded-2xl w-full mb-4">
+                <p class="text-xs font-bold uppercase text-green-600">Saldo Actual</p>
+                <p class="text-4xl font-extrabold text-green-700">L. 50.00</p>
+            </div>
+
+            <p class="text-xs text-gray-400 mb-8">Usa tu número de celular en caja para pagar.</p>
+
+            <a href="rico-run.html" class="w-full bg-yellow-400 text-yellow-900 py-4 rounded-xl font-bold text-lg shadow-lg mb-3">
+                🎮 Jugar "El Salto de Rico"
+            </a>
+        </div>
+
+    </div>
+
+<script>
+    function nextStep(step) {
+        document.querySelectorAll('.step').forEach(el => el.classList.add('hidden'));
+        document.getElementById(`step-${step}`).classList.remove('hidden');
+    }
+
+    function updateCard() {
+        const name = document.getElementById('input-name').value;
+        const phone = document.getElementById('input-phone').value;
+        
+        document.getElementById('card-name').innerText = name || "Tu Nombre...";
+        document.getElementById('card-phone').innerText = phone || "0000-0000";
+    }
+
+    function checkLock() {
+        const val = document.getElementById('input-ig').value;
+        const icon = document.getElementById('lock-icon');
+        if (val.length > 2) {
+            icon.innerText = "🔓";
+            icon.classList.add('animate__rubberBand');
+        } else {
+            icon.innerText = "🔒";
+            icon.classList.remove('animate__rubberBand');
+        }
+    }
+
+    function finish() {
+        // Here we would POST /api/customers
+        nextStep(4);
+        
+        // Confetti effect (simulated)
+        // In prod: confetti();
+    }
+</script>
+</body>
+</html>

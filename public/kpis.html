@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>📊 KPIs - Rich Aroma</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --dark-bg: #0f0d0b;
+            --card-bg: #1a1714;
+            --caramel: #D4A574;
+            --cream: #F5EDE4;
+            --success: #22c55e;
+            --warning: #eab308;
+            --danger: #ef4444;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--dark-bg);
+            color: var(--cream);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 25px;
+        }
+        .title { font-size: 1.5rem; color: var(--caramel); }
+        .date { color: #888; margin-top: 5px; }
+        .kpi-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+        .kpi-card {
+            background: var(--card-bg);
+            border-radius: 15px;
+            padding: 20px;
+            text-align: center;
+        }
+        .kpi-value {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--caramel);
+        }
+        .kpi-label {
+            font-size: 0.85rem;
+            color: #888;
+            margin-top: 5px;
+        }
+        .kpi-trend {
+            font-size: 0.9rem;
+            margin-top: 8px;
+        }
+        .trend-up { color: var(--success); }
+        .trend-down { color: var(--danger); }
+        .section-title {
+            font-size: 1.1rem;
+            color: var(--caramel);
+            margin: 20px 0 15px;
+        }
+        .chart {
+            background: var(--card-bg);
+            border-radius: 15px;
+            padding: 20px;
+            height: 200px;
+            display: flex;
+            align-items: flex-end;
+            gap: 8px;
+        }
+        .bar {
+            flex: 1;
+            background: var(--caramel);
+            border-radius: 5px 5px 0 0;
+            position: relative;
+        }
+        .bar-label {
+            position: absolute;
+            bottom: -25px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 0.7rem;
+            color: #888;
+        }
+        .top-items {
+            background: var(--card-bg);
+            border-radius: 15px;
+            padding: 15px;
+        }
+        .top-item {
+            display: flex;
+            align-items: center;
+            padding: 12px 0;
+            border-bottom: 1px solid #252220;
+        }
+        .top-item:last-child { border-bottom: none; }
+        .rank {
+            width: 30px;
+            height: 30px;
+            background: var(--caramel);
+            color: #000;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            margin-right: 15px;
+        }
+        .top-item-info { flex: 1; }
+        .top-item-name { font-weight: 600; }
+        .top-item-sold { color: #888; font-size: 0.85rem; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="title">📊 Daily KPIs</div>
+        <div class="date" id="date"></div>
+    </div>
+
+    <div class="kpi-grid">
+        <div class="kpi-card">
+            <div class="kpi-value">L 2,450</div>
+            <div class="kpi-label">Today's Sales</div>
+            <div class="kpi-trend trend-up">↑ 12% vs yesterday</div>
+        </div>
+        <div class="kpi-card">
+            <div class="kpi-value">47</div>
+            <div class="kpi-label">Orders</div>
+            <div class="kpi-trend trend-up">↑ 8% vs yesterday</div>
+        </div>
+        <div class="kpi-card">
+            <div class="kpi-value">L 52</div>
+            <div class="kpi-label">Avg Ticket</div>
+            <div class="kpi-trend trend-up">↑ 3%</div>
+        </div>
+        <div class="kpi-card">
+            <div class="kpi-value">4:32</div>
+            <div class="kpi-label">Avg Wait Time</div>
+            <div class="kpi-trend trend-down">↓ 15% faster</div>
+        </div>
+    </div>
+
+    <div class="section-title">📈 Hourly Sales</div>
+    <div class="chart">
+        <div class="bar" style="height: 20%"><span class="bar-label">7a</span></div>
+        <div class="bar" style="height: 45%"><span class="bar-label">8a</span></div>
+        <div class="bar" style="height: 70%"><span class="bar-label">9a</span></div>
+        <div class="bar" style="height: 55%"><span class="bar-label">10a</span></div>
+        <div class="bar" style="height: 40%"><span class="bar-label">11a</span></div>
+        <div class="bar" style="height: 80%"><span class="bar-label">12p</span></div>
+        <div class="bar" style="height: 90%"><span class="bar-label">1p</span></div>
+        <div class="bar" style="height: 60%"><span class="bar-label">2p</span></div>
+        <div class="bar" style="height: 35%"><span class="bar-label">3p</span></div>
+        <div class="bar" style="height: 50%"><span class="bar-label">4p</span></div>
+        <div class="bar" style="height: 65%"><span class="bar-label">5p</span></div>
+        <div class="bar" style="height: 30%"><span class="bar-label">6p</span></div>
+    </div>
+
+    <div class="section-title">🏆 Top Sellers</div>
+    <div class="top-items">
+        <div class="top-item">
+            <div class="rank">1</div>
+            <div class="top-item-info">
+                <div class="top-item-name">Classic Latte</div>
+                <div class="top-item-sold">18 sold • L 1,170</div>
+            </div>
+        </div>
+        <div class="top-item">
+            <div class="rank">2</div>
+            <div class="top-item-info">
+                <div class="top-item-name">Cappuccino</div>
+                <div class="top-item-sold">12 sold • L 780</div>
+            </div>
+        </div>
+        <div class="top-item">
+            <div class="rank">3</div>
+            <div class="top-item-info">
+                <div class="top-item-name">Croissant</div>
+                <div class="top-item-sold">9 sold • L 405</div>
+            </div>
+        </div>
+        <div class="top-item">
+            <div class="rank">4</div>
+            <div class="top-item-info">
+                <div class="top-item-name">Americano</div>
+                <div class="top-item-sold">8 sold • L 480</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.getElementById('date').textContent = new Date().toLocaleDateString('en-US', {
+            weekday: 'long', month: 'long', day: 'numeric', year: 'numeric'
+        });
+    </script>
+</body>
+</html>

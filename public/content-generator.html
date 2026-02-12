@@ -1,0 +1,626 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rich Aroma - Content Generator</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        :root {
+            --gold: #C9A66B;
+            --espresso: #1E1610;
+            --cream: #F5F0E8;
+            --success: #4CAF50;
+            --warning: #FF9800;
+            --danger: #f44336;
+        }
+        body {
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            background: linear-gradient(135deg, var(--espresso) 0%, #3d2b1f 100%);
+            min-height: 100vh;
+            padding: 15px;
+            color: #fff;
+        }
+        .container { max-width: 600px; margin: 0 auto; }
+        
+        header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        h1 {
+            color: var(--gold);
+            font-size: 1.4rem;
+            margin-bottom: 5px;
+        }
+        .subtitle { opacity: 0.7; font-size: 0.85rem; }
+        
+        .card {
+            background: rgba(255,255,255,0.08);
+            border-radius: 12px;
+            padding: 15px;
+            margin-bottom: 15px;
+        }
+        .card-title {
+            color: var(--gold);
+            font-size: 1rem;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .form-group { margin-bottom: 12px; }
+        .form-label {
+            display: block;
+            font-size: 0.8rem;
+            margin-bottom: 4px;
+            opacity: 0.8;
+        }
+        .form-select, .form-input, .form-textarea {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 8px;
+            background: rgba(255,255,255,0.1);
+            color: #fff;
+            font-size: 1rem;
+        }
+        .form-textarea {
+            min-height: 80px;
+            resize: vertical;
+            font-family: inherit;
+        }
+        .form-select option { background: var(--espresso); }
+        .form-input:focus, .form-select:focus, .form-textarea:focus {
+            outline: none;
+            border-color: var(--gold);
+        }
+        
+        .btn {
+            width: 100%;
+            padding: 14px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .btn-primary { 
+            background: linear-gradient(135deg, var(--gold), #a88a5a); 
+            color: var(--espresso); 
+        }
+        .btn-primary:hover { transform: scale(1.02); }
+        .btn-primary:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .output-section {
+            display: none;
+        }
+        .output-section.visible { display: block; }
+        
+        .output-card {
+            background: rgba(255,255,255,0.12);
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 12px;
+            position: relative;
+        }
+        .output-label {
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--gold);
+            margin-bottom: 8px;
+        }
+        .output-text {
+            font-size: 0.95rem;
+            line-height: 1.5;
+            white-space: pre-wrap;
+        }
+        .copy-btn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: rgba(255,255,255,0.2);
+            border: none;
+            border-radius: 6px;
+            padding: 6px 10px;
+            font-size: 0.75rem;
+            color: #fff;
+            cursor: pointer;
+        }
+        .copy-btn:hover { background: var(--gold); color: var(--espresso); }
+        .copy-btn.copied { background: var(--success); }
+        
+        .hashtags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin-top: 10px;
+        }
+        .hashtag {
+            background: rgba(201,166,107,0.3);
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            color: var(--gold);
+        }
+        
+        .pillar-chips {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+        .pillar-chip {
+            background: rgba(255,255,255,0.1);
+            border: 1px solid rgba(255,255,255,0.2);
+            padding: 8px 14px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .pillar-chip:hover { border-color: var(--gold); }
+        .pillar-chip.active {
+            background: var(--gold);
+            color: var(--espresso);
+            border-color: var(--gold);
+        }
+        
+        .spinner {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 2px solid rgba(0,0,0,0.3);
+            border-radius: 50%;
+            border-top-color: var(--espresso);
+            animation: spin 1s linear infinite;
+            margin-right: 8px;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        
+        .ideas-grid {
+            display: grid;
+            gap: 10px;
+            margin-top: 10px;
+        }
+        .idea-card {
+            background: rgba(255,255,255,0.08);
+            border-radius: 8px;
+            padding: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+            border: 1px solid transparent;
+        }
+        .idea-card:hover { 
+            border-color: var(--gold);
+            background: rgba(255,255,255,0.12);
+        }
+        .idea-card.selected {
+            border-color: var(--gold);
+            background: rgba(201,166,107,0.2);
+        }
+        .idea-title { font-weight: 600; margin-bottom: 4px; }
+        .idea-desc { font-size: 0.8rem; opacity: 0.7; }
+        
+        .tabs {
+            display: flex;
+            gap: 5px;
+            margin-bottom: 15px;
+            overflow-x: auto;
+        }
+        .tab {
+            padding: 8px 16px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 20px;
+            font-size: 0.85rem;
+            cursor: pointer;
+            white-space: nowrap;
+            transition: all 0.2s;
+        }
+        .tab:hover { background: rgba(255,255,255,0.2); }
+        .tab.active { background: var(--gold); color: var(--espresso); }
+        
+        .visual-suggestion {
+            background: rgba(255,152,0,0.2);
+            border-left: 3px solid var(--warning);
+            padding: 10px 12px;
+            border-radius: 0 8px 8px 0;
+            margin-top: 10px;
+            font-size: 0.85rem;
+        }
+        .visual-suggestion strong { color: var(--warning); }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🦜 Rich Aroma Content Generator</h1>
+            <div class="subtitle">Captain Rico's voice • Ready-to-post copy</div>
+        </header>
+        
+        <!-- Step 1: Choose Content Type -->
+        <div class="card">
+            <div class="card-title">📱 Platform</div>
+            <div class="tabs" id="platformTabs">
+                <div class="tab active" data-platform="instagram">Instagram</div>
+                <div class="tab" data-platform="facebook">Facebook</div>
+                <div class="tab" data-platform="tiktok">TikTok</div>
+                <div class="tab" data-platform="twitter">X/Twitter</div>
+                <div class="tab" data-platform="whatsapp">WhatsApp</div>
+            </div>
+        </div>
+        
+        <!-- Step 2: Content Pillar -->
+        <div class="card">
+            <div class="card-title">🎯 Content Pillar</div>
+            <div class="pillar-chips" id="pillarChips">
+                <div class="pillar-chip active" data-pillar="product">☕ Product</div>
+                <div class="pillar-chip" data-pillar="behind">🎬 Behind Scenes</div>
+                <div class="pillar-chip" data-pillar="community">👥 Community</div>
+                <div class="pillar-chip" data-pillar="education">📚 Coffee Education</div>
+                <div class="pillar-chip" data-pillar="hype">🔥 Hype/Scarcity</div>
+                <div class="pillar-chip" data-pillar="rico">🦜 Captain Rico</div>
+            </div>
+        </div>
+        
+        <!-- Step 3: Quick Ideas or Custom -->
+        <div class="card">
+            <div class="card-title">💡 Post Idea</div>
+            <div class="ideas-grid" id="ideasGrid"></div>
+            <div style="text-align: center; margin: 12px 0; opacity: 0.5;">— or —</div>
+            <div class="form-group">
+                <label class="form-label">Custom topic (optional)</label>
+                <input type="text" class="form-input" id="customTopic" placeholder="e.g. New cold brew launch, Morning rush hour...">
+            </div>
+        </div>
+        
+        <!-- Generate Button -->
+        <button class="btn btn-primary" id="generateBtn" onclick="generateContent()">
+            🚀 Generate Content
+        </button>
+        
+        <!-- Output Section -->
+        <div class="output-section" id="outputSection">
+            <div class="card" style="margin-top: 20px;">
+                <div class="card-title">✨ Generated Content</div>
+                
+                <div class="output-card">
+                    <div class="output-label">Hook / Opening</div>
+                    <button class="copy-btn" onclick="copyText(this, 'hookText')">Copy</button>
+                    <div class="output-text" id="hookText"></div>
+                </div>
+                
+                <div class="output-card">
+                    <div class="output-label">Caption</div>
+                    <button class="copy-btn" onclick="copyText(this, 'captionText')">Copy</button>
+                    <div class="output-text" id="captionText"></div>
+                </div>
+                
+                <div class="output-card">
+                    <div class="output-label">Hashtags</div>
+                    <button class="copy-btn" onclick="copyText(this, 'hashtagsText')">Copy</button>
+                    <div class="output-text" id="hashtagsText"></div>
+                </div>
+                
+                <div class="visual-suggestion">
+                    <strong>📸 Visual Idea:</strong>
+                    <span id="visualText"></span>
+                </div>
+            </div>
+            
+            <button class="btn btn-primary" onclick="generateContent()" style="margin-top: 10px;">
+                🔄 Generate Another
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // Brand Context
+        const brand = {
+            name: "Rich Aroma",
+            tagline: "Café & Comida",
+            mascot: "Captain Rico",
+            mascotDesc: "Leopard-print monkey with captain's hat, tropical Hawaiian shirt, and black boots",
+            voice: "Chaotic, high energy, playful, slightly unhinged but loveable",
+            colors: { gold: "#C9A66B", espresso: "#1E1610" },
+            products: ["Cold Brew (12oz)", "Espresso", "Latte", "Café con Leche", "Baleadas", "Pastelitos"],
+            values: ["100% Honduran Arabica", "Local roasting", "Community vibes", "Fuel for hustlers"]
+        };
+
+        // Content Templates by Pillar
+        const templates = {
+            product: {
+                ideas: [
+                    { title: "The Drop", desc: "New product announcement with hype" },
+                    { title: "The Pour Shot", desc: "Satisfying coffee pour video" },
+                    { title: "Menu Spotlight", desc: "Feature a single item" },
+                    { title: "Taste Test", desc: "First reaction to trying our coffee" }
+                ],
+                hooks: [
+                    "IT'S HERE. And it's not playing nice.",
+                    "POV: You just tasted real Honduran coffee for the first time.",
+                    "Stop scrolling. This is the coffee that's about to change your mornings.",
+                    "They said we couldn't. We did anyway.",
+                    "Warning: May cause excessive productivity and good vibes."
+                ],
+                captions: [
+                    "{product} just dropped. 100% Honduran Arabica. Zero compromise. If you're still drinking gas station coffee, that's a skill issue. 🇭🇳☕",
+                    "This isn't coffee. It's fuel. {product} hits different when it's roasted with love in Honduras. Your tastebuds will thank you. 🔥",
+                    "Some people drink coffee to wake up. Our people drink it to become unstoppable. {product} now available. Link in bio. ⚡",
+                    "We didn't come all the way from Honduras to make mid coffee. {product} is proof. Try it or stay sleepy. 💪"
+                ],
+                visuals: [
+                    "Slow-mo pour shot with steam rising, moody lighting",
+                    "Product slam onto table with liquid splash, streetwear aesthetic",
+                    "Close-up of coffee beans falling into grinder",
+                    "POV first sip reaction video"
+                ]
+            },
+            behind: {
+                ideas: [
+                    { title: "5AM Prep", desc: "Early morning opening routine" },
+                    { title: "The Team", desc: "Staff spotlight moment" },
+                    { title: "Kitchen Chaos", desc: "Busy hour behind the counter" },
+                    { title: "Bean to Cup", desc: "Show the roasting process" }
+                ],
+                hooks: [
+                    "5AM. Doors closed. Magic happening.",
+                    "You see the coffee. But you don't see THIS.",
+                    "What really happens before we open...",
+                    "This is what 'made with love' actually looks like.",
+                    "The chaos behind your perfect cup."
+                ],
+                captions: [
+                    "While you're still hitting snooze, the Rich Aroma team is already grinding. Literally. 5AM prep is where the magic starts. ☀️🔧",
+                    "Every cup has a story. Here's a piece of ours. Honduran beans, local hands, community love. This is Rich Aroma. 🇭🇳❤️",
+                    "People ask how we do it. The answer: we don't sleep. (Just kidding, we drink our own coffee.) Behind the scenes of the morning rush. 😅☕",
+                    "No filter. No script. Just vibes. This is what it really looks like when we're making your favorite drink. 🎬"
+                ],
+                visuals: [
+                    "Time-lapse of opening prep from empty to ready",
+                    "Staff laughing while prepping orders",
+                    "Hands grinding/tamping espresso close-up",
+                    "Steam and movement during rush hour"
+                ]
+            },
+            community: {
+                ideas: [
+                    { title: "Customer Love", desc: "Repost or feature a regular" },
+                    { title: "Local Shoutout", desc: "Support another local business" },
+                    { title: "Weekly Regular", desc: "Introduce a familiar face" },
+                    { title: "Community Event", desc: "Promote or recap local event" }
+                ],
+                hooks: [
+                    "This is why we do what we do.",
+                    "Our people > everything.",
+                    "Familia. That's it. That's the post.",
+                    "Shoutout to the real ones.",
+                    "Community isn't a buzzword here. It's the whole point."
+                ],
+                captions: [
+                    "Rich Aroma isn't just a coffee shop. It's a gathering spot. A study hall. A first date. A 'I just need 5 minutes of peace' zone. Thank you for making it what it is. 🙏☕",
+                    "We love seeing your faces every morning. Yes, even the grumpy pre-coffee ones. Especially those. 😂❤️",
+                    "To our regulars: We know your order. We appreciate you. You're basically family at this point. 🦜💛",
+                    "Supporting local isn't a trend for us — it's how we were raised. Shoutout to {local_business} for being amazing neighbors. 🤝"
+                ],
+                visuals: [
+                    "Customer smiling with their order (with permission)",
+                    "Packed house during rush hour",
+                    "Group of friends at a table laughing",
+                    "Staff high-fiving customers"
+                ]
+            },
+            education: {
+                ideas: [
+                    { title: "Bean Facts", desc: "Something cool about Honduran coffee" },
+                    { title: "Brewing Tips", desc: "How to make better coffee at home" },
+                    { title: "Coffee Myth", desc: "Bust a common misconception" },
+                    { title: "Origin Story", desc: "Where our beans come from" }
+                ],
+                hooks: [
+                    "Most people don't know this about coffee...",
+                    "You've been making coffee wrong. Here's the fix.",
+                    "Honduras = Top 10 coffee producer in the world. Let me explain.",
+                    "Hot take: Your coffee is boring because of THIS.",
+                    "Coffee fact that will change how you drink it:"
+                ],
+                captions: [
+                    "Honduras is one of the top coffee-producing countries in the world, and most people have no idea. Our beans come from the mountains of Copán — high altitude, volcanic soil, perfect conditions. That's why it tastes like this. 🌋☕",
+                    "Quick tip: Stop storing your beans in the fridge. The moisture ruins them. Keep them in a cool, dark place and grind fresh. Your mornings will thank you. 📚✨",
+                    "Arabica vs Robusta: We only use 100% Arabica. Why? Smoother, less bitter, more complex flavor. Robusta is for people who hate themselves. (Kidding. Kind of.) 🫘",
+                    "The best coffee isn't about fancy machines. It's about fresh beans, proper grind, and the right water temp. Here's how we do it at Rich Aroma... ☕🔥"
+                ],
+                visuals: [
+                    "Map showing Honduras coffee regions",
+                    "Side-by-side comparison shots",
+                    "Close-up of bean varieties",
+                    "Step-by-step brewing tutorial"
+                ]
+            },
+            hype: {
+                ideas: [
+                    { title: "Low Stock Alert", desc: "Create urgency" },
+                    { title: "Limited Drop", desc: "Special edition announcement" },
+                    { title: "Countdown", desc: "Build anticipation for launch" },
+                    { title: "Sold Out Flex", desc: "Brag about selling out" }
+                ],
+                hooks: [
+                    "WE TOLD YOU. Now it's almost gone.",
+                    "Last chance. Not joking.",
+                    "This is your final warning.",
+                    "SOLD OUT in 48 hours. Here's why.",
+                    "If you slept on this, that's on you."
+                ],
+                captions: [
+                    "Stock is LOW. Like, dangerously low. If you want {product} this week, order NOW. We're not restocking until next month. 🚨📦",
+                    "Y'all went CRAZY. We're almost sold out. The last batch ships tomorrow. After that? You wait. Link in bio before it's gone. 💨",
+                    "LIMITED DROP. Only {number} bottles. When they're gone, they're gone. No rainchecks. No exceptions. Captain Rico's orders. 🦜⚡",
+                    "We told you it would sell fast. You didn't listen. Now look. SOLD OUT. Restock dropping soon — get on the list. 📋"
+                ],
+                visuals: [
+                    "Empty shelves with single remaining product",
+                    "Timer/countdown graphic",
+                    "Captain Rico holding a 'SOLD OUT' sign",
+                    "Text on black background, urgency style"
+                ]
+            },
+            rico: {
+                ideas: [
+                    { title: "Rico's Opinion", desc: "Hot take from the Captain" },
+                    { title: "Rico's Morning", desc: "A day in the life of the mascot" },
+                    { title: "Rico Roasts", desc: "Captain roasts bad coffee habits" },
+                    { title: "Rico's Wisdom", desc: "Motivational chaos" }
+                ],
+                hooks: [
+                    "Captain Rico has something to say...",
+                    "Rico woke up and chose violence. (The good kind.)",
+                    "The Captain's daily wisdom:",
+                    "Rico saw your coffee order and had THOUGHTS.",
+                    "A message from Captain Rico himself:"
+                ],
+                captions: [
+                    "Captain Rico didn't fly all the way from Honduras for you to drink instant coffee. Do better. Be better. Drink better. 🦜✈️",
+                    "Rico's morning routine: Wake up. Judge people's coffee choices. Drink espresso. Repeat. He's not sorry. 😤☕",
+                    "Captain Rico says: 'If your coffee doesn't make you want to conquer the day, you're drinking the wrong coffee.' The man has spoken. 🎖️",
+                    "Rico's hot take of the day: Decaf is just hot bean water for cowards. (We still love you, decaf people. Rico doesn't.) 🔥"
+                ],
+                visuals: [
+                    "Captain Rico mascot with speech bubble",
+                    "Rico 'deep fried' meme style edit",
+                    "Rico photoshopped into random situations",
+                    "Rico as motivational poster"
+                ]
+            }
+        };
+
+        // Hashtag sets
+        const hashtags = {
+            base: ["#RichAroma", "#CafeYComida", "#HonduranCoffee", "#CaptainRico"],
+            product: ["#ColdBrew", "#CoffeeLover", "#CoffeeAddict", "#MorningFuel", "#ArabicaCoffee"],
+            behind: ["#BehindTheScenes", "#SmallBusiness", "#CoffeeShopLife", "#MadeWithLove"],
+            community: ["#SupportLocal", "#CommunityFirst", "#CoffeeCommunity", "#LocalLove"],
+            education: ["#CoffeeFacts", "#CoffeeEducation", "#BaristaLife", "#CoffeeTips"],
+            hype: ["#LimitedEdition", "#SoldOut", "#GetItBeforeItsGone", "#CoffeeDrop"],
+            rico: ["#CaptainRico", "#CoffeeMascot", "#RicoSays", "#CoffeeVibes"]
+        };
+
+        let selectedPlatform = 'instagram';
+        let selectedPillar = 'product';
+        let selectedIdea = null;
+
+        // Initialize
+        function init() {
+            renderIdeas();
+            
+            // Platform tabs
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.addEventListener('click', () => {
+                    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+                    tab.classList.add('active');
+                    selectedPlatform = tab.dataset.platform;
+                });
+            });
+            
+            // Pillar chips
+            document.querySelectorAll('.pillar-chip').forEach(chip => {
+                chip.addEventListener('click', () => {
+                    document.querySelectorAll('.pillar-chip').forEach(c => c.classList.remove('active'));
+                    chip.classList.add('active');
+                    selectedPillar = chip.dataset.pillar;
+                    selectedIdea = null;
+                    renderIdeas();
+                });
+            });
+        }
+
+        function renderIdeas() {
+            const grid = document.getElementById('ideasGrid');
+            const ideas = templates[selectedPillar].ideas;
+            grid.innerHTML = ideas.map((idea, i) => `
+                <div class="idea-card ${selectedIdea === i ? 'selected' : ''}" onclick="selectIdea(${i})">
+                    <div class="idea-title">${idea.title}</div>
+                    <div class="idea-desc">${idea.desc}</div>
+                </div>
+            `).join('');
+        }
+
+        function selectIdea(index) {
+            selectedIdea = selectedIdea === index ? null : index;
+            renderIdeas();
+        }
+
+        function generateContent() {
+            const btn = document.getElementById('generateBtn');
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner"></span>Generating...';
+            
+            setTimeout(() => {
+                const t = templates[selectedPillar];
+                const customTopic = document.getElementById('customTopic').value.trim();
+                
+                // Pick random from each array
+                const hook = t.hooks[Math.floor(Math.random() * t.hooks.length)];
+                let caption = t.captions[Math.floor(Math.random() * t.captions.length)];
+                const visual = t.visuals[Math.floor(Math.random() * t.visuals.length)];
+                
+                // Replace placeholders
+                caption = caption
+                    .replace('{product}', brand.products[Math.floor(Math.random() * brand.products.length)])
+                    .replace('{number}', Math.floor(Math.random() * 50 + 50))
+                    .replace('{local_business}', 'our neighbors');
+                
+                // Build hashtags based on platform
+                let tags = [...hashtags.base, ...hashtags[selectedPillar]];
+                if (selectedPlatform === 'twitter') {
+                    tags = tags.slice(0, 3); // Twitter: fewer hashtags
+                } else if (selectedPlatform === 'whatsapp') {
+                    tags = []; // WhatsApp: no hashtags
+                }
+                
+                // Adjust for platform
+                let finalCaption = caption;
+                if (selectedPlatform === 'twitter') {
+                    // Shorten for Twitter
+                    finalCaption = caption.split('.').slice(0, 2).join('.') + '.';
+                    if (finalCaption.length > 250) {
+                        finalCaption = finalCaption.substring(0, 247) + '...';
+                    }
+                }
+                
+                // Display
+                document.getElementById('hookText').textContent = hook;
+                document.getElementById('captionText').textContent = finalCaption;
+                document.getElementById('hashtagsText').textContent = tags.join(' ');
+                document.getElementById('visualText').textContent = visual;
+                
+                document.getElementById('outputSection').classList.add('visible');
+                
+                btn.disabled = false;
+                btn.innerHTML = '🚀 Generate Content';
+                
+                // Scroll to output
+                document.getElementById('outputSection').scrollIntoView({ behavior: 'smooth' });
+            }, 800);
+        }
+
+        function copyText(btn, elementId) {
+            const text = document.getElementById(elementId).textContent;
+            navigator.clipboard.writeText(text).then(() => {
+                btn.textContent = '✓ Copied';
+                btn.classList.add('copied');
+                setTimeout(() => {
+                    btn.textContent = 'Copy';
+                    btn.classList.remove('copied');
+                }, 2000);
+            });
+        }
+
+        init();
+    </script>
+</body>
+</html>

@@ -1,23 +1,58 @@
 {
+  "settings": {
+    "social_requirements": {
+      "instagram": { "required_for_challenges": ["ch_ig_story", "ch_ig_post"], "mutual_follow_required": true },
+      "tiktok": { "required_for_challenges": ["ch_tt_vibe"], "mutual_follow_required": true }
+    }
+  },
   "challenges": [
-    {"id": "follow", "name": "Follow @RichAromaCafe", "points": 50, "icon": "📱", "type": "one-time", "verifyNote": "We'll check our followers"},
-    {"id": "share_story", "name": "Share announcement to story", "points": 100, "icon": "📸", "type": "one-time", "verifyNote": "DM us a screenshot"},
-    {"id": "tag_friends", "name": "Tag 3 friends on a post", "points": 75, "icon": "👥", "type": "repeatable", "maxRepeats": 3, "verifyNote": "Tag on any of our posts"},
-    {"id": "guess_menu", "name": "Guess the mystery menu item", "points": 100, "icon": "🎯", "type": "one-time", "verifyNote": "First 10 correct win"},
-    {"id": "poll_answer", "name": "Answer a poll question", "points": 25, "icon": "📊", "type": "repeatable", "maxRepeats": 5, "verifyNote": "Participate in our story polls"},
-    {"id": "excitement_video", "name": "Share an 'I'm excited' video", "points": 200, "icon": "🎬", "type": "one-time", "verifyNote": "Post or DM us your video"},
-    {"id": "referral", "name": "Refer a friend who signs up", "points": 150, "icon": "🤝", "type": "repeatable", "maxRepeats": 10, "verifyNote": "Friend must mention your name"},
-    {"id": "flash_winner", "name": "Win 'I WANT THIS' flash sale", "points": 300, "icon": "⚡", "type": "repeatable", "maxRepeats": 5, "verifyNote": "Be first to DM on dish reveal"},
-    {"id": "coffee_order", "name": "Tell us your go-to coffee order", "points": 50, "icon": "☕", "type": "one-time", "verifyNote": "Comment on our coffee post"},
-    {"id": "complete_all", "name": "Complete ALL challenges", "points": 500, "icon": "🏆", "type": "bonus", "verifyNote": "Automatic when all done"}
+    {
+      "id": "ch_connect_ig",
+      "name": "Desbloquea Misiones de Instagram",
+      "description": "Conecta tu Instagram y acepta nuestra solicitud de seguimiento.",
+      "reward": { "type": "rico_cash", "amount": 50, "expiry_days": 30 },
+      "icon": "📸",
+      "type": "onboarding",
+      "requirements": ["input_handle_ig", "mutual_follow_verified"]
+    },
+    {
+      "id": "ch_connect_tt",
+      "name": "Desbloquea Misiones de TikTok",
+      "description": "Conecta tu TikTok y acepta nuestra solicitud de seguimiento.",
+      "reward": { "type": "rico_cash", "amount": 50, "expiry_days": 30 },
+      "icon": "🎵",
+      "type": "onboarding",
+      "requirements": ["input_handle_tt", "mutual_follow_verified"]
+    },
+    {
+      "id": "ch_ig_story",
+      "name": "Historia 'Sip & Share'",
+      "description": "Sube una historia de tu bebida/comida. Etiqueta a @RichAromaHN.",
+      "reward": { "type": "token", "token_id": "tok_10_percent_off", "name": "10% Descuento (Próxima Visita)" },
+      "icon": "☕",
+      "type": "ugc",
+      "platform": "instagram",
+      "requirements": ["media_upload", "admin_approval"]
+    },
+    {
+      "id": "ch_tt_vibe",
+      "name": "El Vibe Check",
+      "description": "Sube un TikTok con nuestro audio. Muestra el ambiente del local.",
+      "reward": { "type": "token", "token_id": "tok_free_cookie", "name": "Galleta Gratis" },
+      "icon": "🕺",
+      "type": "ugc",
+      "platform": "tiktok",
+      "requirements": ["media_upload", "admin_approval"]
+    },
+    {
+      "id": "ch_google_review",
+      "name": "Rey de las Reseñas",
+      "description": "Deja una reseña de 5 estrellas en Google Maps.",
+      "reward": { "type": "rico_cash", "amount": 100, "expiry_days": 60 },
+      "icon": "⭐",
+      "type": "reputation",
+      "requirements": ["screenshot_upload", "admin_approval"]
+    }
   ],
-  "rewards": [
-    {"id": "cookie", "name": "Free Cookie", "points": 100, "icon": "🍪"},
-    {"id": "coffee", "name": "Free Coffee", "points": 200, "icon": "☕"},
-    {"id": "specialty", "name": "Free Specialty Drink", "points": 400, "icon": "🧋"},
-    {"id": "bowl", "name": "Free Bowl", "points": 600, "icon": "🥗"},
-    {"id": "gold_month", "name": "1-Month Gold Membership", "points": 1000, "icon": "💳"},
-    {"id": "founding_platinum", "name": "Founding Platinum (1 Year)", "points": 2000, "icon": "👑", "grandPrize": true}
-  ],
-  "participants": []
+  "active_tokens": []
 }

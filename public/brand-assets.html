@@ -1,0 +1,585 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rich Aroma - Brand Assets</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        :root {
+            --gold: #C9A66B;
+            --espresso: #1E1610;
+            --cream: #F5F0E8;
+            --success: #4CAF50;
+        }
+        body {
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            background: linear-gradient(135deg, var(--espresso) 0%, #3d2b1f 100%);
+            min-height: 100vh;
+            padding: 15px;
+            color: #fff;
+        }
+        .container { max-width: 700px; margin: 0 auto; }
+        
+        header { text-align: center; margin-bottom: 20px; }
+        h1 { color: var(--gold); font-size: 1.4rem; margin-bottom: 5px; }
+        .subtitle { opacity: 0.7; font-size: 0.85rem; }
+        
+        .card {
+            background: rgba(255,255,255,0.08);
+            border-radius: 12px;
+            padding: 15px;
+            margin-bottom: 15px;
+        }
+        .card-title {
+            color: var(--gold);
+            font-size: 1rem;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .tabs {
+            display: flex;
+            gap: 5px;
+            margin-bottom: 15px;
+            overflow-x: auto;
+            padding-bottom: 5px;
+        }
+        .tab {
+            padding: 10px 16px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 8px;
+            font-size: 0.85rem;
+            cursor: pointer;
+            white-space: nowrap;
+            transition: all 0.2s;
+        }
+        .tab:hover { background: rgba(255,255,255,0.2); }
+        .tab.active { background: var(--gold); color: var(--espresso); }
+        
+        .section { display: none; }
+        .section.active { display: block; }
+        
+        .form-group { margin-bottom: 12px; }
+        .form-label {
+            display: block;
+            font-size: 0.8rem;
+            margin-bottom: 4px;
+            opacity: 0.8;
+        }
+        .form-input, .form-textarea {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 8px;
+            background: rgba(255,255,255,0.1);
+            color: #fff;
+            font-size: 1rem;
+        }
+        .form-textarea {
+            min-height: 100px;
+            resize: vertical;
+            font-family: monospace;
+            font-size: 0.85rem;
+        }
+        .form-input:focus, .form-textarea:focus {
+            outline: none;
+            border-color: var(--gold);
+        }
+        
+        .btn {
+            padding: 12px 20px;
+            border: none;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .btn-primary { background: var(--gold); color: var(--espresso); }
+        .btn-secondary { background: rgba(255,255,255,0.2); color: #fff; }
+        .btn-success { background: var(--success); color: #fff; }
+        .btn:hover { transform: scale(1.02); }
+        
+        .btn-row {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+        }
+        
+        .color-preview {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+        }
+        .color-swatch {
+            width: 50px;
+            height: 50px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.7rem;
+            font-weight: 600;
+        }
+        
+        .product-list { margin-top: 10px; }
+        .product-item {
+            background: rgba(255,255,255,0.1);
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .product-info { flex: 1; }
+        .product-name { font-weight: 600; }
+        .product-meta { font-size: 0.8rem; opacity: 0.7; }
+        .product-price { color: var(--gold); font-weight: 600; }
+        
+        .catchphrase-list { margin-top: 10px; }
+        .catchphrase-item {
+            background: rgba(255,255,255,0.1);
+            border-radius: 8px;
+            padding: 10px 12px;
+            margin-bottom: 6px;
+            font-style: italic;
+        }
+        
+        .upload-zone {
+            border: 2px dashed rgba(255,255,255,0.3);
+            border-radius: 12px;
+            padding: 30px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .upload-zone:hover {
+            border-color: var(--gold);
+            background: rgba(201,166,107,0.1);
+        }
+        .upload-zone input { display: none; }
+        .upload-icon { font-size: 2rem; margin-bottom: 10px; }
+        
+        .asset-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+            gap: 10px;
+            margin-top: 15px;
+        }
+        .asset-thumb {
+            aspect-ratio: 1;
+            background: rgba(255,255,255,0.1);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2rem;
+            position: relative;
+        }
+        .asset-thumb img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            border-radius: 8px;
+        }
+        
+        .status-bar {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: var(--success);
+            color: #fff;
+            padding: 12px;
+            text-align: center;
+            font-weight: 600;
+            transform: translateY(100%);
+            transition: transform 0.3s;
+        }
+        .status-bar.show { transform: translateY(0); }
+        
+        .json-viewer {
+            background: rgba(0,0,0,0.3);
+            border-radius: 8px;
+            padding: 15px;
+            font-family: monospace;
+            font-size: 0.8rem;
+            overflow-x: auto;
+            white-space: pre-wrap;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🎨 Brand Assets Manager</h1>
+            <div class="subtitle">Edit your brand, products, voice & more</div>
+        </header>
+        
+        <div class="tabs">
+            <div class="tab active" data-section="overview">Overview</div>
+            <div class="tab" data-section="products">Products</div>
+            <div class="tab" data-section="voice">Voice & Rico</div>
+            <div class="tab" data-section="assets">Images</div>
+            <div class="tab" data-section="raw">Raw JSON</div>
+        </div>
+        
+        <!-- Overview Section -->
+        <div class="section active" id="overview">
+            <div class="card">
+                <div class="card-title">🏪 Basic Info</div>
+                <div class="form-group">
+                    <label class="form-label">Brand Name</label>
+                    <input type="text" class="form-input" id="brandName" value="">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Tagline</label>
+                    <input type="text" class="form-input" id="brandTagline" value="">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Location</label>
+                    <input type="text" class="form-input" id="brandLocation" value="">
+                </div>
+            </div>
+            
+            <div class="card">
+                <div class="card-title">🎨 Brand Colors</div>
+                <div class="form-group">
+                    <label class="form-label">Primary (Gold)</label>
+                    <input type="color" class="form-input" id="colorGold" style="height: 50px; padding: 5px;">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Secondary (Espresso)</label>
+                    <input type="color" class="form-input" id="colorEspresso" style="height: 50px; padding: 5px;">
+                </div>
+                <div class="color-preview" id="colorPreview"></div>
+            </div>
+            
+            <div class="card">
+                <div class="card-title">💎 Core Values</div>
+                <div class="form-group">
+                    <label class="form-label">Values (one per line)</label>
+                    <textarea class="form-textarea" id="brandValues" rows="4"></textarea>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Products Section -->
+        <div class="section" id="products">
+            <div class="card">
+                <div class="card-title">☕ Products</div>
+                <div class="product-list" id="productList"></div>
+                <div class="btn-row">
+                    <button class="btn btn-secondary" onclick="addProduct()">+ Add Product</button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Voice Section -->
+        <div class="section" id="voice">
+            <div class="card">
+                <div class="card-title">🦜 Captain Rico</div>
+                <div class="form-group">
+                    <label class="form-label">Mascot Name</label>
+                    <input type="text" class="form-input" id="mascotName" value="">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Description</label>
+                    <textarea class="form-textarea" id="mascotDesc" rows="2"></textarea>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Personality</label>
+                    <input type="text" class="form-input" id="mascotPersonality" value="">
+                </div>
+            </div>
+            
+            <div class="card">
+                <div class="card-title">💬 Catchphrases</div>
+                <div class="catchphrase-list" id="catchphraseList"></div>
+                <div class="form-group" style="margin-top: 10px;">
+                    <input type="text" class="form-input" id="newCatchphrase" placeholder="Add new catchphrase...">
+                </div>
+                <button class="btn btn-secondary" onclick="addCatchphrase()">+ Add</button>
+            </div>
+            
+            <div class="card">
+                <div class="card-title">🎤 Brand Voice</div>
+                <div class="form-group">
+                    <label class="form-label">Tone</label>
+                    <input type="text" class="form-input" id="voiceTone" value="">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Style</label>
+                    <textarea class="form-textarea" id="voiceStyle" rows="2"></textarea>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Don'ts (things to avoid)</label>
+                    <textarea class="form-textarea" id="voiceDonts" rows="3"></textarea>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Assets Section -->
+        <div class="section" id="assets">
+            <div class="card">
+                <div class="card-title">🖼️ Logo & Mascot Images</div>
+                <div class="upload-zone" onclick="document.getElementById('logoUpload').click()">
+                    <input type="file" id="logoUpload" accept="image/*" multiple>
+                    <div class="upload-icon">📁</div>
+                    <div>Tap to upload images</div>
+                    <div style="font-size: 0.8rem; opacity: 0.6; margin-top: 5px;">PNG, JPG up to 5MB</div>
+                </div>
+                <div class="asset-grid" id="assetGrid">
+                    <div class="asset-thumb">🦜</div>
+                    <div class="asset-thumb">☕</div>
+                </div>
+                <p style="font-size: 0.8rem; opacity: 0.6; margin-top: 15px;">
+                    💡 Tip: Add Captain Rico images, product photos, and logo variations here. They'll be available in the content generator.
+                </p>
+            </div>
+        </div>
+        
+        <!-- Raw JSON Section -->
+        <div class="section" id="raw">
+            <div class="card">
+                <div class="card-title">📄 Raw Brand Config</div>
+                <p style="font-size: 0.85rem; opacity: 0.7; margin-bottom: 10px;">
+                    Advanced: Edit the full JSON directly. Be careful with syntax!
+                </p>
+                <textarea class="form-textarea" id="rawJson" rows="20" style="font-family: monospace; font-size: 0.8rem;"></textarea>
+                <div class="btn-row">
+                    <button class="btn btn-secondary" onclick="loadBrand()">↻ Reload</button>
+                    <button class="btn btn-primary" onclick="saveRawJson()">💾 Save JSON</button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Save Button -->
+        <div class="btn-row" style="margin-bottom: 80px;">
+            <button class="btn btn-primary" style="flex: 1;" onclick="saveBrand()">💾 Save All Changes</button>
+        </div>
+    </div>
+    
+    <div class="status-bar" id="statusBar">✓ Saved successfully!</div>
+
+    <script>
+        let brand = {};
+        
+        // Tab switching
+        document.querySelectorAll('.tab').forEach(tab => {
+            tab.addEventListener('click', () => {
+                document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+                document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+                tab.classList.add('active');
+                document.getElementById(tab.dataset.section).classList.add('active');
+            });
+        });
+        
+        // Load brand data
+        async function loadBrand() {
+            try {
+                const res = await fetch('/data/brand.json');
+                brand = await res.json();
+                populateForm();
+            } catch (e) {
+                console.error('Failed to load brand:', e);
+                showStatus('Failed to load brand data', true);
+            }
+        }
+        
+        function populateForm() {
+            // Basic info
+            document.getElementById('brandName').value = brand.name || '';
+            document.getElementById('brandTagline').value = brand.tagline || '';
+            document.getElementById('brandLocation').value = brand.location || '';
+            
+            // Colors
+            document.getElementById('colorGold').value = brand.colors?.gold || '#C9A66B';
+            document.getElementById('colorEspresso').value = brand.colors?.espresso || '#1E1610';
+            updateColorPreview();
+            
+            // Values
+            document.getElementById('brandValues').value = (brand.values || []).join('\n');
+            
+            // Mascot
+            document.getElementById('mascotName').value = brand.mascot?.name || '';
+            document.getElementById('mascotDesc').value = brand.mascot?.outfit || '';
+            document.getElementById('mascotPersonality').value = brand.mascot?.personality || '';
+            
+            // Catchphrases
+            renderCatchphrases();
+            
+            // Voice
+            document.getElementById('voiceTone').value = brand.voice?.tone || '';
+            document.getElementById('voiceStyle').value = brand.voice?.style || '';
+            document.getElementById('voiceDonts').value = (brand.voice?.donts || []).join('\n');
+            
+            // Products
+            renderProducts();
+            
+            // Raw JSON
+            document.getElementById('rawJson').value = JSON.stringify(brand, null, 2);
+        }
+        
+        function updateColorPreview() {
+            const gold = document.getElementById('colorGold').value;
+            const espresso = document.getElementById('colorEspresso').value;
+            document.getElementById('colorPreview').innerHTML = `
+                <div class="color-swatch" style="background: ${gold}; color: ${espresso};">Gold</div>
+                <div class="color-swatch" style="background: ${espresso}; color: ${gold};">Espresso</div>
+                <div class="color-swatch" style="background: linear-gradient(135deg, ${espresso}, #3d2b1f); color: ${gold};">Gradient</div>
+            `;
+        }
+        
+        document.getElementById('colorGold').addEventListener('input', updateColorPreview);
+        document.getElementById('colorEspresso').addEventListener('input', updateColorPreview);
+        
+        function renderProducts() {
+            const list = document.getElementById('productList');
+            list.innerHTML = (brand.products || []).map((p, i) => `
+                <div class="product-item">
+                    <div class="product-info">
+                        <div class="product-name">${p.name}</div>
+                        <div class="product-meta">${p.size} • ${p.description}</div>
+                    </div>
+                    <div class="product-price">${p.price}</div>
+                </div>
+            `).join('');
+        }
+        
+        function renderCatchphrases() {
+            const list = document.getElementById('catchphraseList');
+            list.innerHTML = (brand.mascot?.catchphrases || []).map(c => `
+                <div class="catchphrase-item">"${c}"</div>
+            `).join('');
+        }
+        
+        function addCatchphrase() {
+            const input = document.getElementById('newCatchphrase');
+            const phrase = input.value.trim();
+            if (!phrase) return;
+            
+            if (!brand.mascot) brand.mascot = {};
+            if (!brand.mascot.catchphrases) brand.mascot.catchphrases = [];
+            brand.mascot.catchphrases.push(phrase);
+            
+            input.value = '';
+            renderCatchphrases();
+        }
+        
+        function addProduct() {
+            const name = prompt('Product name:');
+            if (!name) return;
+            const price = prompt('Price (e.g. L.50):') || 'L.0';
+            const desc = prompt('Short description:') || '';
+            
+            if (!brand.products) brand.products = [];
+            brand.products.push({
+                name,
+                price,
+                size: '',
+                description: desc,
+                tags: []
+            });
+            renderProducts();
+        }
+        
+        function collectFormData() {
+            brand.name = document.getElementById('brandName').value;
+            brand.tagline = document.getElementById('brandTagline').value;
+            brand.location = document.getElementById('brandLocation').value;
+            
+            brand.colors = {
+                gold: document.getElementById('colorGold').value,
+                espresso: document.getElementById('colorEspresso').value,
+                cream: brand.colors?.cream || '#F5F0E8'
+            };
+            
+            brand.values = document.getElementById('brandValues').value.split('\n').filter(v => v.trim());
+            
+            if (!brand.mascot) brand.mascot = {};
+            brand.mascot.name = document.getElementById('mascotName').value;
+            brand.mascot.outfit = document.getElementById('mascotDesc').value;
+            brand.mascot.personality = document.getElementById('mascotPersonality').value;
+            
+            if (!brand.voice) brand.voice = {};
+            brand.voice.tone = document.getElementById('voiceTone').value;
+            brand.voice.style = document.getElementById('voiceStyle').value;
+            brand.voice.donts = document.getElementById('voiceDonts').value.split('\n').filter(v => v.trim());
+            
+            return brand;
+        }
+        
+        async function saveBrand() {
+            collectFormData();
+            
+            try {
+                const res = await fetch('/api/brand', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(brand)
+                });
+                
+                if (res.ok) {
+                    showStatus('✓ Saved successfully!');
+                    document.getElementById('rawJson').value = JSON.stringify(brand, null, 2);
+                } else {
+                    throw new Error('Save failed');
+                }
+            } catch (e) {
+                // Fallback: save to localStorage
+                localStorage.setItem('richAromaBrand', JSON.stringify(brand));
+                showStatus('✓ Saved to local storage (server unavailable)');
+            }
+        }
+        
+        async function saveRawJson() {
+            try {
+                brand = JSON.parse(document.getElementById('rawJson').value);
+                populateForm();
+                await saveBrand();
+            } catch (e) {
+                showStatus('❌ Invalid JSON syntax', true);
+            }
+        }
+        
+        function showStatus(message, isError = false) {
+            const bar = document.getElementById('statusBar');
+            bar.textContent = message;
+            bar.style.background = isError ? '#f44336' : '#4CAF50';
+            bar.classList.add('show');
+            setTimeout(() => bar.classList.remove('show'), 3000);
+        }
+        
+        // File upload handling
+        document.getElementById('logoUpload').addEventListener('change', async (e) => {
+            const files = e.target.files;
+            if (!files.length) return;
+            
+            for (const file of files) {
+                // For now, just show a preview - actual upload would need server endpoint
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    const grid = document.getElementById('assetGrid');
+                    const thumb = document.createElement('div');
+                    thumb.className = 'asset-thumb';
+                    thumb.innerHTML = `<img src="${e.target.result}" alt="Uploaded">`;
+                    grid.appendChild(thumb);
+                };
+                reader.readAsDataURL(file);
+            }
+            
+            showStatus(`${files.length} image(s) added (save to keep)`);
+        });
+        
+        // Init
+        loadBrand();
+    </script>
+</body>
+</html>

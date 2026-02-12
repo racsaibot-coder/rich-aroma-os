@@ -1,1077 +1,175 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="es">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <meta name="theme-color" content="#1a1410">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <title>Order | Rich Aroma</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <title>Rich Aroma | Ordenar</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        gold: '#C9A66B',
+                        dark: '#1E1610',
+                        charcoal: '#2C241E',
+                        cream: '#F5F5F0'
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        display: ['Playfair Display', 'serif']
+                    }
+                }
+            }
+        }
+    </script>
     <style>
-        :root {
-            --espresso: #5D4037;
-            --espresso-dark: #3E2723;
-            --caramel: #D4A574;
-            --cream: #F5EDE4;
-            --dark-bg: #0f0d0b;
-            --card-bg: #1a1714;
-            --card-hover: #252019;
-            --text: #f5f0eb;
-            --text-muted: #8a8078;
-            --success: #22c55e;
-            --success-dark: #16a34a;
-            --warning: #f59e0b;
-            --safe-bottom: env(safe-area-inset-bottom, 0px);
-        }
-        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-        html { scroll-behavior: smooth; }
-        body {
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-            background: var(--dark-bg);
-            color: var(--text);
-            min-height: 100vh;
-            min-height: 100dvh;
-            overflow-x: hidden;
-        }
-
-        /* ===== STICKY HEADER WITH CART ===== */
-        .sticky-header {
-            position: sticky;
-            top: 0;
-            z-index: 100;
-            background: rgba(15,13,11,0.95);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
-            border-bottom: 1px solid rgba(255,255,255,0.05);
-        }
-        .header-content {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 1rem 1.25rem;
-            max-width: 600px;
-            margin: 0 auto;
-        }
-        .logo {
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-        }
-        .logo-icon { font-size: 1.5rem; }
-        .logo h1 {
-            font-size: 1.25rem;
-            font-weight: 700;
-            background: linear-gradient(135deg, var(--caramel), var(--cream));
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-        }
-        .cart-pill {
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-            padding: 0.5rem 1rem;
-            background: var(--success);
-            border-radius: 25px;
-            font-weight: 600;
-            font-size: 0.875rem;
-            cursor: pointer;
-            transition: all 0.2s;
-            opacity: 0;
-            transform: scale(0.8);
-        }
-        .cart-pill.show { opacity: 1; transform: scale(1); }
-        .cart-pill:active { transform: scale(0.95); }
-        .cart-pill .total { font-weight: 700; }
-
-        /* ===== CATEGORIES ===== */
-        .categories {
-            display: flex;
-            gap: 0.5rem;
-            padding: 0.75rem 1.25rem;
-            overflow-x: auto;
-            -webkit-overflow-scrolling: touch;
-            scrollbar-width: none;
-            max-width: 600px;
-            margin: 0 auto;
-        }
-        .categories::-webkit-scrollbar { display: none; }
-        .cat-btn {
-            flex-shrink: 0;
-            display: flex;
-            align-items: center;
-            gap: 0.375rem;
-            padding: 0.625rem 1rem;
-            background: var(--card-bg);
-            border: 2px solid transparent;
-            border-radius: 25px;
-            color: var(--text-muted);
-            font-size: 0.875rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-        .cat-btn:active { transform: scale(0.95); }
-        .cat-btn.active {
-            background: linear-gradient(135deg, var(--caramel), var(--espresso));
-            color: white;
-            border-color: var(--caramel);
-        }
-        .cat-icon { font-size: 1.125rem; }
-
-        /* ===== MAIN CONTENT ===== */
-        .main {
-            max-width: 600px;
-            margin: 0 auto;
-            padding: 0 1rem 180px;
-        }
-
-        /* ===== FEATURED SECTION ===== */
-        .featured {
-            margin: 1rem 0 1.5rem;
-        }
-        .section-title {
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-            font-size: 1rem;
-            font-weight: 700;
-            margin-bottom: 0.75rem;
-            padding: 0 0.25rem;
-        }
-        .section-title span { font-size: 1.25rem; }
-        .featured-scroll {
-            display: flex;
-            gap: 0.75rem;
-            overflow-x: auto;
-            -webkit-overflow-scrolling: touch;
-            scrollbar-width: none;
-            padding: 0.25rem;
-            margin: 0 -0.25rem;
-        }
-        .featured-scroll::-webkit-scrollbar { display: none; }
-        .featured-card {
-            flex-shrink: 0;
-            width: 160px;
-            background: linear-gradient(145deg, var(--espresso), var(--card-bg));
-            border-radius: 16px;
-            overflow: hidden;
-            cursor: pointer;
-            transition: transform 0.2s;
-        }
-        .featured-card:active { transform: scale(0.98); }
-        .featured-img {
-            height: 100px;
-            background: var(--espresso-dark);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 3rem;
-        }
-        .featured-info {
-            padding: 0.75rem;
-        }
-        .featured-name {
-            font-weight: 600;
-            font-size: 0.875rem;
-            margin-bottom: 0.25rem;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-        .featured-price {
-            color: var(--caramel);
-            font-weight: 700;
-            font-size: 0.9rem;
-        }
-
-        /* ===== MENU GRID ===== */
-        .menu-grid {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 0.75rem;
-        }
-        @media (max-width: 380px) {
-            .menu-grid { grid-template-columns: 1fr; }
-        }
-        .menu-item {
-            background: var(--card-bg);
-            border-radius: 16px;
-            overflow: hidden;
-            cursor: pointer;
-            transition: all 0.2s;
-            position: relative;
-        }
-        .menu-item:active { transform: scale(0.98); background: var(--card-hover); }
-        .item-img {
-            height: 100px;
-            background: var(--espresso-dark);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 2.5rem;
-            position: relative;
-        }
-        .item-badge {
-            position: absolute;
-            top: 0.5rem;
-            right: 0.5rem;
-            background: var(--warning);
-            color: var(--dark-bg);
-            font-size: 0.625rem;
-            font-weight: 700;
-            padding: 0.25rem 0.5rem;
-            border-radius: 4px;
-            text-transform: uppercase;
-        }
-        .item-info {
-            padding: 0.875rem;
-        }
-        .item-name {
-            font-weight: 600;
-            font-size: 0.9rem;
-            margin-bottom: 0.375rem;
-            line-height: 1.2;
-        }
-        .item-row {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-        .item-price {
-            color: var(--caramel);
-            font-weight: 700;
-            font-size: 1rem;
-        }
-
-        /* ===== BOTTOM CART BAR ===== */
-        .cart-bar {
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            background: rgba(26,23,20,0.98);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
-            border-top: 1px solid rgba(255,255,255,0.08);
-            padding: 1rem;
-            padding-bottom: calc(1rem + var(--safe-bottom));
-            transform: translateY(100%);
-            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            z-index: 200;
-        }
-        .cart-bar.show { transform: translateY(0); }
-        .cart-bar-content {
-            max-width: 600px;
-            margin: 0 auto;
-        }
-        .cart-items {
-            max-height: 200px;
-            overflow-y: auto;
-            margin-bottom: 1rem;
-        }
-        .cart-item {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 0.75rem 0;
-            border-bottom: 1px solid rgba(255,255,255,0.05);
-        }
-        .cart-item:last-child { border-bottom: none; }
-        .cart-item-info {
-            display: flex;
-            align-items: center;
-            gap: 0.75rem;
-        }
-        .cart-item-qty {
-            background: var(--espresso);
-            padding: 0.25rem 0.5rem;
-            border-radius: 6px;
-            font-size: 0.8rem;
-            font-weight: 600;
-        }
-        .cart-item-name { font-weight: 500; font-size: 0.9rem; }
-        .cart-item-price { color: var(--caramel); font-weight: 600; }
-        
-        .cart-summary {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 0.75rem;
-        }
-        .cart-label { color: var(--text-muted); }
-        .cart-total {
-            font-size: 1.5rem;
-            font-weight: 800;
-            color: var(--caramel);
-        }
-        .checkout-btn {
-            width: 100%;
-            padding: 1.125rem;
-            background: linear-gradient(135deg, var(--success), var(--success-dark));
-            border: none;
-            border-radius: 14px;
-            color: white;
-            font-size: 1.1rem;
-            font-weight: 700;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 0.5rem;
-            transition: transform 0.2s;
-        }
-        .checkout-btn:active { transform: scale(0.98); }
-
-        /* ===== WIZARD MODAL (NEW) ===== */
-        .wizard-overlay {
-            position: fixed;
-            inset: 0;
-            background: var(--dark-bg);
-            z-index: 300;
-            display: none;
-            flex-direction: column;
-        }
-        .wizard-overlay.show { display: flex; }
-
-        .wizard-header {
-            padding: 1rem;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            border-bottom: 1px solid rgba(255,255,255,0.1);
-        }
-        .wizard-back, .wizard-close {
-            background: none;
-            border: none;
-            color: var(--text);
-            font-size: 1.5rem;
-            cursor: pointer;
-            width: 40px;
-            height: 40px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-        .wizard-title-container {
-            text-align: center;
-        }
-        .wizard-product-name {
-            font-weight: 700;
-            font-size: 1.1rem;
-        }
-        .wizard-steps-dots {
-            display: flex;
-            justify-content: center;
-            gap: 6px;
-            margin-top: 4px;
-        }
-        .step-dot {
-            width: 8px;
-            height: 8px;
-            border-radius: 50%;
-            background: rgba(255,255,255,0.2);
-        }
-        .step-dot.active { background: var(--caramel); }
-        .step-dot.completed { background: var(--success); }
-
-        .wizard-body {
-            flex: 1;
-            overflow-y: auto;
-            padding: 1.5rem;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-        }
-
-        .wizard-step-title {
-            font-size: 1.5rem;
-            font-weight: 700;
-            margin-bottom: 1.5rem;
-            text-align: center;
-            color: var(--text);
-        }
-
-        /* Options Grid */
-        .options-grid {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 1rem;
-            width: 100%;
-            max-width: 600px;
-        }
-        .option-btn {
-            background: var(--card-bg);
-            border: 2px solid transparent;
-            border-radius: 16px;
-            padding: 1.5rem 1rem;
-            text-align: center;
-            cursor: pointer;
-            transition: all 0.2s;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 0.5rem;
-        }
-        .option-btn:active { transform: scale(0.96); }
-        .option-btn.selected {
-            border-color: var(--caramel);
-            background: rgba(212,165,116,0.15);
-        }
-        .option-icon { font-size: 2.5rem; }
-        .option-name { font-weight: 600; font-size: 1.1rem; }
-        .option-price { color: var(--text-muted); font-size: 0.9rem; }
-
-        .wizard-footer {
-            padding: 1rem;
-            border-top: 1px solid rgba(255,255,255,0.1);
-            background: var(--card-bg);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding-bottom: calc(1rem + var(--safe-bottom));
-        }
-        .wizard-total {
-            font-size: 1.4rem;
-            font-weight: 800;
-            color: var(--caramel);
-        }
-        .wizard-action-btn {
-            background: var(--caramel);
-            color: #000;
-            border: none;
-            padding: 1rem 2rem;
-            border-radius: 12px;
-            font-weight: 700;
-            font-size: 1.1rem;
-            cursor: pointer;
-        }
-        .wizard-action-btn:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-            background: var(--text-muted);
-        }
-
-        /* Upsell Layout */
-        .upsell-container {
-            text-align: center;
-            background: linear-gradient(135deg, var(--card-bg), var(--espresso-dark));
-            padding: 2rem;
-            border-radius: 20px;
-            width: 100%;
-            max-width: 400px;
-        }
-        .upsell-img { font-size: 5rem; margin-bottom: 1rem; }
-        .upsell-text { margin-bottom: 2rem; }
-        .upsell-actions { display: flex; flex-direction: column; gap: 1rem; }
-        .upsell-yes {
-            background: var(--gold);
-            color: black;
-            padding: 1rem;
-            border-radius: 12px;
-            font-weight: 700;
-            border: none;
-            font-size: 1.1rem;
-        }
-        .upsell-no {
-            background: transparent;
-            color: var(--text-muted);
-            border: none;
-            padding: 0.5rem;
-        }
-
-
-        /* ===== ORDER TRACKING ===== */
-        .tracking-screen {
-            position: fixed;
-            inset: 0;
-            background: var(--dark-bg);
-            z-index: 300;
-            display: none;
-            flex-direction: column;
-            padding: 2rem 1.5rem;
-            padding-top: calc(2rem + env(safe-area-inset-top, 0px));
-        }
-        .tracking-screen.show { display: flex; }
-        .tracking-header {
-            text-align: center;
-            margin-bottom: 2rem;
-        }
-        .order-number {
-            font-size: 3rem;
-            font-weight: 800;
-            color: var(--caramel);
-            margin: 0.5rem 0;
-        }
-        .tracking-status {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            gap: 1rem;
-            max-width: 400px;
-            margin: 0 auto;
-            width: 100%;
-        }
-        .status-step {
-            display: flex;
-            align-items: center;
-            gap: 1rem;
-            padding: 1rem;
-            background: var(--card-bg);
-            border-radius: 12px;
-            opacity: 0.4;
-            transition: all 0.3s;
-        }
-        .status-step.active {
-            opacity: 1;
-            background: linear-gradient(135deg, var(--espresso), var(--card-bg));
-            border: 1px solid var(--caramel);
-        }
-        .status-step.done { opacity: 0.6; }
-        .status-icon {
-            width: 48px;
-            height: 48px;
-            background: var(--espresso);
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1.5rem;
-        }
-        .status-step.active .status-icon { background: var(--success); }
-        .status-text h3 { font-size: 1rem; font-weight: 600; }
-        .status-text p { font-size: 0.8rem; color: var(--text-muted); margin-top: 0.25rem; }
-        .new-order-btn {
-            margin-top: 2rem;
-            padding: 1rem;
-            background: var(--card-bg);
-            border: 2px solid var(--espresso);
-            border-radius: 12px;
-            color: var(--text);
-            font-size: 1rem;
-            font-weight: 600;
-            cursor: pointer;
-        }
+        body { background-color: #1E1610; color: #F5F5F0; font-family: 'Inter', sans-serif; }
+        .gold-btn { background: linear-gradient(135deg, #C9A66B 0%, #B08D55 100%); color: #1E1610; }
+        .item-card { background: rgba(44, 36, 30, 0.6); border: 1px solid rgba(201, 166, 107, 0.1); backdrop-filter: blur(10px); }
+        .floating-cart { box-shadow: 0 -4px 20px rgba(0,0,0,0.4); }
+        .quantity-btn:active { transform: scale(0.95); }
     </style>
 </head>
-<body>
-    <!-- Sticky Header -->
-    <header class="sticky-header">
-        <div class="header-content">
-            <div class="logo">
-                <span class="logo-icon">☕</span>
-                <h1>Rich Aroma</h1>
-            </div>
-            <div class="cart-pill" id="cartPill" onclick="toggleCartBar()">
-                <span>🛒</span>
-                <span id="cartPillCount">0</span>
-                <span>·</span>
-                <span class="total" id="cartPillTotal">L 0</span>
-            </div>
+<body class="pb-24">
+
+    <!-- Header -->
+    <header class="sticky top-0 z-50 bg-dark/95 backdrop-blur-md border-b border-white/5 px-6 py-4 flex justify-between items-center">
+        <div>
+            <h1 class="font-display text-xl text-gold font-bold tracking-wide">RICH AROMA</h1>
+            <p class="text-xs text-white/50 tracking-widest uppercase">Quimistán, HN</p>
         </div>
-        <div class="categories" id="categories"></div>
+        <div class="w-10 h-10 rounded-full bg-gold/10 flex items-center justify-center">
+            <i class="fas fa-coffee text-gold"></i>
+        </div>
     </header>
 
-    <!-- Main Content -->
-    <main class="main">
-        <!-- Featured Section -->
-        <section class="featured" id="featuredSection">
-            <div class="section-title"><span>🔥</span> Popular</div>
-            <div class="featured-scroll" id="featuredItems"></div>
-        </section>
+    <!-- Menu Section -->
+    <main class="px-4 py-6 space-y-8">
+        
+        <!-- Category: Bebidas -->
+        <div>
+            <h2 class="text-gold text-sm font-bold uppercase tracking-widest mb-4 border-l-2 border-gold pl-3">Bebidas Signature</h2>
+            <div class="space-y-4">
+                <!-- Item 1 -->
+                <div class="item-card rounded-2xl p-4 flex gap-4 items-center">
+                    <div class="w-20 h-20 bg-charcoal rounded-xl flex items-center justify-center text-3xl">☕️</div>
+                    <div class="flex-1">
+                        <h3 class="font-bold text-lg">Latte Macchiato</h3>
+                        <p class="text-xs text-white/60 mb-2">Espresso doble, leche texturizada.</p>
+                        <div class="flex justify-between items-center">
+                            <span class="text-gold font-mono font-bold">L 65.00</span>
+                            <button onclick="addToCart('Latte Macchiato', 65)" class="w-8 h-8 rounded-full bg-gold text-dark flex items-center justify-center quantity-btn">
+                                <i class="fas fa-plus text-xs"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
 
-        <!-- Menu Grid -->
-        <section class="section-title"><span>📋</span> Menu</section>
-        <div class="menu-grid" id="menuGrid"></div>
+                <!-- Item 2 -->
+                <div class="item-card rounded-2xl p-4 flex gap-4 items-center">
+                    <div class="w-20 h-20 bg-charcoal rounded-xl flex items-center justify-center text-3xl">🧊</div>
+                    <div class="flex-1">
+                        <h3 class="font-bold text-lg">Cold Brew #42</h3>
+                        <p class="text-xs text-white/60 mb-2">Maceración en frío 18h. Notas a chocolate.</p>
+                        <div class="flex justify-between items-center">
+                            <span class="text-gold font-mono font-bold">L 75.00</span>
+                            <button onclick="addToCart('Cold Brew #42', 75)" class="w-8 h-8 rounded-full bg-gold text-dark flex items-center justify-center quantity-btn">
+                                <i class="fas fa-plus text-xs"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Category: Comida -->
+        <div>
+            <h2 class="text-gold text-sm font-bold uppercase tracking-widest mb-4 border-l-2 border-gold pl-3">Comida</h2>
+            <div class="space-y-4">
+                <!-- Item 3 -->
+                <div class="item-card rounded-2xl p-4 flex gap-4 items-center">
+                    <div class="w-20 h-20 bg-charcoal rounded-xl flex items-center justify-center text-3xl">🥞</div>
+                    <div class="flex-1">
+                        <h3 class="font-bold text-lg">Crêpe Clásico</h3>
+                        <p class="text-xs text-white/60 mb-2">Nutella, fresas frescas, azúcar glass.</p>
+                        <div class="flex justify-between items-center">
+                            <span class="text-gold font-mono font-bold">L 95.00</span>
+                            <button onclick="addToCart('Crêpe Clásico', 95)" class="w-8 h-8 rounded-full bg-gold text-dark flex items-center justify-center quantity-btn">
+                                <i class="fas fa-plus text-xs"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
     </main>
 
-    <!-- WIZARD OVERLAY -->
-    <div class="wizard-overlay" id="wizardOverlay">
-        <div class="wizard-header">
-            <button class="wizard-back" onclick="wizardPrev()">←</button>
-            <div class="wizard-title-container">
-                <div class="wizard-product-name" id="wizardProductName">Product</div>
-                <div class="wizard-steps-dots" id="wizardDots"></div>
-            </div>
-            <button class="wizard-close" onclick="closeWizard()">×</button>
+    <!-- Floating Cart -->
+    <div id="cart-bar" class="fixed bottom-6 left-4 right-4 bg-gold rounded-2xl p-4 floating-cart flex justify-between items-center transform translate-y-[150%] transition-transform duration-300 z-50">
+        <div class="flex flex-col">
+            <span class="text-dark text-xs font-bold uppercase tracking-wider">Total</span>
+            <span id="cart-total" class="text-dark font-display font-bold text-xl">L 0.00</span>
         </div>
-        <div class="wizard-body" id="wizardBody">
-            <!-- Dynamic Content -->
-        </div>
-        <div class="wizard-footer">
-            <div class="wizard-total">L<span id="wizardPriceDisplay">0</span></div>
-            <button class="wizard-action-btn" id="wizardNextBtn" onclick="wizardNext()">Siguiente</button>
-        </div>
-    </div>
-
-    <!-- Cart Bottom Bar -->
-    <div class="cart-bar" id="cartBar">
-        <div class="cart-bar-content">
-            <div class="cart-items" id="cartItems"></div>
-            <div class="cart-summary">
-                <span class="cart-label">Total</span>
-                <span class="cart-total" id="cartTotal">L 0</span>
-            </div>
-            <button class="checkout-btn" onclick="placeOrder()">
-                <span>Place Order</span>
-                <span>→</span>
-            </button>
-        </div>
-    </div>
-
-    <!-- Order Tracking Screen -->
-    <div class="tracking-screen" id="trackingScreen">
-        <div class="tracking-header">
-            <span style="font-size:3rem">✅</span>
-            <div class="order-number" id="orderNumber">#0001</div>
-            <p style="color:var(--text-muted)">Your order is being prepared</p>
-        </div>
-        <div class="tracking-status">
-            <div class="status-step done" id="step1">
-                <div class="status-icon">📝</div>
-                <div class="status-text">
-                    <h3>Order Received</h3>
-                    <p>We got your order</p>
-                </div>
-            </div>
-            <div class="status-step active" id="step2">
-                <div class="status-icon">👨‍🍳</div>
-                <div class="status-text">
-                    <h3>Preparing</h3>
-                    <p>Making it fresh for you</p>
-                </div>
-            </div>
-            <div class="status-step" id="step3">
-                <div class="status-icon">🔔</div>
-                <div class="status-text">
-                    <h3>Ready!</h3>
-                    <p>Pick up at the counter</p>
-                </div>
-            </div>
-        </div>
-        <button class="new-order-btn" onclick="newOrder()">← Start New Order</button>
+        <button onclick="checkout()" class="bg-dark text-gold px-6 py-3 rounded-xl font-bold text-sm shadow-lg flex items-center gap-2 active:scale-95 transition-transform">
+            <span>Pedir por WhatsApp</span>
+            <i class="fab fa-whatsapp text-lg"></i>
+        </button>
     </div>
 
     <script>
-        let menu = { categories: [], taxRate: 0.15 };
-        let cart = []; // Array now
-        let currentCat = null;
-        let cartBarOpen = false;
+        let cart = [];
+        const SHOP_PHONE = "50495200236"; // Replace with actual shop number
 
-        // Wizard State
-        let currentItem = null;
-        let wizardState = {
-            step: 0,
-            selections: {},
-            basePrice: 0,
-            totalPrice: 0,
-            steps: []
-        };
-        
-        // Mock Modifiers
-        const DEFAULT_MODIFIERS = [
-            {
-                id: 'size', name: 'Size', type: 'single', required: true,
-                options: [
-                    { id: 's', name: 'Small', price: 0, icon: '🥤' },
-                    { id: 'm', name: 'Medium', price: 10, icon: '🥤' },
-                    { id: 'l', name: 'Large', price: 20, icon: '🥤' }
-                ]
-            },
-            {
-                id: 'milk', name: 'Milk', type: 'single', required: true,
-                options: [
-                    { id: 'whole', name: 'Whole', price: 0, icon: '🥛' },
-                    { id: 'skim', name: 'Skim', price: 0, icon: '🥛' },
-                    { id: 'almond', name: 'Almond', price: 15, icon: '🥜' },
-                    { id: 'oat', name: 'Oat', price: 15, icon: '🌾' }
-                ]
-            }
-        ];
-
-        const UPSELL_ITEM = {
-            id: 'pastry-upsell',
-            name: 'Treat Yourself?',
-            type: 'upsell',
-            item: { name: 'Croissant', price: 45, icon: '🥐' }
-        };
-
-        const itemIcons = {
-            'coffee': '☕', 'latte': '☕', 'espresso': '☕', 'cappuccino': '☕', 'americano': '☕',
-            'tea': '🍵', 'smoothie': '🥤', 'juice': '🧃', 'water': '💧', 'jugo': '🧃',
-            'sandwich': '🥪', 'burger': '🍔', 'wrap': '🌯', 'salad': '🥗', 'tacos': '🌮',
-            'cake': '🍰', 'cookie': '🍪', 'muffin': '🧁', 'donut': '🍩', 'croissant': '🥐',
-            'breakfast': '🍳', 'eggs': '🍳', 'toast': '🍞', 'pancake': '🥞', 'huevos': '🍳',
-            'baleada': '🫓', 'plato': '🍽️', 'flan': '🍮', 'pastel': '🍰', 'brownie': '🍫',
-            'tres': '🍰', 'mocha': '☕', 'cafe': '☕', 'café': '☕', 'agua': '💧',
-            'bowl': '🥗', 'chicken': '🍗', 'acai': '🫐', 'grain': '🌾', 'frappe': '🧋',
-            'cold': '🧊', 'iced': '🧊', 'matcha': '🍵', 'chai': '🍵',
-            'default': '🍽️'
-        };
-
-        function getIcon(name) {
-            const lower = name.toLowerCase();
-            for (const [key, icon] of Object.entries(itemIcons)) {
-                if (lower.includes(key)) return icon;
-            }
-            return itemIcons.default;
-        }
-
-        function init() {
-            fetch('/api/menu')
-                .then(res => res.json())
-                .then(data => {
-                    menu = data;
-                    menu.taxRate = menu.taxRate || 0.15;
-                    renderCategories();
-                    renderFeatured();
-                    if (menu.categories.length) selectCategory(menu.categories[0].id);
-                })
-                .catch(e => {
-                    console.error('Failed to load menu:', e);
-                    // Fallback
-                     menu.categories = [{id:'coffee', name:'Coffee', icon:'☕', items:[
-                        {id:'1', name:'Latte', price:50},
-                        {id:'2', name:'Cappuccino', price:50}
-                    ]}];
-                    renderCategories();
-                    selectCategory('coffee');
-                });
-        }
-
-        function renderCategories() {
-            document.getElementById('categories').innerHTML = menu.categories.map(c =>
-                `<button class="cat-btn" data-id="${c.id}" onclick="selectCategory('${c.id}')">
-                    <span class="cat-icon">${c.icon || '📁'}</span>
-                    <span>${c.name}</span>
-                </button>`
-            ).join('');
-        }
-
-        function renderFeatured() {
-            const featured = [];
-            for (const cat of menu.categories) {
-                for (const item of (cat.items || []).slice(0, 2)) {
-                    if (featured.length < 6) featured.push({...item, catId: cat.id});
-                }
-            }
-            document.getElementById('featuredItems').innerHTML = featured.map(item => `
-                <div class="featured-card" onclick="openWizard('${item.id}')">
-                    <div class="featured-img">${getIcon(item.name)}</div>
-                    <div class="featured-info">
-                        <div class="featured-name">${item.name}</div>
-                        <div class="featured-price">L ${item.price}</div>
-                    </div>
-                </div>
-            `).join('');
-        }
-
-        function selectCategory(id) {
-            currentCat = id;
-            document.querySelectorAll('.cat-btn').forEach(b => 
-                b.classList.toggle('active', b.dataset.id === id)
-            );
-            const cat = menu.categories.find(c => c.id === id);
-            renderMenu(cat ? cat.items : []);
-        }
-
-        function renderMenu(items) {
-            document.getElementById('menuGrid').innerHTML = items.map(item => `
-                <div class="menu-item" onclick="openWizard('${item.id}')">
-                    <div class="item-img">
-                        ${getIcon(item.name)}
-                    </div>
-                    <div class="item-info">
-                        <div class="item-name">${item.name}</div>
-                        <div class="item-row">
-                            <span class="item-price">L ${item.price}</span>
-                        </div>
-                    </div>
-                </div>
-            `).join('');
-        }
-
-        function findItem(id) {
-            for (const c of menu.categories) {
-                const item = (c.items || []).find(i => i.id === id);
-                if (item) return item;
-            }
-            return null;
-        }
-
-        // --- WIZARD LOGIC ---
-        function openWizard(itemId) {
-            currentItem = findItem(itemId);
-            if (!currentItem) return;
-
-            // Setup State
-            wizardState = {
-                step: 0,
-                selections: {},
-                basePrice: currentItem.price,
-                totalPrice: currentItem.price,
-                steps: [...(currentItem.modifiers || DEFAULT_MODIFIERS), UPSELL_ITEM]
-            };
-
-            // Setup UI
-            document.getElementById('wizardProductName').textContent = currentItem.name;
-            updateWizardUI();
-            document.getElementById('wizardOverlay').classList.add('show');
-        }
-
-        function closeWizard() {
-            document.getElementById('wizardOverlay').classList.remove('show');
-        }
-
-        function updateWizardUI() {
-            const currentStep = wizardState.steps[wizardState.step];
+        function addToCart(name, price) {
+            cart.push({ name, price });
+            updateCartUI();
             
-            // 1. Dots
-            const dotsHtml = wizardState.steps.map((_, idx) => `
-                <div class="step-dot ${idx === wizardState.step ? 'active' : ''} ${idx < wizardState.step ? 'completed' : ''}"></div>
-            `).join('');
-            document.getElementById('wizardDots').innerHTML = dotsHtml;
+            // Subtle feedback
+            const btn = event.currentTarget;
+            btn.classList.add('scale-90');
+            setTimeout(() => btn.classList.remove('scale-90'), 100);
+        }
 
-            // 2. Body Content
-            const body = document.getElementById('wizardBody');
-            body.innerHTML = ''; // Clear
-
-            if (currentStep.type === 'upsell') {
-                renderUpsellStep(currentStep, body);
+        function updateCartUI() {
+            const total = cart.reduce((sum, item) => sum + item.price, 0);
+            document.getElementById('cart-total').innerText = `L ${total.toFixed(2)}`;
+            
+            const cartBar = document.getElementById('cart-bar');
+            if (cart.length > 0) {
+                cartBar.classList.remove('translate-y-[150%]');
             } else {
-                renderModifierStep(currentStep, body);
+                cartBar.classList.add('translate-y-[150%]');
             }
-
-            // 3. Footer
-            updateWizardPrice();
-            
-            // Back button visibility
-            document.querySelector('.wizard-back').style.visibility = wizardState.step > 0 ? 'visible' : 'hidden';
-            
-            // Next button state
-            const isValid = validateStep();
-            const nextBtn = document.getElementById('wizardNextBtn');
-            nextBtn.disabled = !isValid;
-            nextBtn.textContent = wizardState.step === wizardState.steps.length - 1 ? 'Add to Cart' : 'Next';
         }
 
-        function renderModifierStep(step, container) {
-            // Title
-            const title = document.createElement('div');
-            title.className = 'wizard-step-title';
-            title.textContent = `Select ${step.name}`;
-            container.appendChild(title);
+        function checkout() {
+            if (cart.length === 0) return;
 
-            // Grid
-            const grid = document.createElement('div');
-            grid.className = 'options-grid';
-            
-            step.options.forEach(opt => {
-                const btn = document.createElement('div');
-                const isSelected = wizardState.selections[step.id] === opt.id;
-                btn.className = `option-btn ${isSelected ? 'selected' : ''}`;
-                btn.onclick = () => selectOption(step.id, opt);
-                btn.innerHTML = `
-                    <div class="option-icon">${opt.icon || '🔹'}</div>
-                    <div class="option-name">${opt.name}</div>
-                    ${opt.price > 0 ? `<div class="option-price">+L${opt.price}</div>` : ''}
-                `;
-                grid.appendChild(btn);
+            // Group items
+            const counts = {};
+            cart.forEach(item => {
+                counts[item.name] = (counts[item.name] || 0) + 1;
             });
-            container.appendChild(grid);
-        }
 
-        function renderUpsellStep(step, container) {
-            container.innerHTML = `
-                <div class="upsell-container">
-                    <div class="upsell-img">${step.item.icon}</div>
-                    <div class="upsell-text">
-                        <h2 style="margin-bottom:0.5rem">${step.name}</h2>
-                        <p style="color:var(--text-muted)">Add a ${step.item.name} for L${step.item.price}</p>
-                    </div>
-                    <div class="upsell-actions">
-                        <button class="upsell-yes" onclick="addUpsellAndFinish(true)">
-                            Yes, add it (+L${step.item.price})
-                        </button>
-                        <button class="upsell-no" onclick="addUpsellAndFinish(false)">
-                            No thanks
-                        </button>
-                    </div>
-                </div>
-            `;
-            // Hide default footer button for upsell
-            document.getElementById('wizardNextBtn').style.display = 'none';
-        }
+            let message = "👋 Hola Rich Aroma! Quiero ordenar:\n\n";
+            let total = 0;
 
-        function selectOption(stepId, option) {
-            wizardState.selections[stepId] = option.id;
-            const step = wizardState.steps[wizardState.step];
-            if (step.type === 'single') {
-                updateWizardUI();
-                setTimeout(() => wizardNext(), 300);
-            } else {
-                updateWizardUI();
+            for (const [name, count] of Object.entries(counts)) {
+                const item = cart.find(i => i.name === name);
+                const subtotal = item.price * count;
+                total += subtotal;
+                message += `▪️ ${count}x ${name} (L ${subtotal})\n`;
             }
+
+            message += `\n💰 *Total: L ${total.toFixed(2)}*`;
+            message += "\n📍 Para recoger en tienda.";
+
+            const url = `https://wa.me/${SHOP_PHONE}?text=${encodeURIComponent(message)}`;
+            window.location.href = url;
         }
-
-        function updateWizardPrice() {
-            let total = wizardState.basePrice;
-            wizardState.steps.forEach(step => {
-                if (step.type !== 'upsell') {
-                    const selId = wizardState.selections[step.id];
-                    if (selId) {
-                        const opt = step.options.find(o => o.id === selId);
-                        if (opt) total += opt.price || 0;
-                    }
-                }
-            });
-            wizardState.totalPrice = total;
-            document.getElementById('wizardPriceDisplay').textContent = total;
-        }
-
-        function validateStep() {
-            const step = wizardState.steps[wizardState.step];
-            if (step.type === 'upsell') return true;
-            if (step.required && !wizardState.selections[step.id]) return false;
-            return true;
-        }
-
-        function wizardNext() {
-            if (wizardState.step < wizardState.steps.length - 1) {
-                wizardState.step++;
-                document.getElementById('wizardNextBtn').style.display = 'block';
-                updateWizardUI();
-            } else {
-                finishWizard();
-            }
-        }
-
-        function wizardPrev() {
-            if (wizardState.step > 0) {
-                wizardState.step--;
-                document.getElementById('wizardNextBtn').style.display = 'block';
-                updateWizardUI();
-            }
-        }
-
-        function addUpsellAndFinish(accepted) {
-            if (accepted) {
-                const upsell = wizardState.steps.find(s => s.type === 'upsell');
-                cart.push({
-                    id: 'upsell-' + Date.now(),
-                    name: upsell.item.name,
-                    price: upsell.item.price,
-                    isUpsell: true
-                });
-            }
-            finishWizard();
-        }
-
-        function finishWizard() {
-            cart.push({
-                ...currentItem,
-                selections: {...wizardState.selections},
-                finalPrice: wizardState.totalPrice,
-                instanceId: Date.now()
-            });
-            closeWizard();
-            updateCart();
-        }
-
-        // --- CART & ORDER ---
-        function updateCart() {
-            const count = cart.length;
-            const total = cart.reduce((s, item) => s + (item.finalPrice || item.price), 0);
-
-            // Update header pill
-            const pill = document.getElementById('cartPill');
-            pill.classList.toggle('show', count > 0);
-            document.getElementById('cartPillCount').textContent = count;
-            document.getElementById('cartPillTotal').textContent = `L ${total}`;
-
-            // Update cart bar
-            document.getElementById('cartTotal').textContent = `L ${total}`; // Assuming tax included for display simplicity
-            
-            // Update cart items list
-            document.getElementById('cartItems').innerHTML = cart.map((item, idx) => {
-                return `
-                    <div class="cart-item">
-                        <div class="cart-item-info">
-                            <span class="cart-item-qty">1x</span>
-                            <span class="cart-item-name">${item.name} ${item.isUpsell ? '(Added)' : ''}</span>
-                        </div>
-                        <div class="cart-item-controls">
-                            <span class="cart-item-price">L ${item.finalPrice || item.price}</span>
-                            <button class="cart-qty-btn" style="width:24px;height:24px;font-size:1rem" onclick="event.stopPropagation(); removeFromCart(${idx})">×</button>
-                        </div>
-                    </div>
-                `;
-            }).join('');
-
-            // Toggle cart bar
-            document.getElementById('cartBar').classList.toggle('show', count > 0 && cartBarOpen);
-        }
-
-        function removeFromCart(idx) {
-            cart.splice(idx, 1);
-            updateCart();
-        }
-
-        function toggleCartBar() {
-            cartBarOpen = !cartBarOpen;
-            const hasItems = cart.length > 0;
-            document.getElementById('cartBar').classList.toggle('show', hasItems && cartBarOpen);
-        }
-
-        async function placeOrder() {
-            if (cart.length === 0) {
-                alert('Cart is empty');
-                return;
-            }
-            
-            const total = cart.reduce((s, i) => s + (i.finalPrice || i.price), 0);
-            const order = { items: cart, total, source: 'self-order' };
-            
-            try {
-                // Mock API call
-                // const res = await fetch('/api/orders', ...);
-                const result = { id: '#'+Math.floor(Math.random()*1000).toString().padStart(4,'0') };
-                
-                // Show tracking screen
-                document.getElementById('orderNumber').textContent = result.id;
-                document.getElementById('trackingScreen').classList.add('show');
-                document.getElementById('cartBar').classList.remove('show');
-                cartBarOpen = false;
-                cart = [];
-                updateCart();
-                
-                // Simulate status updates
-                setTimeout(() => {
-                    document.getElementById('step2').classList.add('done');
-                    document.getElementById('step2').classList.remove('active');
-                    document.getElementById('step3').classList.add('active');
-                }, 8000);
-            } catch (e) {
-                console.error('Order error:', e);
-                alert('Error placing order.');
-            }
-        }
-
-        function newOrder() {
-            cart = [];
-            cartBarOpen = false;
-            document.getElementById('trackingScreen').classList.remove('show');
-            document.getElementById('step2').classList.remove('done');
-            document.getElementById('step2').classList.add('active');
-            document.getElementById('step3').classList.remove('active');
-            updateCart();
-            selectCategory(currentCat);
-        }
-
-        init();
     </script>
 </body>
 </html>

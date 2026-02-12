@@ -1,0 +1,510 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>🧃 Juice Shop</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-user-select: none;
+            user-select: none;
+        }
+
+        body {
+            font-family: 'Comic Sans MS', cursive, sans-serif;
+            background: linear-gradient(180deg, #87CEEB 0%, #98FB98 100%);
+            min-height: 100vh;
+            overflow: hidden;
+        }
+
+        .game {
+            max-width: 500px;
+            margin: 0 auto;
+            padding: 15px;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .header {
+            text-align: center;
+            padding: 10px;
+            background: rgba(255,255,255,0.8);
+            border-radius: 20px;
+            margin-bottom: 10px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+
+        .title {
+            font-size: 1.8rem;
+            color: #FF6B6B;
+            text-shadow: 2px 2px 0 #FFE66D;
+        }
+
+        .stats {
+            display: flex;
+            justify-content: space-around;
+            margin-top: 10px;
+            font-size: 1.2rem;
+        }
+
+        .stat {
+            background: #FFE66D;
+            padding: 5px 15px;
+            border-radius: 15px;
+        }
+
+        .order-area {
+            background: rgba(255,255,255,0.9);
+            border-radius: 20px;
+            padding: 15px;
+            margin-bottom: 10px;
+            text-align: center;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+
+        .customer {
+            font-size: 4rem;
+            animation: bounce 0.5s ease-in-out infinite alternate;
+        }
+
+        @keyframes bounce {
+            from { transform: translateY(0); }
+            to { transform: translateY(-10px); }
+        }
+
+        .speech {
+            background: #fff;
+            border: 3px solid #333;
+            border-radius: 20px;
+            padding: 10px 20px;
+            margin: 10px 0;
+            position: relative;
+            font-size: 1.1rem;
+        }
+
+        .speech::after {
+            content: '';
+            position: absolute;
+            top: -15px;
+            left: 50%;
+            transform: translateX(-50%);
+            border: 10px solid transparent;
+            border-bottom-color: #333;
+        }
+
+        .timer-bar {
+            height: 15px;
+            background: #ddd;
+            border-radius: 10px;
+            overflow: hidden;
+            margin-top: 10px;
+        }
+
+        .timer-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #FF6B6B, #FFE66D);
+            transition: width 0.1s linear;
+            border-radius: 10px;
+        }
+
+        .blender {
+            background: rgba(255,255,255,0.9);
+            border-radius: 20px;
+            padding: 15px;
+            margin-bottom: 10px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+
+        .blender-display {
+            height: 120px;
+            background: linear-gradient(180deg, #f0f0f0, #e0e0e0);
+            border-radius: 15px;
+            border: 5px solid #888;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 3rem;
+            margin-bottom: 10px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .blender-display.blending {
+            animation: shake 0.1s infinite;
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            75% { transform: translateX(5px); }
+        }
+
+        .juice-level {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: var(--juice-color, #FFA500);
+            transition: height 0.3s;
+            opacity: 0.8;
+        }
+
+        .blend-btn {
+            width: 100%;
+            padding: 15px;
+            font-size: 1.3rem;
+            border: none;
+            border-radius: 15px;
+            background: linear-gradient(180deg, #4CAF50, #45a049);
+            color: white;
+            cursor: pointer;
+            font-family: inherit;
+            box-shadow: 0 5px 0 #2E7D32;
+        }
+
+        .blend-btn:active {
+            transform: translateY(3px);
+            box-shadow: 0 2px 0 #2E7D32;
+        }
+
+        .blend-btn:disabled {
+            background: #ccc;
+            box-shadow: 0 5px 0 #999;
+        }
+
+        .fruits {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 10px;
+        }
+
+        .fruit {
+            aspect-ratio: 1;
+            font-size: 2.5rem;
+            background: rgba(255,255,255,0.9);
+            border-radius: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+        }
+
+        .fruit:active {
+            transform: scale(0.9);
+        }
+
+        .fruit.selected {
+            background: #FFE66D;
+            transform: scale(1.1);
+            box-shadow: 0 6px 15px rgba(0,0,0,0.2);
+        }
+
+        .result {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0,0,0,0.9);
+            color: white;
+            padding: 30px 50px;
+            border-radius: 20px;
+            font-size: 2rem;
+            text-align: center;
+            display: none;
+            z-index: 100;
+        }
+
+        .result.show { display: block; }
+
+        .confetti {
+            position: fixed;
+            font-size: 2rem;
+            pointer-events: none;
+            animation: fall 2s linear forwards;
+        }
+
+        @keyframes fall {
+            to {
+                transform: translateY(100vh) rotate(360deg);
+                opacity: 0;
+            }
+        }
+
+        .no-customer {
+            text-align: center;
+            padding: 30px;
+            color: #666;
+        }
+
+        .waiting-text {
+            font-size: 1.5rem;
+            animation: pulse 1s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+    </style>
+</head>
+<body>
+    <div class="game">
+        <div class="header">
+            <div class="title">🧃 Juice Shop 🍹</div>
+            <div class="stats">
+                <div class="stat">💰 $<span id="money">0</span></div>
+                <div class="stat">⭐ <span id="score">0</span></div>
+                <div class="stat">❤️ <span id="lives">3</span></div>
+            </div>
+        </div>
+
+        <div class="order-area" id="orderArea">
+            <div class="no-customer" id="noCustomer">
+                <div class="waiting-text">Waiting for customer...</div>
+            </div>
+            <div id="customerSection" style="display:none">
+                <div class="customer" id="customer">👧</div>
+                <div class="speech" id="speech">I want orange juice!</div>
+                <div class="timer-bar">
+                    <div class="timer-fill" id="timer" style="width: 100%"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="blender">
+            <div class="blender-display" id="blenderDisplay">
+                <div class="juice-level" id="juiceLevel" style="height: 0%"></div>
+                <span id="blenderContent">🫙</span>
+            </div>
+            <button class="blend-btn" id="blendBtn" onclick="blend()" disabled>🌀 BLEND!</button>
+        </div>
+
+        <div class="fruits" id="fruits">
+            <div class="fruit" onclick="addFruit('🍊', '#FFA500')">🍊</div>
+            <div class="fruit" onclick="addFruit('🍎', '#FF6B6B')">🍎</div>
+            <div class="fruit" onclick="addFruit('🍇', '#9B59B6')">🍇</div>
+            <div class="fruit" onclick="addFruit('🍓', '#E74C3C')">🍓</div>
+            <div class="fruit" onclick="addFruit('🍋', '#F1C40F')">🍋</div>
+            <div class="fruit" onclick="addFruit('🥝', '#27AE60')">🥝</div>
+            <div class="fruit" onclick="addFruit('🍌', '#F39C12')">🍌</div>
+            <div class="fruit" onclick="addFruit('🫐', '#3498DB')">🫐</div>
+        </div>
+    </div>
+
+    <div class="result" id="result"></div>
+
+    <script>
+        const customers = ['👧', '👦', '👩', '👨', '👵', '👴', '🧒', '👱‍♀️', '👱', '🧑'];
+        const orders = [
+            { name: 'orange juice', fruits: ['🍊'], color: '#FFA500' },
+            { name: 'apple juice', fruits: ['🍎'], color: '#FF6B6B' },
+            { name: 'grape juice', fruits: ['🍇'], color: '#9B59B6' },
+            { name: 'strawberry juice', fruits: ['🍓'], color: '#E74C3C' },
+            { name: 'lemonade', fruits: ['🍋'], color: '#F1C40F' },
+            { name: 'kiwi juice', fruits: ['🥝'], color: '#27AE60' },
+            { name: 'banana smoothie', fruits: ['🍌'], color: '#F39C12' },
+            { name: 'blueberry juice', fruits: ['🫐'], color: '#3498DB' },
+            { name: 'tropical mix', fruits: ['🍊', '🍌'], color: '#FFB347' },
+            { name: 'berry blast', fruits: ['🍓', '🫐'], color: '#C0392B' },
+            { name: 'green power', fruits: ['🥝', '🍎'], color: '#2ECC71' },
+        ];
+
+        let state = {
+            money: 0,
+            score: 0,
+            lives: 3,
+            selectedFruits: [],
+            currentOrder: null,
+            timeLeft: 100,
+            timer: null,
+            isBlending: false
+        };
+
+        function updateUI() {
+            document.getElementById('money').textContent = state.money;
+            document.getElementById('score').textContent = state.score;
+            document.getElementById('lives').textContent = state.lives;
+        }
+
+        function newCustomer() {
+            if (state.lives <= 0) {
+                gameOver();
+                return;
+            }
+
+            state.selectedFruits = [];
+            state.currentOrder = orders[Math.floor(Math.random() * orders.length)];
+            state.timeLeft = 100;
+
+            document.getElementById('noCustomer').style.display = 'none';
+            document.getElementById('customerSection').style.display = 'block';
+            document.getElementById('customer').textContent = customers[Math.floor(Math.random() * customers.length)];
+            document.getElementById('speech').textContent = `I want ${state.currentOrder.name}! (${state.currentOrder.fruits.join(' + ')})`;
+            
+            clearBlender();
+            updateFruitSelection();
+
+            if (state.timer) clearInterval(state.timer);
+            state.timer = setInterval(() => {
+                state.timeLeft -= 2;
+                document.getElementById('timer').style.width = state.timeLeft + '%';
+                
+                if (state.timeLeft <= 0) {
+                    clearInterval(state.timer);
+                    fail('Too slow! ⏰');
+                }
+            }, 100);
+        }
+
+        function addFruit(fruit, color) {
+            if (state.isBlending || !state.currentOrder) return;
+            
+            state.selectedFruits.push(fruit);
+            document.getElementById('juiceLevel').style.setProperty('--juice-color', color);
+            document.getElementById('juiceLevel').style.height = Math.min(state.selectedFruits.length * 25, 80) + '%';
+            document.getElementById('blenderContent').textContent = state.selectedFruits.join('');
+            document.getElementById('blendBtn').disabled = state.selectedFruits.length === 0;
+            
+            updateFruitSelection();
+        }
+
+        function updateFruitSelection() {
+            document.querySelectorAll('.fruit').forEach(f => {
+                const emoji = f.textContent;
+                if (state.selectedFruits.includes(emoji)) {
+                    f.classList.add('selected');
+                } else {
+                    f.classList.remove('selected');
+                }
+            });
+        }
+
+        function clearBlender() {
+            state.selectedFruits = [];
+            document.getElementById('juiceLevel').style.height = '0%';
+            document.getElementById('blenderContent').textContent = '🫙';
+            document.getElementById('blendBtn').disabled = true;
+            updateFruitSelection();
+        }
+
+        function blend() {
+            if (state.isBlending || state.selectedFruits.length === 0) return;
+            
+            state.isBlending = true;
+            clearInterval(state.timer);
+            
+            document.getElementById('blenderDisplay').classList.add('blending');
+            document.getElementById('blendBtn').disabled = true;
+            
+            setTimeout(() => {
+                document.getElementById('blenderDisplay').classList.remove('blending');
+                state.isBlending = false;
+                checkOrder();
+            }, 1500);
+        }
+
+        function checkOrder() {
+            const needed = [...state.currentOrder.fruits].sort().join('');
+            const got = [...state.selectedFruits].sort().join('');
+            
+            if (needed === got) {
+                success();
+            } else {
+                fail('Wrong juice! 😢');
+            }
+        }
+
+        function success() {
+            const tip = Math.floor(state.timeLeft / 10) + 5;
+            state.money += tip;
+            state.score += 1;
+            updateUI();
+            
+            showResult(`Perfect! 🎉\n+$${tip}`, true);
+            confetti();
+            
+            setTimeout(() => {
+                hideResult();
+                newCustomer();
+            }, 1500);
+        }
+
+        function fail(msg) {
+            state.lives -= 1;
+            updateUI();
+            
+            showResult(msg, false);
+            
+            setTimeout(() => {
+                hideResult();
+                if (state.lives > 0) {
+                    newCustomer();
+                } else {
+                    gameOver();
+                }
+            }, 1500);
+        }
+
+        function gameOver() {
+            document.getElementById('noCustomer').style.display = 'block';
+            document.getElementById('customerSection').style.display = 'none';
+            document.getElementById('noCustomer').innerHTML = `
+                <div style="font-size: 3rem;">😢</div>
+                <div style="font-size: 1.5rem; margin: 10px 0;">Game Over!</div>
+                <div>Final Score: ⭐ ${state.score}</div>
+                <div>Money: 💰 $${state.money}</div>
+                <button onclick="restartGame()" style="margin-top: 15px; padding: 10px 30px; font-size: 1.2rem; border-radius: 10px; border: none; background: #4CAF50; color: white; cursor: pointer;">Play Again</button>
+            `;
+            clearBlender();
+        }
+
+        function restartGame() {
+            state = {
+                money: 0,
+                score: 0,
+                lives: 3,
+                selectedFruits: [],
+                currentOrder: null,
+                timeLeft: 100,
+                timer: null,
+                isBlending: false
+            };
+            updateUI();
+            newCustomer();
+        }
+
+        function showResult(text, success) {
+            const el = document.getElementById('result');
+            el.textContent = text;
+            el.style.background = success ? 'rgba(46, 204, 113, 0.95)' : 'rgba(231, 76, 60, 0.95)';
+            el.classList.add('show');
+        }
+
+        function hideResult() {
+            document.getElementById('result').classList.remove('show');
+        }
+
+        function confetti() {
+            const emojis = ['🎉', '⭐', '✨', '🌟', '💫'];
+            for (let i = 0; i < 20; i++) {
+                const c = document.createElement('div');
+                c.className = 'confetti';
+                c.textContent = emojis[Math.floor(Math.random() * emojis.length)];
+                c.style.left = Math.random() * 100 + 'vw';
+                c.style.top = '-50px';
+                document.body.appendChild(c);
+                setTimeout(() => c.remove(), 2000);
+            }
+        }
+
+        // Start game after 1 second
+        setTimeout(newCustomer, 1000);
+    </script>
+</body>
+</html>

@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Remesas & Divisas - Rich Aroma</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="/js/localforage.min.js"></script>
+    <script src="/offline-manager.js"></script>
+    <style>
+        :root {
+            --bg: #0f0d0b;
+            --card: #1a1714;
+            --primary: #D4A574; /* Caramel */
+            --text: #f5f0eb;
+            --text-muted: #8a8078;
+            --border: rgba(255,255,255,0.1);
+            --green: #22c55e;
+            --red: #ef4444;
+        }
+        
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', sans-serif; }
+        
+        body { background: var(--bg); color: var(--text); padding: 20px; max-width: 600px; margin: 0 auto; }
+        
+        .header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px; }
+        .back-btn { background: none; border: none; color: var(--text); font-size: 24px; cursor: pointer; }
+        .title { font-size: 20px; font-weight: 600; }
+        
+        .rate-card {
+            background: linear-gradient(135deg, #2c241b 0%, var(--card) 100%);
+            border: 1px solid var(--primary);
+            border-radius: 16px;
+            padding: 20px;
+            text-align: center;
+            margin-bottom: 24px;
+            position: relative;
+        }
+        
+        .rate-label { color: var(--primary); font-size: 14px; font-weight: 500; text-transform: uppercase; letter-spacing: 1px; }
+        .rate-value { font-size: 48px; font-weight: 700; margin: 8px 0; }
+        .rate-edit { position: absolute; top: 10px; right: 10px; background: none; border: none; font-size: 16px; cursor: pointer; opacity: 0.5; }
+        
+        .tabs { display: flex; background: var(--card); padding: 4px; border-radius: 12px; margin-bottom: 24px; }
+        .tab { flex: 1; padding: 12px; border: none; background: none; color: var(--text-muted); font-weight: 600; border-radius: 8px; cursor: pointer; transition: all 0.2s; }
+        .tab.active { background: var(--primary); color: #000; }
+        
+        .form-group { margin-bottom: 20px; }
+        .label { display: block; margin-bottom: 8px; color: var(--text-muted); font-size: 14px; }
+        .input-wrapper { position: relative; }
+        .input { 
+            width: 100%; background: var(--card); border: 1px solid var(--border); 
+            color: var(--text); padding: 16px; border-radius: 12px; font-size: 18px; 
+            outline: none; transition: border-color 0.2s;
+        }
+        .input:focus { border-color: var(--primary); }
+        .currency-badge { position: absolute; right: 16px; top: 50%; transform: translateY(-50%); color: var(--text-muted); font-weight: 600; }
+        
+        .result-box { background: rgba(255,255,255,0.05); padding: 16px; border-radius: 12px; margin-bottom: 24px; display: flex; justify-content: space-between; align-items: center; }
+        .result-label { font-size: 14px; color: var(--text-muted); }
+        .result-value { font-size: 24px; font-weight: 700; color: var(--green); }
+        
+        .btn { width: 100%; padding: 16px; border-radius: 12px; font-size: 16px; font-weight: 600; cursor: pointer; border: none; transition: transform 0.1s; }
+        .btn:active { transform: scale(0.98); }
+        .btn-primary { background: var(--primary); color: #000; }
+        .btn-secondary { background: var(--card); color: var(--text); border: 1px solid var(--border); }
+        
+        .history { margin-top: 40px; }
+        .history-title { font-size: 16px; font-weight: 600; margin-bottom: 16px; color: var(--text-muted); }
+        .tx-item { display: flex; justify-content: space-between; padding: 16px; background: var(--card); border-radius: 12px; margin-bottom: 8px; align-items: center; }
+        .tx-left { display: flex; flex-direction: column; gap: 4px; }
+        .tx-type { font-weight: 600; font-size: 14px; }
+        .tx-meta { font-size: 12px; color: var(--text-muted); }
+        .tx-amount { font-weight: 700; font-size: 16px; }
+        .tx-exchange { color: var(--green); }
+        .tx-payout { color: var(--red); }
+
+        /* Modal */
+        .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.8); align-items: center; justify-content: center; padding: 20px; z-index: 100; }
+        .modal.active { display: flex; }
+        .modal-content { background: var(--card); padding: 24px; border-radius: 16px; width: 100%; max-width: 320px; text-align: center; }
+        .modal-title { margin-bottom: 16px; font-size: 18px; font-weight: 600; }
+        .modal-btns { display: flex; gap: 12px; margin-top: 20px; }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <button class="back-btn" onclick="window.history.back()">←</button>
+        <span class="title">Remesas & Divisas</span>
+        <div style="width: 24px"></div>
+    </div>
+
+    <div class="rate-card">
+        <div class="rate-label">Tasa de Cambio Hoy</div>
+        <div class="rate-value" id="displayRate">--.--</div>
+        <div class="rate-label">HNL / USD</div>
+        <button class="rate-edit" onclick="openRateModal()">✏️</button>
+    </div>
+
+    <div class="tabs">
+        <button class="tab active" onclick="switchTab('exchange')">Venta Divisas</button>
+        <button class="tab" onclick="switchTab('payout')">Pago Remesa</button>
+    </div>
+
+    <!-- Exchange View -->
+    <div id="exchangeView">
+        <div class="form-group">
+            <label class="label">Monto a Recibir (USD)</label>
+            <div class="input-wrapper">
+                <input type="number" id="usdInput" class="input" placeholder="0.00" oninput="calcExchange()">
+                <span class="currency-badge">USD</span>
+            </div>
+        </div>
+        
+        <div class="result-box">
+            <span class="result-label">Entregar al Cliente</span>
+            <span class="result-value" id="hnlOutput">L 0.00</span>
+        </div>
+
+        <button class="btn btn-primary" onclick="submitTransaction('exchange')">Confirmar Cambio</button>
+    </div>
+
+    <!-- Payout View -->
+    <div id="payoutView" style="display: none;">
+        <div class="form-group">
+            <label class="label">Código de Remesa</label>
+            <input type="text" id="remesaCode" class="input" placeholder="REF-12345">
+        </div>
+        
+        <div class="form-group">
+            <label class="label">Monto (USD)</label>
+            <div class="input-wrapper">
+                <input type="number" id="payoutUsd" class="input" placeholder="0.00">
+                <span class="currency-badge">USD</span>
+            </div>
+        </div>
+
+        <button class="btn btn-secondary" onclick="submitTransaction('payout')">Procesar Pago</button>
+    </div>
+
+    <div class="history">
+        <div class="history-title">Transacciones Recientes</div>
+        <div id="txList">
+            <!-- Items injected here -->
+        </div>
+    </div>
+
+    <!-- Rate Modal -->
+    <div class="modal" id="rateModal">
+        <div class="modal-content">
+            <div class="modal-title">Actualizar Tasa</div>
+            <input type="number" id="newRateInput" class="input" placeholder="24.50" style="text-align: center;">
+            <div class="modal-btns">
+                <button class="btn btn-secondary" onclick="closeRateModal()">Cancelar</button>
+                <button class="btn btn-primary" onclick="saveRate()">Guardar</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // State
+        let currentRate = 24.5;
+        // Mock Auth Token
+        const TOKEN = 'TEST_TOKEN_ADMIN'; 
+
+        // Init
+        async function init() {
+            await fetchRate();
+            await fetchHistory();
+        }
+
+        // API Calls
+        async function fetchRate() {
+            try {
+                const res = await fetch('/api/remesas/rate');
+                const data = await res.json();
+                currentRate = data.rate;
+                document.getElementById('displayRate').textContent = currentRate.toFixed(2);
+            } catch (e) { console.error(e); }
+        }
+
+        async function fetchHistory() {
+            try {
+                const res = await fetch('/api/remesas/transactions', {
+                    headers: { 'Authorization': `Bearer ${TOKEN}` }
+                });
+                const data = await res.json();
+                renderHistory(data.transactions);
+            } catch (e) { console.error(e); }
+        }
+
+        async function saveRate() {
+            const val = parseFloat(document.getElementById('newRateInput').value);
+            if (!val) return;
+            
+            await fetch('/api/remesas/rate', {
+                method: 'POST',
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${TOKEN}`
+                },
+                body: JSON.stringify({ rate: val })
+            });
+            
+            closeRateModal();
+            fetchRate();
+        }
+
+        async function submitTransaction(type) {
+            let body = {};
+            
+            if (type === 'exchange') {
+                const usd = parseFloat(document.getElementById('usdInput').value);
+                if (!usd) return alert('Ingrese monto');
+                
+                body = {
+                    type: 'exchange',
+                    amountUSD: usd,
+                    amountHNL: usd * currentRate,
+                    details: 'Forex Walk-in'
+                };
+            } else {
+                const usd = parseFloat(document.getElementById('payoutUsd').value);
+                const code = document.getElementById('remesaCode').value;
+                if (!usd || !code) return alert('Datos incompletos');
+                
+                body = {
+                    type: 'payout',
+                    amountUSD: usd,
+                    amountHNL: 0, // Payout is in USD usually, or depends. Let's assume USD payout for now.
+                    details: `Ref: ${code}`
+                };
+            }
+
+            try {
+                const res = await fetch('/api/remesas/transaction', {
+                    method: 'POST',
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${TOKEN}`
+                    },
+                    body: JSON.stringify(body)
+                });
+                
+                if (res.ok) {
+                    alert('Transacción Exitosa');
+                    // Reset inputs
+                    document.getElementById('usdInput').value = '';
+                    document.getElementById('hnlOutput').textContent = 'L 0.00';
+                    document.getElementById('remesaCode').value = '';
+                    document.getElementById('payoutUsd').value = '';
+                    fetchHistory();
+                } else {
+                    throw new Error('API Error');
+                }
+            } catch (e) {
+                console.log("Saving remesa offline", e);
+                if (window.OfflineManager) {
+                    await window.OfflineManager.saveRemesaOffline(body);
+                    alert('Offline: Transacción guardada localmente. 🟠');
+                     // Reset inputs
+                    document.getElementById('usdInput').value = '';
+                    document.getElementById('hnlOutput').textContent = 'L 0.00';
+                    document.getElementById('remesaCode').value = '';
+                    document.getElementById('payoutUsd').value = '';
+                } else {
+                    alert('Error de conexión');
+                }
+            }
+        }
+
+        // UI Logic
+        function switchTab(tab) {
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            if (tab === 'exchange') {
+                document.querySelectorAll('.tab')[0].classList.add('active');
+                document.getElementById('exchangeView').style.display = 'block';
+                document.getElementById('payoutView').style.display = 'none';
+            } else {
+                document.querySelectorAll('.tab')[1].classList.add('active');
+                document.getElementById('exchangeView').style.display = 'none';
+                document.getElementById('payoutView').style.display = 'block';
+            }
+        }
+
+        function calcExchange() {
+            const usd = parseFloat(document.getElementById('usdInput').value) || 0;
+            const hnl = usd * currentRate;
+            document.getElementById('hnlOutput').textContent = 'L ' + hnl.toFixed(2);
+        }
+
+        function renderHistory(txs) {
+            const list = document.getElementById('txList');
+            list.innerHTML = '';
+            
+            // Show recent first
+            txs.slice().reverse().forEach(tx => {
+                const isEx = tx.type === 'exchange';
+                const div = document.createElement('div');
+                div.className = 'tx-item';
+                div.innerHTML = `
+                    <div class="tx-left">
+                        <span class="tx-type">${isEx ? 'Venta Divisas' : 'Pago Remesa'}</span>
+                        <span class="tx-meta">${new Date(tx.timestamp).toLocaleTimeString()} • ${tx.details}</span>
+                    </div>
+                    <div class="tx-amount ${isEx ? 'tx-exchange' : 'tx-payout'}">
+                        ${isEx ? '+ L ' + tx.amountHNL.toFixed(2) : '- $ ' + tx.amountUSD.toFixed(2)}
+                    </div>
+                `;
+                list.appendChild(div);
+            });
+        }
+
+        function openRateModal() {
+            document.getElementById('newRateInput').value = currentRate;
+            document.getElementById('rateModal').classList.add('active');
+        }
+
+        function closeRateModal() {
+            document.getElementById('rateModal').classList.remove('active');
+        }
+
+        init();
+    </script>
+</body>
+</html>

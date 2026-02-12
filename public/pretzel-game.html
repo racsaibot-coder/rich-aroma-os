@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Pretzel Catcher</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: Arial, sans-serif;
+            background: #87CEEB;
+            height: 100vh;
+            overflow: hidden;
+            touch-action: none;
+        }
+        #game {
+            width: 100%;
+            height: 100%;
+            position: relative;
+        }
+        #score {
+            position: fixed;
+            top: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: white;
+            padding: 10px 20px;
+            border-radius: 20px;
+            font-size: 20px;
+            font-weight: bold;
+            z-index: 100;
+        }
+        #lives {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            font-size: 24px;
+            z-index: 100;
+        }
+        #basket {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 60px;
+            z-index: 50;
+        }
+        .item {
+            position: absolute;
+            font-size: 40px;
+            z-index: 10;
+        }
+        #menu {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #FFE4B5;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 200;
+        }
+        #menu h1 {
+            font-size: 28px;
+            color: #8B4513;
+            margin-bottom: 20px;
+        }
+        #menu .pretzel {
+            font-size: 80px;
+            margin: 20px;
+        }
+        #playBtn {
+            padding: 20px 60px;
+            font-size: 24px;
+            background: #FFD700;
+            border: 3px solid #8B4513;
+            border-radius: 30px;
+            color: #8B4513;
+            font-weight: bold;
+            margin-top: 20px;
+        }
+        #menu p {
+            margin-top: 20px;
+            color: #8B4513;
+            text-align: center;
+            padding: 0 20px;
+        }
+        .hidden { display: none !important; }
+    </style>
+</head>
+<body>
+    <div id="game">
+        <div id="score">🥨 0</div>
+        <div id="lives">❤️❤️❤️</div>
+        <div id="basket">🧺</div>
+        
+        <div id="menu">
+            <h1>Pretzel Catcher!</h1>
+            <div class="pretzel">🥨</div>
+            <button id="playBtn">▶️ PLAY</button>
+            <p>Catch pretzels! 🥨<br>Avoid veggies! 🥦<br>Move basket with finger!</p>
+        </div>
+    </div>
+
+    <script>
+        var score = 0;
+        var lives = 3;
+        var playing = false;
+        var basketX = window.innerWidth / 2;
+        var items = [];
+        
+        var game = document.getElementById('game');
+        var scoreEl = document.getElementById('score');
+        var livesEl = document.getElementById('lives');
+        var basket = document.getElementById('basket');
+        var menu = document.getElementById('menu');
+        var playBtn = document.getElementById('playBtn');
+        
+        playBtn.onclick = function() {
+            startGame();
+        };
+        
+        function startGame() {
+            score = 0;
+            lives = 3;
+            playing = true;
+            items = [];
+            updateScore();
+            updateLives();
+            menu.className = 'hidden';
+            
+            // Remove old items
+            var oldItems = document.querySelectorAll('.item');
+            for (var i = 0; i < oldItems.length; i++) {
+                oldItems[i].remove();
+            }
+            
+            spawnLoop();
+            gameLoop();
+        }
+        
+        function spawnLoop() {
+            if (!playing) return;
+            spawnItem();
+            setTimeout(spawnLoop, 1000);
+        }
+        
+        function spawnItem() {
+            var el = document.createElement('div');
+            el.className = 'item';
+            
+            var isGood = Math.random() > 0.25;
+            if (isGood) {
+                el.textContent = '🥨';
+                el.dataset.type = 'good';
+            } else {
+                var bads = ['🥦', '🧅', '🍋'];
+                el.textContent = bads[Math.floor(Math.random() * bads.length)];
+                el.dataset.type = 'bad';
+            }
+            
+            el.style.left = (Math.random() * (window.innerWidth - 50)) + 'px';
+            el.style.top = '-50px';
+            el.dataset.y = -50;
+            el.dataset.speed = 3 + Math.random() * 2;
+            
+            game.appendChild(el);
+            items.push(el);
+        }
+        
+        function gameLoop() {
+            if (!playing) return;
+            
+            var basketRect = basket.getBoundingClientRect();
+            
+            for (var i = items.length - 1; i >= 0; i--) {
+                var el = items[i];
+                var y = parseFloat(el.dataset.y) + parseFloat(el.dataset.speed);
+                el.dataset.y = y;
+                el.style.top = y + 'px';
+                
+                var itemRect = el.getBoundingClientRect();
+                
+                // Check catch
+                if (itemRect.bottom > basketRect.top && 
+                    itemRect.top < basketRect.bottom &&
+                    itemRect.right > basketRect.left && 
+                    itemRect.left < basketRect.right) {
+                    
+                    if (el.dataset.type === 'good') {
+                        score += 10;
+                    } else {
+                        lives--;
+                        updateLives();
+                    }
+                    updateScore();
+                    el.remove();
+                    items.splice(i, 1);
+                    
+                    if (lives <= 0) {
+                        endGame();
+                        return;
+                    }
+                }
+                // Missed
+                else if (y > window.innerHeight) {
+                    if (el.dataset.type === 'good') {
+                        lives--;
+                        updateLives();
+                    }
+                    el.remove();
+                    items.splice(i, 1);
+                    
+                    if (lives <= 0) {
+                        endGame();
+                        return;
+                    }
+                }
+            }
+            
+            setTimeout(gameLoop, 16);
+        }
+        
+        function updateScore() {
+            scoreEl.textContent = '🥨 ' + score;
+        }
+        
+        function updateLives() {
+            var h = '';
+            for (var i = 0; i < 3; i++) {
+                h += i < lives ? '❤️' : '🖤';
+            }
+            livesEl.textContent = h;
+        }
+        
+        function endGame() {
+            playing = false;
+            menu.querySelector('h1').textContent = 'Game Over!';
+            menu.querySelector('.pretzel').textContent = '😢';
+            menu.querySelector('p').textContent = 'Your score: ' + score + '\nTap PLAY to try again!';
+            playBtn.textContent = '🔄 PLAY AGAIN';
+            menu.className = '';
+        }
+        
+        // Touch controls
+        document.addEventListener('touchmove', function(e) {
+            if (!playing) return;
+            e.preventDefault();
+            basketX = e.touches[0].clientX;
+            basket.style.left = basketX + 'px';
+        }, {passive: false});
+        
+        // Mouse controls
+        document.addEventListener('mousemove', function(e) {
+            if (!playing) return;
+            basketX = e.clientX;
+            basket.style.left = basketX + 'px';
+        });
+    </script>
+</body>
+</html>

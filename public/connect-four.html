@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Connect Four ☕ Captain Rico Edition</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            background: linear-gradient(135deg, #1E1610 0%, #2a1f18 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            color: #C9A66B;
+        }
+        h1 {
+            font-size: 1.5rem;
+            margin-bottom: 10px;
+            text-align: center;
+        }
+        .status {
+            font-size: 1.1rem;
+            margin-bottom: 15px;
+            padding: 10px 20px;
+            background: rgba(201, 166, 107, 0.1);
+            border-radius: 20px;
+            text-align: center;
+        }
+        .board {
+            background: #C9A66B;
+            border-radius: 12px;
+            padding: 10px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+        }
+        .row {
+            display: flex;
+            gap: 6px;
+            margin-bottom: 6px;
+        }
+        .row:last-child { margin-bottom: 0; }
+        .cell {
+            width: 44px;
+            height: 44px;
+            background: #1E1610;
+            border-radius: 50%;
+            cursor: pointer;
+            transition: all 0.15s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .cell:hover { transform: scale(1.05); }
+        .cell.red {
+            background: radial-gradient(circle at 30% 30%, #ff6b6b, #c0392b);
+            box-shadow: inset 0 -3px 6px rgba(0,0,0,0.3);
+        }
+        .cell.yellow {
+            background: radial-gradient(circle at 30% 30%, #f9e076, #f1c40f);
+            box-shadow: inset 0 -3px 6px rgba(0,0,0,0.3);
+        }
+        .cell.win {
+            animation: pulse 0.5s ease infinite alternate;
+        }
+        @keyframes pulse {
+            from { transform: scale(1); }
+            to { transform: scale(1.1); }
+        }
+        .buttons {
+            margin-top: 20px;
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+        button {
+            background: #C9A66B;
+            color: #1E1610;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        button:hover {
+            background: #d4b87a;
+            transform: translateY(-2px);
+        }
+        button.active {
+            background: #fff;
+            box-shadow: 0 0 10px rgba(255,255,255,0.3);
+        }
+        .emoji { font-size: 1.3rem; }
+        .mode-label {
+            font-size: 0.9rem;
+            margin-top: 15px;
+            opacity: 0.7;
+        }
+        @media (max-width: 400px) {
+            .cell { width: 38px; height: 38px; }
+            .row { gap: 4px; margin-bottom: 4px; }
+            .board { padding: 8px; }
+        }
+    </style>
+</head>
+<body>
+    <h1>🐒 Captain Rico's Connect Four ☕</h1>
+    <div class="status" id="status">
+        <span class="emoji">🔴</span> Red's turn!
+    </div>
+    <div class="board" id="board"></div>
+    <div class="buttons">
+        <button onclick="resetGame()">New Game</button>
+        <button id="modeBtn" onclick="toggleMode()">🤖 vs AI</button>
+    </div>
+    <div class="mode-label" id="modeLabel">Playing: 2 Players 👫</div>
+
+    <script>
+        const ROWS = 6;
+        const COLS = 7;
+        let board = [];
+        let currentPlayer = 'red';
+        let gameOver = false;
+        let vsAI = false; // Default: 2 player mode
+
+        function createBoard() {
+            const boardEl = document.getElementById('board');
+            boardEl.innerHTML = '';
+            board = [];
+            
+            for (let r = 0; r < ROWS; r++) {
+                const row = [];
+                const rowEl = document.createElement('div');
+                rowEl.className = 'row';
+                
+                for (let c = 0; c < COLS; c++) {
+                    row.push(null);
+                    const cell = document.createElement('div');
+                    cell.className = 'cell';
+                    cell.dataset.col = c;
+                    cell.onclick = () => dropPiece(c);
+                    rowEl.appendChild(cell);
+                }
+                
+                board.push(row);
+                boardEl.appendChild(rowEl);
+            }
+        }
+
+        function dropPiece(col) {
+            if (gameOver) return;
+            if (vsAI && currentPlayer === 'yellow') return; // Wait for AI
+            
+            // Find lowest empty row
+            let row = -1;
+            for (let r = ROWS - 1; r >= 0; r--) {
+                if (!board[r][col]) {
+                    row = r;
+                    break;
+                }
+            }
+            
+            if (row === -1) return; // Column full
+            
+            board[row][col] = currentPlayer;
+            renderBoard();
+            
+            if (checkWin(row, col)) {
+                gameOver = true;
+                const winner = currentPlayer === 'red' ? '🔴 Red wins!' : '🟡 Yellow wins!';
+                document.getElementById('status').innerHTML = `<span class="emoji">🎉</span> ${winner}`;
+                highlightWin(row, col);
+                return;
+            }
+            
+            if (checkDraw()) {
+                gameOver = true;
+                document.getElementById('status').innerHTML = `<span class="emoji">🤝</span> It's a draw!`;
+                return;
+            }
+            
+            currentPlayer = currentPlayer === 'red' ? 'yellow' : 'red';
+            updateStatus();
+            
+            if (vsAI && currentPlayer === 'yellow') {
+                setTimeout(aiMove, 500);
+            }
+        }
+
+        function aiMove() {
+            if (gameOver) return;
+            
+            let bestCol = -1;
+            
+            // Try to win
+            for (let c = 0; c < COLS; c++) {
+                const row = getEmptyRow(c);
+                if (row !== -1) {
+                    board[row][c] = 'yellow';
+                    if (checkWin(row, c)) bestCol = c;
+                    board[row][c] = null;
+                    if (bestCol !== -1) break;
+                }
+            }
+            
+            // Block player
+            if (bestCol === -1) {
+                for (let c = 0; c < COLS; c++) {
+                    const row = getEmptyRow(c);
+                    if (row !== -1) {
+                        board[row][c] = 'red';
+                        if (checkWin(row, c)) bestCol = c;
+                        board[row][c] = null;
+                        if (bestCol !== -1) break;
+                    }
+                }
+            }
+            
+            // Prefer center
+            if (bestCol === -1 && getEmptyRow(3) !== -1) {
+                bestCol = 3;
+            }
+            
+            // Random valid column
+            if (bestCol === -1) {
+                const validCols = [];
+                for (let c = 0; c < COLS; c++) {
+                    if (getEmptyRow(c) !== -1) validCols.push(c);
+                }
+                bestCol = validCols[Math.floor(Math.random() * validCols.length)];
+            }
+            
+            // Actually place the piece
+            const row = getEmptyRow(bestCol);
+            board[row][bestCol] = 'yellow';
+            renderBoard();
+            
+            if (checkWin(row, bestCol)) {
+                gameOver = true;
+                document.getElementById('status').innerHTML = `<span class="emoji">🎉</span> 🟡 Rico wins!`;
+                highlightWin(row, bestCol);
+                return;
+            }
+            
+            if (checkDraw()) {
+                gameOver = true;
+                document.getElementById('status').innerHTML = `<span class="emoji">🤝</span> It's a draw!`;
+                return;
+            }
+            
+            currentPlayer = 'red';
+            updateStatus();
+        }
+
+        function getEmptyRow(col) {
+            for (let r = ROWS - 1; r >= 0; r--) {
+                if (!board[r][col]) return r;
+            }
+            return -1;
+        }
+
+        function checkWin(row, col) {
+            const player = board[row][col];
+            const directions = [[0,1], [1,0], [1,1], [1,-1]];
+            
+            for (const [dr, dc] of directions) {
+                let count = 1;
+                for (let i = 1; i < 4; i++) {
+                    const r = row + dr * i, c = col + dc * i;
+                    if (r >= 0 && r < ROWS && c >= 0 && c < COLS && board[r][c] === player) count++;
+                    else break;
+                }
+                for (let i = 1; i < 4; i++) {
+                    const r = row - dr * i, c = col - dc * i;
+                    if (r >= 0 && r < ROWS && c >= 0 && c < COLS && board[r][c] === player) count++;
+                    else break;
+                }
+                if (count >= 4) return true;
+            }
+            return false;
+        }
+
+        function highlightWin(row, col) {
+            const player = board[row][col];
+            const directions = [[0,1], [1,0], [1,1], [1,-1]];
+            
+            for (const [dr, dc] of directions) {
+                const cells = [[row, col]];
+                for (let i = 1; i < 4; i++) {
+                    const r = row + dr * i, c = col + dc * i;
+                    if (r >= 0 && r < ROWS && c >= 0 && c < COLS && board[r][c] === player) cells.push([r, c]);
+                    else break;
+                }
+                for (let i = 1; i < 4; i++) {
+                    const r = row - dr * i, c = col - dc * i;
+                    if (r >= 0 && r < ROWS && c >= 0 && c < COLS && board[r][c] === player) cells.push([r, c]);
+                    else break;
+                }
+                if (cells.length >= 4) {
+                    const boardEl = document.getElementById('board');
+                    cells.forEach(([r, c]) => {
+                        boardEl.children[r].children[c].classList.add('win');
+                    });
+                    return;
+                }
+            }
+        }
+
+        function checkDraw() {
+            return board[0].every(cell => cell !== null);
+        }
+
+        function renderBoard() {
+            const boardEl = document.getElementById('board');
+            for (let r = 0; r < ROWS; r++) {
+                for (let c = 0; c < COLS; c++) {
+                    const cell = boardEl.children[r].children[c];
+                    cell.className = 'cell';
+                    if (board[r][c]) cell.classList.add(board[r][c]);
+                }
+            }
+        }
+
+        function updateStatus() {
+            const emoji = currentPlayer === 'red' ? '🔴' : '🟡';
+            let text;
+            if (vsAI) {
+                text = currentPlayer === 'red' ? 'Your turn!' : 'Rico is thinking...';
+            } else {
+                text = currentPlayer === 'red' ? "Red's turn!" : "Yellow's turn!";
+            }
+            document.getElementById('status').innerHTML = `<span class="emoji">${emoji}</span> ${text}`;
+        }
+
+        function toggleMode() {
+            vsAI = !vsAI;
+            document.getElementById('modeBtn').textContent = vsAI ? '👫 2 Players' : '🤖 vs AI';
+            document.getElementById('modeBtn').classList.toggle('active', vsAI);
+            document.getElementById('modeLabel').textContent = vsAI ? 'Playing: vs Captain Rico 🤖' : 'Playing: 2 Players 👫';
+            resetGame();
+        }
+
+        function resetGame() {
+            currentPlayer = 'red';
+            gameOver = false;
+            createBoard();
+            updateStatus();
+        }
+
+        createBoard();
+    </script>
+</body>
+</html>

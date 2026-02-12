@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Rich Aroma | KDS & Status</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        gold: '#C9A66B',
+                        dark: '#1E1610',
+                        charcoal: '#2C241E',
+                        cream: '#F5F5F0',
+                        success: '#10B981',
+                        danger: '#EF4444',
+                        warning: '#F59E0B'
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        display: ['Playfair Display', 'serif'],
+                        mono: ['JetBrains Mono', 'monospace']
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { background-color: #1E1610; color: #F5F5F0; font-family: 'Inter', sans-serif; }
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: #1E1610; }
+        ::-webkit-scrollbar-thumb { background: #2C241E; border-radius: 3px; }
+        .blink { animation: blink 1s infinite; }
+        @keyframes blink { 50% { opacity: 0.5; } }
+    </style>
+</head>
+<body class="h-screen flex flex-col overflow-hidden">
+
+    <!-- Header / Toggle -->
+    <header class="h-16 bg-charcoal border-b border-white/10 flex items-center justify-between px-6 shrink-0">
+        <div class="flex items-center gap-4">
+            <h1 class="text-xl font-bold font-display text-gold tracking-widest">RICH AROMA OS</h1>
+            <div class="px-3 py-1 rounded bg-white/5 text-xs font-mono" id="mode-badge">LOADING...</div>
+        </div>
+        
+        <div class="flex bg-dark rounded-lg p-1 border border-white/5">
+            <button onclick="setMode('drinks')" class="px-4 py-2 rounded text-sm font-bold transition-all mode-btn" id="btn-drinks">☕️ BARISTA</button>
+            <button onclick="setMode('food')" class="px-4 py-2 rounded text-sm font-bold transition-all mode-btn" id="btn-food">🥞 KITCHEN</button>
+            <button onclick="setMode('status')" class="px-4 py-2 rounded text-sm font-bold transition-all mode-btn" id="btn-status">📺 CUSTOMER</button>
+        </div>
+    </header>
+
+    <!-- CONTENT AREA -->
+    <main class="flex-1 overflow-hidden relative">
+        
+        <!-- 1. KDS VIEW (Masonry Layout) -->
+        <div id="view-kds" class="hidden h-full overflow-y-auto p-4">
+            <div class="columns-1 md:columns-2 lg:columns-3 xl:columns-4 gap-4 space-y-4" id="kds-grid">
+                <!-- Tickets injected here -->
+            </div>
+        </div>
+
+        <!-- 2. STATUS BOARD VIEW (Split Screen) -->
+        <div id="view-status" class="hidden h-full flex">
+            <!-- Left: Preparing -->
+            <div class="w-1/2 border-r border-white/10 flex flex-col">
+                <div class="h-20 bg-dark flex items-center justify-center border-b border-white/5">
+                    <h2 class="text-2xl font-bold text-white/60 tracking-widest"><i class="fas fa-fire-alt mr-3 text-warning"></i> PREPARING</h2>
+                </div>
+                <div class="flex-1 p-8 space-y-4 overflow-y-auto" id="col-prep">
+                    <!-- Names here -->
+                </div>
+            </div>
+
+            <!-- Right: Ready -->
+            <div class="w-1/2 flex flex-col bg-gold/5">
+                <div class="h-20 bg-gold/10 flex items-center justify-center border-b border-gold/20">
+                    <h2 class="text-3xl font-bold text-gold tracking-widest blink"><i class="fas fa-check-circle mr-3"></i> READY</h2>
+                </div>
+                <div class="flex-1 p-8 space-y-4 overflow-y-auto" id="col-ready">
+                    <!-- Names here -->
+                </div>
+            </div>
+            
+            <!-- Bottom Ticker -->
+            <div class="absolute bottom-0 w-full bg-dark border-t border-gold/20 py-3 overflow-hidden whitespace-nowrap">
+                <div class="animate-marquee inline-block text-gold/80 font-mono text-lg">
+                    🎥 CHALLENGE: Film your first sip & tag @RichAromaHN for a chance to win L.500!  •  📲 Skip the line next time: Load Rico Cash at the register!  •  🦁 RICH AROMA: Coffee & Culture.
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <script>
+        // State
+        let currentMode = 'drinks'; // drinks | food | status
+        let orders = [];
+        
+        // Mock Data (Replace with API)
+        const mockOrders = [
+            { id: 'ORD-0091', num: 91, customer: 'NeeNee', items: [{name: 'Latte', type: 'drink'}, {name: 'Crêpe Nutella', type: 'food'}], status: 'pending', time: 2 },
+            { id: 'ORD-0092', num: 92, customer: 'Oscar', items: [{name: 'Cold Brew', type: 'drink'}], status: 'pending', time: 5 },
+            { id: 'ORD-0090', num: 90, customer: 'Guest', items: [{name: 'Cappuccino', type: 'drink'}], status: 'completed', time: 10 },
+        ];
+
+        // Init
+        const urlParams = new URLSearchParams(window.location.search);
+        const modeParam = urlParams.get('mode');
+        if(modeParam) setMode(modeParam);
+        else setMode('drinks');
+
+        // Poll Loop
+        setInterval(fetchOrders, 3000); // 3s poll
+        fetchOrders();
+
+        async function fetchOrders() {
+            try {
+                const res = await fetch('/api/orders');
+                const data = await res.json();
+                orders = data.orders || mockOrders; // Fallback to mock if empty
+                render();
+            } catch(e) {
+                console.log("Offline mode / API Error");
+                orders = mockOrders;
+                render();
+            }
+        }
+
+        function setMode(mode) {
+            currentMode = mode;
+            
+            // Update UI Buttons
+            document.querySelectorAll('.mode-btn').forEach(btn => {
+                btn.classList.remove('bg-gold', 'text-dark', 'bg-white/5', 'text-white');
+                if(btn.id === `btn-${mode}`) btn.classList.add('bg-gold', 'text-dark');
+                else btn.classList.add('bg-white/5', 'text-white/60');
+            });
+
+            document.getElementById('mode-badge').innerText = mode.toUpperCase() + " MODE";
+
+            // Toggle Views
+            document.getElementById('view-kds').classList.add('hidden');
+            document.getElementById('view-status').classList.add('hidden');
+
+            if(mode === 'status') {
+                document.getElementById('view-status').classList.remove('hidden');
+            } else {
+                document.getElementById('view-kds').classList.remove('hidden');
+            }
+            
+            render();
+        }
+
+        function render() {
+            if(currentMode === 'status') renderStatusBoard();
+            else renderKDS();
+        }
+
+        function renderKDS() {
+            const grid = document.getElementById('kds-grid');
+            grid.innerHTML = '';
+
+            // Filter orders that are NOT completed
+            const activeOrders = orders.filter(o => o.status !== 'completed');
+
+            activeOrders.forEach(order => {
+                // Filter Items based on Mode
+                // Assume logic: Drink items vs Food items.
+                // For MVP, show all items but highlight relevant ones?
+                // Or better: filter out items not for this station.
+                
+                // Hack: We don't have 'type' in DB yet, so we guess by name
+                // Drink keywords: Latte, Brew, Cappuccino, Tea, Icee
+                // Food: Crêpe, Sandwich, Bowl, Muffin
+                
+                const relevantItems = (order.items || []).filter(item => {
+                    const name = (item.name || '').toLowerCase();
+                    const isDrink = name.includes('latte') || name.includes('brew') || name.includes('capp') || name.includes('tea') || name.includes('icee') || name.includes('espresso');
+                    
+                    if(currentMode === 'drinks') return isDrink;
+                    if(currentMode === 'food') return !isDrink; // Everything else is food
+                    return true;
+                });
+
+                if(relevantItems.length === 0) return; // Skip ticket if nothing for this station
+
+                // Time Color
+                const elapsed = (new Date() - new Date(order.created_at)) / 1000 / 60; // Mins
+                let timeColor = 'bg-white/5';
+                if(elapsed > 5) timeColor = 'bg-yellow-500/10 border-yellow-500/50';
+                if(elapsed > 10) timeColor = 'bg-red-500/10 border-red-500/50';
+
+                const card = document.createElement('div');
+                card.className = `p-4 rounded-xl border border-white/10 flex flex-col gap-3 ${timeColor} break-inside-avoid mb-4`;
+                
+                card.innerHTML = `
+                    <div class="flex justify-between items-start border-b border-white/10 pb-3">
+                        <div>
+                            <h3 class="font-bold text-xl text-white">#${order.order_number}</h3>
+                            <p class="text-sm text-white/50">${order.customers?.name || 'Guest'}</p>
+                        </div>
+                        <span class="font-mono text-xs text-white/40">${Math.floor(elapsed)}m</span>
+                    </div>
+                    
+                    <div class="space-y-2 flex-1">
+                        ${relevantItems.map(i => `
+                            <div class="flex justify-between items-center text-lg">
+                                <span class="font-bold text-gold">${i.quantity || 1}x</span>
+                                <span class="text-white/90 flex-1 ml-3">${i.name}</span>
+                            </div>
+                            ${i.modifiers ? `<p class="text-xs text-white/40 ml-8">+ ${i.modifiers.map(m=>m.name).join(', ')}</p>` : ''}
+                        `).join('')}
+                    </div>
+
+                    <button onclick="completeOrder('${order.id}')" class="w-full py-3 bg-white/10 hover:bg-green-600 hover:text-white text-white/60 font-bold rounded-lg transition-all mt-2">
+                        DONE
+                    </button>
+                `;
+                grid.appendChild(card);
+            });
+        }
+
+        function renderStatusBoard() {
+            const colPrep = document.getElementById('col-prep');
+            const colReady = document.getElementById('col-ready');
+            
+            colPrep.innerHTML = '';
+            colReady.innerHTML = '';
+
+            // Status Logic
+            // Active = Preparing
+            // Completed (Recently) = Ready
+            
+            orders.forEach(order => {
+                if(order.status === 'pending' || order.status === 'paid') {
+                    // Preparing
+                    colPrep.innerHTML += `
+                        <div class="text-4xl text-white/50 font-bold font-mono py-2 border-b border-white/5">
+                            #${order.order_number} <span class="text-2xl text-white/20 ml-4">${order.customers?.name || ''}</span>
+                        </div>
+                    `;
+                } else if(order.status === 'completed') {
+                    // Only show if completed in last 15 mins
+                    const doneTime = new Date(order.completed_at || order.created_at); // Fallback
+                    const now = new Date();
+                    if((now - doneTime) < 15 * 60 * 1000) {
+                        colReady.innerHTML += `
+                            <div class="text-5xl text-gold font-bold font-mono py-4 border-b border-gold/10 flex justify-between items-center">
+                                <span>#${order.order_number}</span>
+                                <i class="fas fa-check text-3xl"></i>
+                            </div>
+                        `;
+                    }
+                }
+            });
+        }
+
+        async function completeOrder(id) {
+            // Optimistic UI
+            orders = orders.filter(o => o.id !== id);
+            render();
+            
+            // API Call
+            await fetch(`/api/orders/${id}`, {
+                method: 'PATCH',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ status: 'completed' })
+            });
+        }
+    </script>
+    
+    <style>
+        .animate-marquee { animation: marquee 20s linear infinite; }
+        @keyframes marquee {
+            0% { transform: translateX(100%); }
+            100% { transform: translateX(-100%); }
+        }
+    </style>
+</body>
+</html>

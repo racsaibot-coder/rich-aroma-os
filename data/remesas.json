@@ -1,0 +1,45 @@
+{
+  "rate": 24.5,
+  "transactions": [
+    {
+      "id": "REM-1769801619810",
+      "timestamp": "2026-01-30T19:33:39.810Z",
+      "clerk": "admin@test.com",
+      "type": "exchange",
+      "amountUSD": 100,
+      "amountHNL": 2450,
+      "rate": 24.5,
+      "details": "Forex Walk-in"
+    },
+    {
+      "id": "REM-1769801620835",
+      "timestamp": "2026-01-30T19:33:40.835Z",
+      "clerk": "admin@test.com",
+      "type": "payout",
+      "amountUSD": 50,
+      "amountHNL": 0,
+      "rate": 24.5,
+      "details": "Ref: TEST-REF-999"
+    },
+    {
+      "id": "REM-1769809961771",
+      "timestamp": "2026-01-30T21:52:41.771Z",
+      "clerk": "admin@test.com",
+      "type": "exchange",
+      "amountUSD": 50,
+      "amountHNL": 1225,
+      "rate": 24.5,
+      "details": "Forex Walk-in"
+    },
+    {
+      "id": "REM-1769810025965",
+      "timestamp": "2026-01-30T21:53:45.965Z",
+      "clerk": "admin@test.com",
+      "type": "payout",
+      "amountUSD": 10,
+      "amountHNL": 0,
+      "rate": 24.5,
+      "details": "Ref: REF-12345"
+    }
+  ]
+}

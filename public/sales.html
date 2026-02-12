@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sales Dashboard - Rich Aroma</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: 'Inter', -apple-system, sans-serif;
+            background: #0a0a0a;
+            color: #fff;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+        }
+
+        .title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #C9A66B;
+        }
+
+        .date-range {
+            display: flex;
+            gap: 8px;
+        }
+
+        .date-btn {
+            padding: 8px 16px;
+            background: #1a1a1a;
+            border: 1px solid #333;
+            border-radius: 8px;
+            color: #888;
+            cursor: pointer;
+            font-size: 0.85rem;
+            transition: all 0.2s;
+        }
+
+        .date-btn.active {
+            background: #C9A66B;
+            color: #000;
+            border-color: #C9A66B;
+        }
+
+        .metrics {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+
+        @media (max-width: 800px) {
+            .metrics { grid-template-columns: repeat(2, 1fr); }
+        }
+
+        .metric {
+            background: #111;
+            border-radius: 16px;
+            padding: 20px;
+            border: 1px solid #1a1a1a;
+        }
+
+        .metric-label {
+            font-size: 0.8rem;
+            color: #666;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 8px;
+        }
+
+        .metric-value {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #C9A66B;
+        }
+
+        .metric-change {
+            font-size: 0.85rem;
+            margin-top: 8px;
+        }
+
+        .metric-change.up { color: #22c55e; }
+        .metric-change.down { color: #ef4444; }
+
+        .grid {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 16px;
+        }
+
+        @media (max-width: 900px) {
+            .grid { grid-template-columns: 1fr; }
+        }
+
+        .card {
+            background: #111;
+            border-radius: 16px;
+            padding: 20px;
+            border: 1px solid #1a1a1a;
+        }
+
+        .card-title {
+            font-size: 1rem;
+            font-weight: 600;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .chart {
+            height: 200px;
+            display: flex;
+            align-items: flex-end;
+            gap: 8px;
+            padding-top: 20px;
+        }
+
+        .bar-group {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .bar {
+            width: 100%;
+            max-width: 40px;
+            background: linear-gradient(180deg, #C9A66B, #8B6914);
+            border-radius: 4px 4px 0 0;
+            transition: height 0.3s;
+        }
+
+        .bar-label {
+            font-size: 0.7rem;
+            color: #666;
+        }
+
+        .bar-value {
+            font-size: 0.75rem;
+            color: #C9A66B;
+            font-weight: 600;
+        }
+
+        .top-items {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .top-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px;
+            background: #0a0a0a;
+            border-radius: 10px;
+        }
+
+        .top-rank {
+            width: 28px;
+            height: 28px;
+            background: #C9A66B;
+            color: #000;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 0.85rem;
+        }
+
+        .top-info { flex: 1; }
+        .top-name { font-weight: 600; }
+        .top-qty { font-size: 0.85rem; color: #666; }
+        .top-revenue { font-weight: 600; color: #C9A66B; }
+
+        .orders-list {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .order-row {
+            display: flex;
+            align-items: center;
+            padding: 12px 0;
+            border-bottom: 1px solid #1a1a1a;
+            gap: 16px;
+        }
+
+        .order-id {
+            font-weight: 700;
+            color: #C9A66B;
+            min-width: 70px;
+        }
+
+        .order-items {
+            flex: 1;
+            font-size: 0.9rem;
+            color: #888;
+        }
+
+        .order-total {
+            font-weight: 600;
+        }
+
+        .order-status {
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        .status-completed { background: #14532d; color: #22c55e; }
+        .status-ready { background: #422006; color: #C9A66B; }
+        .status-preparing { background: #1e1b4b; color: #818cf8; }
+        .status-new { background: #3b0764; color: #c084fc; }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px;
+            color: #444;
+        }
+
+        .refresh-btn {
+            padding: 8px 16px;
+            background: #1a1a1a;
+            border: 1px solid #333;
+            border-radius: 8px;
+            color: #888;
+            cursor: pointer;
+            font-size: 0.85rem;
+        }
+
+        .refresh-btn:hover {
+            background: #222;
+            color: #fff;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="title">📊 Sales Dashboard</div>
+        <div class="date-range">
+            <button class="date-btn active" onclick="setRange('today')">Today</button>
+            <button class="date-btn" onclick="setRange('week')">Week</button>
+            <button class="date-btn" onclick="setRange('month')">Month</button>
+            <button class="refresh-btn" onclick="refresh()">🔄 Refresh</button>
+        </div>
+    </div>
+
+    <div class="metrics">
+        <div class="metric">
+            <div class="metric-label">Total Sales</div>
+            <div class="metric-value" id="totalSales">L 0</div>
+            <div class="metric-change up" id="salesChange">↑ 0% vs yesterday</div>
+        </div>
+        <div class="metric">
+            <div class="metric-label">Orders</div>
+            <div class="metric-value" id="totalOrders">0</div>
+            <div class="metric-change up" id="ordersChange">↑ 0% vs yesterday</div>
+        </div>
+        <div class="metric">
+            <div class="metric-label">Avg Ticket</div>
+            <div class="metric-value" id="avgTicket">L 0</div>
+            <div class="metric-change" id="ticketChange">—</div>
+        </div>
+        <div class="metric">
+            <div class="metric-label">Items Sold</div>
+            <div class="metric-value" id="itemsSold">0</div>
+            <div class="metric-change" id="itemsChange">—</div>
+        </div>
+    </div>
+
+    <div class="grid">
+        <div class="card">
+            <div class="card-title">📈 Hourly Sales</div>
+            <div class="chart" id="hourlyChart"></div>
+        </div>
+        <div class="card">
+            <div class="card-title">🏆 Top Sellers</div>
+            <div class="top-items" id="topItems"></div>
+        </div>
+    </div>
+
+    <div class="card" style="margin-top: 16px;">
+        <div class="card-title">📋 Recent Orders</div>
+        <div class="orders-list" id="ordersList"></div>
+    </div>
+
+    <script>
+        let orders = [];
+        let range = 'today';
+
+        function load() {
+            const stored = localStorage.getItem('rich-aroma-orders');
+            if (stored) {
+                orders = JSON.parse(stored);
+            }
+            render();
+        }
+
+        function setRange(r) {
+            range = r;
+            document.querySelectorAll('.date-btn').forEach(b => b.classList.remove('active'));
+            event.target.classList.add('active');
+            render();
+        }
+
+        function refresh() {
+            load();
+        }
+
+        function getFilteredOrders() {
+            const now = Date.now();
+            const day = 24 * 60 * 60 * 1000;
+            
+            return orders.filter(o => {
+                const age = now - o.createdAt;
+                if (range === 'today') return age < day;
+                if (range === 'week') return age < 7 * day;
+                if (range === 'month') return age < 30 * day;
+                return true;
+            });
+        }
+
+        function render() {
+            const filtered = getFilteredOrders();
+            const completed = filtered.filter(o => o.status === 'completed');
+            
+            // Calculate metrics
+            const totalSales = filtered.reduce((sum, o) => sum + (o.total || 0), 0);
+            const totalOrders = filtered.length;
+            const avgTicket = totalOrders > 0 ? Math.round(totalSales / totalOrders) : 0;
+            const itemsSold = filtered.reduce((sum, o) => sum + (o.items?.length || 0), 0);
+
+            document.getElementById('totalSales').textContent = 'L ' + totalSales.toLocaleString();
+            document.getElementById('totalOrders').textContent = totalOrders;
+            document.getElementById('avgTicket').textContent = 'L ' + avgTicket;
+            document.getElementById('itemsSold').textContent = itemsSold;
+
+            // Hourly chart
+            const hourly = {};
+            for (let h = 6; h <= 20; h++) hourly[h] = 0;
+            
+            filtered.forEach(o => {
+                const hour = new Date(o.createdAt).getHours();
+                if (hourly[hour] !== undefined) {
+                    hourly[hour] += (o.total || 0);
+                }
+            });
+
+            const maxHourly = Math.max(...Object.values(hourly), 1);
+            
+            document.getElementById('hourlyChart').innerHTML = Object.entries(hourly).map(([h, val]) => {
+                const height = (val / maxHourly * 150) || 2;
+                const label = h > 12 ? (h - 12) + 'p' : h + 'a';
+                return `
+                    <div class="bar-group">
+                        <div class="bar-value">${val > 0 ? 'L' + val : ''}</div>
+                        <div class="bar" style="height: ${height}px"></div>
+                        <div class="bar-label">${label}</div>
+                    </div>
+                `;
+            }).join('');
+
+            // Top items
+            const itemCounts = {};
+            filtered.forEach(o => {
+                (o.items || []).forEach(item => {
+                    const name = item.name || 'Unknown';
+                    if (!itemCounts[name]) itemCounts[name] = { qty: 0, revenue: 0 };
+                    itemCounts[name].qty += (item.qty || 1);
+                    itemCounts[name].revenue += 65; // Approximate
+                });
+            });
+
+            const topItems = Object.entries(itemCounts)
+                .sort((a, b) => b[1].qty - a[1].qty)
+                .slice(0, 5);
+
+            document.getElementById('topItems').innerHTML = topItems.length ? topItems.map(([name, data], i) => `
+                <div class="top-item">
+                    <div class="top-rank">${i + 1}</div>
+                    <div class="top-info">
+                        <div class="top-name">${name}</div>
+                        <div class="top-qty">${data.qty} sold</div>
+                    </div>
+                    <div class="top-revenue">L ${data.revenue}</div>
+                </div>
+            `).join('') : '<div class="empty-state">No sales yet</div>';
+
+            // Orders list
+            const recent = [...filtered].sort((a, b) => b.createdAt - a.createdAt).slice(0, 20);
+            
+            document.getElementById('ordersList').innerHTML = recent.length ? recent.map(o => {
+                const time = new Date(o.createdAt).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+                const items = (o.items || []).map(i => i.name).join(', ') || 'No items';
+                const statusClass = `status-${o.status || 'new'}`;
+                return `
+                    <div class="order-row">
+                        <div class="order-id">#${o.id}</div>
+                        <div class="order-items">${items}</div>
+                        <div class="order-total">L ${o.total || 0}</div>
+                        <div class="order-status ${statusClass}">${o.status || 'new'}</div>
+                    </div>
+                `;
+            }).join('') : '<div class="empty-state">No orders yet. Place orders from the POS!</div>';
+        }
+
+        // Auto-refresh every 30 seconds
+        setInterval(load, 30000);
+
+        // Listen for storage changes
+        window.addEventListener('storage', (e) => {
+            if (e.key === 'rich-aroma-orders') load();
+        });
+
+        load();
+    </script>
+</body>
+</html>

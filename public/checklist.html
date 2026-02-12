@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🚀 Honduras Checklist</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            min-height: 100vh;
+            color: #fff;
+            padding: 20px;
+        }
+
+        h1 {
+            text-align: center;
+            font-size: 1.5rem;
+            margin-bottom: 20px;
+            color: #C9A66B;
+        }
+
+        .progress {
+            background: #2a2a4a;
+            border-radius: 10px;
+            height: 20px;
+            margin-bottom: 20px;
+            overflow: hidden;
+        }
+
+        .progress-bar {
+            height: 100%;
+            background: linear-gradient(90deg, #C9A66B, #FFD700);
+            transition: width 0.3s;
+            border-radius: 10px;
+        }
+
+        .progress-text {
+            text-align: center;
+            font-size: 0.9rem;
+            color: #888;
+            margin-bottom: 20px;
+        }
+
+        .category {
+            margin-bottom: 20px;
+        }
+
+        .category-title {
+            font-size: 1rem;
+            color: #C9A66B;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .task {
+            background: #2a2a4a;
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .task:hover {
+            background: #3a3a5a;
+        }
+
+        .task.done {
+            opacity: 0.5;
+        }
+
+        .task.done .task-text {
+            text-decoration: line-through;
+        }
+
+        .checkbox {
+            width: 28px;
+            height: 28px;
+            border: 3px solid #C9A66B;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            transition: all 0.2s;
+        }
+
+        .task.done .checkbox {
+            background: #C9A66B;
+        }
+
+        .checkmark {
+            display: none;
+            color: #1a1a2e;
+            font-weight: bold;
+        }
+
+        .task.done .checkmark {
+            display: block;
+        }
+
+        .task-text {
+            flex: 1;
+            font-size: 1rem;
+        }
+
+        .add-task {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .add-task input {
+            flex: 1;
+            padding: 12px 15px;
+            border: none;
+            border-radius: 10px;
+            background: #2a2a4a;
+            color: #fff;
+            font-size: 1rem;
+        }
+
+        .add-task button {
+            padding: 12px 20px;
+            border: none;
+            border-radius: 10px;
+            background: #C9A66B;
+            color: #1a1a2e;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .sync-status {
+            text-align: center;
+            font-size: 0.8rem;
+            color: #666;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <h1>🚀 Honduras Checklist</h1>
+    
+    <div class="progress">
+        <div class="progress-bar" id="progressBar" style="width: 0%"></div>
+    </div>
+    <div class="progress-text" id="progressText">0 / 0 completed</div>
+
+    <div class="add-task">
+        <input type="text" id="newTask" placeholder="Add new task...">
+        <button onclick="addTask()">+</button>
+    </div>
+
+    <div id="tasks"></div>
+
+    <div class="sync-status" id="syncStatus">Loading...</div>
+
+    <script>
+        let data = {
+            tasks: [
+                { id: 1, cat: "🚗 Transportation", text: "Get a car (buy/rent)", done: false },
+                { id: 2, cat: "🏗️ Property", text: "Install fences", done: false },
+                { id: 3, cat: "🏗️ Property", text: "Build poles at entrance", done: false },
+                { id: 4, cat: "🏗️ Property", text: "Fumigate property", done: false },
+                { id: 5, cat: "🏗️ Property", text: "Deep clean coffee shop", done: false },
+                { id: 6, cat: "🍳 Kitchen", text: "Buy pots & pans", done: false },
+                { id: 7, cat: "🍳 Kitchen", text: "Buy spoons & spatulas", done: false },
+                { id: 8, cat: "🍳 Kitchen", text: "Buy knives & cutting boards", done: false },
+                { id: 9, cat: "🍳 Kitchen", text: "Buy mixing bowls & measuring cups", done: false },
+                { id: 10, cat: "☕ Coffee", text: "Check espresso machine", done: false },
+                { id: 11, cat: "☕ Coffee", text: "Check grinder status", done: false },
+                { id: 12, cat: "☕ Coffee", text: "Buy cups & to-go cups", done: false },
+                { id: 13, cat: "📋 Menu", text: "Finalize menu items", done: false },
+                { id: 14, cat: "📋 Menu", text: "Create ingredient list", done: false },
+                { id: 15, cat: "📋 Menu", text: "Source suppliers", done: false },
+            ]
+        };
+
+        function render() {
+            const container = document.getElementById('tasks');
+            const categories = {};
+            
+            data.tasks.forEach(task => {
+                if (!categories[task.cat]) categories[task.cat] = [];
+                categories[task.cat].push(task);
+            });
+
+            let html = '';
+            for (const [cat, tasks] of Object.entries(categories)) {
+                html += `<div class="category">
+                    <div class="category-title">${cat}</div>`;
+                tasks.forEach(task => {
+                    html += `<div class="task ${task.done ? 'done' : ''}" onclick="toggle(${task.id})">
+                        <div class="checkbox"><span class="checkmark">✓</span></div>
+                        <div class="task-text">${task.text}</div>
+                    </div>`;
+                });
+                html += '</div>';
+            }
+            container.innerHTML = html;
+
+            // Update progress
+            const total = data.tasks.length;
+            const done = data.tasks.filter(t => t.done).length;
+            const pct = total > 0 ? (done / total * 100) : 0;
+            document.getElementById('progressBar').style.width = pct + '%';
+            document.getElementById('progressText').textContent = `${done} / ${total} completed`;
+        }
+
+        function toggle(id) {
+            const task = data.tasks.find(t => t.id === id);
+            if (task) {
+                task.done = !task.done;
+                save();
+                render();
+            }
+        }
+
+        function addTask() {
+            const input = document.getElementById('newTask');
+            const text = input.value.trim();
+            if (text) {
+                const maxId = Math.max(...data.tasks.map(t => t.id), 0);
+                data.tasks.push({ id: maxId + 1, cat: "📝 Added", text: text, done: false });
+                input.value = '';
+                save();
+                render();
+            }
+        }
+
+        function save() {
+            localStorage.setItem('honduras-checklist', JSON.stringify(data));
+            document.getElementById('syncStatus').textContent = 'Saved ✓';
+        }
+
+        function load() {
+            const saved = localStorage.getItem('honduras-checklist');
+            if (saved) {
+                data = JSON.parse(saved);
+            }
+            render();
+            document.getElementById('syncStatus').textContent = 'Ready';
+        }
+
+        // Enter key to add
+        document.getElementById('newTask').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') addTask();
+        });
+
+        load();
+    </script>
+</body>
+</html>

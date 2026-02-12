@@ -1,5 +1,6 @@
 const express = require('express');
 const path = require('path');
+const fs = require('fs');
 const cors = require('cors');
 const { createClient } = require('@supabase/supabase-js');
 
@@ -23,9 +24,11 @@ const supabase = createClient(supabaseUrl, supabaseKey);
 
 // Middleware
 app.use(cors());
-app.use(express.json());
+app.use(express.json({ limit: '10mb' })); // Increased for image uploads
 
-// --- SECURITY MIDDLEWARE ---
+// Global memory for Receipts (Deduplication)
+const RECEIPT_HASHES = new Set(); 
+const crypto = require('crypto');
 
 // Verify Supabase Session
 const requireAuth = async (req, res, next) => {
@@ -116,6 +119,156 @@ app.use('/src', express.static(path.join(__dirname, 'src')));
 app.use(express.static(path.join(__dirname, 'public')));
 
 // ============== API ROUTES ==============
+
+// === LIVE DROP API ===
+// Global state for Flash Sale (In-memory for speed)
+let currentDrop = {
+    active: false,
+    product: "Mystery Item",
+    price: 0,
+    originalPrice: 0,
+    stock: 0,
+    imageUrl: "https://images.unsplash.com/photo-1541167760496-1628856ab772?q=80&w=1000&auto=format&fit=crop",
+    codes: [] // Track claimed codes to prevent over-selling
+};
+
+app.get('/api/live/status', (req, res) => {
+    res.json(currentDrop);
+});
+
+app.post('/api/live/config', requireAdmin, (req, res) => {
+    const { product, price, originalPrice, stock, imageUrl, active } = req.body;
+    
+    // Update state
+    if (product) currentDrop.product = product;
+    if (price !== undefined) currentDrop.price = price;
+    if (originalPrice !== undefined) currentDrop.originalPrice = originalPrice;
+    if (stock !== undefined) currentDrop.stock = parseInt(stock);
+    if (imageUrl) currentDrop.imageUrl = imageUrl;
+    if (active !== undefined) currentDrop.active = active;
+    
+    // If resetting/starting new, clear claimed codes
+    if (req.body.reset) {
+        currentDrop.codes = [];
+    }
+    
+    console.log("[Live Drop] Config Updated:", currentDrop);
+    res.json({ success: true, drop: currentDrop });
+});
+
+app.post('/api/live/claim', async (req, res) => {
+    if (!currentDrop.active) return res.status(400).json({ error: "No active drop" });
+    if (currentDrop.stock <= 0) return res.status(400).json({ error: "Sold out" });
+    
+    const { phone } = req.body;
+    
+    // Check if phone already claimed
+    if (currentDrop.codes.find(c => c.phone === phone)) {
+        return res.json({ 
+            success: true, 
+            code: currentDrop.codes.find(c => c.phone === phone).code,
+            alreadyClaimed: true
+        });
+    }
+
+    // Decrement Stock
+    currentDrop.stock--;
+    
+    // Generate Code
+    const code = "RA-" + Math.floor(1000 + Math.random() * 9000);
+    
+    // Save claim
+    currentDrop.codes.push({ phone, code, timestamp: new Date() });
+    
+    // Log claim to console/DB
+    console.log(`[Live Drop] Claimed: ${code} by ${phone}. Stock left: ${currentDrop.stock}`);
+    
+    res.json({ success: true, code: code, remaining: currentDrop.stock });
+});
+
+// === WALLET PAYMENT (PIN Protected) ===
+app.post('/api/live/pay', async (req, res) => {
+    const { phone, pin } = req.body;
+    
+    // 1. Validate Active Drop
+    if (!currentDrop.active || currentDrop.stock <= 0) {
+        return res.status(400).json({ error: "Sold out or inactive" });
+    }
+    
+    // 2. Validate User & PIN
+    const cleanPhone = phone.replace(/\D/g, '');
+    const { data: customer } = await supabase
+        .from('customers')
+        .select('*')
+        .eq('phone', cleanPhone)
+        .single();
+        
+    if (!customer) return res.status(404).json({ error: "Customer not found" });
+    if (customer.pin !== pin) return res.status(401).json({ error: "Invalid PIN" });
+    
+    // 3. Check Balance
+    const price = currentDrop.price;
+    const balance = (customer.cash_balance || 0) + (customer.membership_credit || 0);
+    
+    if (balance < price) {
+        return res.status(400).json({ error: "Insufficient balance", balance });
+    }
+    
+    // 4. Process Payment
+    // Deduct from Credit first, then Cash
+    let remainingCost = price;
+    let deductCredit = 0;
+    let deductCash = 0;
+    
+    if (customer.membership_credit >= remainingCost) {
+        deductCredit = remainingCost;
+    } else {
+        deductCredit = customer.membership_credit;
+        deductCash = remainingCost - deductCredit;
+    }
+    
+    // DB Update (Atomic ideally, simplified here)
+    const { error } = await supabase
+        .from('customers')
+        .update({
+            membership_credit: customer.membership_credit - deductCredit,
+            cash_balance: customer.cash_balance - deductCash
+        })
+        .eq('id', customer.id);
+        
+    if (error) return res.status(500).json({ error: "Transaction failed" });
+    
+    // 5. Generate PAID Ticket
+    const code = "RA-" + Math.floor(1000 + Math.random() * 9000);
+    currentDrop.stock--;
+    currentDrop.codes.push({ phone: cleanPhone, code, paid: true });
+    
+    // Log Transaction
+    await supabase.from('balance_history').insert({
+        customer_id: customer.id,
+        type: 'payment',
+        amount: -price,
+        notes: `Live Drop: ${currentDrop.product}`
+    });
+    
+    // 6. Create Order (So kitchen sees it!)
+    // We'll auto-create an order for KDS
+    const { data: maxOrder } = await supabase.from('orders').select('order_number').order('order_number', { ascending: false }).limit(1);
+    const orderNum = (maxOrder?.[0]?.order_number || 0) + 1;
+    
+    await supabase.from('orders').insert({
+        id: `ORD-${String(orderNum).padStart(4, '0')}`,
+        order_number: orderNum,
+        customer_id: customer.id,
+        items: [{ name: currentDrop.product, price: price, quantity: 1, id: 'live-item' }],
+        total: price,
+        status: 'paid', // Paid but not yet made? or 'pending'?
+        payment_method: 'rico_balance',
+        notes: `LIVE DROP TICKET: ${code}`
+    });
+
+    res.json({ success: true, code, paid: true, balance: balance - price });
+});
 
 // === AUTH ROUTES ===
 
@@ -426,6 +579,23 @@ app.post('/api/orders', async (req, res) => {
     }
     
     const { data, error } = await supabase.from('orders').insert(orderData).select().single();
+    
+    // --- LOCAL FALLBACK / HYBRID SYNC ---
+    // Save to local JSON as backup/offline storage
+    try {
+        const ordersPath = path.join(__dirname, 'data', 'orders.json');
+        let localOrders = { orders: [] };
+        if (fs.existsSync(ordersPath)) {
+            localOrders = JSON.parse(fs.readFileSync(ordersPath, 'utf8'));
+        }
+        localOrders.orders.unshift(orderData); // Add new order to top
+        fs.writeFileSync(ordersPath, JSON.stringify(localOrders, null, 2));
+        console.log(`[Hybrid] Saved Order ${orderData.id} to local JSON.`);
+    } catch (fsErr) {
+        console.error("Local save failed:", fsErr);
+    }
+    // ------------------------------------
+
     if (error) return res.status(500).json({ error: error.message });
 
     // DEDUCTION ENGINE
@@ -473,6 +643,62 @@ app.post('/api/orders', async (req, res) => {
     }
 
     res.json(data);
+});
+
+// BATCH SYNC (Offline Orders)
+app.post('/api/sync/batch', async (req, res) => {
+    const { orders } = req.body;
+    if (!orders || !Array.isArray(orders)) return res.status(400).json({ error: 'Invalid batch' });
+
+    console.log(`[Sync] Processing ${orders.length} offline orders...`);
+    
+    let syncedCount = 0;
+    const errors = [];
+
+    for (const offlineOrder of orders) {
+        try {
+            // Generate real ID
+            const { data: maxOrder } = await supabase
+                .from('orders')
+                .select('order_number')
+                .order('order_number', { ascending: false })
+                .limit(1);
+            const orderNum = (maxOrder?.[0]?.order_number || 0) + 1;
+            
+            const realId = `ORD-${String(orderNum).padStart(4, '0')}`;
+            
+            // Prepare Data
+            const newOrder = {
+                id: realId,
+                order_number: orderNum,
+                items: offlineOrder.items,
+                subtotal: offlineOrder.subtotal,
+                tax: offlineOrder.tax,
+                discount: offlineOrder.discount,
+                total: offlineOrder.total,
+                status: 'pending', // Or 'completed' if it was paid?
+                payment_method: offlineOrder.payment_method || 'cash',
+                customer_id: offlineOrder.customer_id,
+                discount_code: offlineOrder.discount_code,
+                notes: (offlineOrder.notes || '') + ' [Synced]',
+                created_at: offlineOrder.created_at || new Date().toISOString()
+            };
+
+            const { error } = await supabase.from('orders').insert(newOrder);
+            if (error) throw error;
+            
+            syncedCount++;
+            
+            // Deduct Inventory (Simplified version of single order logic)
+            // ... (We could refactor the deduction logic to a function to reuse)
+            
+        } catch (e) {
+            console.error(`[Sync] Failed order ${offlineOrder.id}:`, e);
+            errors.push({ id: offlineOrder.id, error: e.message });
+        }
+    }
+
+    res.json({ success: true, syncedCount, errors });
 });
 
 app.patch('/api/orders/:id', ensureAuthenticated, async (req, res) => {
@@ -2082,6 +2308,388 @@ app.get('/', (req, res) => {
 app.get('/api/health', (req, res) => {
     res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
+
+// === REMESAS API (Supabase Version) ===
+
+app.get('/api/remesas/rate', async (req, res) => {
+    try {
+        const { data } = await supabase
+            .from('business_settings')
+            .select('exchange_rate_buy')
+            .eq('id', 1)
+            .single();
+        res.json({ rate: data?.exchange_rate_buy || 24.50 });
+    } catch (e) {
+        res.json({ rate: 24.50 });
+    }
+});
+
+app.post('/api/remesas/rate', ensureAuthenticated, async (req, res) => {
+    const { rate } = req.body;
+    await supabase
+        .from('business_settings')
+        .update({ exchange_rate_buy: parseFloat(rate) })
+        .eq('id', 1);
+    res.json({ success: true, rate });
+});
+
+app.post('/api/remesas/transaction', ensureAuthenticated, async (req, res) => {
+    const { type, amountUSD, amountHNL, customerName, details } = req.body;
+    
+    // Get current rate
+    const { data: settings } = await supabase
+        .from('business_settings')
+        .select('exchange_rate_buy')
+        .eq('id', 1)
+        .single();
+    
+    const rate = settings?.exchange_rate_buy || 24.50;
+
+    const tx = {
+        id: 'REM-' + Date.now(),
+        timestamp: new Date().toISOString(),
+        clerk: req.user?.email || 'anon',
+        type, 
+        amount_usd: parseFloat(amountUSD),
+        amount_hnl: parseFloat(amountHNL),
+        rate: rate,
+        customer_name: customerName,
+        details
+    };
+    
+    const { data, error } = await supabase.from('remesas_transactions').insert(tx).select().single();
+    if (error) return res.status(500).json({ error: error.message });
+    
+    res.json({ success: true, transaction: data });
+});
+
+app.get('/api/remesas/transactions', ensureAuthenticated, async (req, res) => {
+    const { data } = await supabase
+        .from('remesas_transactions')
+        .select('*')
+        .order('timestamp', { ascending: false })
+        .limit(100);
+    res.json({ transactions: data || [] });
+});
+
+// ============================================================
+// BRAND ASSETS API
+// ============================================================
+const brandPath = path.join(__dirname, 'public', 'data', 'brand.json');
+
+app.get('/api/brand', (req, res) => {
+    try {
+        const data = fs.readFileSync(brandPath, 'utf8');
+        res.json(JSON.parse(data));
+    } catch (e) {
+        res.status(500).json({ error: 'Failed to read brand config' });
+    }
+});
+
+app.post('/api/brand', (req, res) => {
+    try {
+        fs.writeFileSync(brandPath, JSON.stringify(req.body, null, 2));
+        res.json({ success: true });
+    } catch (e) {
+        res.status(500).json({ error: 'Failed to save brand config' });
+    }
+});
+
+// === GAME API ===
+app.post('/api/game/claim', async (req, res) => {
+    const { phone, score } = req.body;
+    if (!phone || !score) return res.status(400).json({ error: "Missing phone or score" });
+
+    // 1. Determine Reward Level
+    let rewardLevel = 0;
+    let rewardName = null;
+    
+    if (score >= 2000) {
+        rewardLevel = 3;
+        rewardName = "Free Coffee";
+    } else if (score >= 1000) {
+        rewardLevel = 2;
+        rewardName = "Free Cookie";
+    } else if (score >= 500) {
+        rewardLevel = 1;
+        rewardName = "Free Topping";
+    } else {
+        return res.json({ success: false, message: "Score too low for reward." });
+    }
+
+    // 2. Local Tracking (Hybrid DB)
+    const gameClaimsPath = path.join(__dirname, 'data', 'game_claims.json');
+    let claims = {};
+    try {
+        if (fs.existsSync(gameClaimsPath)) {
+            claims = JSON.parse(fs.readFileSync(gameClaimsPath, 'utf8'));
+        }
+    } catch (e) { console.error("Game DB Read Error", e); }
+
+    const cleanPhone = phone.replace(/\D/g, '');
+    const now = Date.now();
+    const lastClaim = claims[cleanPhone] || { timestamp: 0, level: 0 };
+    const hoursSince = (now - lastClaim.timestamp) / (1000 * 60 * 60);
+
+    let isUpgrade = false;
+    let code = "RICO-" + Math.floor(1000 + Math.random() * 9000);
+
+    // 3. Logic Check
+    if (hoursSince < 24) {
+        // Daily Limit Active
+        if (rewardLevel > lastClaim.level) {
+            // UPGRADE ALLOWED
+            isUpgrade = true;
+        } else {
+            // REJECT
+            return res.json({ 
+                success: false, 
+                message: "Daily limit reached! You already claimed a reward today.",
+                nextClaimIn: Math.ceil(24 - hoursSince) + " hours"
+            });
+        }
+    }
+
+    // 4. Save State
+    claims[cleanPhone] = {
+        timestamp: isUpgrade ? lastClaim.timestamp : now, // Keep original time if upgrade to maintain 24h cycle
+        level: rewardLevel,
+        code: code,
+        reward: rewardName
+    };
+    
+    try {
+        fs.writeFileSync(gameClaimsPath, JSON.stringify(claims, null, 2));
+    } catch (e) { console.error("Game DB Write Error", e); }
+
+    // 5. Sync to Supabase (Create Customer if new)
+    try {
+        const { data: customer } = await supabase.from('customers').select('id').eq('phone', cleanPhone).single();
+        
+        if (!customer) {
+            // Auto-create Ghost Account
+            const { data: maxId } = await supabase.from('customers').select('id').order('id', { ascending: false }).limit(1);
+            const nextNum = maxId?.length ? parseInt(maxId[0].id.slice(1)) + 1 : 1;
+            const newId = `C${String(nextNum).padStart(3, '0')}`;
+            
+            await supabase.from('customers').insert({
+                id: newId,
+                name: "Player " + cleanPhone.slice(-4),
+                phone: cleanPhone,
+                tier: 'bronze',
+                points: 0,
+                pin: null, // Explicitly null to trigger setup at POS
+                notes: 'GHOST_ACCOUNT: Created via Rico Run Game. Needs PIN setup.'
+            });
+        }
+    } catch (e) {
+        console.error("Supabase Sync Error:", e);
+        // Continue anyway, game logic worked locally
+    }
+
+    res.json({
+        success: true,
+        code: code,
+        reward: rewardName,
+        isUpgrade: isUpgrade,
+        message: isUpgrade ? "🎉 Prize UPGRADED!" : "🎉 Prize Claimed!"
+    });
+});
+
+// === RESERVATIONS API ===
+app.post('/api/reserve', async (req, res) => {
+    const { name, phone, pin } = req.body;
+    
+    // Check limit
+    const { count } = await supabase
+        .from('customers')
+        .select('*', { count: 'exact', head: true })
+        .eq('is_vip', true); 
+        
+    const currentCount = 38; 
+    
+    if (currentCount >= 50) {
+        return res.status(400).json({ error: "Sold out." });
+    }
+
+    // Generate Ticket Code
+    const ticketCode = "RA-F" + Math.floor(100 + Math.random() * 900);
+
+    // Save as "Reserved" Customer
+    const cleanPhone = phone.replace(/\D/g, '');
+    
+    // Check if exists
+    const { data: existing } = await supabase.from('customers').select('id').eq('phone', cleanPhone).single();
+    
+    if (existing) {
+        // Update existing account with reservation note + PIN if provided
+        const updates = { notes: `RESERVED: Founder Ticket ${ticketCode}` };
+        if (pin) updates.pin = pin;
+        
+        await supabase.from('customers').update(updates).eq('id', existing.id);
+    } else {
+        const { data: maxId } = await supabase.from('customers').select('id').order('id', { ascending: false }).limit(1);
+        const nextNum = maxId?.length ? parseInt(maxId[0].id.slice(1)) + 1 : 1;
+        const newId = `C${String(nextNum).padStart(3, '0')}`;
+        
+        await supabase.from('customers').insert({
+            id: newId,
+            name: name,
+            phone: cleanPhone,
+            tier: 'bronze',
+            points: 0,
+            pin: pin || null,
+            notes: `RESERVED: Founder Ticket ${ticketCode}`
+        });
+    }
+
+    res.json({ success: true, ticketCode });
+});
+
+// === RECEIPT UPLOAD & VERIFY ===
+const USED_REFS = new Set(); // Store used reference numbers
+
+app.post('/api/upload-receipt', async (req, res) => {
+    const { imageBase64, ticketCode, refNumber } = req.body;
+    
+    if (!imageBase64 || !ticketCode || !refNumber) {
+        return res.status(400).json({ error: "Datos incompletos." });
+    }
+
+    // 1. Reference Check (The Strong Lock)
+    if (USED_REFS.has(refNumber)) {
+        return res.status(409).json({ 
+            error: "🚫 Esta referencia ya fue utilizada.",
+            isDuplicate: true
+        });
+    }
+
+    // 2. Duplicate Check (The Weak Lock - Hash)
+    const hash = crypto.createHash('md5').update(imageBase64).digest('hex');
+    if (RECEIPT_HASHES.has(hash)) {
+        return res.status(409).json({ 
+            error: "⚠️ Este comprobante (imagen) ya fue utilizado.",
+            isDuplicate: true
+        });
+    }
+
+    // 3. Mark as Used
+    USED_REFS.add(refNumber);
+    RECEIPT_HASHES.add(hash);
+
+    // 4. Save Logic (Simulated storage)
+    console.log(`[Receipt] New Upload for ${ticketCode}. Ref: ${refNumber}`);
+    
+    res.json({ success: true, message: "Comprobante recibido." });
+});
+
+
+// === FOUNDERS DASHBOARD API (Supabase Version) ===
+
+app.get('/api/admin/founders', async (req, res) => {
+    try {
+        const { data: founders } = await supabase
+            .from('founders')
+            .select('*')
+            .order('created_at', { ascending: false });
+            
+        // Transform for frontend
+        const confirmed = (founders || []).filter(f => f.status === 'confirmed');
+        const pending = (founders || []).filter(f => f.status === 'pending');
+        
+        res.json({
+            sold: confirmed.length,
+            revenue: confirmed.length * 1500,
+            pending,
+            confirmed
+        });
+    } catch (e) {
+        res.status(500).json({ error: e.message });
+    }
+});
+
+app.post('/api/admin/founders/add', async (req, res) => {
+    const { name, phone, ref, status } = req.body;
+    
+    // Get next ticket number
+    const { count } = await supabase.from('founders').select('*', { count: 'exact', head: true });
+    const ticket = 'RA-F' + ((count || 0) + 1).toString().padStart(3, '0');
+    
+    const { data, error } = await supabase.from('founders').insert({
+        name,
+        phone: phone.replace(/\D/g, ''),
+        ticket,
+        ref_notes: ref || 'CASH',
+        status: status || 'pending',
+        amount: 1500
+    }).select().single();
+    
+    if (error) return res.status(500).json({ error: error.message });
+    
+    // If adding as CONFIRMED directly, trigger the upgrade
+    if (status === 'confirmed') {
+        // Trigger VIP Upgrade (Copying logic for safety)
+        const cleanPhone = data.phone.replace(/\D/g, '');
+        const { data: existing } = await supabase.from('customers').select('id').eq('phone', cleanPhone).single();
+        if (existing) {
+            await supabase.from('customers').update({ is_vip: true, tier: 'gold', notes: `FOUNDER: ${ticket}` }).eq('id', existing.id);
+        } else {
+            const { data: maxId } = await supabase.from('customers').select('id').order('id', { ascending: false }).limit(1);
+            const nextNum = maxId?.length ? parseInt(maxId[0].id.slice(1)) + 1 : 1;
+            const newId = `C${String(nextNum).padStart(3, '0')}`;
+            await supabase.from('customers').insert({ id: newId, name, phone: cleanPhone, tier: 'gold', is_vip: true, points: 500, notes: `FOUNDER: ${ticket}` });
+        }
+    }
+
+    res.json({ success: true, entry: data });
+});
+
+app.post('/api/admin/verify-founder', async (req, res) => {
+    const { id } = req.body;
+    
+    // 1. Update Founder
+    const { data: founder, error } = await supabase
+        .from('founders')
+        .update({ status: 'confirmed', confirmed_at: new Date().toISOString() })
+        .eq('id', id)
+        .select()
+        .single();
+        
+    if (error) return res.status(500).json({ error: error.message });
+    
+    // 2. Upgrade Customer
+    try {
+        const cleanPhone = founder.phone.replace(/\D/g, '');
+        const { data: existing } = await supabase.from('customers').select('id').eq('phone', cleanPhone).single();
+        
+        if (existing) {
+            await supabase.from('customers').update({
+                is_vip: true,
+                tier: 'gold',
+                notes: `FOUNDER: ${founder.ticket} (Verified)`
+            }).eq('id', existing.id);
+        } else {
+            const { data: maxId } = await supabase.from('customers').select('id').order('id', { ascending: false }).limit(1);
+            const nextNum = maxId?.length ? parseInt(maxId[0].id.slice(1)) + 1 : 1;
+            const newId = `C${String(nextNum).padStart(3, '0')}`;
+            
+            await supabase.from('customers').insert({
+                id: newId,
+                name: founder.name,
+                phone: cleanPhone,
+                tier: 'gold',
+                is_vip: true,
+                points: 500,
+                notes: `FOUNDER: ${founder.ticket} (Auto-Created)`
+            });
+        }
+    } catch (e) {
+        console.error("Auto-Upgrade Failed", e);
+    }
+    
+    res.json({ success: true, founder });
+});
+
 
 // Start server (for local dev)
 if (require.main === module) {

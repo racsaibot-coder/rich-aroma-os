@@ -963,6 +963,7 @@
 
         function validateStep() {
             const step = wizardState.steps[wizardState.step];
+            if (!step) return true; // Safety check
             if (step.type === 'upsell') return true;
             if (step.required && !wizardState.selections[step.id]) return false;
             return true;
@@ -978,6 +979,7 @@
                 finishWizard();
             }
         }
+
 
         function wizardPrev() {
             if (wizardState.step > 0) {

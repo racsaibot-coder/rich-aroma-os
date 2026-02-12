@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mi Perfil | Rich Aroma</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <script src="https://cdn.rawgit.com/davidshimjs/qrcodejs/gh-pages/qrcode.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;800&display=swap');
+        body { font-family: 'Poppins', sans-serif; background-color: #0F0F0F; color: white; }
+        
+        .gold-gradient {
+            background: linear-gradient(135deg, #C9A66B 0%, #F4E2C0 50%, #C9A66B 100%);
+        }
+        
+        .card-container {
+            perspective: 1000px;
+        }
+        
+        .member-card {
+            background: linear-gradient(135deg, #1a1a1a 0%, #000000 100%);
+            border: 1px solid #C9A66B;
+            box-shadow: 0 0 20px rgba(201, 166, 107, 0.2);
+            transition: transform 0.6s;
+            transform-style: preserve-3d;
+        }
+        
+        .flip { transform: rotateY(180deg); }
+    </style>
+</head>
+<body class="pb-20">
+
+    <!-- NAV -->
+    <nav class="bg-[#1a1a1a] p-4 flex justify-between items-center sticky top-0 z-50 border-b border-gray-800">
+        <div class="flex items-center gap-2">
+            <img src="logo.jpg" class="w-8 h-8 rounded-full border border-yellow-600">
+            <span class="font-bold text-sm">Rich Aroma</span>
+        </div>
+        <div class="flex items-center gap-3">
+            <div class="bg-gray-800 px-3 py-1 rounded-full flex items-center gap-1">
+                <span class="text-yellow-500 text-xs">🪙</span>
+                <span class="text-xs font-bold" id="header-points">0 Pts</span>
+            </div>
+            <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Felix" class="w-8 h-8 rounded-full bg-gray-700 border border-gray-600">
+        </div>
+    </nav>
+
+    <main class="p-6 max-w-md mx-auto space-y-6">
+
+        <!-- WELCOME -->
+        <div>
+            <p class="text-gray-400 text-sm">Bienvenido de vuelta,</p>
+            <h1 class="text-2xl font-bold text-white" id="user-name">Cargando...</h1>
+        </div>
+
+        <!-- DIGITAL ID CARD -->
+        <div class="card-container h-56 cursor-pointer" onclick="this.querySelector('.member-card').classList.toggle('flip')">
+            <div class="member-card relative w-full h-full rounded-2xl p-6 flex flex-col justify-between">
+                
+                <!-- Front -->
+                <div class="absolute inset-0 backface-hidden p-6 flex flex-col justify-between">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <p class="text-[10px] text-yellow-500 tracking-widest uppercase mb-1">Membresía</p>
+                            <p class="text-xl font-bold tracking-tight">CLUB FUNDADORES</p>
+                        </div>
+                        <i class="fas fa-wifi text-gray-600 transform rotate-90"></i>
+                    </div>
+                    
+                    <div class="flex justify-between items-end">
+                        <div>
+                            <p class="text-[10px] text-gray-500 uppercase mb-1">Saldo Disponible</p>
+                            <p class="text-3xl font-mono text-white">L. 500.00</p>
+                        </div>
+                        <i class="fas fa-qrcode text-3xl text-white"></i>
+                    </div>
+                </div>
+
+                <!-- Back (QR) -->
+                <div class="absolute inset-0 backface-hidden bg-white rounded-2xl p-6 flex flex-col items-center justify-center transform rotate-y-180" style="backface-visibility: hidden; transform: rotateY(180deg);">
+                    <div id="qrcode"></div>
+                    <p class="text-black text-xs mt-2 font-mono" id="user-id">RA-F000</p>
+                    <p class="text-gray-500 text-[10px] mt-1">Escanea en Caja</p>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- QUICK ACTIONS -->
+        <div class="grid grid-cols-2 gap-4">
+            <a href="order.html" class="bg-gray-800 p-4 rounded-xl flex flex-col items-center gap-2 hover:bg-gray-700 transition">
+                <div class="w-10 h-10 bg-yellow-500/20 rounded-full flex items-center justify-center text-yellow-500">
+                    <i class="fas fa-coffee"></i>
+                </div>
+                <span class="text-sm font-bold">Pedir</span>
+            </a>
+            <button onclick="alert('Próximamente')" class="bg-gray-800 p-4 rounded-xl flex flex-col items-center gap-2 hover:bg-gray-700 transition">
+                <div class="w-10 h-10 bg-green-500/20 rounded-full flex items-center justify-center text-green-500">
+                    <i class="fas fa-plus"></i>
+                </div>
+                <span class="text-sm font-bold">Recargar</span>
+            </button>
+        </div>
+
+        <!-- ACTIVE QUESTS -->
+        <div class="bg-[#1a1a1a] rounded-2xl p-6 border border-gray-800">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="font-bold">Misiones Activas</h3>
+                <span class="text-xs bg-gray-700 px-2 py-1 rounded">1/3</span>
+            </div>
+
+            <div class="space-y-4">
+                <!-- Quest 1 -->
+                <div class="flex items-center gap-4 opacity-50">
+                    <div class="w-10 h-10 rounded-full bg-green-900/50 flex items-center justify-center text-green-500">
+                        <i class="fas fa-check"></i>
+                    </div>
+                    <div class="flex-1">
+                        <p class="text-sm font-bold line-through">Crear Cuenta</p>
+                        <p class="text-xs text-gray-500">Completado</p>
+                    </div>
+                    <span class="text-xs font-bold text-green-500">+50 Pts</span>
+                </div>
+
+                <!-- Quest 2 -->
+                <div class="flex items-center gap-4">
+                    <div class="w-10 h-10 rounded-full bg-blue-900/30 flex items-center justify-center text-blue-400">
+                        <i class="fab fa-instagram"></i>
+                    </div>
+                    <div class="flex-1">
+                        <p class="text-sm font-bold">Conectar Instagram</p>
+                        <p class="text-xs text-gray-400">Desbloquea retos de fotos</p>
+                    </div>
+                    <button class="text-xs bg-blue-600 px-3 py-1.5 rounded-full font-bold">Ir</button>
+                </div>
+
+                <!-- Quest 3 -->
+                <div class="flex items-center gap-4">
+                    <div class="w-10 h-10 rounded-full bg-purple-900/30 flex items-center justify-center text-purple-400">
+                        <i class="fas fa-gamepad"></i>
+                    </div>
+                    <div class="flex-1">
+                        <p class="text-sm font-bold">Juega Rico Run</p>
+                        <p class="text-xs text-gray-400">Supera 500 puntos</p>
+                    </div>
+                    <a href="rico-run.html" class="text-xs bg-purple-600 px-3 py-1.5 rounded-full font-bold">Jugar</a>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+<script>
+    // Mock Data (In prod, fetch from /api/customers/me)
+    const user = {
+        name: "Oscar Castillo",
+        id: "RA-F038",
+        balance: 500,
+        points: 50
+    };
+
+    window.onload = () => {
+        document.getElementById('user-name').innerText = user.name;
+        document.getElementById('user-id').innerText = user.id;
+        document.getElementById('header-points').innerText = user.points + " Pts";
+        
+        // Generate QR
+        new QRCode(document.getElementById("qrcode"), {
+            text: user.id,
+            width: 100,
+            height: 100,
+            colorDark : "#000000",
+            colorLight : "#ffffff",
+            correctLevel : QRCode.CorrectLevel.H
+        });
+    };
+</script>
+</body>
+</html>

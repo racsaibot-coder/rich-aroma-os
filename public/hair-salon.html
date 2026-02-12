@@ -1,0 +1,582 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>✨ Hair Salon ✨</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-touch-callout: none;
+            -webkit-user-select: none;
+            user-select: none;
+        }
+
+        body {
+            font-family: 'Comic Sans MS', cursive, sans-serif;
+            background: linear-gradient(135deg, #FFB6C1 0%, #DDA0DD 50%, #E6E6FA 100%);
+            min-height: 100vh;
+            overflow: hidden;
+            touch-action: none;
+        }
+
+        .salon {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 15px;
+            height: 100vh;
+        }
+
+        h1 {
+            font-size: 1.8rem;
+            color: #FF69B4;
+            text-shadow: 2px 2px 4px rgba(255,255,255,0.8);
+            margin-bottom: 10px;
+        }
+
+        .mirror {
+            width: 260px;
+            height: 320px;
+            background: linear-gradient(145deg, #FFF8DC, #FFFACD);
+            border-radius: 50% 50% 45% 45%;
+            border: 12px solid #DAA520;
+            box-shadow: 
+                inset 0 0 30px rgba(255,215,0,0.3),
+                0 10px 30px rgba(0,0,0,0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            margin-bottom: 15px;
+        }
+
+        .head {
+            width: 200px;
+            height: 250px;
+            position: relative;
+        }
+
+        .face {
+            width: 120px;
+            height: 140px;
+            background: linear-gradient(180deg, #FFDAB9 0%, #FFE4C4 100%);
+            border-radius: 50% 50% 45% 45%;
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            box-shadow: inset 0 -10px 20px rgba(0,0,0,0.1);
+            z-index: 10;
+        }
+
+        .eyes {
+            position: absolute;
+            top: 45px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 25px;
+        }
+
+        .eye {
+            width: 22px;
+            height: 26px;
+            background: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: inset 0 2px 5px rgba(0,0,0,0.1);
+        }
+
+        .pupil {
+            width: 10px;
+            height: 12px;
+            background: #4A3728;
+            border-radius: 50%;
+            position: relative;
+        }
+
+        .pupil::after {
+            content: '';
+            width: 3px;
+            height: 3px;
+            background: white;
+            border-radius: 50%;
+            position: absolute;
+            top: 2px;
+            left: 2px;
+        }
+
+        .mouth {
+            width: 25px;
+            height: 12px;
+            background: #FF6B8A;
+            border-radius: 0 0 50px 50px;
+            position: absolute;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+
+        .cheeks {
+            position: absolute;
+            top: 65px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 55px;
+        }
+
+        .cheek {
+            width: 18px;
+            height: 10px;
+            background: rgba(255,150,150,0.5);
+            border-radius: 50%;
+        }
+
+        .hair-back {
+            position: absolute;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 140px;
+            height: 180px;
+            background: var(--hair-color, #4A3728);
+            border-radius: 70px 70px 20px 20px;
+            z-index: 1;
+        }
+
+        .hair-container {
+            position: absolute;
+            top: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 160px;
+            height: 100px;
+            z-index: 20;
+        }
+
+        .hair-strand {
+            position: absolute;
+            width: 10px;
+            background: linear-gradient(180deg, var(--hair-color, #4A3728) 0%, var(--hair-dark, #2C1810) 100%);
+            border-radius: 5px;
+            transform-origin: top center;
+            transition: transform 0.2s ease;
+        }
+
+        .tools {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            justify-content: center;
+            margin-bottom: 10px;
+        }
+
+        .tool {
+            width: 60px;
+            height: 60px;
+            background: white;
+            border-radius: 12px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.15);
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            border: 3px solid transparent;
+        }
+
+        .tool:active, .tool.selected {
+            transform: scale(0.95);
+            border-color: #FF69B4;
+        }
+
+        .tool-icon {
+            font-size: 1.8rem;
+        }
+
+        .tool-name {
+            font-size: 0.6rem;
+            color: #666;
+            margin-top: 2px;
+        }
+
+        .colors {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .color-btn {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            border: 3px solid white;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.2);
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        .color-btn:active {
+            transform: scale(0.9);
+        }
+
+        .sparkle {
+            position: fixed;
+            pointer-events: none;
+            font-size: 1.5rem;
+            animation: sparkle 0.8s ease-out forwards;
+            z-index: 100;
+        }
+
+        @keyframes sparkle {
+            0% {
+                transform: scale(0) rotate(0deg);
+                opacity: 1;
+            }
+            100% {
+                transform: scale(1.5) rotate(180deg);
+                opacity: 0;
+            }
+        }
+
+        .brush-cursor {
+            position: fixed;
+            font-size: 2.5rem;
+            pointer-events: none;
+            z-index: 1000;
+            transform: translate(-50%, -50%) rotate(-45deg);
+            display: none;
+        }
+
+        .message {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(255,255,255,0.95);
+            padding: 15px 25px;
+            border-radius: 20px;
+            font-size: 1.2rem;
+            color: #FF69B4;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            animation: bounce 0.5s ease;
+            z-index: 200;
+            display: none;
+        }
+
+        @keyframes bounce {
+            0%, 100% { transform: translate(-50%, -50%) scale(1); }
+            50% { transform: translate(-50%, -50%) scale(1.1); }
+        }
+
+        .accessory {
+            position: absolute;
+            font-size: 2rem;
+            z-index: 30;
+            display: none;
+        }
+
+        .bow {
+            top: 5px;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+
+        .tiara {
+            top: 0px;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+
+        .flower {
+            top: 40px;
+            left: 15px;
+        }
+    </style>
+</head>
+<body>
+    <div class="salon">
+        <h1>✨ Hair Salon ✨</h1>
+        
+        <div class="mirror">
+            <div class="head">
+                <div class="hair-back" id="hairBack"></div>
+                <div class="hair-container" id="hairContainer"></div>
+                <span class="accessory bow" id="bow">🎀</span>
+                <span class="accessory tiara" id="tiara">👑</span>
+                <span class="accessory flower" id="flower">🌸</span>
+                <div class="face">
+                    <div class="eyes">
+                        <div class="eye"><div class="pupil"></div></div>
+                        <div class="eye"><div class="pupil"></div></div>
+                    </div>
+                    <div class="cheeks">
+                        <div class="cheek"></div>
+                        <div class="cheek"></div>
+                    </div>
+                    <div class="mouth"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="tools">
+            <div class="tool selected" data-tool="brush" onclick="selectTool('brush')">
+                <span class="tool-icon">🪮</span>
+                <span class="tool-name">Brush</span>
+            </div>
+            <div class="tool" data-tool="mess" onclick="messUpHair()">
+                <span class="tool-icon">💨</span>
+                <span class="tool-name">Messy</span>
+            </div>
+            <div class="tool" data-tool="bow" onclick="toggleAccessory('bow')">
+                <span class="tool-icon">🎀</span>
+                <span class="tool-name">Bow</span>
+            </div>
+            <div class="tool" data-tool="tiara" onclick="toggleAccessory('tiara')">
+                <span class="tool-icon">👑</span>
+                <span class="tool-name">Tiara</span>
+            </div>
+            <div class="tool" data-tool="flower" onclick="toggleAccessory('flower')">
+                <span class="tool-icon">🌸</span>
+                <span class="tool-name">Flower</span>
+            </div>
+        </div>
+
+        <div class="colors">
+            <div class="color-btn" style="background: linear-gradient(135deg, #4A3728, #2C1810)" onclick="changeColor('#4A3728', '#2C1810')"></div>
+            <div class="color-btn" style="background: linear-gradient(135deg, #FFD700, #DAA520)" onclick="changeColor('#FFD700', '#DAA520')"></div>
+            <div class="color-btn" style="background: linear-gradient(135deg, #FF6B6B, #CC5555)" onclick="changeColor('#FF6B6B', '#CC5555')"></div>
+            <div class="color-btn" style="background: linear-gradient(135deg, #9B59B6, #7D3C98)" onclick="changeColor('#9B59B6', '#7D3C98')"></div>
+            <div class="color-btn" style="background: linear-gradient(135deg, #3498DB, #2574A9)" onclick="changeColor('#3498DB', '#2574A9')"></div>
+            <div class="color-btn" style="background: linear-gradient(135deg, #FF69B4, #FF1493)" onclick="changeColor('#FF69B4', '#FF1493')"></div>
+        </div>
+    </div>
+
+    <div class="brush-cursor" id="brushCursor">🪮</div>
+    <div class="message" id="message"></div>
+
+    <script>
+        let currentTool = 'brush';
+        let hairColor = '#4A3728';
+        let hairDark = '#2C1810';
+        let hairStrands = [];
+        let isBrushing = false;
+
+        function createHair() {
+            const container = document.getElementById('hairContainer');
+            container.innerHTML = '';
+            hairStrands = [];
+
+            // Create bangs/front hair
+            const positions = [
+                {x: 20, y: 0, len: 50, rot: -25},
+                {x: 35, y: 0, len: 55, rot: -15},
+                {x: 50, y: 0, len: 60, rot: -8},
+                {x: 65, y: 0, len: 65, rot: -3},
+                {x: 80, y: 0, len: 65, rot: 0},
+                {x: 95, y: 0, len: 65, rot: 3},
+                {x: 110, y: 0, len: 60, rot: 8},
+                {x: 125, y: 0, len: 55, rot: 15},
+                {x: 140, y: 0, len: 50, rot: 25},
+                // Second row
+                {x: 30, y: 5, len: 45, rot: -20},
+                {x: 50, y: 5, len: 50, rot: -10},
+                {x: 70, y: 5, len: 55, rot: -5},
+                {x: 90, y: 5, len: 55, rot: 5},
+                {x: 110, y: 5, len: 50, rot: 10},
+                {x: 130, y: 5, len: 45, rot: 20},
+            ];
+
+            positions.forEach((pos, i) => {
+                const strand = document.createElement('div');
+                strand.className = 'hair-strand';
+                
+                const messyRot = pos.rot + (Math.random() - 0.5) * 40;
+                
+                strand.style.cssText = `
+                    left: ${pos.x}px;
+                    top: ${pos.y}px;
+                    height: ${pos.len}px;
+                    --hair-color: ${hairColor};
+                    --hair-dark: ${hairDark};
+                    transform: rotate(${messyRot}deg);
+                `;
+                strand.dataset.baseRot = pos.rot;
+                strand.dataset.currentRot = messyRot;
+                strand.dataset.x = pos.x;
+                strand.dataset.y = pos.y;
+                
+                container.appendChild(strand);
+                hairStrands.push(strand);
+            });
+
+            updateHairBack();
+        }
+
+        function updateHairBack() {
+            const back = document.getElementById('hairBack');
+            back.style.setProperty('--hair-color', hairColor);
+            back.style.background = `linear-gradient(180deg, ${hairColor} 0%, ${hairDark} 100%)`;
+        }
+
+        function selectTool(tool) {
+            currentTool = tool;
+            document.querySelectorAll('.tool').forEach(t => t.classList.remove('selected'));
+            document.querySelector(`[data-tool="${tool}"]`)?.classList.add('selected');
+        }
+
+        function messUpHair() {
+            hairStrands.forEach(strand => {
+                const baseRot = parseFloat(strand.dataset.baseRot);
+                const messyRot = baseRot + (Math.random() - 0.5) * 50;
+                strand.style.transform = `rotate(${messyRot}deg)`;
+                strand.dataset.currentRot = messyRot;
+            });
+            showMessage("💨 Whoosh! Messy hair!");
+            createSparkles(window.innerWidth / 2, 200, 5);
+        }
+
+        function brushHair(x, y) {
+            const container = document.getElementById('hairContainer');
+            const rect = container.getBoundingClientRect();
+            const localX = x - rect.left;
+            const localY = y - rect.top;
+
+            let brushedAny = false;
+            hairStrands.forEach(strand => {
+                const strandX = parseFloat(strand.dataset.x);
+                const strandY = parseFloat(strand.dataset.y);
+                const distance = Math.sqrt((localX - strandX) ** 2 + (localY - strandY) ** 2);
+                
+                if (distance < 40) {
+                    const baseRot = parseFloat(strand.dataset.baseRot);
+                    const currentRot = parseFloat(strand.dataset.currentRot);
+                    // Move toward base rotation
+                    const newRot = currentRot + (baseRot - currentRot) * 0.5;
+                    strand.style.transform = `rotate(${newRot}deg)`;
+                    strand.dataset.currentRot = newRot;
+                    brushedAny = true;
+                }
+            });
+
+            if (brushedAny) {
+                createSparkles(x, y, 1);
+            }
+
+            // Check if all neat
+            const allNeat = hairStrands.every(s => {
+                const base = parseFloat(s.dataset.baseRot);
+                const current = parseFloat(s.dataset.currentRot);
+                return Math.abs(current - base) < 5;
+            });
+            if (allNeat) {
+                showMessage("✨ Beautiful! ✨");
+            }
+        }
+
+        function changeColor(color, dark) {
+            hairColor = color;
+            hairDark = dark;
+            hairStrands.forEach(strand => {
+                strand.style.setProperty('--hair-color', color);
+                strand.style.setProperty('--hair-dark', dark);
+            });
+            updateHairBack();
+            showMessage("🎨 Pretty color!");
+            createSparkles(window.innerWidth / 2, 200, 6);
+        }
+
+        function toggleAccessory(type) {
+            const el = document.getElementById(type);
+            if (el.style.display === 'block') {
+                el.style.display = 'none';
+            } else {
+                el.style.display = 'block';
+                showMessage("✨ So cute! ✨");
+                createSparkles(window.innerWidth / 2, 150, 4);
+            }
+        }
+
+        function createSparkles(x, y, count) {
+            const emojis = ['✨', '💖', '⭐', '💫'];
+            for (let i = 0; i < count; i++) {
+                const sparkle = document.createElement('div');
+                sparkle.className = 'sparkle';
+                sparkle.textContent = emojis[Math.floor(Math.random() * emojis.length)];
+                sparkle.style.left = (x + (Math.random() - 0.5) * 50) + 'px';
+                sparkle.style.top = (y + (Math.random() - 0.5) * 50) + 'px';
+                document.body.appendChild(sparkle);
+                setTimeout(() => sparkle.remove(), 800);
+            }
+        }
+
+        function showMessage(text) {
+            const msg = document.getElementById('message');
+            msg.textContent = text;
+            msg.style.display = 'block';
+            setTimeout(() => msg.style.display = 'none', 1200);
+        }
+
+        function handleStart(e) {
+            e.preventDefault();
+            if (currentTool === 'brush') {
+                isBrushing = true;
+                const pos = getPosition(e);
+                brushHair(pos.x, pos.y);
+                updateCursor(pos.x, pos.y);
+                document.getElementById('brushCursor').style.display = 'block';
+            }
+        }
+
+        function handleMove(e) {
+            e.preventDefault();
+            const pos = getPosition(e);
+            if (currentTool === 'brush') {
+                updateCursor(pos.x, pos.y);
+            }
+            if (isBrushing && currentTool === 'brush') {
+                brushHair(pos.x, pos.y);
+            }
+        }
+
+        function handleEnd(e) {
+            isBrushing = false;
+            document.getElementById('brushCursor').style.display = 'none';
+        }
+
+        function getPosition(e) {
+            if (e.touches && e.touches.length > 0) {
+                return { x: e.touches[0].clientX, y: e.touches[0].clientY };
+            }
+            return { x: e.clientX, y: e.clientY };
+        }
+
+        function updateCursor(x, y) {
+            const cursor = document.getElementById('brushCursor');
+            cursor.style.left = x + 'px';
+            cursor.style.top = y + 'px';
+        }
+
+        // Initialize
+        createHair();
+
+        // Event listeners
+        const mirror = document.querySelector('.mirror');
+        mirror.addEventListener('touchstart', handleStart, { passive: false });
+        mirror.addEventListener('touchmove', handleMove, { passive: false });
+        mirror.addEventListener('touchend', handleEnd);
+        mirror.addEventListener('mousedown', handleStart);
+        mirror.addEventListener('mousemove', handleMove);
+        mirror.addEventListener('mouseup', handleEnd);
+        mirror.addEventListener('mouseleave', handleEnd);
+    </script>
+</body>
+</html>

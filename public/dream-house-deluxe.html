@@ -1,0 +1,879 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>✨ Dream House Deluxe ✨</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-touch-callout: none;
+            -webkit-user-select: none;
+            user-select: none;
+        }
+
+        body {
+            font-family: 'Comic Sans MS', cursive, sans-serif;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        h1 {
+            font-size: 1.2rem;
+            color: #FF69B4;
+            text-align: center;
+            padding: 6px;
+            background: rgba(255,255,255,0.95);
+        }
+
+        .scene {
+            width: 100%;
+            max-width: 380px;
+            height: 300px;
+            margin: 0 auto;
+            position: relative;
+            border-radius: 10px;
+            overflow: hidden;
+            display: none;
+        }
+
+        .scene.active { display: block; }
+
+        /* Kitchen */
+        .kitchen { background: linear-gradient(180deg, #E0F7FA, #B2EBF2); }
+
+        .counter {
+            position: absolute;
+            bottom: 30px;
+            left: 0;
+            right: 0;
+            height: 25px;
+            background: linear-gradient(180deg, #D2B48C, #BC9B6A);
+        }
+
+        .fridge {
+            position: absolute;
+            left: 10px;
+            bottom: 55px;
+            width: 55px;
+            height: 110px;
+            background: linear-gradient(180deg, #E0E0E0, #BDBDBD);
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        .fridge-items {
+            position: absolute;
+            top: 0;
+            left: 60px;
+            display: none;
+            flex-wrap: wrap;
+            gap: 5px;
+            background: white;
+            padding: 5px;
+            border-radius: 5px;
+            z-index: 100;
+        }
+
+        .fridge.open .fridge-items { display: flex; }
+
+        .fridge-item {
+            font-size: 1.5rem;
+            cursor: pointer;
+            padding: 5px;
+            background: #f0f0f0;
+            border-radius: 8px;
+        }
+
+        .fridge-item:active {
+            background: #FFE4EC;
+            transform: scale(1.2);
+        }
+
+        .sink {
+            position: absolute;
+            left: 80px;
+            bottom: 55px;
+            width: 60px;
+            height: 50px;
+            background: #B0BEC5;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        .sink-basin {
+            width: 45px;
+            height: 30px;
+            background: #78909C;
+            margin: 5px auto;
+            border-radius: 0 0 10px 10px;
+        }
+
+        .water {
+            position: absolute;
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 8px;
+            height: 30px;
+            background: linear-gradient(180deg, #64B5F6, #2196F3);
+            border-radius: 4px;
+            display: none;
+            animation: flow 0.3s infinite alternate;
+        }
+
+        @keyframes flow {
+            from { opacity: 0.7; }
+            to { opacity: 1; }
+        }
+
+        .sink.on .water { display: block; }
+
+        .stove {
+            position: absolute;
+            right: 80px;
+            bottom: 55px;
+            width: 70px;
+            height: 60px;
+            background: #37474F;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        .burners {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 5px;
+            padding: 10px;
+        }
+
+        .burner {
+            width: 20px;
+            height: 20px;
+            background: #263238;
+            border-radius: 50%;
+        }
+
+        .stove.on .burner {
+            background: radial-gradient(circle, #FF5722, #E64A19);
+            animation: glow 0.5s infinite alternate;
+        }
+
+        @keyframes glow {
+            from { box-shadow: 0 0 5px #FF5722; }
+            to { box-shadow: 0 0 15px #FF5722; }
+        }
+
+        .pan-counter {
+            position: absolute;
+            bottom: 58px;
+            left: 160px;
+            font-size: 2rem;
+            cursor: pointer;
+            z-index: 60;
+        }
+
+        .pan-on-stove {
+            position: absolute;
+            bottom: 65px;
+            right: 100px;
+            font-size: 2.5rem;
+            z-index: 60;
+            display: none;
+        }
+
+        .pan-counter:active {
+            transform: scale(1.2);
+        }
+
+        .plate {
+            position: absolute;
+            bottom: 60px;
+            right: 20px;
+            width: 50px;
+            height: 50px;
+            background: white;
+            border-radius: 50%;
+            border: 3px solid #E0E0E0;
+            cursor: pointer;
+        }
+
+        .plate:active {
+            transform: scale(1.1);
+        }
+
+        .plate-food {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 1.5rem;
+        }
+
+        .cup {
+            position: absolute;
+            bottom: 60px;
+            right: 10px;
+            font-size: 1.8rem;
+            cursor: pointer;
+        }
+
+        .spatula {
+            position: absolute;
+            bottom: 120px;
+            right: 60px;
+            font-size: 1.5rem;
+            cursor: pointer;
+        }
+
+        .spatula:active {
+            transform: scale(1.2);
+        }
+
+        /* Bathroom */
+        .bathroom { background: linear-gradient(180deg, #E1F5FE, #B3E5FC); }
+
+        .bathtub {
+            position: absolute;
+            left: 50%;
+            transform: translateX(-50%);
+            bottom: 40px;
+            width: 180px;
+            height: 90px;
+            background: white;
+            border-radius: 50% 50% 20px 20px;
+            border: 5px solid #E0E0E0;
+            cursor: pointer;
+        }
+
+        .bath-water {
+            position: absolute;
+            bottom: 10px;
+            left: 10px;
+            right: 10px;
+            height: 50px;
+            background: linear-gradient(180deg, #81D4FA, #4FC3F7);
+            border-radius: 0 0 15px 15px;
+            display: none;
+        }
+
+        .bathtub.filled .bath-water { display: block; }
+
+        .bubbles {
+            position: absolute;
+            top: -20px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 1.5rem;
+            display: none;
+        }
+
+        .bathtub.filled .bubbles { display: block; }
+
+        .toilet {
+            position: absolute;
+            right: 20px;
+            bottom: 40px;
+            font-size: 3rem;
+        }
+
+        .bath-sink {
+            position: absolute;
+            left: 20px;
+            bottom: 80px;
+            width: 50px;
+            height: 40px;
+            background: white;
+            border-radius: 5px 5px 25px 25px;
+            border: 3px solid #E0E0E0;
+        }
+
+        .bath-mirror {
+            position: absolute;
+            left: 15px;
+            bottom: 130px;
+            width: 60px;
+            height: 70px;
+            background: linear-gradient(145deg, #E3F2FD, #BBDEFB);
+            border: 5px solid #FFD700;
+            border-radius: 30px 30px 5px 5px;
+        }
+
+        /* Outside */
+        .outside { background: linear-gradient(180deg, #87CEEB 0%, #98FB98 60%); }
+
+        .sun { position: absolute; top: 15px; right: 20px; font-size: 2.5rem; }
+        .cloud { position: absolute; font-size: 1.8rem; }
+        .cloud:nth-child(1) { top: 20px; left: 15px; }
+        .cloud:nth-child(2) { top: 40px; left: 100px; }
+
+        .tree { position: absolute; bottom: 30px; font-size: 3rem; }
+        .tree:nth-child(4) { left: 10px; }
+        .tree:nth-child(5) { right: 10px; }
+
+        .swing {
+            position: absolute;
+            left: 50%;
+            transform: translateX(-50%);
+            bottom: 60px;
+            text-align: center;
+            cursor: pointer;
+        }
+
+        .swing-ropes {
+            width: 60px;
+            height: 80px;
+            border-left: 3px solid #8B4513;
+            border-right: 3px solid #8B4513;
+            margin: 0 auto;
+        }
+
+        .swing-seat {
+            width: 70px;
+            height: 15px;
+            background: #8B4513;
+            border-radius: 5px;
+            margin-top: -5px;
+        }
+
+        .swing-top {
+            width: 80px;
+            height: 10px;
+            background: #8B4513;
+            margin: 0 auto;
+            border-radius: 5px;
+        }
+
+        .swing.swinging {
+            animation: swing 0.5s ease-in-out infinite alternate;
+        }
+
+        @keyframes swing {
+            from { transform: translateX(-50%) rotate(-5deg); }
+            to { transform: translateX(-50%) rotate(5deg); }
+        }
+
+        .house-door {
+            position: absolute;
+            right: 30px;
+            bottom: 30px;
+            width: 50px;
+            height: 80px;
+            background: #8B4513;
+            border-radius: 5px 5px 0 0;
+            cursor: pointer;
+        }
+
+        /* Character */
+        .character {
+            position: absolute;
+            bottom: 35px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 80px;
+            z-index: 50;
+        }
+
+        .char-head {
+            width: 35px;
+            height: 40px;
+            margin: 0 auto;
+            position: relative;
+        }
+
+        .char-hair {
+            position: absolute;
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 40px;
+            height: 35px;
+            background: var(--hair-color, #4A3728);
+            border-radius: 50% 50% 30% 30%;
+            z-index: 1;
+        }
+
+        .char-face {
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 30px;
+            height: 32px;
+            background: #FFDAB9;
+            border-radius: 50% 50% 45% 45%;
+            z-index: 10;
+        }
+
+        .char-eyes {
+            position: absolute;
+            top: 12px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 8px;
+        }
+
+        .char-eye {
+            width: 5px;
+            height: 6px;
+            background: #333;
+            border-radius: 50%;
+        }
+
+        .char-mouth {
+            position: absolute;
+            bottom: 8px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 8px;
+            height: 4px;
+            background: #FF6B8A;
+            border-radius: 0 0 8px 8px;
+        }
+
+        .char-body {
+            width: 25px;
+            height: 30px;
+            background: var(--shirt-color, #FF69B4);
+            border-radius: 8px 8px 3px 3px;
+            margin: -2px auto 0;
+            position: relative;
+        }
+
+        .char-arms {
+            position: absolute;
+            top: 0;
+            left: -10px;
+            right: -10px;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .char-arm {
+            width: 10px;
+            height: 25px;
+            background: #FFDAB9;
+            border-radius: 5px;
+        }
+
+        .char-hand {
+            width: 10px;
+            height: 10px;
+            background: #FFDAB9;
+            border-radius: 50%;
+            margin-top: -2px;
+            position: relative;
+        }
+
+        .char-hand .hand-item {
+            position: absolute;
+            top: -15px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 1rem;
+        }
+
+        .char-legs {
+            display: flex;
+            gap: 3px;
+            justify-content: center;
+        }
+
+        .char-leg {
+            width: 10px;
+            height: 25px;
+            background: var(--pants-color, #4169E1);
+            border-radius: 5px;
+        }
+
+        .holding {
+            position: absolute;
+            top: 15px;
+            right: -15px;
+            font-size: 1.2rem;
+        }
+
+        /* Navigation */
+        .nav {
+            display: flex;
+            gap: 5px;
+            justify-content: center;
+            padding: 8px;
+            background: white;
+            flex-wrap: wrap;
+        }
+
+        .nav-btn {
+            padding: 8px 12px;
+            background: linear-gradient(180deg, #FF69B4, #FF1493);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 0.8rem;
+            cursor: pointer;
+        }
+
+        .nav-btn.active {
+            background: linear-gradient(180deg, #9C27B0, #7B1FA2);
+        }
+
+        /* Actions */
+        .actions {
+            display: flex;
+            gap: 8px;
+            justify-content: center;
+            padding: 8px;
+            background: white;
+            flex-wrap: wrap;
+        }
+
+        .action-btn {
+            padding: 8px 12px;
+            background: #E1BEE7;
+            border: none;
+            border-radius: 10px;
+            font-size: 0.8rem;
+            cursor: pointer;
+        }
+
+        .walk-btns {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            padding: 8px;
+        }
+
+        .walk-btn {
+            width: 45px;
+            height: 45px;
+            background: white;
+            border: 3px solid #FF69B4;
+            border-radius: 50%;
+            font-size: 1.3rem;
+            cursor: pointer;
+        }
+
+        .message {
+            position: fixed;
+            top: 40%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: white;
+            padding: 12px 20px;
+            border-radius: 15px;
+            color: #FF69B4;
+            font-size: 1rem;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.2);
+            z-index: 200;
+            display: none;
+        }
+
+        .sparkle {
+            position: fixed;
+            pointer-events: none;
+            font-size: 1.5rem;
+            animation: sparkle 0.8s forwards;
+            z-index: 100;
+        }
+
+        @keyframes sparkle {
+            0% { transform: scale(0); opacity: 1; }
+            100% { transform: scale(1.5); opacity: 0; }
+        }
+    </style>
+</head>
+<body>
+    <h1>✨ Dream House Deluxe ✨</h1>
+
+    <!-- Kitchen -->
+    <div class="scene kitchen active" id="scene-kitchen">
+        <div class="fridge" id="fridge" onclick="toggleFridge()">
+            <div class="fridge-items" id="fridge-items">
+                <span class="fridge-item" ontouchend="grabItem('🥛', event)" onclick="grabItem('🥛', event)">🥛</span>
+                <span class="fridge-item" ontouchend="grabItem('🍎', event)" onclick="grabItem('🍎', event)">🍎</span>
+                <span class="fridge-item" ontouchend="grabItem('🧀', event)" onclick="grabItem('🧀', event)">🧀</span>
+                <span class="fridge-item" ontouchend="grabItem('🥚', event)" onclick="grabItem('🥚', event)">🥚</span>
+                <span class="fridge-item" ontouchend="grabItem('🍕', event)" onclick="grabItem('🍕', event)">🍕</span>
+                <span class="fridge-item" ontouchend="grabItem('🍰', event)" onclick="grabItem('🍰', event)">🍰</span>
+            </div>
+        </div>
+        <div class="sink" id="sink" onclick="toggleSink()">
+            <div class="sink-basin"></div>
+            <div class="water"></div>
+        </div>
+        <div class="stove" id="stove" onclick="toggleStove()">
+            <div class="burners">
+                <div class="burner"></div>
+                <div class="burner"></div>
+                <div class="burner"></div>
+                <div class="burner"></div>
+            </div>
+        </div>
+        <div class="pan-counter" id="pan-counter" onclick="movePanToStove()">🍳</div>
+        <div class="pan-on-stove" id="pan-stove">🍳</div>
+        <div class="spatula" onclick="grabItem('🥄', event)" ontouchend="grabItem('🥄', event)">🥄</div>
+        <div class="plate" id="plate" onclick="grabItem('🍽️', event)" ontouchend="grabItem('🍽️', event)"><span class="plate-food" id="plate-food"></span></div>
+        <div class="cup" onclick="grabItem('🥤', event)">🥤</div>
+        <div class="counter"></div>
+        <div class="character" id="char">
+            <div class="holding" id="holding"></div>
+            <div class="char-head">
+                <div class="char-hair"></div>
+                <div class="char-face">
+                    <div class="char-eyes">
+                        <div class="char-eye"></div>
+                        <div class="char-eye"></div>
+                    </div>
+                    <div class="char-mouth"></div>
+                </div>
+            </div>
+            <div class="char-body">
+                <div class="char-arms">
+                    <div class="char-arm"><div class="char-hand"></div></div>
+                    <div class="char-arm"><div class="char-hand"></div></div>
+                </div>
+            </div>
+            <div class="char-legs">
+                <div class="char-leg"></div>
+                <div class="char-leg"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bathroom -->
+    <div class="scene bathroom" id="scene-bathroom">
+        <div class="bath-mirror"></div>
+        <div class="bath-sink"></div>
+        <div class="bathtub" id="bathtub" onclick="toggleBath()">
+            <div class="bath-water"></div>
+            <div class="bubbles">🫧🫧🫧</div>
+        </div>
+        <div class="toilet">🚽</div>
+        <div class="character">
+            <div class="char-head">
+                <div class="char-hair"></div>
+                <div class="char-face">
+                    <div class="char-eyes">
+                        <div class="char-eye"></div>
+                        <div class="char-eye"></div>
+                    </div>
+                    <div class="char-mouth"></div>
+                </div>
+            </div>
+            <div class="char-body">
+                <div class="char-arms">
+                    <div class="char-arm"><div class="char-hand"></div></div>
+                    <div class="char-arm"><div class="char-hand"></div></div>
+                </div>
+            </div>
+            <div class="char-legs">
+                <div class="char-leg"></div>
+                <div class="char-leg"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Outside -->
+    <div class="scene outside" id="scene-outside">
+        <div class="cloud">☁️</div>
+        <div class="cloud">☁️</div>
+        <div class="sun">☀️</div>
+        <div class="tree">🌳</div>
+        <div class="tree">🌲</div>
+        <div class="swing" id="swing" onclick="toggleSwing()">
+            <div class="swing-top"></div>
+            <div class="swing-ropes"></div>
+            <div class="swing-seat"></div>
+        </div>
+        <div class="house-door" onclick="goTo('kitchen')"></div>
+        <div class="character">
+            <div class="char-head">
+                <div class="char-hair"></div>
+                <div class="char-face">
+                    <div class="char-eyes">
+                        <div class="char-eye"></div>
+                        <div class="char-eye"></div>
+                    </div>
+                    <div class="char-mouth"></div>
+                </div>
+            </div>
+            <div class="char-body">
+                <div class="char-arms">
+                    <div class="char-arm"><div class="char-hand"></div></div>
+                    <div class="char-arm"><div class="char-hand"></div></div>
+                </div>
+            </div>
+            <div class="char-legs">
+                <div class="char-leg"></div>
+                <div class="char-leg"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="nav">
+        <button class="nav-btn active" onclick="goTo('kitchen')">🍳 Kitchen</button>
+        <button class="nav-btn" onclick="goTo('bathroom')">🛁 Bathroom</button>
+        <button class="nav-btn" onclick="goTo('outside')">🌳 Outside</button>
+    </div>
+
+    <div class="walk-btns">
+        <button class="walk-btn" onclick="walk(-1)">⬅️</button>
+        <button class="walk-btn" onclick="walk(1)">➡️</button>
+    </div>
+
+    <div class="actions">
+        <button class="action-btn" onclick="putOnPlate()">🍽️ Put on Plate</button>
+        <button class="action-btn" onclick="dropItem()">❌ Drop</button>
+        <button class="action-btn" onclick="changeHair()">💇 Hair</button>
+        <button class="action-btn" onclick="changeShirt()">👚 Shirt</button>
+    </div>
+
+    <div class="message" id="message"></div>
+
+    <script>
+        let currentRoom = 'kitchen';
+        let holding = '';
+        let charX = 50;
+
+        const hairColors = ['#4A3728', '#FFD700', '#FF6B6B', '#9B59B6', '#FF69B4'];
+        const shirtColors = ['#FF69B4', '#87CEEB', '#98FB98', '#FFD700', '#DDA0DD'];
+        let hairIndex = 0;
+        let shirtIndex = 0;
+
+        function goTo(room) {
+            document.querySelectorAll('.scene').forEach(s => s.classList.remove('active'));
+            document.getElementById('scene-' + room).classList.add('active');
+            document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+            event.target.classList.add('active');
+            currentRoom = room;
+            sparkle();
+            showMsg('🚪 ' + room + '!');
+        }
+
+        function walk(dir) {
+            charX = Math.max(10, Math.min(90, charX + dir * 10));
+            document.querySelectorAll('.character').forEach(c => {
+                c.style.left = charX + '%';
+                c.style.transform = 'translateX(-50%)';
+            });
+        }
+
+        function toggleFridge() {
+            document.getElementById('fridge').classList.toggle('open');
+            sparkle();
+            showMsg('🧊 Fridge!');
+        }
+
+        function toggleSink() {
+            document.getElementById('sink').classList.toggle('on');
+            sparkle();
+            showMsg('💧 Water!');
+        }
+
+        function toggleStove() {
+            const stove = document.getElementById('stove');
+            stove.classList.toggle('on');
+            sparkle();
+            showMsg(stove.classList.contains('on') ? '🔥 Stove on!' : '🍳 Stove off!');
+        }
+
+        function movePanToStove() {
+            document.getElementById('pan-counter').style.display = 'none';
+            document.getElementById('pan-stove').style.display = 'block';
+            sparkle();
+            showMsg('🍳 Pan on stove!');
+        }
+
+        function toggleBath() {
+            document.getElementById('bathtub').classList.toggle('filled');
+            sparkle();
+            showMsg('🛁 Bubble bath!');
+        }
+
+        function toggleSwing() {
+            document.getElementById('swing').classList.toggle('swinging');
+            sparkle();
+            showMsg('🎢 Wheee!');
+        }
+
+        function grabItem(item, e) {
+            if (e) {
+                e.stopPropagation();
+                e.preventDefault();
+            }
+            holding = item;
+            // Put item in hand - find all right hands
+            const hands = document.querySelectorAll('.char-hand');
+            hands.forEach((h, i) => {
+                if (i % 2 === 1) { // Right hand (every other one)
+                    h.innerHTML = '<span class="hand-item">' + item + '</span>';
+                }
+            });
+            sparkle();
+            showMsg('✋ Got ' + item + '!');
+        }
+
+        function putOnPlate() {
+            if (holding) {
+                document.getElementById('plate-food').textContent = holding;
+                showMsg('🍽️ Yummy!');
+                // Clear from hand
+                document.querySelectorAll('.char-hand').forEach(h => {
+                    h.innerHTML = '';
+                });
+                holding = '';
+                sparkle();
+            }
+        }
+
+        function dropItem() {
+            holding = '';
+            document.querySelectorAll('.char-hand').forEach(h => {
+                h.innerHTML = '';
+            });
+            document.getElementById('holding').textContent = '';
+            showMsg('👋 Dropped!');
+        }
+
+        function changeHair() {
+            hairIndex = (hairIndex + 1) % hairColors.length;
+            document.querySelectorAll('.char-hair').forEach(h => {
+                h.style.background = hairColors[hairIndex];
+            });
+            sparkle();
+            showMsg('💇 Pretty hair!');
+        }
+
+        function changeShirt() {
+            shirtIndex = (shirtIndex + 1) % shirtColors.length;
+            document.querySelectorAll('.char-body').forEach(b => {
+                b.style.background = shirtColors[shirtIndex];
+            });
+            sparkle();
+            showMsg('👚 Nice shirt!');
+        }
+
+        function sparkle() {
+            for (let i = 0; i < 4; i++) {
+                const s = document.createElement('div');
+                s.className = 'sparkle';
+                s.textContent = ['✨', '💖', '⭐'][Math.floor(Math.random() * 3)];
+                s.style.left = (50 + Math.random() * 250) + 'px';
+                s.style.top = (80 + Math.random() * 150) + 'px';
+                document.body.appendChild(s);
+                setTimeout(() => s.remove(), 800);
+            }
+        }
+
+        function showMsg(text) {
+            const msg = document.getElementById('message');
+            msg.textContent = text;
+            msg.style.display = 'block';
+            setTimeout(() => msg.style.display = 'none', 900);
+        }
+    </script>
+</body>
+</html>

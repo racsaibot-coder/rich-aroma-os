@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>El Salto del Capitán Rico</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            background-color: #87CEEB; /* Sky Blue */
+            font-family: 'Courier New', Courier, monospace;
+            touch-action: manipulation; /* Prevent double-tap zoom */
+        }
+        #gameCanvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
+        #ui-layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+        .header {
+            padding: 20px;
+            display: flex;
+            justify-content: space-between;
+            font-size: 24px;
+            font-weight: bold;
+            color: #fff;
+            text-shadow: 2px 2px 0 #000;
+        }
+        #start-screen, #game-over-screen {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            background: rgba(0, 0, 0, 0.9);
+            padding: 30px;
+            border-radius: 15px;
+            color: white;
+            pointer-events: auto;
+            border: 4px solid #C9A66B; /* Rich Aroma Gold */
+            width: 80%;
+            max-width: 350px;
+        }
+        .btn {
+            background: #C9A66B;
+            border: none;
+            padding: 15px 30px;
+            font-size: 20px;
+            color: #1E1610; /* Espresso */
+            font-weight: bold;
+            border-radius: 8px;
+            cursor: pointer;
+            margin-top: 20px;
+            font-family: inherit;
+            width: 100%;
+        }
+        .btn:active {
+            transform: scale(0.95);
+        }
+        input {
+            width: 90%;
+            padding: 10px;
+            margin-top: 10px;
+            font-size: 18px;
+            border-radius: 5px;
+            border: 2px solid #C9A66B;
+            text-align: center;
+        }
+        .hidden { display: none !important; }
+        
+        .code-display {
+            font-size: 32px;
+            color: #4CAF50; /* Green */
+            background: #fff;
+            padding: 10px;
+            border-radius: 8px;
+            margin: 10px 0;
+            font-weight: bold;
+            letter-spacing: 2px;
+        }
+
+        /* Preload Asset */
+        #rico-src { display: none; }
+    </style>
+</head>
+<body>
+
+    <!-- Asset Loader -->
+    <img id="rico-src" src="rico-sprites.jpg" alt="Rico Sprites">
+
+    <div id="ui-layer">
+        <div class="header">
+            <span>🏆 <span id="score">0</span></span>
+            <span>🪙 <span id="coins">0</span></span>
+        </div>
+    </div>
+
+    <div id="start-screen">
+        <h1>🐵 El Salto del Capitán Rico</h1>
+        <p>¡Ayuda a Rico a recolectar café!</p>
+        <p>Toca para saltar</p>
+        <button class="btn" onclick="startGame()">¡JUGAR!</button>
+    </div>
+
+    <div id="game-over-screen" class="hidden">
+        <h1>💀 ¡Ay caramba!</h1>
+        <p>Puntuación: <span id="final-score">0</span></p>
+        
+        <!-- Reward Section -->
+        <div id="reward-section" class="hidden">
+            <div id="claim-form">
+                <p style="color: #FFD700; font-weight: bold;">🎉 ¡NUEVO RECORD!</p>
+                <p>Ingresa tu celular para guardar tu premio en tu cuenta:</p>
+                <input type="tel" id="phone-input" placeholder="Ej: 9988-1122" maxlength="8">
+                <button class="btn" onclick="submitClaim()">GUARDAR PREMIO</button>
+            </div>
+
+            <div id="claim-success" class="hidden">
+                <p>✅ ¡Premio Guardado!</p>
+                <p>Tu Código:</p>
+                <div class="code-display" id="reward-code">----</div>
+                <small>Muestra este código en caja</small>
+            </div>
+        </div>
+
+        <div id="no-reward-msg">
+            <small>Necesitas 500 puntos para ganar premio</small>
+        </div>
+
+        <button class="btn" onclick="resetGame()" style="background: #555; color: #fff; margin-top: 10px;">Jugar de Nuevo</button>
+    </div>
+
+    <canvas id="gameCanvas"></canvas>
+
+<script>
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+    const ricoImg = document.getElementById('rico-src');
+
+    // Game State
+    let gameRunning = false;
+    let score = 0;
+    let coins = 0;
+    let frame = 0;
+    let speed = 6;
+    
+    // Physics
+    let groundY;
+    
+    // Resize
+    function resize() {
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+        groundY = canvas.height - 100;
+    }
+    window.addEventListener('resize', resize);
+    resize();
+
+    const player = {
+        x: 50,
+        y: groundY,
+        width: 80,
+        height: 80,
+        dy: 0,
+        jumpPower: -18,
+        gravity: 0.9,
+        grounded: false,
+        runFrame: 0
+    };
+
+    let obstacles = [];
+    let items = [];
+
+    const COFFEE_EMOJI = "🍒";
+    const OBSTACLE_EMOJI = "🪨";
+
+    // Controls
+    function jump() {
+        if (player.grounded && gameRunning) {
+            player.dy = player.jumpPower;
+            player.grounded = false;
+        }
+    }
+    
+    window.addEventListener('touchstart', (e) => { 
+        if(e.target.tagName !== 'BUTTON' && e.target.tagName !== 'INPUT') {
+            e.preventDefault(); jump(); 
+        }
+    }, {passive: false});
+    
+    window.addEventListener('mousedown', (e) => {
+        if(e.target.tagName !== 'BUTTON' && e.target.tagName !== 'INPUT') jump();
+    });
+    
+    window.addEventListener('keydown', (e) => {
+        if (e.code === 'Space') jump();
+    });
+
+    // Game Loop
+    function update() {
+        if (!gameRunning) return;
+
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        // Ground
+        ctx.fillStyle = '#4a3c31';
+        ctx.fillRect(0, groundY, canvas.width, 100);
+        ctx.fillStyle = '#2d5a27';
+        ctx.fillRect(0, groundY, canvas.width, 15);
+
+        // Player Physics
+        player.dy += player.gravity;
+        player.y += player.dy;
+
+        if (player.y > groundY - player.height + 10) {
+            player.y = groundY - player.height + 10;
+            player.dy = 0;
+            player.grounded = true;
+        }
+
+        // --- DRAW RICO ---
+        let spriteIndex = 1; 
+        if (!player.grounded) {
+            spriteIndex = 1;
+        } else {
+            if (Math.floor(frame / 8) % 2 === 0) spriteIndex = 1;
+            else spriteIndex = 2;
+        }
+
+        const spriteW = ricoImg.naturalWidth / 5;
+        const spriteH = ricoImg.naturalHeight;
+        
+        ctx.drawImage(
+            ricoImg, 
+            spriteIndex * spriteW, 0, spriteW, spriteH, 
+            player.x, player.y, player.width, player.height
+        );
+
+        // Spawners
+        frame++;
+        if (frame % 100 === 0) {
+            obstacles.push({ x: canvas.width, type: 'rock' });
+        }
+        if (frame % 60 === 0) {
+            items.push({ x: canvas.width, y: groundY - 150 - Math.random() * 100 });
+        }
+
+        // Obstacles
+        for (let i = obstacles.length - 1; i >= 0; i--) {
+            let obs = obstacles[i];
+            obs.x -= speed;
+            ctx.font = "40px Arial";
+            ctx.fillText(OBSTACLE_EMOJI, obs.x + 20, groundY - 5);
+
+            if (
+                player.x < obs.x + 30 &&
+                player.x + player.width > obs.x + 10 &&
+                player.y + player.height > groundY - 30
+            ) {
+                gameOver();
+            }
+            if (obs.x < -50) obstacles.splice(i, 1);
+        }
+
+        // Items
+        for (let i = items.length - 1; i >= 0; i--) {
+            let item = items[i];
+            item.x -= speed;
+            ctx.fillText(COFFEE_EMOJI, item.x, item.y);
+
+            let dx = (player.x + player.width/2) - item.x;
+            let dy = (player.y + player.height/2) - item.y;
+            if (Math.sqrt(dx*dx + dy*dy) < 60) {
+                coins++;
+                document.getElementById('coins').innerText = coins;
+                items.splice(i, 1);
+            }
+            if (item.x < -50) items.splice(i, 1);
+        }
+
+        score++;
+        document.getElementById('score').innerText = score;
+        if (score % 500 === 0) speed += 1;
+
+        requestAnimationFrame(update);
+    }
+
+    function startGame() {
+        document.getElementById('start-screen').classList.add('hidden');
+        document.getElementById('game-over-screen').classList.add('hidden');
+        resetState();
+        gameRunning = true;
+        update();
+    }
+
+    function resetState() {
+        score = 0;
+        coins = 0;
+        frame = 0;
+        speed = 6;
+        obstacles = [];
+        items = [];
+        player.y = groundY - player.height;
+        document.getElementById('score').innerText = '0';
+        document.getElementById('coins').innerText = '0';
+        
+        // Reset UI
+        document.getElementById('claim-form').classList.remove('hidden');
+        document.getElementById('claim-success').classList.add('hidden');
+        document.getElementById('phone-input').value = '';
+    }
+
+    function gameOver() {
+        gameRunning = false;
+        document.getElementById('game-over-screen').classList.remove('hidden');
+        document.getElementById('final-score').innerText = score;
+        
+        if (score > 500) {
+            document.getElementById('reward-section').classList.remove('hidden');
+            document.getElementById('no-reward-msg').classList.add('hidden');
+        } else {
+            document.getElementById('reward-section').classList.add('hidden');
+            document.getElementById('no-reward-msg').classList.remove('hidden');
+        }
+    }
+
+    function resetGame() {
+        startGame();
+    }
+
+    function submitClaim() {
+        const phone = document.getElementById('phone-input').value;
+        if (phone.length < 8) {
+            alert("Por favor ingresa un número válido");
+            return;
+        }
+
+        // Simulate Backend Call
+        // In Prod: await fetch('/api/claim', { method: 'POST', body: { phone, score } })
+        
+        const fakeCode = "RICO-" + Math.floor(1000 + Math.random() * 9000);
+        
+        document.getElementById('claim-form').classList.add('hidden');
+        document.getElementById('claim-success').classList.remove('hidden');
+        document.getElementById('reward-code').innerText = fakeCode;
+    }
+</script>
+</body>
+</html>

@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Live Drop Admin</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body class="bg-slate-900 text-white p-6 font-sans">
+
+    <div class="max-w-md mx-auto space-y-6">
+        <h1 class="text-2xl font-bold text-yellow-500 mb-4 flex items-center gap-2">
+            <i class="fas fa-satellite-dish"></i> Live Control
+        </h1>
+
+        <!-- Status Card -->
+        <div class="bg-slate-800 p-4 rounded-xl border border-slate-700">
+            <div class="flex justify-between items-center mb-4">
+                <span class="text-slate-400 text-sm font-bold uppercase tracking-wider">Status</span>
+                <span id="status-badge" class="px-3 py-1 rounded-full text-xs font-bold bg-red-500/20 text-red-400">OFFLINE</span>
+            </div>
+            <div class="text-center py-4">
+                <p class="text-4xl font-mono font-bold text-white" id="live-stock">0</p>
+                <p class="text-xs text-slate-500">Remaining Stock</p>
+            </div>
+        </div>
+
+        <!-- Controls -->
+        <div class="bg-slate-800 p-6 rounded-xl border border-slate-700 space-y-4">
+            <div>
+                <label class="block text-xs text-slate-400 mb-1">Product Name</label>
+                <input type="text" id="product" value="Flan de Coco" class="w-full bg-slate-900 border border-slate-700 rounded p-3 text-white">
+            </div>
+
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-xs text-slate-400 mb-1">Stock Qty</label>
+                    <input type="number" id="stock" value="5" class="w-full bg-slate-900 border border-slate-700 rounded p-3 text-white font-bold text-lg">
+                </div>
+                <div>
+                    <label class="block text-xs text-slate-400 mb-1">Promo Price</label>
+                    <input type="number" id="price" value="45" class="w-full bg-slate-900 border border-slate-700 rounded p-3 text-white">
+                </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-4 pt-2">
+                <button onclick="updateConfig(true)" class="bg-green-600 hover:bg-green-500 text-white font-bold py-4 rounded-xl flex flex-col items-center justify-center gap-1">
+                    <i class="fas fa-play"></i>
+                    <span>GO LIVE</span>
+                </button>
+                <button onclick="updateConfig(false)" class="bg-red-600 hover:bg-red-500 text-white font-bold py-4 rounded-xl flex flex-col items-center justify-center gap-1">
+                    <i class="fas fa-stop"></i>
+                    <span>STOP</span>
+                </button>
+            </div>
+        </div>
+        
+        <p class="text-center text-xs text-slate-500 mt-6">Updates apply instantly to /live.html</p>
+    </div>
+
+    <script>
+        // Use the backdoor admin token
+        const AUTH_TOKEN = "TEST_TOKEN_ADMIN"; 
+
+        async function updateConfig(isActive) {
+            const payload = {
+                active: isActive,
+                reset: isActive, // Reset logic if starting new
+                product: document.getElementById('product').value,
+                stock: document.getElementById('stock').value,
+                price: document.getElementById('price').value,
+                originalPrice: 80 // Hardcoded or add field
+            };
+
+            try {
+                const res = await fetch('/api/live/config', {
+                    method: 'POST',
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${AUTH_TOKEN}`
+                    },
+                    body: JSON.stringify(payload)
+                });
+                const data = await res.json();
+                if(data.success) {
+                    refreshStatus();
+                    // Visual feedback
+                    const btn = isActive ? document.querySelector('.bg-green-600') : document.querySelector('.bg-red-600');
+                    const original = btn.innerHTML;
+                    btn.innerHTML = '<i class="fas fa-check"></i> UPDATED';
+                    setTimeout(() => btn.innerHTML = original, 1000);
+                }
+            } catch(e) {
+                alert('Error updating config');
+            }
+        }
+
+        async function refreshStatus() {
+            try {
+                const res = await fetch('/api/live/status');
+                const data = await res.json();
+                
+                document.getElementById('live-stock').innerText = data.stock;
+                
+                const badge = document.getElementById('status-badge');
+                if(data.active) {
+                    badge.className = "px-3 py-1 rounded-full text-xs font-bold bg-green-500/20 text-green-400 animate-pulse";
+                    badge.innerText = "LIVE ON AIR";
+                } else {
+                    badge.className = "px-3 py-1 rounded-full text-xs font-bold bg-red-500/20 text-red-400";
+                    badge.innerText = "OFFLINE";
+                }
+            } catch(e) {}
+        }
+
+        // Auto-refresh stats
+        setInterval(refreshStatus, 2000);
+        refreshStatus();
+    </script>
+</body>
+</html>

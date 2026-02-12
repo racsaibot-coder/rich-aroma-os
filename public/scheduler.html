@@ -1,0 +1,567 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rich Aroma - Staff Scheduler</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        :root {
+            --gold: #C9A66B;
+            --espresso: #1E1610;
+            --cream: #F5F0E8;
+            --success: #4CAF50;
+            --warning: #FF9800;
+            --danger: #f44336;
+        }
+        body {
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            background: linear-gradient(135deg, var(--espresso) 0%, #3d2b1f 100%);
+            min-height: 100vh;
+            padding: 15px;
+            color: #fff;
+        }
+        .container { max-width: 900px; margin: 0 auto; }
+        
+        header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        h1 {
+            color: var(--gold);
+            font-size: 1.5rem;
+            margin-bottom: 5px;
+        }
+        .subtitle { opacity: 0.7; font-size: 0.9rem; }
+        
+        .card {
+            background: rgba(255,255,255,0.08);
+            border-radius: 12px;
+            padding: 15px;
+            margin-bottom: 15px;
+        }
+        .card-title {
+            color: var(--gold);
+            font-size: 1rem;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        /* Staff List */
+        .staff-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        .staff-card {
+            background: rgba(255,255,255,0.1);
+            border-radius: 8px;
+            padding: 12px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .staff-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: var(--gold);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+        }
+        .staff-info { flex: 1; }
+        .staff-name { font-weight: 600; }
+        .staff-role { font-size: 0.75rem; opacity: 0.7; }
+        .staff-hours { font-size: 0.8rem; color: var(--gold); }
+        
+        .add-staff {
+            background: rgba(201,166,107,0.2);
+            border: 2px dashed var(--gold);
+            border-radius: 8px;
+            padding: 12px;
+            text-align: center;
+            cursor: pointer;
+            color: var(--gold);
+            transition: all 0.2s;
+        }
+        .add-staff:hover { background: rgba(201,166,107,0.3); }
+        
+        /* Timeline */
+        .timeline {
+            overflow-x: auto;
+            padding-bottom: 10px;
+        }
+        .timeline-grid {
+            display: grid;
+            grid-template-columns: 100px repeat(13, 1fr);
+            gap: 2px;
+            min-width: 700px;
+        }
+        .timeline-header {
+            background: rgba(201,166,107,0.3);
+            padding: 8px 4px;
+            text-align: center;
+            font-size: 0.7rem;
+            font-weight: 600;
+            border-radius: 4px;
+        }
+        .timeline-row {
+            display: contents;
+        }
+        .timeline-label {
+            background: rgba(255,255,255,0.1);
+            padding: 8px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.8rem;
+            border-radius: 4px 0 0 4px;
+        }
+        .timeline-cell {
+            background: rgba(255,255,255,0.05);
+            min-height: 40px;
+            border-radius: 2px;
+            cursor: pointer;
+            transition: all 0.15s;
+            position: relative;
+        }
+        .timeline-cell:hover { background: rgba(201,166,107,0.2); }
+        .timeline-cell.active {
+            background: linear-gradient(135deg, var(--gold), #a88a5a);
+        }
+        .timeline-cell.prep {
+            background: linear-gradient(135deg, #5c6bc0, #3f51b5);
+        }
+        .timeline-cell.close {
+            background: linear-gradient(135deg, #7e57c2, #5e35b1);
+        }
+        
+        /* Coverage Indicator */
+        .coverage-row {
+            display: contents;
+        }
+        .coverage-label {
+            background: transparent;
+            padding: 8px;
+            font-size: 0.75rem;
+            color: var(--gold);
+        }
+        .coverage-cell {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.8rem;
+            font-weight: 600;
+            border-radius: 2px;
+        }
+        .coverage-0 { background: rgba(244,67,54,0.3); color: #ffcdd2; }
+        .coverage-1 { background: rgba(255,152,0,0.3); color: #ffe0b2; }
+        .coverage-2 { background: rgba(76,175,80,0.3); color: #c8e6c9; }
+        .coverage-3 { background: rgba(76,175,80,0.5); color: #a5d6a7; }
+        
+        /* Peak Hours */
+        .peak-indicator {
+            position: absolute;
+            top: 2px;
+            right: 2px;
+            font-size: 0.6rem;
+        }
+        
+        /* Summary */
+        .summary-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+            gap: 10px;
+        }
+        .summary-item {
+            background: rgba(255,255,255,0.1);
+            border-radius: 8px;
+            padding: 12px;
+            text-align: center;
+        }
+        .summary-value {
+            font-size: 1.4rem;
+            font-weight: 700;
+            color: var(--gold);
+        }
+        .summary-label {
+            font-size: 0.75rem;
+            opacity: 0.7;
+        }
+        
+        /* Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.8);
+            z-index: 100;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .modal.open { display: flex; }
+        .modal-content {
+            background: var(--espresso);
+            border-radius: 12px;
+            padding: 20px;
+            max-width: 350px;
+            width: 100%;
+        }
+        .modal-title {
+            color: var(--gold);
+            margin-bottom: 15px;
+        }
+        .form-group { margin-bottom: 12px; }
+        .form-label {
+            display: block;
+            font-size: 0.8rem;
+            margin-bottom: 4px;
+            opacity: 0.8;
+        }
+        .form-input {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 6px;
+            background: rgba(255,255,255,0.1);
+            color: #fff;
+            font-size: 1rem;
+        }
+        .form-input:focus {
+            outline: none;
+            border-color: var(--gold);
+        }
+        .form-select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 6px;
+            background: rgba(255,255,255,0.1);
+            color: #fff;
+            font-size: 1rem;
+        }
+        .btn-row {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+        }
+        .btn {
+            flex: 1;
+            padding: 10px;
+            border: none;
+            border-radius: 6px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+        }
+        .btn-primary { background: var(--gold); color: var(--espresso); }
+        .btn-secondary { background: rgba(255,255,255,0.2); color: #fff; }
+        .btn-danger { background: var(--danger); color: #fff; }
+        
+        /* Legend */
+        .legend {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+            font-size: 0.75rem;
+            margin-top: 10px;
+        }
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        .legend-color {
+            width: 16px;
+            height: 16px;
+            border-radius: 3px;
+        }
+        
+        @media (max-width: 600px) {
+            .staff-grid { grid-template-columns: 1fr; }
+            .timeline-grid { min-width: 600px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>☕ Rich Aroma - Staff Scheduler</h1>
+            <div class="subtitle">Plan shifts, track coverage, calculate payroll</div>
+        </header>
+        
+        <!-- Staff List -->
+        <div class="card">
+            <div class="card-title">👥 Team</div>
+            <div class="staff-grid" id="staffGrid"></div>
+            <div class="add-staff" onclick="openAddStaffModal()">+ Add Staff Member</div>
+        </div>
+        
+        <!-- Timeline -->
+        <div class="card">
+            <div class="card-title">📅 Schedule (Click to toggle shifts)</div>
+            <div class="timeline">
+                <div class="timeline-grid" id="timelineGrid"></div>
+            </div>
+            <div class="legend">
+                <div class="legend-item"><div class="legend-color" style="background: linear-gradient(135deg, #5c6bc0, #3f51b5);"></div> Prep</div>
+                <div class="legend-item"><div class="legend-color" style="background: linear-gradient(135deg, var(--gold), #a88a5a);"></div> Working</div>
+                <div class="legend-item"><div class="legend-color" style="background: linear-gradient(135deg, #7e57c2, #5e35b1);"></div> Close</div>
+                <div class="legend-item">🔥 Peak Hour</div>
+            </div>
+        </div>
+        
+        <!-- Summary -->
+        <div class="card">
+            <div class="card-title">💰 Daily Summary</div>
+            <div class="summary-grid">
+                <div class="summary-item">
+                    <div class="summary-value" id="totalHours">0</div>
+                    <div class="summary-label">Total Hours</div>
+                </div>
+                <div class="summary-item">
+                    <div class="summary-value" id="laborCost">L.0</div>
+                    <div class="summary-label">Labor Cost</div>
+                </div>
+                <div class="summary-item">
+                    <div class="summary-value" id="avgCoverage">0</div>
+                    <div class="summary-label">Avg Coverage</div>
+                </div>
+                <div class="summary-item">
+                    <div class="summary-value" id="peakCoverage">0</div>
+                    <div class="summary-label">Peak Coverage</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Add Staff Modal -->
+    <div class="modal" id="staffModal">
+        <div class="modal-content">
+            <h3 class="modal-title" id="modalTitle">Add Staff Member</h3>
+            <div class="form-group">
+                <label class="form-label">Name</label>
+                <input type="text" class="form-input" id="staffName" placeholder="e.g. María">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Role</label>
+                <select class="form-select" id="staffRole">
+                    <option value="admin">Admin/Manager</option>
+                    <option value="barista">Barista</option>
+                    <option value="kitchen">Kitchen</option>
+                    <option value="cashier">Cashier</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Hourly Rate (L.)</label>
+                <input type="number" class="form-input" id="staffRate" placeholder="52" value="52">
+            </div>
+            <div class="btn-row">
+                <button class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+                <button class="btn btn-danger" id="deleteBtn" style="display:none" onclick="deleteStaff()">Delete</button>
+                <button class="btn btn-primary" onclick="saveStaff()">Save</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Hours: 5:30am (prep) to 6:30pm (close) = 13 slots
+        const hours = ['5:30', '6:00', '6:30', '7:00', '8:00', '9:00', '10:00', '11:00', '12:00', '1:00', '2:00', '3:00', '4:00', '5:00', '6:00'];
+        const hourLabels = ['5:30a', '6a', '6:30a', '7a', '8a', '9a', '10a', '11a', '12p', '1p', '2p', '3p', '4p', '5p', '6p'];
+        const peakHours = [1, 2, 3, 8, 9, 11, 12]; // Indices of peak hours
+        
+        const roleEmoji = {
+            admin: '👔',
+            barista: '☕',
+            kitchen: '🍳',
+            cashier: '💰'
+        };
+        const roleNames = {
+            admin: 'Admin',
+            barista: 'Barista',
+            kitchen: 'Kitchen',
+            cashier: 'Cashier'
+        };
+        
+        // Load from localStorage or defaults
+        let staff = JSON.parse(localStorage.getItem('ra_staff')) || [
+            { id: 1, name: 'Admin', role: 'admin', rate: 54, schedule: [1,1,1,1,1,1,1,1,1,1,1,1,0,0,0] },
+            { id: 2, name: 'Barista 1', role: 'barista', rate: 52, schedule: [1,1,1,1,1,1,1,1,1,0,0,0,0,0,0] },
+            { id: 3, name: 'Barista 2', role: 'barista', rate: 52, schedule: [0,0,0,0,0,1,1,1,1,1,1,1,1,1,1] },
+        ];
+        
+        let editingStaffId = null;
+        
+        function saveData() {
+            localStorage.setItem('ra_staff', JSON.stringify(staff));
+        }
+        
+        function render() {
+            renderStaffGrid();
+            renderTimeline();
+            updateSummary();
+        }
+        
+        function renderStaffGrid() {
+            const grid = document.getElementById('staffGrid');
+            grid.innerHTML = staff.map(s => {
+                const hrs = s.schedule.filter(x => x).length;
+                return `
+                    <div class="staff-card" onclick="editStaff(${s.id})">
+                        <div class="staff-avatar">${roleEmoji[s.role]}</div>
+                        <div class="staff-info">
+                            <div class="staff-name">${s.name}</div>
+                            <div class="staff-role">${roleNames[s.role]}</div>
+                        </div>
+                        <div class="staff-hours">${hrs}h</div>
+                    </div>
+                `;
+            }).join('');
+        }
+        
+        function renderTimeline() {
+            const grid = document.getElementById('timelineGrid');
+            let html = '<div class="timeline-header"></div>';
+            
+            // Headers
+            hourLabels.forEach((h, i) => {
+                const isPeak = peakHours.includes(i);
+                html += `<div class="timeline-header">${h}${isPeak ? ' 🔥' : ''}</div>`;
+            });
+            
+            // Staff rows
+            staff.forEach(s => {
+                html += `<div class="timeline-label">${roleEmoji[s.role]} ${s.name}</div>`;
+                s.schedule.forEach((active, i) => {
+                    let cls = 'timeline-cell';
+                    if (active) {
+                        if (i === 0) cls += ' prep';
+                        else if (i >= 13) cls += ' close';
+                        else cls += ' active';
+                    }
+                    html += `<div class="${cls}" onclick="toggleCell(${s.id}, ${i})"></div>`;
+                });
+            });
+            
+            // Coverage row
+            html += `<div class="coverage-label">Coverage</div>`;
+            for (let i = 0; i < 15; i++) {
+                const count = staff.reduce((sum, s) => sum + (s.schedule[i] ? 1 : 0), 0);
+                html += `<div class="coverage-cell coverage-${Math.min(count, 3)}">${count}</div>`;
+            }
+            
+            grid.innerHTML = html;
+        }
+        
+        function toggleCell(staffId, hourIndex) {
+            const s = staff.find(x => x.id === staffId);
+            if (s) {
+                s.schedule[hourIndex] = s.schedule[hourIndex] ? 0 : 1;
+                saveData();
+                render();
+            }
+        }
+        
+        function updateSummary() {
+            let totalHours = 0;
+            let totalCost = 0;
+            
+            staff.forEach(s => {
+                const hrs = s.schedule.filter(x => x).length;
+                totalHours += hrs;
+                totalCost += hrs * s.rate;
+            });
+            
+            const coverage = [];
+            for (let i = 0; i < 15; i++) {
+                coverage.push(staff.reduce((sum, s) => sum + (s.schedule[i] ? 1 : 0), 0));
+            }
+            const avgCov = (coverage.reduce((a,b) => a+b, 0) / coverage.length).toFixed(1);
+            
+            // Peak coverage (only peak hour indices)
+            const peakCov = peakHours.map(i => coverage[i]);
+            const minPeakCov = Math.min(...peakCov);
+            
+            document.getElementById('totalHours').textContent = totalHours;
+            document.getElementById('laborCost').textContent = 'L.' + totalCost.toLocaleString();
+            document.getElementById('avgCoverage').textContent = avgCov;
+            document.getElementById('peakCoverage').textContent = minPeakCov + '+';
+        }
+        
+        function openAddStaffModal() {
+            editingStaffId = null;
+            document.getElementById('modalTitle').textContent = 'Add Staff Member';
+            document.getElementById('staffName').value = '';
+            document.getElementById('staffRole').value = 'barista';
+            document.getElementById('staffRate').value = '52';
+            document.getElementById('deleteBtn').style.display = 'none';
+            document.getElementById('staffModal').classList.add('open');
+        }
+        
+        function editStaff(id) {
+            const s = staff.find(x => x.id === id);
+            if (!s) return;
+            editingStaffId = id;
+            document.getElementById('modalTitle').textContent = 'Edit Staff Member';
+            document.getElementById('staffName').value = s.name;
+            document.getElementById('staffRole').value = s.role;
+            document.getElementById('staffRate').value = s.rate;
+            document.getElementById('deleteBtn').style.display = 'block';
+            document.getElementById('staffModal').classList.add('open');
+        }
+        
+        function closeModal() {
+            document.getElementById('staffModal').classList.remove('open');
+            editingStaffId = null;
+        }
+        
+        function saveStaff() {
+            const name = document.getElementById('staffName').value.trim();
+            const role = document.getElementById('staffRole').value;
+            const rate = parseInt(document.getElementById('staffRate').value) || 52;
+            
+            if (!name) { alert('Please enter a name'); return; }
+            
+            if (editingStaffId) {
+                const s = staff.find(x => x.id === editingStaffId);
+                if (s) {
+                    s.name = name;
+                    s.role = role;
+                    s.rate = rate;
+                }
+            } else {
+                const newId = Math.max(0, ...staff.map(s => s.id)) + 1;
+                staff.push({
+                    id: newId,
+                    name,
+                    role,
+                    rate,
+                    schedule: [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
+                });
+            }
+            
+            saveData();
+            closeModal();
+            render();
+        }
+        
+        function deleteStaff() {
+            if (!editingStaffId) return;
+            if (!confirm('Delete this staff member?')) return;
+            staff = staff.filter(s => s.id !== editingStaffId);
+            saveData();
+            closeModal();
+            render();
+        }
+        
+        // Initial render
+        render();
+    </script>
+</body>
+</html>

@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Founder's Ledger | Admin</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background-color: #0F0F0F; color: white; }
+        .gold-text { color: #FFD700; }
+        .border-gold { border-color: #FFD700; }
+    </style>
+</head>
+<body class="pb-20">
+
+    <!-- Header -->
+    <div class="sticky top-0 bg-[#1a1a1a] p-4 border-b border-gray-800 z-50 flex justify-between items-center">
+        <div>
+            <h1 class="font-bold text-lg text-white">Club Ledger 📜</h1>
+            <p class="text-xs text-gray-400">Live Sales Tracker</p>
+        </div>
+        <button onclick="fetchData()" class="text-gray-400 hover:text-white"><i class="fas fa-sync"></i></button>
+    </div>
+
+    <!-- KPI Cards -->
+    <div class="p-4 grid grid-cols-2 gap-4">
+        <!-- Progress -->
+        <div class="bg-gray-900 border border-gray-800 p-4 rounded-xl relative overflow-hidden">
+            <div class="absolute top-0 right-0 p-2 opacity-10 text-4xl">👑</div>
+            <p class="text-xs text-gray-500 uppercase font-bold tracking-widest">Sold</p>
+            <p class="text-3xl font-bold text-white mt-1"><span id="sold-count">0</span><span class="text-gray-600 text-lg">/50</span></p>
+            <div class="w-full bg-gray-800 h-1 mt-3 rounded-full overflow-hidden">
+                <div id="progress-bar" class="bg-yellow-500 h-full w-0 transition-all duration-1000"></div>
+            </div>
+        </div>
+
+        <!-- Revenue -->
+        <div class="bg-gray-900 border border-gray-800 p-4 rounded-xl">
+            <p class="text-xs text-gray-500 uppercase font-bold tracking-widest">Revenue</p>
+            <p class="text-3xl font-bold text-green-500 mt-1">L. <span id="revenue">0</span></p>
+            <p class="text-xs text-gray-600 mt-1">Cash In Hand</p>
+        </div>
+    </div>
+
+    <!-- The List -->
+    <div class="px-4">
+        <!-- Add Button -->
+        <button onclick="openAddModal()" class="w-full bg-yellow-500/10 border border-yellow-500/50 text-yellow-500 py-3 rounded-xl font-bold mb-6 flex justify-center items-center gap-2 hover:bg-yellow-500/20 transition">
+            <i class="fas fa-plus"></i> Record Sale
+        </button>
+
+        <h3 class="text-sm font-bold text-gray-400 uppercase mb-3">Pending Verification</h3>
+        <div id="pending-list" class="space-y-3">
+            <!-- Items injected here -->
+            <div class="text-center py-8 text-gray-600 italic">All caught up! 🐆</div>
+        </div>
+
+        <h3 class="text-sm font-bold text-gray-400 uppercase mb-3 mt-8">Confirmed Founders</h3>
+        <div id="confirmed-list" class="space-y-3">
+            <!-- Items injected here -->
+        </div>
+    </div>
+
+    <!-- Verify Modal -->
+    <div id="verify-modal" class="hidden fixed inset-0 bg-black bg-opacity-95 flex items-center justify-center p-4 z-50">
+        <div class="bg-gray-900 w-full max-w-sm rounded-2xl border border-gray-700 p-6">
+            <h2 class="text-xl font-bold mb-4">Verify Payment</h2>
+            
+            <div class="bg-gray-800 p-4 rounded-xl mb-4">
+                <p class="text-xs text-gray-500 uppercase">Founder</p>
+                <p class="text-lg font-bold" id="modal-name">...</p>
+                <p class="text-sm text-yellow-500 font-mono mt-1" id="modal-ticket">...</p>
+            </div>
+
+            <div class="bg-gray-800 p-4 rounded-xl mb-6">
+                <p class="text-xs text-gray-500 uppercase">Check Bank App For:</p>
+                <div class="flex justify-between items-end mt-1">
+                    <p class="text-xl font-bold text-green-400">L. 1,500.00</p>
+                    <p class="text-sm font-mono text-white" id="modal-ref">Ref: ????</p>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-3">
+                <button onclick="closeModal('verify-modal')" class="py-3 rounded-lg border border-gray-600 text-gray-400 font-bold">Cancel</button>
+                <button onclick="confirmPayment()" class="py-3 rounded-lg bg-green-600 text-white font-bold shadow-lg shadow-green-900/20">Confirm ✅</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Modal -->
+    <div id="add-modal" class="hidden fixed inset-0 bg-black bg-opacity-95 flex items-center justify-center p-4 z-50">
+        <div class="bg-gray-900 w-full max-w-sm rounded-2xl border border-gray-700 p-6">
+            <h2 class="text-xl font-bold mb-4">Record New Sale</h2>
+            
+            <div class="space-y-4">
+                <div>
+                    <label class="text-xs text-gray-500 uppercase font-bold">Name</label>
+                    <input type="text" id="add-name" class="w-full bg-gray-800 border border-gray-700 rounded-lg p-3 text-white focus:border-yellow-500 outline-none" placeholder="Oscar Castillo">
+                </div>
+                <div>
+                    <label class="text-xs text-gray-500 uppercase font-bold">Phone</label>
+                    <input type="tel" id="add-phone" class="w-full bg-gray-800 border border-gray-700 rounded-lg p-3 text-white focus:border-yellow-500 outline-none" placeholder="9988-7766">
+                </div>
+                <div>
+                    <label class="text-xs text-gray-500 uppercase font-bold">Ref / Note</label>
+                    <input type="text" id="add-ref" class="w-full bg-gray-800 border border-gray-700 rounded-lg p-3 text-white focus:border-yellow-500 outline-none" placeholder="Cash / Transfer Ref">
+                </div>
+                
+                <!-- Status Toggle -->
+                <div class="flex gap-2">
+                    <button onclick="setAddStatus('pending')" id="btn-pending" class="flex-1 py-2 rounded-lg border border-yellow-500 text-yellow-500 font-bold bg-yellow-500/10">Pending</button>
+                    <button onclick="setAddStatus('confirmed')" id="btn-confirmed" class="flex-1 py-2 rounded-lg border border-gray-700 text-gray-500 font-bold">Paid (Cash)</button>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-3 mt-6">
+                <button onclick="closeModal('add-modal')" class="py-3 rounded-lg border border-gray-600 text-gray-400 font-bold">Cancel</button>
+                <button onclick="submitSale()" class="py-3 rounded-lg bg-white text-black font-bold">Save 💾</button>
+            </div>
+        </div>
+    </div>
+
+<script>
+    let currentId = null;
+    let addStatus = 'pending';
+
+    async function fetchData() {
+        try {
+            const res = await fetch('/api/admin/founders');
+            const data = await res.json();
+            render(data);
+        } catch (e) {
+            console.error("Connection Error", e);
+        }
+    }
+
+    function render(data) {
+        // Render Stats
+        document.getElementById('sold-count').innerText = data.sold;
+        document.getElementById('revenue').innerText = data.revenue.toLocaleString();
+        document.getElementById('progress-bar').style.width = `${(data.sold / 50) * 100}%`;
+
+        // Render Pending
+        const pendingContainer = document.getElementById('pending-list');
+        if (data.pending.length > 0) {
+            pendingContainer.innerHTML = data.pending.map(u => `
+                <div onclick="openVerify('${u.id}', '${u.name}', '${u.ticket}', '${u.ref}')" class="bg-gray-800 p-4 rounded-xl border-l-4 border-yellow-500 cursor-pointer hover:bg-gray-750 transition flex justify-between items-center">
+                    <div>
+                        <p class="font-bold text-white">${u.name}</p>
+                        <p class="text-xs text-gray-400 font-mono">${u.ticket} • ${u.ref}</p>
+                    </div>
+                    <div class="bg-yellow-500/10 text-yellow-500 px-3 py-1 rounded-full text-xs font-bold">
+                        Verify
+                    </div>
+                </div>
+            `).join('');
+        } else {
+            pendingContainer.innerHTML = `<div class="text-center py-4 text-gray-600 text-sm">No pending payments. Good job!</div>`;
+        }
+
+        // Render Confirmed
+        const confirmedContainer = document.getElementById('confirmed-list');
+        confirmedContainer.innerHTML = data.confirmed.map(u => `
+            <div class="bg-gray-900 p-4 rounded-xl border border-gray-800 flex justify-between items-center opacity-70">
+                <div>
+                    <p class="font-bold text-gray-300">${u.name}</p>
+                    <p class="text-xs text-gray-600 font-mono">${u.ticket}</p>
+                </div>
+                <div class="text-green-900 text-xl">
+                    <i class="fas fa-check-circle"></i>
+                </div>
+            </div>
+        `).join('');
+    }
+
+    function openVerify(id, name, ticket, ref) {
+        currentId = id;
+        document.getElementById('modal-name').innerText = name;
+        document.getElementById('modal-ticket').innerText = ticket;
+        document.getElementById('modal-ref').innerText = "Ref: " + (ref || '???');
+        document.getElementById('verify-modal').classList.remove('hidden');
+    }
+    
+    function openAddModal() {
+        document.getElementById('add-modal').classList.remove('hidden');
+    }
+
+    function closeModal(id) {
+        document.getElementById(id).classList.add('hidden');
+    }
+    
+    function setAddStatus(status) {
+        addStatus = status;
+        if (status === 'pending') {
+            document.getElementById('btn-pending').className = "flex-1 py-2 rounded-lg border border-yellow-500 text-yellow-500 font-bold bg-yellow-500/10";
+            document.getElementById('btn-confirmed').className = "flex-1 py-2 rounded-lg border border-gray-700 text-gray-500 font-bold";
+        } else {
+            document.getElementById('btn-pending').className = "flex-1 py-2 rounded-lg border border-gray-700 text-gray-500 font-bold";
+            document.getElementById('btn-confirmed').className = "flex-1 py-2 rounded-lg border border-green-500 text-green-500 font-bold bg-green-500/10";
+        }
+    }
+
+    async function submitSale() {
+        const name = document.getElementById('add-name').value;
+        const phone = document.getElementById('add-phone').value;
+        const ref = document.getElementById('add-ref').value;
+        
+        if (!name) return alert("Name required");
+        
+        await fetch('/api/admin/founders/add', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ name, phone, ref, status: addStatus })
+        });
+        
+        document.getElementById('add-name').value = '';
+        document.getElementById('add-phone').value = '';
+        document.getElementById('add-ref').value = '';
+        closeModal('add-modal');
+        fetchData();
+    }
+
+    async function confirmPayment() {
+        if (!currentId) return;
+        await fetch('/api/admin/verify-founder', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ id: currentId })
+        });
+        
+        closeModal('verify-modal');
+        fetchData(); // Refresh
+    }
+
+    // Init
+    fetchData();
+</script>
+</body>
+</html>

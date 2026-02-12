@@ -1,0 +1,579 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>🤖 ClawdPet</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-user-select: none;
+            user-select: none;
+        }
+
+        body {
+            font-family: 'Courier New', monospace;
+            background: linear-gradient(180deg, #0a0a1a 0%, #1a1a3a 50%, #0a0a1a 100%);
+            min-height: 100vh;
+            color: #0f0;
+            overflow: hidden;
+        }
+
+        .game {
+            max-width: 400px;
+            margin: 0 auto;
+            padding: 10px;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px;
+            background: rgba(0, 255, 0, 0.1);
+            border: 1px solid #0f0;
+            border-radius: 10px;
+            margin-bottom: 10px;
+        }
+
+        .wallet {
+            font-size: 1.2rem;
+            color: #FFD700;
+        }
+
+        .level {
+            font-size: 0.9rem;
+            color: #0f0;
+        }
+
+        .pet-screen {
+            flex: 1;
+            background: #111;
+            border: 3px solid #0f0;
+            border-radius: 20px;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 0 30px rgba(0, 255, 0, 0.3);
+        }
+
+        .environment {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 60%;
+            background: linear-gradient(180deg, transparent 0%, rgba(0, 255, 0, 0.1) 100%);
+        }
+
+        .ground {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 30px;
+            background: linear-gradient(180deg, #1a3a1a, #0a2a0a);
+        }
+
+        .pet {
+            position: absolute;
+            bottom: 40px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 5rem;
+            animation: bounce 1s ease-in-out infinite;
+            cursor: pointer;
+            transition: transform 0.3s;
+        }
+
+        .pet:active {
+            transform: translateX(-50%) scale(1.2);
+        }
+
+        .pet.walking {
+            animation: walk 0.3s ease-in-out infinite alternate;
+        }
+
+        .pet.sad {
+            filter: grayscale(50%);
+            animation: none;
+        }
+
+        @keyframes bounce {
+            0%, 100% { transform: translateX(-50%) translateY(0); }
+            50% { transform: translateX(-50%) translateY(-10px); }
+        }
+
+        @keyframes walk {
+            0% { transform: translateX(-60%) rotate(-5deg); }
+            100% { transform: translateX(-40%) rotate(5deg); }
+        }
+
+        .thought {
+            position: absolute;
+            bottom: 150px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.8);
+            border: 2px solid #0f0;
+            padding: 10px 15px;
+            border-radius: 15px;
+            font-size: 1.5rem;
+            display: none;
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 10px;
+            padding: 10px;
+        }
+
+        .stat {
+            text-align: center;
+        }
+
+        .stat-label {
+            font-size: 0.7rem;
+            color: #888;
+            margin-bottom: 5px;
+        }
+
+        .stat-bar {
+            height: 15px;
+            background: #222;
+            border-radius: 10px;
+            overflow: hidden;
+            border: 1px solid #333;
+        }
+
+        .stat-fill {
+            height: 100%;
+            transition: width 0.3s;
+            border-radius: 10px;
+        }
+
+        .stat-fill.hunger { background: linear-gradient(90deg, #ff6b6b, #ff0000); }
+        .stat-fill.happiness { background: linear-gradient(90deg, #FFD700, #FFA500); }
+        .stat-fill.energy { background: linear-gradient(90deg, #00ff00, #00aa00); }
+
+        .actions {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 8px;
+            padding: 10px;
+        }
+
+        .action {
+            background: rgba(0, 255, 0, 0.2);
+            border: 2px solid #0f0;
+            border-radius: 15px;
+            padding: 15px 10px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .action:active {
+            background: rgba(0, 255, 0, 0.4);
+            transform: scale(0.95);
+        }
+
+        .action-icon {
+            font-size: 1.5rem;
+            display: block;
+            margin-bottom: 5px;
+        }
+
+        .action-label {
+            font-size: 0.6rem;
+            color: #0f0;
+        }
+
+        .mission-panel {
+            background: rgba(0, 0, 0, 0.9);
+            border: 2px solid #FFD700;
+            border-radius: 15px;
+            padding: 15px;
+            margin: 10px;
+            display: none;
+        }
+
+        .mission-panel.show { display: block; }
+
+        .mission-title {
+            color: #FFD700;
+            font-size: 1rem;
+            margin-bottom: 10px;
+            text-align: center;
+        }
+
+        .mission {
+            background: rgba(255, 215, 0, 0.1);
+            border: 1px solid #FFD700;
+            border-radius: 10px;
+            padding: 12px;
+            margin-bottom: 10px;
+            cursor: pointer;
+        }
+
+        .mission:active {
+            background: rgba(255, 215, 0, 0.3);
+        }
+
+        .mission-name {
+            font-size: 0.9rem;
+            color: #FFD700;
+        }
+
+        .mission-reward {
+            font-size: 0.8rem;
+            color: #0f0;
+            margin-top: 5px;
+        }
+
+        .mission-time {
+            font-size: 0.7rem;
+            color: #888;
+        }
+
+        .active-mission {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            right: 10px;
+            background: rgba(0, 0, 0, 0.8);
+            border: 1px solid #FFD700;
+            padding: 10px;
+            border-radius: 10px;
+            font-size: 0.8rem;
+            color: #FFD700;
+        }
+
+        .message {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0, 0, 0, 0.95);
+            border: 2px solid #0f0;
+            padding: 20px 30px;
+            border-radius: 15px;
+            font-size: 1.2rem;
+            color: #0f0;
+            z-index: 100;
+            display: none;
+            text-align: center;
+        }
+
+        .particles {
+            position: absolute;
+            pointer-events: none;
+        }
+
+        .particle {
+            position: absolute;
+            font-size: 1.5rem;
+            animation: float 1s ease-out forwards;
+        }
+
+        @keyframes float {
+            0% { transform: translateY(0); opacity: 1; }
+            100% { transform: translateY(-50px); opacity: 0; }
+        }
+    </style>
+</head>
+<body>
+    <div class="game">
+        <div class="header">
+            <div class="wallet">💰 <span id="balance">0.00</span> ETH</div>
+            <div class="level">LVL <span id="level">1</span> 🤖</div>
+        </div>
+
+        <div class="pet-screen">
+            <div class="environment"></div>
+            <div class="ground"></div>
+            <div class="active-mission" id="activeMission" style="display:none">
+                <span id="missionText">Mission in progress...</span>
+                <span id="missionTimer"></span>
+            </div>
+            <div class="thought" id="thought">💭</div>
+            <div class="pet" id="pet" onclick="petPet()">🤖</div>
+            <div class="particles" id="particles"></div>
+        </div>
+
+        <div class="stats">
+            <div class="stat">
+                <div class="stat-label">🍕 HUNGER</div>
+                <div class="stat-bar"><div class="stat-fill hunger" id="hungerBar" style="width: 80%"></div></div>
+            </div>
+            <div class="stat">
+                <div class="stat-label">😊 HAPPY</div>
+                <div class="stat-bar"><div class="stat-fill happiness" id="happyBar" style="width: 80%"></div></div>
+            </div>
+            <div class="stat">
+                <div class="stat-label">⚡ ENERGY</div>
+                <div class="stat-bar"><div class="stat-fill energy" id="energyBar" style="width: 80%"></div></div>
+            </div>
+        </div>
+
+        <div class="actions">
+            <div class="action" onclick="feed()">
+                <span class="action-icon">🍕</span>
+                <span class="action-label">FEED</span>
+            </div>
+            <div class="action" onclick="play()">
+                <span class="action-icon">🎮</span>
+                <span class="action-label">PLAY</span>
+            </div>
+            <div class="action" onclick="walk()">
+                <span class="action-icon">🚶</span>
+                <span class="action-label">WALK</span>
+            </div>
+            <div class="action" onclick="toggleMissions()">
+                <span class="action-icon">📡</span>
+                <span class="action-label">MISSIONS</span>
+            </div>
+        </div>
+
+        <div class="mission-panel" id="missionPanel">
+            <div class="mission-title">⚡ CRYPTO MISSIONS ⚡</div>
+            <div class="mission" onclick="startMission('scout', 0.01, 30)">
+                <div class="mission-name">🔍 Scout Market</div>
+                <div class="mission-reward">+0.01 ETH</div>
+                <div class="mission-time">30 seconds</div>
+            </div>
+            <div class="mission" onclick="startMission('trade', 0.05, 60)">
+                <div class="mission-name">📈 Quick Trade</div>
+                <div class="mission-reward">+0.05 ETH</div>
+                <div class="mission-time">1 minute</div>
+            </div>
+            <div class="mission" onclick="startMission('arb', 0.15, 120)">
+                <div class="mission-name">💎 Arbitrage Run</div>
+                <div class="mission-reward">+0.15 ETH</div>
+                <div class="mission-time">2 minutes</div>
+            </div>
+            <div class="mission" onclick="startMission('whale', 0.50, 300)">
+                <div class="mission-name">🐋 Whale Watch</div>
+                <div class="mission-reward">+0.50 ETH</div>
+                <div class="mission-time">5 minutes</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="message" id="message"></div>
+
+    <script>
+        let state = {
+            hunger: 80,
+            happiness: 80,
+            energy: 80,
+            balance: 0,
+            level: 1,
+            xp: 0,
+            onMission: false,
+            missionEnd: null
+        };
+
+        function save() {
+            localStorage.setItem('clawdpet', JSON.stringify(state));
+        }
+
+        function load() {
+            const saved = localStorage.getItem('clawdpet');
+            if (saved) state = JSON.parse(saved);
+            updateUI();
+        }
+
+        function updateUI() {
+            document.getElementById('hungerBar').style.width = state.hunger + '%';
+            document.getElementById('happyBar').style.width = state.happiness + '%';
+            document.getElementById('energyBar').style.width = state.energy + '%';
+            document.getElementById('balance').textContent = state.balance.toFixed(2);
+            document.getElementById('level').textContent = state.level;
+
+            const pet = document.getElementById('pet');
+            if (state.hunger < 30 || state.happiness < 30) {
+                pet.classList.add('sad');
+                showThought('😢');
+            } else {
+                pet.classList.remove('sad');
+            }
+
+            if (state.onMission) {
+                pet.classList.add('walking');
+            } else {
+                pet.classList.remove('walking');
+            }
+        }
+
+        function showThought(emoji) {
+            const thought = document.getElementById('thought');
+            thought.textContent = emoji;
+            thought.style.display = 'block';
+            setTimeout(() => thought.style.display = 'none', 2000);
+        }
+
+        function showMessage(text) {
+            const msg = document.getElementById('message');
+            msg.textContent = text;
+            msg.style.display = 'block';
+            setTimeout(() => msg.style.display = 'none', 1500);
+        }
+
+        function particles(emoji, count) {
+            const container = document.getElementById('particles');
+            for (let i = 0; i < count; i++) {
+                const p = document.createElement('div');
+                p.className = 'particle';
+                p.textContent = emoji;
+                p.style.left = (100 + Math.random() * 150) + 'px';
+                p.style.top = (150 + Math.random() * 50) + 'px';
+                container.appendChild(p);
+                setTimeout(() => p.remove(), 1000);
+            }
+        }
+
+        function petPet() {
+            state.happiness = Math.min(100, state.happiness + 5);
+            showThought('💚');
+            particles('💚', 3);
+            addXP(1);
+            updateUI();
+            save();
+        }
+
+        function feed() {
+            if (state.hunger >= 100) {
+                showMessage('Already full! 🤖');
+                return;
+            }
+            state.hunger = Math.min(100, state.hunger + 30);
+            showThought('😋');
+            particles('🍕', 5);
+            showMessage('+30 Hunger');
+            addXP(5);
+            updateUI();
+            save();
+        }
+
+        function play() {
+            if (state.energy < 20) {
+                showMessage('Too tired! 😴');
+                return;
+            }
+            state.happiness = Math.min(100, state.happiness + 25);
+            state.energy = Math.max(0, state.energy - 15);
+            showThought('🎮');
+            particles('⭐', 5);
+            showMessage('+25 Happy');
+            addXP(5);
+            updateUI();
+            save();
+        }
+
+        function walk() {
+            if (state.energy < 30) {
+                showMessage('Too tired! 😴');
+                return;
+            }
+            state.happiness = Math.min(100, state.happiness + 15);
+            state.energy = Math.max(0, state.energy - 20);
+            state.hunger = Math.max(0, state.hunger - 10);
+            
+            const pet = document.getElementById('pet');
+            pet.classList.add('walking');
+            setTimeout(() => pet.classList.remove('walking'), 3000);
+            
+            showThought('🚶');
+            showMessage('Walking in Otherside...');
+            addXP(10);
+            updateUI();
+            save();
+        }
+
+        function toggleMissions() {
+            const panel = document.getElementById('missionPanel');
+            panel.classList.toggle('show');
+        }
+
+        function startMission(type, reward, seconds) {
+            if (state.onMission) {
+                showMessage('Already on mission!');
+                return;
+            }
+            if (state.energy < 40) {
+                showMessage('Need more energy! ⚡');
+                return;
+            }
+
+            state.onMission = true;
+            state.missionEnd = Date.now() + (seconds * 1000);
+            state.energy = Math.max(0, state.energy - 30);
+            
+            document.getElementById('missionPanel').classList.remove('show');
+            document.getElementById('activeMission').style.display = 'block';
+            
+            const names = {
+                scout: '🔍 Scouting market...',
+                trade: '📈 Trading...',
+                arb: '💎 Running arbitrage...',
+                whale: '🐋 Tracking whale...'
+            };
+            document.getElementById('missionText').textContent = names[type];
+            
+            updateUI();
+            save();
+
+            const timer = setInterval(() => {
+                const remaining = Math.max(0, state.missionEnd - Date.now());
+                if (remaining <= 0) {
+                    clearInterval(timer);
+                    completeMission(reward);
+                } else {
+                    document.getElementById('missionTimer').textContent = 
+                        ' (' + Math.ceil(remaining / 1000) + 's)';
+                }
+            }, 1000);
+        }
+
+        function completeMission(reward) {
+            state.onMission = false;
+            state.balance += reward;
+            
+            document.getElementById('activeMission').style.display = 'none';
+            showMessage('+' + reward.toFixed(2) + ' ETH! 🎉');
+            particles('💰', 8);
+            showThought('🤑');
+            addXP(20);
+            updateUI();
+            save();
+        }
+
+        function addXP(amount) {
+            state.xp += amount;
+            if (state.xp >= state.level * 50) {
+                state.xp = 0;
+                state.level++;
+                showMessage('LEVEL UP! 🎉');
+                particles('⭐', 10);
+            }
+        }
+
+        // Decay stats over time
+        setInterval(() => {
+            state.hunger = Math.max(0, state.hunger - 1);
+            state.happiness = Math.max(0, state.happiness - 0.5);
+            state.energy = Math.min(100, state.energy + 0.5);
+            updateUI();
+            save();
+        }, 30000);
+
+        load();
+    </script>
+</body>
+</html>

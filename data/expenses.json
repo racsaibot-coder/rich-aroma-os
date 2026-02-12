@@ -1,0 +1,12 @@
+[
+  {
+    "id": "init_1",
+    "date": "2026-02-11T08:00:00Z",
+    "item": "System Initialization",
+    "amount": 0,
+    "currency": "HNL",
+    "category": "system",
+    "phase": "pre-opening",
+    "notes": "Expense tracking started"
+  }
+]

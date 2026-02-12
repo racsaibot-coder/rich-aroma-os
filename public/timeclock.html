@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>⏰ Time Clock - Rich Aroma</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --dark-bg: #0f0d0b;
+            --card-bg: #1a1714;
+            --caramel: #D4A574;
+            --cream: #F5EDE4;
+            --success: #22c55e;
+            --danger: #ef4444;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--dark-bg);
+            color: var(--cream);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .clock {
+            font-size: 4rem;
+            font-weight: 700;
+            color: var(--caramel);
+            margin-bottom: 10px;
+        }
+        .date {
+            font-size: 1.2rem;
+            color: #888;
+            margin-bottom: 40px;
+        }
+        .employee-select {
+            background: var(--card-bg);
+            border: 2px solid #333;
+            border-radius: 15px;
+            padding: 15px 30px;
+            color: var(--cream);
+            font-size: 1.2rem;
+            margin-bottom: 30px;
+            min-width: 250px;
+        }
+        .punch-btn {
+            padding: 25px 60px;
+            font-size: 1.5rem;
+            font-weight: 600;
+            border: none;
+            border-radius: 20px;
+            cursor: pointer;
+            transition: all 0.2s;
+            margin: 10px;
+        }
+        .punch-in {
+            background: var(--success);
+            color: #000;
+        }
+        .punch-out {
+            background: var(--danger);
+            color: #fff;
+        }
+        .punch-btn:active { transform: scale(0.95); }
+        .status {
+            margin-top: 30px;
+            padding: 20px;
+            background: var(--card-bg);
+            border-radius: 15px;
+            text-align: center;
+        }
+        .log {
+            margin-top: 30px;
+            background: var(--card-bg);
+            border-radius: 15px;
+            padding: 20px;
+            max-width: 400px;
+            width: 100%;
+        }
+        .log-title {
+            color: var(--caramel);
+            margin-bottom: 15px;
+            font-weight: 600;
+        }
+        .log-entry {
+            padding: 10px 0;
+            border-bottom: 1px solid #333;
+            display: flex;
+            justify-content: space-between;
+        }
+    </style>
+</head>
+<body>
+    <div class="clock" id="clock">--:--:--</div>
+    <div class="date" id="date">Loading...</div>
+
+    <select class="employee-select" id="employee">
+        <option value="">Select Employee</option>
+        <option value="admin">👔 Admin</option>
+        <option value="barista1">☕ Barista 1</option>
+        <option value="barista2">☕ Barista 2</option>
+    </select>
+
+    <div>
+        <button class="punch-btn punch-in" onclick="punch('in')">☀️ Punch IN</button>
+        <button class="punch-btn punch-out" onclick="punch('out')">🌙 Punch OUT</button>
+    </div>
+
+    <div class="status" id="status">Select an employee to punch in/out</div>
+
+    <div class="log">
+        <div class="log-title">Today's Log</div>
+        <div id="logEntries"></div>
+    </div>
+
+    <script>
+        let punches = JSON.parse(localStorage.getItem('timeclock-punches') || '[]');
+
+        function updateClock() {
+            const now = new Date();
+            document.getElementById('clock').textContent = now.toLocaleTimeString('en-US', {
+                hour: '2-digit', minute: '2-digit', second: '2-digit'
+            });
+            document.getElementById('date').textContent = now.toLocaleDateString('en-US', {
+                weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
+            });
+        }
+
+        function punch(type) {
+            const emp = document.getElementById('employee').value;
+            if (!emp) {
+                alert('Please select an employee');
+                return;
+            }
+            const now = new Date();
+            punches.push({
+                employee: emp,
+                type: type,
+                time: now.toISOString(),
+                display: now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })
+            });
+            localStorage.setItem('timeclock-punches', JSON.stringify(punches));
+            document.getElementById('status').textContent = 
+                `${emp} punched ${type.toUpperCase()} at ${now.toLocaleTimeString()}`;
+            renderLog();
+        }
+
+        function renderLog() {
+            const today = new Date().toDateString();
+            const todayPunches = punches.filter(p => new Date(p.time).toDateString() === today);
+            document.getElementById('logEntries').innerHTML = todayPunches.map(p => `
+                <div class="log-entry">
+                    <span>${p.employee}</span>
+                    <span>${p.type === 'in' ? '☀️' : '🌙'} ${p.display}</span>
+                </div>
+            `).join('') || '<div style="color:#666">No punches today</div>';
+        }
+
+        updateClock();
+        setInterval(updateClock, 1000);
+        renderLog();
+    </script>
+</body>
+</html>

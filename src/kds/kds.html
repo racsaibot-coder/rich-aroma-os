@@ -196,7 +196,15 @@
         // Supabase Configuration
         const supabaseUrl = 'https://zcqubacfcettwawcimsy.supabase.co';
         const supabaseKey = 'sb_publishable_hRVyru_6sektmVGQyJFfwQ_4b2-7MKq';
-        const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
+        // Check if already declared (some environments duplicate script blocks)
+        let db; 
+        if (typeof supabase === 'undefined') {
+             // In case global 'supabase' is conflicting, use the library constructor
+             db = window.supabase.createClient(supabaseUrl, supabaseKey);
+        } else {
+             // Re-use or Create new
+             db = window.supabase.createClient(supabaseUrl, supabaseKey);
+        }
 
         let orders = [];
         let drivers = [];
@@ -204,15 +212,9 @@
         const startTimes = {};
 
         // Realtime Subscription
-        const channel = supabase
-            .channel('orders')
-            .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'orders' }, payload => {
-                console.log('New order!', payload);
-                // Optimistically add or reload
-                loadOrders();
-            })
-            .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'orders' }, payload => {
-                console.log('Order updated!', payload);
+        const channel = db.channel('orders')
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, payload => {
+                console.log('Order update:', payload);
                 loadOrders();
             })
             .subscribe();
@@ -234,8 +236,14 @@
             try {
                 const res = await fetch('/api/orders');
                 const data = await res.json();
-                // Fix: Include 'paid' status for prepaid orders
-                orders = (data.orders || []).filter(o => o.status === 'pending' || o.status === 'paid');
+                
+                // Show 'pending' (Kitchen) and 'paid' (Counter) orders
+                // In Phase 2, we treat 'pending' and 'paid' as "Open" orders.
+                orders = (data.orders || []).filter(o => 
+                    o.status === 'pending' || 
+                    o.status === 'paid' || 
+                    o.status === 'partial_paid'
+                );
                 
                 // Debug Mode: Update timestamp
                 const time = new Date().toLocaleTimeString();
@@ -291,6 +299,7 @@
                             </div>
                         `).join('')}
                     </div>
+                    ${order.notes ? `<div style="padding:0.5rem 1rem; color:#fbbf24; font-weight:600; font-size:0.9rem; border-top:1px dashed rgba(255,255,255,0.1)">📝 ${order.notes}</div>` : ''}
                     ${driverSection}
                     <button class="bump-btn" onclick="bumpOrder('${order.id}')">✓ BUMP</button>
                 </div>`;
