@@ -82,7 +82,7 @@
             </div>
 
             <div class="grid grid-cols-2 gap-3">
-                <button onclick="closeModal('verify-modal')" class="py-3 rounded-lg border border-gray-600 text-gray-400 font-bold">Cancel</button>
+                <button onclick="rejectPayment()" class="py-3 rounded-lg border border-red-900/50 text-red-500 font-bold hover:bg-red-900/20">Reject ❌</button>
                 <button onclick="confirmPayment()" class="py-3 rounded-lg bg-green-600 text-white font-bold shadow-lg shadow-green-900/20">Confirm ✅</button>
             </div>
         </div>
@@ -227,6 +227,18 @@
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
             body: JSON.stringify({ id: currentId })
+        });
+        
+        closeModal('verify-modal');
+        fetchData(); // Refresh
+    }
+
+    async function rejectPayment() {
+        if (!currentId) return;
+        if (!confirm("Are you sure you want to REJECT and DELETE this request?")) return;
+
+        await fetch(`/api/admin/founders/${currentId}`, {
+            method: 'DELETE'
         });
         
         closeModal('verify-modal');

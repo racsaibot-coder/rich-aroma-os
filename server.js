@@ -2690,6 +2690,25 @@ app.post('/api/admin/verify-founder', async (req, res) => {
     res.json({ success: true, founder });
 });
 
+app.delete('/api/admin/founders/:id', async (req, res) => {
+    // REJECT / DELETE Founder Request
+    const { id } = req.params;
+    
+    // 1. Delete from founders table
+    const { error } = await supabase
+        .from('founders')
+        .delete()
+        .eq('id', id);
+        
+    if (error) return res.status(500).json({ error: error.message });
+    
+    // 2. We do NOT delete the customer account if it exists, 
+    // because they might be a real customer who just uploaded a fake receipt.
+    // We just remove the "Founder Request".
+    
+    res.json({ success: true, message: "Request rejected/deleted." });
+});
+
 
 // Start server (for local dev)
 if (require.main === module) {
