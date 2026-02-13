@@ -1,40 +1,25 @@
 {
   "version": 2,
   "builds": [
-    {
-      "src": "api/**/*.js",
-      "use": "@vercel/node"
-    },
-    {
-      "src": "src/**/*.html",
-      "use": "@vercel/static"
-    },
-    {
-      "src": "src/**/*.js",
-      "use": "@vercel/static"
-    },
-    {
-      "src": "src/**/*.css",
-      "use": "@vercel/static"
-    },
-    {
-      "src": "public/**/*",
-      "use": "@vercel/static"
-    }
+    { "src": "api/*.js", "use": "@vercel/node" },
+    { "src": "public/**/*", "use": "@vercel/static" }
   ],
   "routes": [
     { "src": "/api/health", "dest": "/api/health.js" },
-    
-    { "src": "/admin", "dest": "/src/admin/admin.html" },
-    { "src": "/driver", "dest": "/src/driver/dashboard.html" },
-    { "src": "/order", "dest": "/src/order/order-v2.html" },
-    { "src": "/rewards", "dest": "/src/rewards/teacher-portal.html" },
-    { "src": "/rewards/certificate", "dest": "/src/rewards/certificate.html" },
-    { "src": "/load-balance", "dest": "/src/rewards/load-balance.html" },
-    { "src": "/creators", "dest": "/src/creators/creators.html" },
-    { "src": "/creators/review", "dest": "/src/creators/review.html" },
+
+    { "src": "/api/auth/login", "dest": "/api/auth.js?action=login" },
+    { "src": "/api/auth/register", "dest": "/api/auth.js?action=register" },
+
+    { "src": "/api/admin/founders", "dest": "/api/admin.js?action=founders" },
+    { "src": "/api/admin/verify-founder", "dest": "/api/admin.js?action=verify-founder" },
+
+    { "src": "/api/menu", "dest": "/api/store.js?action=menu" },
+    { "src": "/api/orders", "dest": "/api/store.js?action=orders" },
+    { "src": "/api/live/status", "dest": "/api/store.js?action=live-status" },
+    { "src": "/api/upload-receipt", "dest": "/api/store.js?action=upload-receipt" },
+    { "src": "/api/campaign/valentines", "dest": "/api/store.js?action=valentines" },
+
     { "src": "/sanvalentin", "dest": "/public/sanvalentin.html" },
-    
     { "src": "/(.*)", "dest": "/public/$1" }
   ]
 }
