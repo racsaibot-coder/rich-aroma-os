@@ -33,7 +33,7 @@
     { "src": "/load-balance", "dest": "/src/rewards/load-balance.html" },
     { "src": "/creators", "dest": "/src/creators/creators.html" },
     { "src": "/creators/review", "dest": "/src/creators/review.html" },
-    { "src": "/sanvalentin", "dest": "/src/public/sanvalentin.html" },
+    { "src": "/sanvalentin", "dest": "/public/sanvalentin.html" },
     
     { "src": "/(.*)", "dest": "/public/$1" }
   ]
