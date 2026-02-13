@@ -69,10 +69,14 @@
             <form id="artForm" class="space-y-4">
                 <div>
                     <label class="block text-xs font-bold text-gray-500 mb-1">Nombre del Artista (Niño/a)</label>
-                    <input type="text" id="name" class="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 outline-none focus:border-red-500" placeholder="Ej. Sofia">
+                    <input type="text" id="kidName" class="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 outline-none focus:border-red-500" placeholder="Ej. Sofia">
                 </div>
                 <div>
-                    <label class="block text-xs font-bold text-gray-500 mb-1">WhatsApp de Papá/Mamá</label>
+                    <label class="block text-xs font-bold text-gray-500 mb-1">Nombre de Papá/Mamá</label>
+                    <input type="text" id="parentName" class="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 outline-none focus:border-red-500" placeholder="Ej. Carlos Perez">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-gray-500 mb-1">WhatsApp</label>
                     <input type="tel" id="phone" class="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 outline-none focus:border-red-500" placeholder="9988-7766">
                 </div>
                 <div>
@@ -115,11 +119,12 @@
             btn.innerText = "Subiendo... ⏳";
             btn.disabled = true;
 
-            const name = document.getElementById('name').value;
+            const kidName = document.getElementById('kidName').value;
+            const parentName = document.getElementById('parentName').value;
             const phone = document.getElementById('phone').value;
             const photo = document.getElementById('photo').files[0];
 
-            if (!name || !phone || !photo) {
+            if (!kidName || !parentName || !phone || !photo) {
                 alert("Por favor llena todos los campos 😅");
                 btn.innerText = originalText;
                 btn.disabled = false;
@@ -135,7 +140,7 @@
                     const res = await fetch('/api/campaign/valentines', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ name, phone, image: base64 })
+                        body: JSON.stringify({ name: parentName, kidName: kidName, phone, image: base64 })
                     });
 
                     const data = await res.json();

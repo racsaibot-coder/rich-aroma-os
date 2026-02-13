@@ -48,7 +48,7 @@ export default async function handler(req, res) {
 
     // VALENTINE CAMPAIGN
     if (action === 'valentines' && req.method === 'POST') {
-        const { name, phone } = req.body;
+        const { name, kidName, phone } = req.body;
         const cleanPhone = phone.replace(/\D/g, '');
         let { data: customer } = await supabase.from('customers').select('id').eq('phone', cleanPhone).single();
         
@@ -57,13 +57,13 @@ export default async function handler(req, res) {
             const nextNum = maxId?.length ? parseInt(maxId[0].id.slice(1)) + 1 : 1;
             const newId = `C${String(nextNum).padStart(3, '0')}`;
             const { data: newCust } = await supabase.from('customers').insert({
-                id: newId, name: name + " (Art)", phone: cleanPhone, tier: 'bronze', points: 0
+                id: newId, name: name, phone: cleanPhone, tier: 'bronze', points: 0, notes: `Kid: ${kidName}`
             }).select().single();
             customer = newCust;
         }
         
         await supabase.from('creator_submissions').insert({
-            phone: cleanPhone, creator_name: name, platform: 'valentine_art', status: 'approved', points_awarded: 50
+            phone: cleanPhone, creator_name: kidName, platform: 'valentine_art', status: 'approved', points_awarded: 50
         });
         await supabase.rpc('increment_points', { user_id: customer.id, amount: 50 });
         return res.json({ success: true });
