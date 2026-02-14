@@ -153,12 +153,8 @@
 
         <!-- Canvas Area -->
         <div class="flex-1 bg-gray-200 overflow-hidden relative flex items-center justify-center touch-none" id="canvasContainer">
-            <div id="canvasWrapper" class="relative shadow-2xl origin-center transition-transform duration-75" style="transform: scale(1) translate(0px, 0px);">
-                <!-- Background Image Layer -->
-                <img id="bgLayer" class="absolute pointer-events-none select-none z-10 opacity-80 mix-blend-multiply w-full h-full object-cover">
-                <!-- Paint Layer -->
-                <canvas id="paintCanvas" class="bg-white z-0"></canvas>
-            </div>
+            <!-- Single Canvas for Everything -->
+            <canvas id="paintCanvas" class="bg-white shadow-lg touch-none"></canvas>
         </div>
 
         <!-- Palette (Floating) -->
