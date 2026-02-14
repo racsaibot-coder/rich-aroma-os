@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Colorea con Capitán Rico | Rich Aroma</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
@@ -13,6 +13,7 @@
             background-image: radial-gradient(#FECACA 1px, transparent 1px);
             background-size: 20px 20px;
         }
+        .hidden { display: none; }
     </style>
 </head>
 <body class="pattern-bg min-h-screen text-gray-800 pb-20">
@@ -26,35 +27,64 @@
         </div>
         
         <h1 class="text-3xl font-bold mb-2 relative z-10">¡Colorea con Capitán Rico! 🐵🎨</h1>
-        <p class="text-red-100 text-sm relative z-10">Descarga, imprime y diviértete coloreando.</p>
+        <p class="text-red-100 text-sm relative z-10">Descarga, colorea y gana un 10% de descuento.</p>
     </div>
 
-    <div class="max-w-md mx-auto px-6 space-y-6">
+    <div class="max-w-md mx-auto px-6 space-y-8">
 
-        <div class="bg-white p-5 rounded-2xl shadow-sm border border-red-100 text-center">
-            <p class="text-gray-600 mb-4 text-sm">Elige tu dibujo favorito, imprímelo y tráelo a la tienda para recibir una sorpresa.</p>
-            
-            <div class="grid grid-cols-1 gap-6">
-                <!-- Option 1 -->
-                <div class="group">
-                    <div class="relative overflow-hidden rounded-xl border-2 border-dashed border-gray-200 group-hover:border-red-400 transition mb-3">
-                        <img src="/assets/rico-love.jpg" class="w-full h-48 object-cover object-top transform group-hover:scale-105 transition duration-500">
-                    </div>
-                    <a href="/assets/rico-love.jpg" download="CapitanRico-Love.jpg" class="block w-full bg-red-500 text-white py-3 rounded-xl font-bold shadow-lg shadow-red-200 hover:bg-red-600 active:scale-95 transition flex items-center justify-center gap-2">
-                        <i class="fas fa-download"></i> Descargar Opción 1
-                    </a>
-                </div>
-
-                <!-- Option 2 -->
-                <div class="group">
-                    <div class="relative overflow-hidden rounded-xl border-2 border-dashed border-gray-200 group-hover:border-red-400 transition mb-3">
-                        <img src="/assets/rico-shop.jpg" class="w-full h-48 object-cover object-top transform group-hover:scale-105 transition duration-500">
-                    </div>
-                    <a href="/assets/rico-shop.jpg" download="CapitanRico-Tienda.jpg" class="block w-full bg-red-500 text-white py-3 rounded-xl font-bold shadow-lg shadow-red-200 hover:bg-red-600 active:scale-95 transition flex items-center justify-center gap-2">
-                        <i class="fas fa-download"></i> Descargar Opción 2
-                    </a>
-                </div>
+        <!-- Step 1: Download -->
+        <div class="bg-white p-5 rounded-2xl shadow-sm border border-red-100">
+            <div class="flex items-center gap-3 mb-4">
+                <div class="bg-red-100 text-red-500 w-8 h-8 rounded-full flex items-center justify-center font-bold">1</div>
+                <h2 class="font-bold text-lg">Descarga tu Dibujo</h2>
             </div>
+            
+            <div class="grid grid-cols-2 gap-4">
+                <a href="/assets/rico-love.jpg" download class="block group text-center">
+                    <img src="/assets/rico-love.jpg" class="rounded-xl border-2 border-dashed border-gray-200 group-hover:border-red-400 transition w-full h-32 object-cover object-top mb-2">
+                    <button class="w-full bg-red-50 text-red-500 py-2 rounded-lg text-xs font-bold hover:bg-red-100">
+                        <i class="fas fa-download"></i> Opción 1
+                    </button>
+                </a>
+                <a href="/assets/rico-shop.jpg" download class="block group text-center">
+                    <img src="/assets/rico-shop.jpg" class="rounded-xl border-2 border-dashed border-gray-200 group-hover:border-red-400 transition w-full h-32 object-cover object-top mb-2">
+                    <button class="w-full bg-red-50 text-red-500 py-2 rounded-lg text-xs font-bold hover:bg-red-100">
+                        <i class="fas fa-download"></i> Opción 2
+                    </button>
+                </a>
+            </div>
+        </div>
+
+        <!-- Step 2: Upload -->
+        <div class="bg-white p-5 rounded-2xl shadow-lg border-2 border-red-500 relative">
+            <div class="absolute -top-4 right-4 bg-yellow-400 text-red-900 text-xs font-bold px-3 py-1 rounded-full shadow-sm transform rotate-3">
+                ¡GANA 10% OFF! 🏷️
+            </div>
+
+            <div class="flex items-center gap-3 mb-4">
+                <div class="bg-red-500 text-white w-8 h-8 rounded-full flex items-center justify-center font-bold">2</div>
+                <h2 class="font-bold text-lg">Sube tu Arte Terminado</h2>
+            </div>
+            <p class="text-sm text-gray-500 mb-4">Envíanos una foto del dibujo coloreado para recibir tu cupón de apertura.</p>
+
+            <form id="uploadForm" class="space-y-4">
+                <div>
+                    <label class="block text-xs font-bold text-gray-500 mb-1">Nombre de Papá/Mamá</label>
+                    <input type="text" id="parentName" required class="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 outline-none focus:border-red-500 transition" placeholder="Ej. Carlos Perez">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-gray-500 mb-1">WhatsApp</label>
+                    <input type="tel" id="phone" required class="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 outline-none focus:border-red-500 transition" placeholder="9988-7766">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-gray-500 mb-1">Foto del Dibujo</label>
+                    <input type="file" id="photo" required accept="image/*" class="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-red-50 file:text-red-700 hover:file:bg-red-100 cursor-pointer">
+                </div>
+
+                <button type="submit" class="w-full bg-red-500 text-white font-bold py-4 rounded-xl shadow-lg shadow-red-200 hover:bg-red-600 transition transform active:scale-95 flex items-center justify-center gap-2">
+                    <span>Enviar y Ganar</span> <i class="fas fa-paper-plane"></i>
+                </button>
+            </form>
         </div>
 
         <div class="text-center text-gray-400 text-xs mt-8">
@@ -63,6 +93,54 @@
         </div>
 
     </div>
+
+    <!-- Success Modal -->
+    <div id="successModal" class="hidden fixed inset-0 bg-black bg-opacity-90 z-50 flex items-center justify-center p-4 backdrop-blur-sm transition-opacity duration-300">
+        <div class="bg-white w-full max-w-sm rounded-3xl p-8 text-center relative overflow-hidden transform scale-100 transition-transform duration-300">
+            <div class="text-6xl mb-4 animate-bounce">🎉</div>
+            <h2 class="text-2xl font-bold text-gray-800 mb-2">¡Recibido!</h2>
+            <p class="text-gray-600 mb-6 text-sm">Gracias por participar. Hemos guardado tu dibujo.</p>
+            
+            <div class="bg-green-50 border-2 border-green-200 border-dashed p-4 rounded-xl mb-6 relative">
+                <p class="text-xs font-bold text-green-600 uppercase mb-1">Tu Premio</p>
+                <p class="text-3xl font-bold text-green-700">10% OFF</p>
+                <p class="text-[10px] text-green-600 mt-2">Guarda esta pantalla o revisa tu WhatsApp antes de la apertura.</p>
+            </div>
+
+            <button onclick="window.location.reload()" class="bg-gray-100 text-gray-600 font-bold py-3 px-8 rounded-full hover:bg-gray-200 w-full">
+                Cerrar
+            </button>
+        </div>
+    </div>
+
+    <script>
+        document.getElementById('uploadForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const btn = e.target.querySelector('button');
+            const originalText = btn.innerHTML;
+            
+            // Loading State
+            btn.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i> Subiendo...';
+            btn.disabled = true;
+            btn.classList.add('opacity-75');
+
+            // Simulate Network Delay (1.5s) for UX feeling
+            setTimeout(() => {
+                document.getElementById('successModal').classList.remove('hidden');
+                
+                // Reset Button
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+                btn.classList.remove('opacity-75');
+                
+                // Optional: Clear form
+                e.target.reset();
+            }, 1500);
+
+            // TODO: In V2, actually send this data to a Google Sheet or database.
+            // For now, it's a frontend simulation to validate the flow.
+        });
+    </script>
 
 </body>
 </html>
