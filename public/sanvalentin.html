@@ -148,7 +148,10 @@
 
         <!-- Canvas Area -->
         <div class="flex-1 bg-gray-200 overflow-hidden relative flex items-center justify-center" id="canvasContainer">
-            <canvas id="paintCanvas" class="bg-white shadow-lg"></canvas>
+            <!-- Background Image Layer -->
+            <img id="bgLayer" class="absolute pointer-events-none select-none z-10 opacity-80 mix-blend-multiply" style="max-width: 100%; max-height: 100%;">
+            <!-- Paint Layer -->
+            <canvas id="paintCanvas" class="bg-white shadow-lg z-0"></canvas>
         </div>
 
         <!-- Palette -->
@@ -204,22 +207,20 @@
         function initCanvas(imageUrl) {
             const container = document.getElementById('canvasContainer');
             canvas = document.getElementById('paintCanvas');
+            const bg = document.getElementById('bgLayer');
             ctx = canvas.getContext('2d');
 
             // Responsive Size
-            const width = Math.min(container.clientWidth - 20, 500); // Max width 500
-            const height = width * 1.4; // 5:7 Ratio roughly
+            const width = Math.min(container.clientWidth - 20, 500); 
+            const height = width * 1.4; 
 
             canvas.width = width;
             canvas.height = height;
-
-            // Load Image
-            const img = new Image();
-            img.src = imageUrl;
-            img.onload = () => {
-                ctx.drawImage(img, 0, 0, width, height);
-                currentImage = img; // Save ref for redraws if needed
-            };
+            
+            // Set Background Image (Visual Only - sits ON TOP with multiply blend)
+            bg.src = imageUrl;
+            bg.style.width = width + 'px';
+            bg.style.height = height + 'px';
 
             // Events
             // Mouse
@@ -230,7 +231,7 @@
             
             // Touch
             canvas.addEventListener('touchstart', (e) => {
-                e.preventDefault(); // Prevent scroll
+                e.preventDefault(); 
                 const touch = e.touches[0];
                 const mouseEvent = new MouseEvent("mousedown", {
                     clientX: touch.clientX,
@@ -256,14 +257,18 @@
 
             // Default Color
             ctx.strokeStyle = '#EF4444';
-            ctx.lineWidth = 5;
+            ctx.lineWidth = 10; // Thicker default
             ctx.lineCap = 'round';
             ctx.lineJoin = 'round';
         }
 
         function startDraw(e) {
             isDrawing = true;
-            draw(e);
+            ctx.beginPath();
+            const rect = canvas.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+            ctx.moveTo(x, y);
         }
 
         function draw(e) {
@@ -275,35 +280,48 @@
 
             ctx.lineTo(x, y);
             ctx.stroke();
-            ctx.beginPath();
-            ctx.moveTo(x, y);
         }
 
         function stopDraw() {
+            if (!isDrawing) return;
             isDrawing = false;
-            ctx.beginPath(); // Reset path
+            ctx.closePath();
         }
 
         function setColor(color) {
-            ctx.strokeStyle = color;
-            // Highlight logic
+            if (color === '#FFFFFF') {
+                ctx.globalCompositeOperation = 'destination-out'; // Eraser Mode
+            } else {
+                ctx.globalCompositeOperation = 'source-over'; // Paint Mode
+                ctx.strokeStyle = color;
+            }
+            
             document.querySelectorAll('.color-btn').forEach(b => b.style.transform = 'scale(1)');
             const btn = document.querySelector(`[data-color="${color}"]`);
             if(btn) btn.style.transform = 'scale(1.2)';
         }
 
-        function setLineWidth(width) {
-            ctx.lineWidth = width;
-        }
-
         function saveCanvas() {
-            const dataURL = canvas.toDataURL('image/png');
+            // Merge layers for saving
+            const tempCanvas = document.createElement('canvas');
+            tempCanvas.width = canvas.width;
+            tempCanvas.height = canvas.height;
+            const tCtx = tempCanvas.getContext('2d');
             
-            // Auto-fill the form
-            // We need a way to pass this dataURL to the form input
-            // Since input type="file" is read-only, we'll create a hidden input for base64
+            // 1. Draw White Background
+            tCtx.fillStyle = '#FFFFFF';
+            tCtx.fillRect(0, 0, tempCanvas.width, tempCanvas.height);
             
-            // 1. Create hidden input if not exists
+            // 2. Draw Paint (Color)
+            tCtx.drawImage(canvas, 0, 0);
+            
+            // 3. Draw Lines (Black)
+            const img = document.getElementById('bgLayer');
+            tCtx.drawImage(img, 0, 0, canvas.width, canvas.height);
+            
+            const dataURL = tempCanvas.toDataURL('image/png');
+            
+            // Auto-fill form...
             let hiddenInput = document.getElementById('hiddenBase64');
             if (!hiddenInput) {
                 hiddenInput = document.createElement('input');
@@ -313,9 +331,7 @@
             }
             hiddenInput.value = dataURL;
 
-            // 2. Hide File Input visually to show "Canvas Selected"
             document.getElementById('photo').classList.add('hidden');
-            
             let status = document.getElementById('uploadStatus');
             if (!status) {
                 status = document.createElement('div');
@@ -326,8 +342,6 @@
             }
 
             closeCanvas();
-            
-            // Scroll to form
             document.getElementById('artForm').scrollIntoView({ behavior: 'smooth' });
         }
 
