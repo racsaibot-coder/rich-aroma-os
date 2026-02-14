@@ -2,148 +2,96 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Rich Aroma | El Futuro del Café</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Rich Aroma | Café & Comida</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'brand-gold': '#C9A66B',
+                        'brand-brown': '#1E1610',
+                        'brand-dark': '#120C09'
+                    }
+                }
+            }
+        }
+    </script>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&family=Poppins:wght@300;400;600&display=swap');
-        
-        body { font-family: 'Poppins', sans-serif; background-color: #0F0F0F; color: white; }
-        h1, h2, h3, .fun-font { font-family: 'Fredoka', sans-serif; }
-        
-        .gold-gradient {
-            background: linear-gradient(135deg, #C9A66B 0%, #F4E2C0 50%, #C9A66B 100%);
-        }
-        
-        .tech-grid {
-            background-image: linear-gradient(#1a1a1a 1px, transparent 1px),
-            linear-gradient(90deg, #1a1a1a 1px, transparent 1px);
+        @import url('https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap');
+        body { font-family: 'Fredoka', sans-serif; background-color: #FFFDF5; }
+        .pattern-bg {
+            background-image: radial-gradient(#C9A66B 0.5px, transparent 0.5px);
             background-size: 20px 20px;
-        }
-
-        .shine {
-            position: relative;
-            overflow: hidden;
-        }
-        .shine::after {
-            content: '';
-            position: absolute;
-            top: 0; left: -100%;
-            width: 100%; height: 100%;
-            background: linear-gradient(to right, transparent, rgba(255,255,255,0.2), transparent);
-            animation: shine 3s infinite;
-        }
-        @keyframes shine {
-            0% { left: -100%; }
-            20% { left: 100%; }
-            100% { left: 100%; }
         }
     </style>
 </head>
-<body class="overflow-x-hidden">
+<body class="pattern-bg min-h-screen text-brand-brown pb-24">
 
-    <!-- HERO -->
-    <header class="relative min-h-[60vh] flex flex-col items-center justify-center p-6 text-center tech-grid border-b border-gray-800">
-        <!-- Logo -->
-        <img src="logo.jpg" class="w-32 h-32 rounded-full border-4 border-yellow-600 shadow-2xl mb-6 animate__animated animate__zoomIn">
+    <!-- Hero -->
+    <div class="relative pt-12 pb-8 text-center bg-brand-brown text-white rounded-b-[3rem] shadow-xl overflow-hidden mb-8">
+        <!-- Shine -->
+        <div class="absolute top-0 right-0 w-64 h-64 bg-brand-gold opacity-10 rounded-full blur-3xl transform translate-x-20 -translate-y-20"></div>
         
-        <h1 class="text-4xl md:text-6xl font-black mb-2 animate__animated animate__fadeInUp">
-            Rich Aroma <span class="text-yellow-500">2.0</span>
-        </h1>
-        <p class="text-gray-400 text-lg mb-8 max-w-md animate__animated animate__fadeInUp animate__delay-1s">
-            No es solo café. Es tecnología.
-            <br>La primera cafetería inteligente de Quimistán.
-        </p>
-
-        <!-- STATUS -->
-        <div class="inline-flex items-center gap-2 bg-gray-800 border border-gray-700 rounded-full px-4 py-2 mb-8 animate__animated animate__fadeIn">
-            <span class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
-            <span class="text-xs font-mono text-gray-300">SYSTEM: ONLINE</span>
-        </div>
-    </header>
-
-    <!-- THE CHOICE -->
-    <section class="max-w-4xl mx-auto px-6 -mt-16 pb-20 relative z-10">
-        <div class="grid md:grid-cols-2 gap-6">
+        <div class="relative z-10 px-6">
+            <img src="/assets/rich-aroma-logo.jpg" class="w-32 h-32 rounded-full border-4 border-brand-gold shadow-2xl mx-auto mb-6 transform hover:scale-105 transition duration-500">
             
-            <!-- OPTION 1: FOUNDER (The Upsell) -->
-            <div class="bg-gradient-to-br from-yellow-900 to-black p-1 rounded-3xl shadow-2xl transform hover:scale-[1.02] transition duration-300">
-                <div class="bg-[#121212] rounded-[22px] p-8 h-full flex flex-col items-center text-center relative overflow-hidden shine">
-                    <div class="absolute top-4 right-4 text-2xl">👑</div>
-                    
-                    <h3 class="text-2xl font-bold text-yellow-500 mb-2">Club Fundadores</h3>
-                    <p class="text-gray-400 text-sm mb-6">Para los que quieren hacer historia. Acceso VIP y café diario.</p>
-                    
-                    <ul class="text-left text-sm text-gray-300 space-y-3 mb-8 w-full pl-4 border-l border-yellow-800">
-                        <li>☕️ Café Gratis todos los días</li>
-                        <li>💰 L. 500 en Saldo Digital</li>
-                        <li>🚀 Prioridad en Delivery</li>
-                    </ul>
-
-                    <div class="mt-auto w-full">
-                        <p class="text-xs text-yellow-600 font-bold mb-2 uppercase tracking-widest">Quedan 12 Cupos</p>
-                        <a href="founders.html" class="block w-full gold-gradient text-black font-bold py-4 rounded-xl shadow-lg">
-                            Reservar (L. 1,500)
-                        </a>
-                    </div>
-                </div>
-            </div>
-
-            <!-- OPTION 2: SQUAD (The Free Entry) -->
-            <div class="bg-gray-800 p-1 rounded-3xl shadow-xl">
-                <div class="bg-[#1a1a1a] rounded-[22px] p-8 h-full flex flex-col items-center text-center">
-                    <div class="text-4xl mb-4">🐵</div>
-                    
-                    <h3 class="text-2xl font-bold text-white mb-2">Únete al Squad</h3>
-                    <p class="text-gray-400 text-sm mb-6">Crea tu cuenta digital y empieza a ganar recompensas hoy.</p>
-                    
-                    <ul class="text-left text-sm text-gray-300 space-y-3 mb-8 w-full pl-4 border-l border-gray-600">
-                        <li>💸 L. 50 de Regalo de Bienvenida</li>
-                        <li>🎮 Acceso a Misiones y Juegos</li>
-                        <li>📱 Pedidos sin fila</li>
-                    </ul>
-
-                    <div class="mt-auto w-full">
-                        <a href="join.html" class="block w-full bg-white/10 hover:bg-white/20 text-white font-bold py-4 rounded-xl border border-white/10 transition">
-                            Crear Cuenta (Gratis)
-                        </a>
-                    </div>
-                </div>
-            </div>
-
-        </div>
-    </section>
-
-    <!-- THE TECH SHOWCASE -->
-    <section class="py-16 bg-black border-t border-white/5">
-        <div class="max-w-4xl mx-auto px-6 text-center">
-            <h2 class="text-2xl font-bold mb-12 fun-font">¿Qué es Rich Aroma OS?</h2>
+            <h1 class="text-4xl font-bold mb-2">Rich Aroma <span class="text-brand-gold">2.0</span></h1>
+            <p class="text-brand-gold/80 text-sm tracking-widest uppercase font-bold mb-6">Quimistán, Santa Bárbara</p>
             
-            <div class="grid md:grid-cols-3 gap-8">
-                <div>
-                    <div class="w-16 h-16 bg-blue-900/30 rounded-2xl flex items-center justify-center mx-auto mb-4 text-2xl">📱</div>
-                    <h4 class="font-bold mb-2">Tu Celular es el Control</h4>
-                    <p class="text-sm text-gray-500">Pide, paga y juega desde tu mesa. Sin apps que descargar.</p>
-                </div>
-                <div>
-                    <div class="w-16 h-16 bg-green-900/30 rounded-2xl flex items-center justify-center mx-auto mb-4 text-2xl">💵</div>
-                    <h4 class="font-bold mb-2">Rico Cash</h4>
-                    <p class="text-sm text-gray-500">Nuestra propia moneda. Recarga saldo y obtén bonus automáticos.</p>
-                </div>
-                <div>
-                    <div class="w-16 h-16 bg-purple-900/30 rounded-2xl flex items-center justify-center mx-auto mb-4 text-2xl">🎮</div>
-                    <h4 class="font-bold mb-2">Gamificación Real</h4>
-                    <p class="text-sm text-gray-500">Sube fotos, completa retos y gana comida gratis al instante.</p>
-                </div>
+            <div class="flex gap-3 justify-center mb-8">
+                <a href="/login.html" class="bg-white/10 backdrop-blur-md border border-white/20 text-white px-6 py-2 rounded-full text-sm font-bold hover:bg-white hover:text-brand-brown transition flex items-center gap-2">
+                    <i class="fas fa-key"></i> Iniciar Sesión
+                </a>
             </div>
         </div>
-    </section>
+    </div>
 
-    <footer class="py-8 text-center text-gray-600 text-xs">
-        <p>📍 Quimistán, Honduras</p>
-        <p class="mt-2">Powered by Rich Aroma OS v2.1</p>
+    <!-- Main Actions -->
+    <div class="max-w-md mx-auto px-6 space-y-6">
+
+        <!-- Contest Banner -->
+        <a href="/sanvalentin.html" class="block bg-white p-1 rounded-3xl shadow-lg hover:shadow-xl transition transform hover:scale-[1.02] border border-brand-gold/20">
+            <div class="bg-red-50 rounded-[20px] p-6 relative overflow-hidden">
+                <div class="absolute top-0 right-0 w-24 h-24 bg-red-500/10 rounded-full blur-xl"></div>
+                <div class="relative z-10 flex justify-between items-center">
+                    <div>
+                        <div class="bg-red-500 text-white text-[10px] font-bold px-2 py-1 rounded inline-block mb-2">GANA PREMIOS</div>
+                        <h3 class="text-xl font-bold text-red-900 mb-1">Colorea con Rico</h3>
+                        <p class="text-red-700/70 text-xs">Descarga dibujos y gana descuentos.</p>
+                    </div>
+                    <div class="text-4xl">🎨</div>
+                </div>
+            </div>
+        </a>
+
+        <!-- Founder Club -->
+        <div class="bg-brand-dark text-white p-6 rounded-3xl shadow-xl relative overflow-hidden border border-brand-gold/30">
+            <div class="flex justify-between items-start mb-4">
+                <div>
+                    <h3 class="text-xl font-bold text-brand-gold">Membresía Fundador</h3>
+                    <p class="text-gray-400 text-xs">Solo 50 cupos disponibles.</p>
+                </div>
+                <div class="text-2xl">👑</div>
+            </div>
+            
+            <ul class="space-y-2 mb-6 text-sm text-gray-300">
+                <li class="flex items-center gap-2"><i class="fas fa-check text-brand-gold"></i> Café gratis diario</li>
+                <li class="flex items-center gap-2"><i class="fas fa-check text-brand-gold"></i> L. 500 Saldo Incluido</li>
+                <li class="flex items-center gap-2"><i class="fas fa-check text-brand-gold"></i> Acceso a Canchas</li>
+            </ul>
+
+            <button onclick="window.location.href='/login.html'" class="w-full bg-brand-gold text-brand-dark font-bold py-3 rounded-xl hover:bg-white transition">
+                Ver Detalles
+            </button>
+        </div>
+
+    </div>
+
+    <footer class="mt-12 text-center text-gray-400 text-xs pb-8">
+        <p>&copy; 2026 Rich Aroma Coffee & Food</p>
     </footer>
 
 </body>
