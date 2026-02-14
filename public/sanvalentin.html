@@ -179,18 +179,49 @@
             btn.disabled = true;
             btn.classList.add('opacity-75');
 
-            // Simulate Network Delay (1.5s) for UX feeling
-            setTimeout(() => {
-                document.getElementById('successModal').classList.remove('hidden');
-                
+            const parentName = document.getElementById('parentName').value;
+            const kidName = document.getElementById('kidName').value;
+            const phone = document.getElementById('phone').value;
+            const fileInput = document.getElementById('photo');
+
+            if (!fileInput.files[0]) {
+                alert("Por favor selecciona una foto");
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+                return;
+            }
+
+            // Convert Image to Base64
+            const reader = new FileReader();
+            reader.readAsDataURL(fileInput.files[0]);
+            reader.onload = async () => {
+                const base64 = reader.result;
+
+                try {
+                    const res = await fetch('/api/campaign/valentines', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ parentName, kidName, phone, image: base64 })
+                    });
+
+                    const data = await res.json();
+                    
+                    if (data.success) {
+                        document.getElementById('successModal').classList.remove('hidden');
+                        e.target.reset();
+                    } else {
+                        alert("Error: " + (data.error || "Intenta de nuevo"));
+                    }
+                } catch (err) {
+                    console.error(err);
+                    alert("Error de conexión. Revisa tu internet.");
+                }
+
                 // Reset Button
                 btn.innerHTML = originalText;
                 btn.disabled = false;
                 btn.classList.remove('opacity-75');
-                
-                // Optional: Clear form
-                e.target.reset();
-            }, 1500);
+            };
         });
     </script>
 

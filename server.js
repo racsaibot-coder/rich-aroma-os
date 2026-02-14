@@ -120,6 +120,89 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 // ============== API ROUTES ==============
 
+// === COLORING CAMPAIGN API ===
+// Store submissions in a simple JSON file for now (easy to review)
+app.post('/api/campaign/valentines', async (req, res) => {
+    try {
+        const { parentName, kidName, phone, image } = req.body;
+        
+        // Basic validation
+        if (!parentName || !phone || !image) {
+            return res.status(400).json({ error: 'Missing required fields' });
+        }
+
+        // Save Image
+        const imageBuffer = Buffer.from(image.replace(/^data:image\/\w+;base64,/, ""), 'base64');
+        const filename = `sub_${Date.now()}_${phone.replace(/\D/g, '').slice(-4)}.jpg`;
+        const uploadDir = path.join(__dirname, 'public', 'uploads', 'coloring');
+        
+        if (!fs.existsSync(uploadDir)) {
+            fs.mkdirSync(uploadDir, { recursive: true });
+        }
+        
+        fs.writeFileSync(path.join(uploadDir, filename), imageBuffer);
+
+        // Save Data
+        const dbPath = path.join(__dirname, 'data', 'coloring-submissions.json');
+        let db = { submissions: [] };
+        if (fs.existsSync(dbPath)) {
+            db = JSON.parse(fs.readFileSync(dbPath, 'utf8'));
+        }
+
+        const newSubmission = {
+            id: 'col_' + Date.now(),
+            parentName,
+            kidName: kidName || '',
+            phone: phone.replace(/\D/g, ''),
+            image: `/uploads/coloring/${filename}`,
+            submittedAt: new Date().toISOString(),
+            status: 'pending' // pending, approved, rejected
+        };
+
+        db.submissions.unshift(newSubmission);
+        fs.writeFileSync(dbPath, JSON.stringify(db, null, 2));
+
+        // OPTIONAL: Register them as a customer automatically?
+        // Let's create a placeholder customer if they don't exist
+        const { data: existing } = await supabase
+            .from('customers')
+            .select('id')
+            .eq('phone', newSubmission.phone)
+            .single();
+            
+        if (!existing) {
+            const { data: maxId } = await supabase.from('customers').select('id').order('id', { ascending: false }).limit(1);
+            const nextNum = maxId?.length ? parseInt(maxId[0].id.slice(1)) + 1 : 1;
+            const newId = `C${String(nextNum).padStart(3, '0')}`;
+            
+            await supabase.from('customers').insert({
+                id: newId,
+                name: parentName,
+                phone: newSubmission.phone,
+                notes: `Source: Coloring Campaign 2026`,
+                tags: ['coloring_contest']
+            });
+        }
+
+        res.json({ success: true });
+
+    } catch (e) {
+        console.error("Coloring submission error:", e);
+        res.status(500).json({ error: 'Server error saving submission' });
+    }
+});
+
+// Admin View for Coloring
+app.get('/api/admin/coloring', requireAdmin, (req, res) => {
+    const dbPath = path.join(__dirname, 'data', 'coloring-submissions.json');
+    if (fs.existsSync(dbPath)) {
+        const db = JSON.parse(fs.readFileSync(dbPath, 'utf8'));
+        res.json(db.submissions);
+    } else {
+        res.json([]);
+    }
+});
+
 // === LIVE DROP API ===
 // Global state for Flash Sale (In-memory for speed)
 let currentDrop = {
