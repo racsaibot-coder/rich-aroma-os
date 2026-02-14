@@ -6,112 +6,163 @@
     <title>Colorea con Capitán Rico | Rich Aroma</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'brand-gold': '#C9A66B',
+                        'brand-brown': '#1E1610',
+                        'brand-teal': '#66B2B2' // Approx from logo
+                    }
+                }
+            }
+        }
+    </script>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600&display=swap');
-        body { font-family: 'Fredoka', sans-serif; background-color: #FFF5F5; }
+        @import url('https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap');
+        body { font-family: 'Fredoka', sans-serif; background-color: #FFFDF5; }
         .pattern-bg {
-            background-image: radial-gradient(#FECACA 1px, transparent 1px);
+            background-image: radial-gradient(#C9A66B 0.5px, transparent 0.5px);
             background-size: 20px 20px;
         }
-        .hidden { display: none; }
+        .heart-float { animation: float 6s ease-in-out infinite; }
+        .heart-float-2 { animation: float 8s ease-in-out infinite; animation-delay: 2s; }
+        @keyframes float {
+            0% { transform: translateY(0px) rotate(0deg); opacity: 0.6; }
+            50% { transform: translateY(-15px) rotate(5deg); opacity: 0.8; }
+            100% { transform: translateY(0px) rotate(0deg); opacity: 0.6; }
+        }
     </style>
 </head>
-<body class="pattern-bg min-h-screen text-gray-800 pb-20">
+<body class="pattern-bg min-h-screen text-brand-brown pb-20 relative overflow-x-hidden">
+
+    <!-- Floating Hearts -->
+    <div class="fixed top-20 left-10 text-red-300 text-4xl opacity-50 heart-float pointer-events-none z-0"><i class="fas fa-heart"></i></div>
+    <div class="fixed top-40 right-10 text-brand-gold text-3xl opacity-50 heart-float-2 pointer-events-none z-0"><i class="fas fa-heart"></i></div>
+    <div class="fixed bottom-20 left-20 text-red-200 text-5xl opacity-40 heart-float pointer-events-none z-0"><i class="fas fa-heart"></i></div>
 
     <!-- Hero -->
-    <div class="bg-red-500 text-white p-8 rounded-b-3xl shadow-lg text-center relative overflow-hidden mb-8">
-        <div class="absolute top-0 left-0 w-full h-full opacity-10">
-            <i class="fas fa-heart absolute top-4 left-4 text-4xl"></i>
-            <i class="fas fa-heart absolute bottom-4 right-4 text-6xl"></i>
-            <i class="fas fa-paw absolute top-10 right-10 text-5xl"></i>
+    <div class="relative z-10 pt-8 pb-4 text-center">
+        <!-- Logo -->
+        <div class="mx-auto w-40 h-40 relative mb-4">
+            <img src="/assets/rich-aroma-logo.jpg" class="w-full h-full object-contain rounded-full shadow-xl border-4 border-white transform hover:scale-105 transition duration-500">
+            <div class="absolute -bottom-2 -right-2 bg-red-500 text-white text-xs font-bold px-3 py-1 rounded-full shadow-md animate-bounce">
+                ¡Edición San Valentín! 💘
+            </div>
         </div>
         
-        <h1 class="text-3xl font-bold mb-2 relative z-10">¡Colorea con Capitán Rico! 🐵🎨</h1>
-        <p class="text-red-100 text-sm relative z-10">Descarga, colorea y gana un 10% de descuento.</p>
+        <h1 class="text-3xl font-bold text-brand-brown mb-1">Colorea con Capitán Rico</h1>
+        <p class="text-brand-gold font-bold text-sm uppercase tracking-wide">Rich Aroma Coffee & Food</p>
     </div>
 
-    <div class="max-w-md mx-auto px-6 space-y-8">
+    <div class="max-w-md mx-auto px-6 space-y-8 relative z-10">
 
         <!-- Step 1: Download -->
-        <div class="bg-white p-5 rounded-2xl shadow-sm border border-red-100">
+        <div class="bg-white/90 backdrop-blur-sm p-6 rounded-3xl shadow-lg border-2 border-brand-gold/20">
             <div class="flex items-center gap-3 mb-4">
-                <div class="bg-red-100 text-red-500 w-8 h-8 rounded-full flex items-center justify-center font-bold">1</div>
-                <h2 class="font-bold text-lg">Descarga tu Dibujo</h2>
+                <div class="bg-brand-gold text-white w-8 h-8 rounded-full flex items-center justify-center font-bold">1</div>
+                <h2 class="font-bold text-lg text-brand-brown">Descarga tu Dibujo</h2>
             </div>
             
             <div class="grid grid-cols-2 gap-4">
                 <a href="/assets/rico-love.jpg" download class="block group text-center">
-                    <img src="/assets/rico-love.jpg" class="rounded-xl border-2 border-dashed border-gray-200 group-hover:border-red-400 transition w-full h-32 object-cover object-top mb-2">
-                    <button class="w-full bg-red-50 text-red-500 py-2 rounded-lg text-xs font-bold hover:bg-red-100">
-                        <i class="fas fa-download"></i> Opción 1
+                    <div class="rounded-2xl overflow-hidden border-2 border-dashed border-gray-200 group-hover:border-brand-gold transition mb-2 bg-gray-50">
+                        <img src="/assets/rico-love.jpg" class="w-full h-32 object-cover object-top opacity-90 group-hover:opacity-100 transition">
+                    </div>
+                    <button class="w-full bg-brand-gold/10 text-brand-brown py-2 rounded-xl text-xs font-bold hover:bg-brand-gold hover:text-white transition">
+                        <i class="fas fa-download"></i> Capitán Rico 1
                     </button>
                 </a>
                 <a href="/assets/rico-shop.jpg" download class="block group text-center">
-                    <img src="/assets/rico-shop.jpg" class="rounded-xl border-2 border-dashed border-gray-200 group-hover:border-red-400 transition w-full h-32 object-cover object-top mb-2">
-                    <button class="w-full bg-red-50 text-red-500 py-2 rounded-lg text-xs font-bold hover:bg-red-100">
-                        <i class="fas fa-download"></i> Opción 2
+                    <div class="rounded-2xl overflow-hidden border-2 border-dashed border-gray-200 group-hover:border-brand-gold transition mb-2 bg-gray-50">
+                        <img src="/assets/rico-shop.jpg" class="w-full h-32 object-cover object-top opacity-90 group-hover:opacity-100 transition">
+                    </div>
+                    <button class="w-full bg-brand-gold/10 text-brand-brown py-2 rounded-xl text-xs font-bold hover:bg-brand-gold hover:text-white transition">
+                        <i class="fas fa-download"></i> Capitán Rico 2
                     </button>
                 </a>
             </div>
         </div>
 
         <!-- Step 2: Upload -->
-        <div class="bg-white p-5 rounded-2xl shadow-lg border-2 border-red-500 relative">
-            <div class="absolute -top-4 right-4 bg-yellow-400 text-red-900 text-xs font-bold px-3 py-1 rounded-full shadow-sm transform rotate-3">
-                ¡GANA 10% OFF! 🏷️
+        <div class="bg-white p-6 rounded-3xl shadow-xl border-2 border-red-500 relative">
+            <div class="absolute -top-4 right-6 bg-red-500 text-white text-xs font-bold px-4 py-1.5 rounded-full shadow-md transform rotate-2 flex items-center gap-1">
+                <i class="fas fa-gift"></i> ¡GANA 10% OFF!
             </div>
 
-            <div class="flex items-center gap-3 mb-4">
+            <div class="flex items-center gap-3 mb-5">
                 <div class="bg-red-500 text-white w-8 h-8 rounded-full flex items-center justify-center font-bold">2</div>
-                <h2 class="font-bold text-lg">Sube tu Arte Terminado</h2>
+                <h2 class="font-bold text-lg text-brand-brown">Sube tu Obra de Arte</h2>
             </div>
-            <p class="text-sm text-gray-500 mb-4">Envíanos una foto del dibujo coloreado para recibir tu cupón de apertura.</p>
+            
+            <p class="text-sm text-gray-500 mb-5 leading-relaxed bg-red-50 p-3 rounded-xl border border-red-100">
+                <i class="fas fa-camera text-red-400 mr-1"></i> Tómale una foto a tu dibujo coloreado y súbela aquí para recibir tu cupón de apertura.
+            </p>
 
             <form id="uploadForm" class="space-y-4">
                 <div>
-                    <label class="block text-xs font-bold text-gray-500 mb-1">Nombre del Niño/a (Opcional)</label>
-                    <input type="text" id="kidName" class="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 outline-none focus:border-red-500 transition" placeholder="Ej. Sofia">
+                    <label class="block text-xs font-bold text-gray-500 mb-1 ml-1">Nombre del Niño/a <span class="text-brand-gold font-normal">(Opcional)</span></label>
+                    <div class="relative">
+                        <i class="fas fa-child absolute left-4 top-3.5 text-gray-300"></i>
+                        <input type="text" id="kidName" class="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 pl-10 outline-none focus:border-brand-gold transition" placeholder="Ej. Sofia">
+                    </div>
                 </div>
                 <div>
-                    <label class="block text-xs font-bold text-gray-500 mb-1">Nombre de Papá/Mamá</label>
-                    <input type="text" id="parentName" required class="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 outline-none focus:border-red-500 transition" placeholder="Ej. Carlos Perez">
+                    <label class="block text-xs font-bold text-gray-500 mb-1 ml-1">Nombre de Papá/Mamá</label>
+                    <div class="relative">
+                        <i class="fas fa-user absolute left-4 top-3.5 text-gray-300"></i>
+                        <input type="text" id="parentName" required class="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 pl-10 outline-none focus:border-brand-gold transition" placeholder="Ej. Carlos Perez">
+                    </div>
                 </div>
                 <div>
-                    <label class="block text-xs font-bold text-gray-500 mb-1">WhatsApp</label>
-                    <input type="tel" id="phone" required class="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 outline-none focus:border-red-500 transition" placeholder="9988-7766">
+                    <label class="block text-xs font-bold text-gray-500 mb-1 ml-1">WhatsApp</label>
+                    <div class="relative">
+                        <i class="fab fa-whatsapp absolute left-4 top-3.5 text-gray-300"></i>
+                        <input type="tel" id="phone" required class="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 pl-10 outline-none focus:border-brand-gold transition" placeholder="9988-7766">
+                    </div>
                 </div>
                 <div>
-                    <label class="block text-xs font-bold text-gray-500 mb-1">Foto del Dibujo</label>
-                    <input type="file" id="photo" required accept="image/*" class="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-red-50 file:text-red-700 hover:file:bg-red-100 cursor-pointer">
+                    <label class="block text-xs font-bold text-gray-500 mb-1 ml-1">Foto del Dibujo</label>
+                    <div class="relative">
+                        <input type="file" id="photo" required accept="image/*" class="w-full bg-gray-50 border-2 border-dashed border-gray-300 rounded-xl p-3 text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-bold file:bg-brand-gold file:text-white hover:file:bg-brand-brown cursor-pointer focus:border-brand-gold transition">
+                    </div>
                 </div>
 
-                <button type="submit" class="w-full bg-red-500 text-white font-bold py-4 rounded-xl shadow-lg shadow-red-200 hover:bg-red-600 transition transform active:scale-95 flex items-center justify-center gap-2">
-                    <span>Enviar y Ganar</span> <i class="fas fa-paper-plane"></i>
+                <button type="submit" class="w-full bg-brand-brown text-white font-bold py-4 rounded-xl shadow-lg shadow-brand-brown/20 hover:bg-gray-800 transition transform active:scale-95 flex items-center justify-center gap-2 mt-2">
+                    <span>Enviar y Ganar</span> <i class="fas fa-paper-plane text-brand-gold"></i>
                 </button>
             </form>
         </div>
 
-        <div class="text-center text-gray-400 text-xs mt-8">
-            <p>Rich Aroma Coffee & Food</p>
-            <p>Quimistán, Santa Bárbara</p>
+        <div class="text-center pb-8">
+            <p class="text-brand-gold font-bold text-sm">Rich Aroma</p>
+            <p class="text-gray-400 text-xs">Quimistán, Santa Bárbara</p>
         </div>
 
     </div>
 
     <!-- Success Modal -->
-    <div id="successModal" class="hidden fixed inset-0 bg-black bg-opacity-90 z-50 flex items-center justify-center p-4 backdrop-blur-sm transition-opacity duration-300">
-        <div class="bg-white w-full max-w-sm rounded-3xl p-8 text-center relative overflow-hidden transform scale-100 transition-transform duration-300">
-            <div class="text-6xl mb-4 animate-bounce">🎉</div>
-            <h2 class="text-2xl font-bold text-gray-800 mb-2">¡Recibido!</h2>
-            <p class="text-gray-600 mb-6 text-sm">Gracias por participar. Hemos guardado tu dibujo.</p>
+    <div id="successModal" class="hidden fixed inset-0 bg-brand-brown/90 z-50 flex items-center justify-center p-4 backdrop-blur-sm transition-opacity duration-300">
+        <div class="bg-white w-full max-w-sm rounded-3xl p-8 text-center relative overflow-hidden transform scale-100 transition-transform duration-300 border-4 border-brand-gold">
+            <div class="absolute top-0 left-0 w-full h-2 bg-brand-gold"></div>
             
-            <div class="bg-green-50 border-2 border-green-200 border-dashed p-4 rounded-xl mb-6 relative">
-                <p class="text-xs font-bold text-green-600 uppercase mb-1">Tu Premio</p>
-                <p class="text-3xl font-bold text-green-700">10% OFF</p>
-                <p class="text-[10px] text-green-600 mt-2">Guarda esta pantalla o revisa tu WhatsApp antes de la apertura.</p>
+            <div class="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4 animate-bounce">
+                <i class="fas fa-check text-4xl text-green-500"></i>
+            </div>
+            
+            <h2 class="text-2xl font-bold text-brand-brown mb-2">¡Recibido!</h2>
+            <p class="text-gray-600 mb-6 text-sm">¡Qué artista! 🎨<br>Hemos guardado tu dibujo.</p>
+            
+            <div class="bg-brand-gold/10 border-2 border-brand-gold border-dashed p-4 rounded-xl mb-6 relative">
+                <div class="absolute -top-3 left-1/2 transform -translate-x-1/2 bg-brand-gold text-white text-[10px] font-bold px-3 py-1 rounded-full uppercase tracking-wider">
+                    Tu Premio
+                </div>
+                <p class="text-4xl font-bold text-brand-brown mt-2">10% OFF</p>
+                <p class="text-[10px] text-gray-500 mt-2">Muestra esta pantalla en la apertura.</p>
             </div>
 
-            <button onclick="window.location.reload()" class="bg-gray-100 text-gray-600 font-bold py-3 px-8 rounded-full hover:bg-gray-200 w-full">
+            <button onclick="window.location.reload()" class="bg-brand-brown text-white font-bold py-3 px-8 rounded-xl hover:bg-gray-800 w-full shadow-lg">
                 Cerrar
             </button>
         </div>
@@ -140,9 +191,6 @@
                 // Optional: Clear form
                 e.target.reset();
             }, 1500);
-
-            // TODO: In V2, actually send this data to a Google Sheet or database.
-            // For now, it's a frontend simulation to validate the flow.
         });
     </script>
 
