@@ -143,8 +143,10 @@
         <div class="bg-white p-4 flex justify-between items-center shadow-md z-20">
             <button onclick="closeCanvas()" class="text-gray-500 font-bold">Cancelar</button>
             <div class="flex gap-2">
-                <button onclick="setMode('draw')" id="btnDraw" class="bg-red-500 text-white px-3 py-1 rounded-full text-xs font-bold shadow transition">✏️ Pintar</button>
-                <button onclick="setMode('move')" id="btnMove" class="bg-gray-200 text-gray-600 px-3 py-1 rounded-full text-xs font-bold shadow transition">✋ Mover</button>
+                <button onclick="setTool('fill')" id="btnFill" class="bg-purple-500 text-white w-8 h-8 rounded-full shadow flex items-center justify-center transition text-sm"><i class="fas fa-fill-drip"></i></button>
+                <button onclick="setTool('brush')" id="btnBrush" class="bg-gray-200 text-gray-600 w-8 h-8 rounded-full shadow flex items-center justify-center transition text-sm"><i class="fas fa-paint-brush"></i></button>
+                <button onclick="setTool('move')" id="btnMove" class="bg-gray-200 text-gray-600 w-8 h-8 rounded-full shadow flex items-center justify-center transition text-sm"><i class="fas fa-hand-paper"></i></button>
+                <button onclick="undo()" class="bg-gray-100 text-gray-600 w-8 h-8 rounded-full shadow flex items-center justify-center active:bg-gray-300"><i class="fas fa-undo"></i></button>
             </div>
             <button onclick="saveCanvas()" class="text-green-600 font-bold">Guardar</button>
         </div>
@@ -162,7 +164,10 @@
         <!-- Palette (Floating) -->
         <div class="bg-white p-4 pb-8 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)] z-20 rounded-t-2xl">
             <div class="flex justify-between items-center gap-2 overflow-x-auto pb-2 px-1">
-                <!-- Colors -->
+                <!-- Color Picker -->
+                <input type="color" id="colorPicker" class="w-8 h-8 rounded-full border-0 p-0 overflow-hidden shadow-sm" onchange="setColor(this.value)">
+                
+                <!-- Presets -->
                 <div onclick="setColor('#EF4444')" class="w-8 h-8 flex-shrink-0 rounded-full bg-red-500 border-2 border-white shadow-sm cursor-pointer ring-offset-1 hover:ring-2 hover:ring-gray-300 color-btn" data-color="#EF4444"></div>
                 <div onclick="setColor('#F472B6')" class="w-8 h-8 flex-shrink-0 rounded-full bg-pink-400 border-2 border-white shadow-sm cursor-pointer ring-offset-1 hover:ring-2 hover:ring-gray-300 color-btn" data-color="#F472B6"></div>
                 <div onclick="setColor('#FBBF24')" class="w-8 h-8 flex-shrink-0 rounded-full bg-yellow-400 border-2 border-white shadow-sm cursor-pointer ring-offset-1 hover:ring-2 hover:ring-gray-300 color-btn" data-color="#FBBF24"></div>
@@ -171,7 +176,7 @@
                 <div onclick="setColor('#A78BFA')" class="w-8 h-8 flex-shrink-0 rounded-full bg-purple-400 border-2 border-white shadow-sm cursor-pointer ring-offset-1 hover:ring-2 hover:ring-gray-300 color-btn" data-color="#A78BFA"></div>
                 <div onclick="setColor('#78350F')" class="w-8 h-8 flex-shrink-0 rounded-full bg-yellow-900 border-2 border-white shadow-sm cursor-pointer ring-offset-1 hover:ring-2 hover:ring-gray-300 color-btn" data-color="#78350F"></div>
                 <div onclick="setColor('#000000')" class="w-8 h-8 flex-shrink-0 rounded-full bg-black border-2 border-white shadow-sm cursor-pointer ring-offset-1 hover:ring-2 hover:ring-gray-300 color-btn" data-color="#000000"></div>
-                <div onclick="setColor('#FFFFFF')" class="w-8 h-8 flex-shrink-0 rounded-full bg-white border-2 border-gray-200 cursor-pointer flex items-center justify-center color-btn text-xs shadow-sm" data-color="#FFFFFF">🧽</div>
+                <div onclick="setTool('eraser')" class="w-8 h-8 flex-shrink-0 rounded-full bg-white border-2 border-gray-200 cursor-pointer flex items-center justify-center color-btn text-xs shadow-sm" id="btnEraser">🧽</div>
             </div>
             
             <div class="mt-3 flex gap-3 items-center">
