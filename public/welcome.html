@@ -54,12 +54,11 @@
                     <p class="text-xs text-gray-400 uppercase tracking-widest mb-1">Miembro</p>
                     <h2 class="text-2xl font-bold text-white" id="userName">Cargando...</h2>
                 </div>
-                <div class="relative group cursor-pointer" onclick="document.getElementById('pfpInput').click()">
+                <div class="relative group cursor-pointer" onclick="openAvatarModal()">
                     <img id="userPfp" src="/assets/rich-aroma-logo.jpg" class="w-12 h-12 rounded-full border-2 border-brand-gold/30 object-cover group-hover:border-white transition">
                     <div class="absolute inset-0 bg-black/50 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition">
-                        <i class="fas fa-camera text-white text-xs"></i>
+                        <i class="fas fa-pen text-white text-xs"></i>
                     </div>
-                    <input type="file" id="pfpInput" class="hidden" accept="image/*" onchange="updatePfp(this)">
                 </div>
             </div>
 
@@ -147,8 +146,108 @@
 
     </div>
 
+    <div id="avatarModal" class="hidden fixed inset-0 bg-black/90 z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl p-6 w-full max-w-sm">
+            <h3 class="text-lg font-bold text-brand-brown mb-4 text-center">Elige tu Avatar</h3>
+            
+            <div class="grid grid-cols-3 gap-4" id="avatarGrid">
+                <!-- Avatars will be injected here via crop -->
+            </div>
+
+            <div class="mt-4 border-t border-gray-100 pt-4 text-center">
+                <label class="block w-full bg-gray-100 text-gray-500 font-bold py-3 rounded-xl mb-2 cursor-pointer">
+                    <i class="fas fa-camera"></i> Subir Foto
+                    <input type="file" id="pfpInput" class="hidden" accept="image/*" onchange="updatePfp(this)">
+                </label>
+                <button onclick="closeAvatarModal()" class="text-sm text-gray-400 underline">Cancelar</button>
+            </div>
+        </div>
+    </div>
+
     <script>
-        // Confetti Logic
+        // ... (Existing Confetti Logic) ...
+
+        // AVATAR SYSTEM
+        function openAvatarModal() {
+            document.getElementById('avatarModal').classList.remove('hidden');
+            generateAvatars();
+        }
+
+        function closeAvatarModal() {
+            document.getElementById('avatarModal').classList.add('hidden');
+        }
+
+        function generateAvatars() {
+            // We use CSS clipping to show parts of the spritesheet
+            // Sheet is 5x2 grid approx.
+            const grid = document.getElementById('avatarGrid');
+            if(grid.children.length > 0) return; // Already generated
+
+            const roles = ['Astronaut', 'Explorer', 'Barista', 'Princess', 'Skater', 'Sassy', 'Athlete', 'Nerd', 'Rockstar', 'Artist'];
+            
+            roles.forEach((role, i) => {
+                const btn = document.createElement('button');
+                btn.className = "aspect-square rounded-full overflow-hidden border-2 border-transparent hover:border-brand-gold relative group";
+                btn.onclick = () => selectAvatar(i);
+                
+                // Calculate position in spritesheet
+                // Image is roughly 1280x720. 5 cols, 2 rows.
+                // Each cell approx 256x360.
+                const row = Math.floor(i / 5);
+                const col = i % 5;
+                
+                const div = document.createElement('div');
+                div.style.width = '100%';
+                div.style.height = '100%';
+                div.style.backgroundImage = 'url(/assets/avatars.jpg)';
+                div.style.backgroundSize = '500% 200%'; // 5 cols, 2 rows
+                div.style.backgroundPosition = `${col * 25}% ${row * 100}%`;
+                
+                btn.appendChild(div);
+                grid.appendChild(btn);
+            });
+        }
+
+        function selectAvatar(index) {
+            // For now, we save the index and render it using the same CSS trick on the main card
+            // Or better: Canvas crop to dataURL to save as real image
+            
+            const canvas = document.createElement('canvas');
+            canvas.width = 256;
+            canvas.height = 256;
+            const ctx = canvas.getContext('2d');
+            
+            const img = new Image();
+            img.src = '/assets/avatars.jpg';
+            img.onload = () => {
+                const row = Math.floor(index / 5);
+                const col = index % 5;
+                const sw = img.width / 5;
+                const sh = img.height / 2;
+                
+                // Crop the face (top part of the cell)
+                ctx.drawImage(img, col * sw, row * sh, sw, sh * 0.7, 0, 0, 256, 256);
+                
+                const dataUrl = canvas.toDataURL();
+                document.getElementById('userPfp').src = dataUrl;
+                localStorage.setItem('ra_pfp', dataUrl);
+                closeAvatarModal();
+            };
+        }
+
+        function updatePfp(input) {
+            if (input.files && input.files[0]) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    document.getElementById('userPfp').src = e.target.result;
+                    localStorage.setItem('ra_pfp', e.target.result);
+                    closeAvatarModal();
+                }
+                reader.readAsDataURL(input.files[0]);
+            }
+        }
+        
+        // ... (Rest of existing code) ...
         const canvas = document.getElementById('confetti');
         const ctx = canvas.getContext('2d');
         canvas.width = window.innerWidth;
