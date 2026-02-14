@@ -434,6 +434,39 @@ app.post('/api/campaign/valentines', async (req, res) => {
     }
 });
 
+// Admin View for Leads (Unified Customers + Submissions)
+app.get('/api/admin/leads', requireAdmin, async (req, res) => {
+    // Fetch all customers who signed up via contest or simple signup
+    const client = req.supabase || supabase;
+    const { data: customers } = await client
+        .from('customers')
+        .select('*')
+        .order('created_at', { ascending: false });
+        
+    // Merge with submission images if available (JSON fallback)
+    const dbPath = path.join(__dirname, 'data', 'coloring-submissions.json');
+    let submissions = [];
+    if (fs.existsSync(dbPath)) {
+        submissions = JSON.parse(fs.readFileSync(dbPath, 'utf8')).submissions;
+    }
+    
+    // Map data
+    const leads = (customers || []).map(c => {
+        // Find matching image submission
+        const sub = submissions.find(s => s.phone === c.phone);
+        return {
+            name: c.name,
+            phone: c.phone,
+            kidName: sub?.kidName || null,
+            image: sub?.image || null,
+            tags: c.tags,
+            created_at: c.created_at || (sub?.submittedAt)
+        };
+    });
+    
+    res.json(leads);
+});
+
 // Profile / Data Fetch
 app.get('/api/customer/profile', async (req, res) => {
     const phone = req.query.phone;
