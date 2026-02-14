@@ -123,6 +123,14 @@
                     </div>
                 </div>
                 <div>
+                    <label class="block text-xs font-bold text-gray-500 mb-1 ml-1">Crea un PIN (4 dígitos)</label>
+                    <div class="relative">
+                        <i class="fas fa-lock absolute left-4 top-3.5 text-gray-300"></i>
+                        <input type="tel" id="pin" required maxlength="4" class="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 pl-10 outline-none focus:border-brand-gold transition" placeholder="1234">
+                    </div>
+                    <p class="text-[10px] text-gray-400 ml-1 mt-1">Usarás este PIN para ver tus puntos después.</p>
+                </div>
+                <div>
                     <label class="block text-xs font-bold text-gray-500 mb-1 ml-1">Foto del Dibujo</label>
                     <div class="relative">
                         <input type="file" id="photo" required accept="image/*" class="w-full bg-gray-50 border-2 border-dashed border-gray-300 rounded-xl p-3 text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-bold file:bg-brand-gold file:text-white hover:file:bg-brand-brown cursor-pointer focus:border-brand-gold transition">
@@ -182,7 +190,15 @@
             const parentName = document.getElementById('parentName').value;
             const kidName = document.getElementById('kidName').value;
             const phone = document.getElementById('phone').value;
+            const pin = document.getElementById('pin').value;
             const fileInput = document.getElementById('photo');
+
+            if (pin.length < 4) {
+                alert("El PIN debe tener 4 números");
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+                return;
+            }
 
             if (!fileInput.files[0]) {
                 alert("Por favor selecciona una foto");
@@ -203,7 +219,7 @@
                     const res = await fetch(API_URL, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ parentName, kidName, phone, image: base64 })
+                        body: JSON.stringify({ parentName, kidName, phone, pin, image: base64 })
                     });
 
                     const data = await res.json();
