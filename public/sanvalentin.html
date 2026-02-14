@@ -138,39 +138,46 @@
     </div>
 
     <!-- Canvas Modal -->
-    <div id="canvasModal" class="hidden fixed inset-0 bg-gray-900 z-50 flex flex-col">
+    <div id="canvasModal" class="hidden fixed inset-0 bg-gray-900 z-50 flex flex-col touch-none">
         <!-- Header -->
-        <div class="bg-white p-4 flex justify-between items-center shadow-md z-10">
+        <div class="bg-white p-4 flex justify-between items-center shadow-md z-20">
             <button onclick="closeCanvas()" class="text-gray-500 font-bold">Cancelar</button>
-            <h3 class="font-bold text-lg text-red-500">Colorear 🎨</h3>
-            <button onclick="saveCanvas()" class="bg-green-500 text-white px-4 py-2 rounded-full font-bold shadow-md">Terminar</button>
+            <div class="flex gap-2">
+                <button onclick="setMode('draw')" id="btnDraw" class="bg-red-500 text-white px-3 py-1 rounded-full text-xs font-bold shadow transition">✏️ Pintar</button>
+                <button onclick="setMode('move')" id="btnMove" class="bg-gray-200 text-gray-600 px-3 py-1 rounded-full text-xs font-bold shadow transition">✋ Mover</button>
+            </div>
+            <button onclick="saveCanvas()" class="text-green-600 font-bold">Guardar</button>
         </div>
 
         <!-- Canvas Area -->
-        <div class="flex-1 bg-gray-200 overflow-hidden relative flex items-center justify-center" id="canvasContainer">
-            <!-- Background Image Layer -->
-            <img id="bgLayer" class="absolute pointer-events-none select-none z-10 opacity-80 mix-blend-multiply" style="max-width: 100%; max-height: 100%;">
-            <!-- Paint Layer -->
-            <canvas id="paintCanvas" class="bg-white shadow-lg z-0"></canvas>
+        <div class="flex-1 bg-gray-200 overflow-hidden relative flex items-center justify-center touch-none" id="canvasContainer">
+            <div id="canvasWrapper" class="relative shadow-2xl origin-center transition-transform duration-75" style="transform: scale(1) translate(0px, 0px);">
+                <!-- Background Image Layer -->
+                <img id="bgLayer" class="absolute pointer-events-none select-none z-10 opacity-80 mix-blend-multiply w-full h-full object-cover">
+                <!-- Paint Layer -->
+                <canvas id="paintCanvas" class="bg-white z-0"></canvas>
+            </div>
         </div>
 
-        <!-- Palette -->
-        <div class="bg-white p-4 pb-8 shadow-t-lg">
-            <div class="flex justify-between items-center gap-2 overflow-x-auto pb-2">
+        <!-- Palette (Floating) -->
+        <div class="bg-white p-4 pb-8 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)] z-20 rounded-t-2xl">
+            <div class="flex justify-between items-center gap-2 overflow-x-auto pb-2 px-1">
                 <!-- Colors -->
-                <div onclick="setColor('#EF4444')" class="w-10 h-10 rounded-full bg-red-500 border-4 border-transparent cursor-pointer ring-offset-2 hover:ring-2 hover:ring-gray-300 color-btn" data-color="#EF4444"></div>
-                <div onclick="setColor('#F472B6')" class="w-10 h-10 rounded-full bg-pink-400 border-4 border-transparent cursor-pointer ring-offset-2 hover:ring-2 hover:ring-gray-300 color-btn" data-color="#F472B6"></div>
-                <div onclick="setColor('#FBBF24')" class="w-10 h-10 rounded-full bg-yellow-400 border-4 border-transparent cursor-pointer ring-offset-2 hover:ring-2 hover:ring-gray-300 color-btn" data-color="#FBBF24"></div>
-                <div onclick="setColor('#34D399')" class="w-10 h-10 rounded-full bg-green-400 border-4 border-transparent cursor-pointer ring-offset-2 hover:ring-2 hover:ring-gray-300 color-btn" data-color="#34D399"></div>
-                <div onclick="setColor('#60A5FA')" class="w-10 h-10 rounded-full bg-blue-400 border-4 border-transparent cursor-pointer ring-offset-2 hover:ring-2 hover:ring-gray-300 color-btn" data-color="#60A5FA"></div>
-                <div onclick="setColor('#A78BFA')" class="w-10 h-10 rounded-full bg-purple-400 border-4 border-transparent cursor-pointer ring-offset-2 hover:ring-2 hover:ring-gray-300 color-btn" data-color="#A78BFA"></div>
-                <div onclick="setColor('#78350F')" class="w-10 h-10 rounded-full bg-yellow-900 border-4 border-transparent cursor-pointer ring-offset-2 hover:ring-2 hover:ring-gray-300 color-btn" data-color="#78350F"></div>
-                <div onclick="setColor('#FFFFFF')" class="w-10 h-10 rounded-full bg-white border-2 border-gray-300 cursor-pointer flex items-center justify-center color-btn" data-color="#FFFFFF">🧽</div>
+                <div onclick="setColor('#EF4444')" class="w-8 h-8 flex-shrink-0 rounded-full bg-red-500 border-2 border-white shadow-sm cursor-pointer ring-offset-1 hover:ring-2 hover:ring-gray-300 color-btn" data-color="#EF4444"></div>
+                <div onclick="setColor('#F472B6')" class="w-8 h-8 flex-shrink-0 rounded-full bg-pink-400 border-2 border-white shadow-sm cursor-pointer ring-offset-1 hover:ring-2 hover:ring-gray-300 color-btn" data-color="#F472B6"></div>
+                <div onclick="setColor('#FBBF24')" class="w-8 h-8 flex-shrink-0 rounded-full bg-yellow-400 border-2 border-white shadow-sm cursor-pointer ring-offset-1 hover:ring-2 hover:ring-gray-300 color-btn" data-color="#FBBF24"></div>
+                <div onclick="setColor('#34D399')" class="w-8 h-10 flex-shrink-0 rounded-full bg-green-400 border-2 border-white shadow-sm cursor-pointer ring-offset-1 hover:ring-2 hover:ring-gray-300 color-btn" data-color="#34D399"></div>
+                <div onclick="setColor('#60A5FA')" class="w-8 h-8 flex-shrink-0 rounded-full bg-blue-400 border-2 border-white shadow-sm cursor-pointer ring-offset-1 hover:ring-2 hover:ring-gray-300 color-btn" data-color="#60A5FA"></div>
+                <div onclick="setColor('#A78BFA')" class="w-8 h-8 flex-shrink-0 rounded-full bg-purple-400 border-2 border-white shadow-sm cursor-pointer ring-offset-1 hover:ring-2 hover:ring-gray-300 color-btn" data-color="#A78BFA"></div>
+                <div onclick="setColor('#78350F')" class="w-8 h-8 flex-shrink-0 rounded-full bg-yellow-900 border-2 border-white shadow-sm cursor-pointer ring-offset-1 hover:ring-2 hover:ring-gray-300 color-btn" data-color="#78350F"></div>
+                <div onclick="setColor('#000000')" class="w-8 h-8 flex-shrink-0 rounded-full bg-black border-2 border-white shadow-sm cursor-pointer ring-offset-1 hover:ring-2 hover:ring-gray-300 color-btn" data-color="#000000"></div>
+                <div onclick="setColor('#FFFFFF')" class="w-8 h-8 flex-shrink-0 rounded-full bg-white border-2 border-gray-200 cursor-pointer flex items-center justify-center color-btn text-xs shadow-sm" data-color="#FFFFFF">🧽</div>
             </div>
             
-            <div class="mt-4 flex gap-4 items-center">
-                <span class="text-xs font-bold text-gray-400 uppercase">Grosor</span>
-                <input type="range" min="2" max="20" value="5" class="w-full accent-red-500" onchange="setLineWidth(this.value)">
+            <div class="mt-3 flex gap-3 items-center">
+                <span class="text-[10px] font-bold text-gray-400 uppercase tracking-wide">Grosor</span>
+                <input type="range" min="1" max="30" value="5" class="flex-1 accent-red-500 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer" oninput="setLineWidth(this.value)">
+                <div id="brushSizePreview" class="w-5 h-5 rounded-full bg-red-500 flex-shrink-0"></div>
             </div>
         </div>
     </div>
