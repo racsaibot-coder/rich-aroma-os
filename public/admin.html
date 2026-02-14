@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Admin Dashboard | Rich Aroma</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body class="bg-gray-100 text-gray-800 p-6">
+
+    <div class="max-w-4xl mx-auto">
+        <h1 class="text-3xl font-bold mb-6 flex items-center gap-2">
+            <i class="fas fa-user-shield text-blue-600"></i> Admin Dashboard
+        </h1>
+
+        <div class="grid md:grid-cols-3 gap-6 mb-8">
+            <div class="bg-white p-6 rounded-2xl shadow-sm">
+                <h3 class="text-gray-500 text-xs font-bold uppercase">Total Leads</h3>
+                <p class="text-4xl font-bold text-gray-800" id="totalLeads">0</p>
+            </div>
+            <div class="bg-white p-6 rounded-2xl shadow-sm">
+                <h3 class="text-gray-500 text-xs font-bold uppercase">Photos</h3>
+                <p class="text-4xl font-bold text-purple-600" id="totalPhotos">0</p>
+            </div>
+            <div class="bg-white p-6 rounded-2xl shadow-sm">
+                <h3 class="text-gray-500 text-xs font-bold uppercase">Interested Founders</h3>
+                <p class="text-4xl font-bold text-yellow-600" id="totalFounders">0</p>
+            </div>
+        </div>
+
+        <div class="bg-white rounded-2xl shadow-lg overflow-hidden">
+            <table class="w-full text-left border-collapse">
+                <thead class="bg-gray-50 text-gray-500 text-xs uppercase">
+                    <tr>
+                        <th class="p-4">Photo</th>
+                        <th class="p-4">Name</th>
+                        <th class="p-4">Phone</th>
+                        <th class="p-4">Submitted</th>
+                        <th class="p-4">Tags</th>
+                    </tr>
+                </thead>
+                <tbody id="leadsTable" class="divide-y divide-gray-100 text-sm">
+                    <!-- Injected via JS -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        async function loadData() {
+            // Fetch directly from API
+            const API_URL = 'https://schedule-arguments-hdtv-throw.trycloudflare.com/api/admin/leads?token=TEST_TOKEN_ADMIN';
+            
+            try {
+                const res = await fetch(API_URL);
+                const data = await res.json();
+                
+                document.getElementById('totalLeads').innerText = data.length;
+                document.getElementById('totalPhotos').innerText = data.filter(d => d.image).length;
+                document.getElementById('totalFounders').innerText = data.filter(d => d.tags && d.tags.includes('founder_launch')).length;
+
+                const tbody = document.getElementById('leadsTable');
+                tbody.innerHTML = '';
+
+                data.forEach(lead => {
+                    const row = document.createElement('tr');
+                    
+                    const imgHtml = lead.image 
+                        ? `<a href="${lead.image}" target="_blank"><img src="${lead.image}" class="w-10 h-10 rounded-lg object-cover border border-gray-200"></a>` 
+                        : '<span class="text-gray-300">-</span>';
+                        
+                    const tagsHtml = (lead.tags || []).map(t => 
+                        `<span class="bg-blue-100 text-blue-700 px-2 py-1 rounded-full text-[10px] mr-1">${t}</span>`
+                    ).join('');
+
+                    row.innerHTML = `
+                        <td class="p-4">${imgHtml}</td>
+                        <td class="p-4 font-bold text-gray-700">
+                            ${lead.name}<br>
+                            <span class="text-gray-400 text-xs font-normal">Kid: ${lead.kidName || '-'}</span>
+                        </td>
+                        <td class="p-4 font-mono text-gray-600">
+                            <a href="https://wa.me/${lead.phone.replace('+','')}" target="_blank" class="hover:text-green-500"><i class="fab fa-whatsapp"></i> ${lead.phone}</a>
+                        </td>
+                        <td class="p-4 text-gray-500 text-xs">${new Date(lead.created_at || Date.now()).toLocaleDateString()}</td>
+                        <td class="p-4">${tagsHtml}</td>
+                    `;
+                    tbody.appendChild(row);
+                });
+
+            } catch (e) {
+                console.error(e);
+                alert("Error loading admin data");
+            }
+        }
+        
+        loadData();
+    </script>
+</body>
+</html>
