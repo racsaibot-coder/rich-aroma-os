@@ -66,8 +66,8 @@
                     </div>
                 </div>
                 <div class="text-right">
-                    <p class="text-xs text-gray-400 uppercase tracking-widest mb-1">Puntos</p>
-                    <p class="text-3xl font-bold text-white" id="userPoints">50</p>
+                    <p class="text-xs text-gray-400 uppercase tracking-widest mb-1">Rico Cash</p>
+                    <p class="text-3xl font-bold text-white">L. <span id="userBalance">5.00</span></p>
                 </div>
             </div>
         </div>
@@ -96,14 +96,14 @@
         <div class="bg-white p-6 rounded-3xl shadow-lg border-2 border-brand-gold/20 mb-8 relative overflow-hidden">
             <div class="absolute -right-4 -top-4 w-16 h-16 bg-brand-gold/10 rounded-full"></div>
             
-            <h3 class="text-lg font-bold text-brand-brown mb-2"><i class="fas fa-users text-brand-gold"></i> Gana más Premios</h3>
-            <p class="text-sm text-gray-500 mb-4">Invita amigos y gana <span class="font-bold text-green-600">+50 puntos</span> por cada uno que participe.</p>
+            <h3 class="text-lg font-bold text-brand-brown mb-2"><i class="fas fa-users text-brand-gold"></i> Gana Rico Cash</h3>
+            <p class="text-sm text-gray-500 mb-4">Invita amigos y gana <span class="font-bold text-green-600">L. 5.00</span> por cada uno que participe.</p>
             
             <div class="flex items-center gap-2 mb-4">
-                <div class="bg-gray-100 px-4 py-2 rounded-lg text-sm font-mono text-gray-600 border border-gray-200 flex-1 text-center" id="referralLink">
-                    Cargando...
+                <div class="bg-gray-100 px-4 py-2 rounded-lg text-sm font-mono text-gray-600 border border-gray-200 flex-1 text-center truncate" id="referralLink">
+                    Generando link...
                 </div>
-                <button onclick="copyLink()" class="bg-brand-brown text-white w-10 h-10 rounded-lg flex items-center justify-center hover:bg-gray-800"><i class="fas fa-copy"></i></button>
+                <button onclick="copyLink()" class="bg-brand-brown text-white w-10 h-10 rounded-lg flex items-center justify-center hover:bg-gray-800 flex-shrink-0"><i class="fas fa-copy"></i></button>
             </div>
 
             <button onclick="shareWhatsapp()" class="w-full bg-green-500 text-white font-bold py-3 rounded-xl shadow-lg shadow-green-200 hover:bg-green-600 transition flex items-center justify-center gap-2">
@@ -138,8 +138,9 @@
                 </li>
             </ul>
 
-            <button class="w-full bg-brand-gold text-brand-dark font-bold py-3 rounded-xl hover:bg-white transition shadow-lg shadow-brand-gold/20">
-                Avísame cuando salga 🔔
+            <button onclick="notifyMe(this)" class="w-full bg-brand-gold text-brand-dark font-bold py-3 rounded-xl hover:bg-white transition shadow-lg shadow-brand-gold/20 group">
+                <span class="group-hover:hidden">Avísame cuando salga 🔔</span>
+                <span class="hidden group-hover:inline">¡Quiero ser Fundador! 🚀</span>
             </button>
         </div>
 
@@ -156,7 +157,7 @@
         canvas.width = window.innerWidth;
         canvas.height = window.innerHeight;
         
-        const pieces = [];
+        let pieces = [];
         for(let i=0; i<50; i++) {
             pieces.push({
                 x: Math.random() * canvas.width,
@@ -167,6 +168,7 @@
             });
         }
 
+        let animationFrame;
         function draw() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             pieces.forEach(p => {
@@ -175,28 +177,24 @@
                 p.y += p.speed;
                 if(p.y > canvas.height) p.y = -10;
             });
-            requestAnimationFrame(draw);
+            animationFrame = requestAnimationFrame(draw);
         }
         draw();
+
+        // Stop Confetti after 30s
+        setTimeout(() => {
+            cancelAnimationFrame(animationFrame);
+            canvas.style.display = 'none';
+        }, 30000);
 
         // Hydrate User Name & Ref Code
         const params = new URLSearchParams(window.location.search);
         const name = params.get('name');
         
         async function loadProfile() {
-            // If we have a name but no ref code locally, we need to fetch profile
-            // But we don't have authentication here (security trade-off for simplicity)
-            // Ideally we pass the ref code in URL or fetch via phone if we had it.
-            
-            // For now, let's generate a placeholder or fetch if we stored phone in localStorage
-            // Or better: Pass the phone in the URL? (Less secure)
-            
             if (name) {
                 document.getElementById('userName').innerText = name.toUpperCase();
                 
-                // Generate a pseudo-code for display if we can't fetch real one easily without auth
-                // Or fetch via the API if we have the phone
-                // Let's rely on localStorage if available
                 const phone = localStorage.getItem('ra_phone');
                 if (phone) {
                     try {
@@ -204,13 +202,25 @@
                         const res = await fetch(API_URL);
                         const data = await res.json();
                         
-                        if (data && data.referral_code) {
-                            const link = `richaromacoffee.com/sanvalentin.html?ref=${data.referral_code}`;
-                            document.getElementById('referralLink').innerText = link;
-                            document.getElementById('userPoints').innerText = data.points || 50;
-                            window.referralLink = link;
+                        if (data) {
+                            // Link
+                            if (data.referral_code) {
+                                const link = `richaromacoffee.com/sanvalentin.html?ref=${data.referral_code}`;
+                                document.getElementById('referralLink').innerText = link;
+                                window.referralLink = link;
+                            }
+                            
+                            // Balance (Points / 10)
+                            const points = data.points || 50;
+                            const balance = (points / 10).toFixed(2);
+                            document.getElementById('userBalance').innerText = balance;
                         }
-                    } catch (e) { console.error(e); }
+                    } catch (e) { 
+                        console.error(e);
+                        document.getElementById('referralLink').innerText = "Error cargando link";
+                    }
+                } else {
+                    document.getElementById('referralLink').innerText = "Inicia sesión para ver tu link";
                 }
             } else {
                 document.getElementById('userName').innerText = "CAPITÁN";
@@ -220,15 +230,48 @@
         loadProfile();
 
         function copyLink() {
-            const link = window.referralLink || "richaromacoffee.com/sanvalentin.html";
+            const link = window.referralLink;
+            if(!link) return alert("Inicia sesión primero");
             navigator.clipboard.writeText("https://" + link);
             alert("Link copiado al portapapeles");
         }
 
         function shareWhatsapp() {
-            const link = window.referralLink || "richaromacoffee.com/sanvalentin.html";
+            const link = window.referralLink;
+            if(!link) return alert("Inicia sesión primero");
             const text = `¡Hola! Colorea con Capitán Rico y gana premios. Usa mi link: https://${link}`;
             window.location.href = `https://wa.me/?text=${encodeURIComponent(text)}`;
+        }
+
+        async function notifyMe(btn) {
+            const phone = localStorage.getItem('ra_phone');
+            if(!phone) {
+                alert("Por favor inicia sesión primero");
+                window.location.href = '/login.html';
+                return;
+            }
+
+            const originalText = btn.innerHTML;
+            btn.innerHTML = '⏳ Guardando...';
+            
+            try {
+                const API_URL = 'https://schedule-arguments-hdtv-throw.trycloudflare.com/api/customer/notify';
+                await fetch(API_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ phone, topic: 'founder_launch' })
+                });
+                
+                btn.innerHTML = '✅ ¡Anotado! Te escribiremos.';
+                btn.classList.remove('bg-brand-gold', 'text-brand-dark');
+                btn.classList.add('bg-green-500', 'text-white');
+                btn.disabled = true;
+                
+            } catch(e) {
+                console.error(e);
+                alert("Error de conexión");
+                btn.innerHTML = originalText;
+            }
         }
     </script>
 </body>

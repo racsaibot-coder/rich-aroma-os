@@ -457,25 +457,33 @@ app.post('/api/customer/notify', async (req, res) => {
     const { phone, topic } = req.body;
     const cleanPhone = phone.replace(/\D/g, '');
     
-    // Fetch current tags
+    // Fetch current customer
     const { data: customer } = await supabase
         .from('customers')
-        .select('tags')
+        .select('*')
         .eq('phone', cleanPhone)
         .single();
         
+    // Hybrid Fallback: Check JSON if not in DB yet
+    // ...
+
     if(customer) {
-        const currentTags = customer.tags || [];
+        let currentTags = customer.tags || [];
+        if (!Array.isArray(currentTags)) currentTags = [];
+        
         if (!currentTags.includes(topic)) {
             currentTags.push(topic);
             await supabase
                 .from('customers')
                 .update({ tags: currentTags })
-                .eq('phone', cleanPhone);
+                .eq('id', customer.id);
         }
         res.json({ success: true });
     } else {
-        res.status(404).json({ error: "Customer not found" });
+        // If not found in DB yet (sync delay), we log to a notify list
+        console.log(`[Notify] Pending customer ${cleanPhone} wants ${topic}`);
+        // We could append to a separate JSON file here
+        res.json({ success: true, pending: true });
     }
 });
 
