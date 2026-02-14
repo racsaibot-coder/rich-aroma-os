@@ -65,7 +65,11 @@ export default async function handler(req, res) {
         await supabase.from('creator_submissions').insert({
             phone: cleanPhone, creator_name: kidName, platform: 'valentine_art', status: 'approved', points_awarded: 50
         });
-        await supabase.rpc('increment_points', { user_id: customer.id, amount: 50 });
+        
+        // Manual point update (RPC might be missing)
+        const currentPoints = (customer.points || 0) + 50;
+        await supabase.from('customers').update({ points: currentPoints }).eq('id', customer.id);
+        
         return res.json({ success: true });
     }
 
