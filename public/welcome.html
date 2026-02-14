@@ -239,14 +239,24 @@
 
         function copyLink() {
             const link = window.referralLink;
-            if(!link) return alert("Inicia sesión primero");
+            if(!link || link.includes("object")) {
+                // Fallback if link is malformed
+                const phone = localStorage.getItem('ra_phone');
+                if (phone) {
+                    // Try to reconstruct
+                    // Wait, window.referralLink is set by loadProfile.
+                    alert("El link aún se está generando. Recarga la página.");
+                    return;
+                }
+                return alert("Inicia sesión primero");
+            }
             navigator.clipboard.writeText("https://" + link);
             alert("Link copiado al portapapeles");
         }
 
         function shareWhatsapp() {
             const link = window.referralLink;
-            if(!link) return alert("Inicia sesión primero");
+            if(!link || link.includes("object")) return alert("El link aún se está generando. Recarga la página.");
             const text = `¡Hola! Colorea con Capitán Rico y gana premios. Usa mi link: https://${link}`;
             window.location.href = `https://wa.me/?text=${encodeURIComponent(text)}`;
         }
