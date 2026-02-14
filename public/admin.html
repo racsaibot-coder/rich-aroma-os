@@ -50,10 +50,17 @@
     <script>
         async function loadData() {
             // Fetch directly from API
+            // Use the public tunnel URL to bypass Vercel
             const API_URL = 'https://schedule-arguments-hdtv-throw.trycloudflare.com/api/admin/leads?token=TEST_TOKEN_ADMIN';
             
+            // Add AUTH header because middleware checks it
+            const headers = {
+                'Authorization': 'Bearer TEST_TOKEN_ADMIN'
+            };
+            
             try {
-                const res = await fetch(API_URL);
+                const res = await fetch(API_URL, { headers });
+                if (!res.ok) throw new Error(res.statusText);
                 const data = await res.json();
                 
                 document.getElementById('totalLeads').innerText = data.length;
