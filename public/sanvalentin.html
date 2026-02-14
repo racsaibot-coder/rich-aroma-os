@@ -2,310 +2,67 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Rico Runner | Rich Aroma</title>
-    <script src="https://cdn.jsdelivr.net/npm/phaser@3.60.0/dist/phaser.min.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Colorea con Capitán Rico | Rich Aroma</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Fredoka:wght@400;700&display=swap');
-        body { margin: 0; padding: 0; overflow: hidden; background-color: #000; font-family: 'Fredoka', sans-serif; }
-        #game-container { width: 100%; height: 100vh; }
-        .ui-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; display: flex; flex-direction: column; justify-content: center; items-center; }
-        .btn { pointer-events: auto; background: #EF4444; color: white; padding: 15px 30px; border-radius: 50px; font-weight: bold; font-size: 20px; box-shadow: 0 4px 0 #991B1B; transition: transform 0.1s; border: 2px solid white; }
-        .btn:active { transform: scale(0.95); box-shadow: 0 2px 0 #991B1B; }
-        .hidden { display: none !important; }
+        @import url('https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600&display=swap');
+        body { font-family: 'Fredoka', sans-serif; background-color: #FFF5F5; }
+        .pattern-bg {
+            background-image: radial-gradient(#FECACA 1px, transparent 1px);
+            background-size: 20px 20px;
+        }
     </style>
 </head>
-<body>
+<body class="pattern-bg min-h-screen text-gray-800 pb-20">
 
-    <div id="game-container"></div>
-
-    <!-- Start Screen -->
-    <div id="startScreen" class="ui-layer bg-black/80 z-10 backdrop-blur-sm">
-        <div class="text-center p-6 bg-white rounded-3xl max-w-xs border-4 border-red-500 shadow-2xl animate-bounce-slow">
-            <h1 class="text-4xl font-bold text-red-600 mb-2 drop-shadow-sm">Rico Runner</h1>
-            <p class="text-gray-600 mb-6 text-sm">¡Ayuda a Capitán Rico a recolectar corazones!</p>
-            
-            <div class="space-y-2 mb-6 text-left bg-red-50 p-4 rounded-xl text-xs">
-                <p>🏆 100 pts = <span class="font-bold text-red-600">10% OFF</span></p>
-                <p>🏆 500 pts = <span class="font-bold text-red-600">Galleta Gratis</span></p>
-                <p>🏆 1000 pts = <span class="font-bold text-red-600">Bebida Gratis</span></p>
-            </div>
-
-            <button onclick="startGame()" class="btn w-full">¡JUGAR!</button>
+    <!-- Hero -->
+    <div class="bg-red-500 text-white p-8 rounded-b-3xl shadow-lg text-center relative overflow-hidden mb-8">
+        <div class="absolute top-0 left-0 w-full h-full opacity-10">
+            <i class="fas fa-heart absolute top-4 left-4 text-4xl"></i>
+            <i class="fas fa-heart absolute bottom-4 right-4 text-6xl"></i>
+            <i class="fas fa-paw absolute top-10 right-10 text-5xl"></i>
         </div>
+        
+        <h1 class="text-3xl font-bold mb-2 relative z-10">¡Colorea con Capitán Rico! 🐵🎨</h1>
+        <p class="text-red-100 text-sm relative z-10">Descarga, imprime y diviértete coloreando.</p>
     </div>
 
-    <!-- Game Over Screen -->
-    <div id="gameOverScreen" class="ui-layer bg-black/90 z-20 hidden backdrop-blur-md">
-        <div class="text-center p-6 bg-white rounded-3xl max-w-xs border-4 border-yellow-400 shadow-2xl relative">
+    <div class="max-w-md mx-auto px-6 space-y-6">
+
+        <div class="bg-white p-5 rounded-2xl shadow-sm border border-red-100 text-center">
+            <p class="text-gray-600 mb-4 text-sm">Elige tu dibujo favorito, imprímelo y tráelo a la tienda para recibir una sorpresa.</p>
             
-            <div class="absolute -top-6 left-1/2 transform -translate-x-1/2 bg-yellow-400 text-yellow-900 px-4 py-1 rounded-full font-bold text-sm shadow-md">
-                RESULTADO
-            </div>
+            <div class="grid grid-cols-1 gap-6">
+                <!-- Option 1 -->
+                <div class="group">
+                    <div class="relative overflow-hidden rounded-xl border-2 border-dashed border-gray-200 group-hover:border-red-400 transition mb-3">
+                        <img src="/assets/rico-love.jpg" class="w-full h-48 object-cover object-top transform group-hover:scale-105 transition duration-500">
+                    </div>
+                    <a href="/assets/rico-love.jpg" download="CapitanRico-Love.jpg" class="block w-full bg-red-500 text-white py-3 rounded-xl font-bold shadow-lg shadow-red-200 hover:bg-red-600 active:scale-95 transition flex items-center justify-center gap-2">
+                        <i class="fas fa-download"></i> Descargar Opción 1
+                    </a>
+                </div>
 
-            <h2 class="text-2xl font-bold text-gray-800 mt-2 mb-1">¡Buen Intento!</h2>
-            <div class="text-5xl font-bold text-red-500 mb-4" id="finalScore">0</div>
-            
-            <div id="prizeContainer" class="bg-green-100 p-4 rounded-xl mb-6 border border-green-300 hidden">
-                <p class="text-xs text-green-700 font-bold uppercase mb-1">Premio Desbloqueado</p>
-                <p class="text-lg font-bold text-green-800" id="prizeText">10% OFF</p>
-                <p class="text-[10px] text-green-600 mt-1">Toma captura de pantalla para canjear</p>
-            </div>
-
-            <div id="noPrizeContainer" class="mb-6 text-gray-400 text-sm">
-                ¡Casi! Necesitas 100 pts para ganar.
-            </div>
-
-            <button onclick="restartGame()" class="btn w-full mb-3 bg-blue-500 shadow-blue-800 border-blue-200">Reintentar ↺</button>
-            <a href="/" class="block text-gray-400 text-xs underline mt-2 pointer-events-auto">Volver al Inicio</a>
-            <div class="mt-4 border-t border-gray-100 pt-3">
-                <p class="text-[10px] text-gray-400 mb-2">¿Prefieres colorear?</p>
-                <div class="flex gap-2 justify-center">
-                    <a href="/assets/rico-love.jpg" download class="bg-gray-100 text-gray-600 px-3 py-1 rounded text-xs font-bold hover:bg-gray-200 pointer-events-auto">📥 Dibujo 1</a>
-                    <a href="/assets/rico-shop.jpg" download class="bg-gray-100 text-gray-600 px-3 py-1 rounded text-xs font-bold hover:bg-gray-200 pointer-events-auto">📥 Dibujo 2</a>
+                <!-- Option 2 -->
+                <div class="group">
+                    <div class="relative overflow-hidden rounded-xl border-2 border-dashed border-gray-200 group-hover:border-red-400 transition mb-3">
+                        <img src="/assets/rico-shop.jpg" class="w-full h-48 object-cover object-top transform group-hover:scale-105 transition duration-500">
+                    </div>
+                    <a href="/assets/rico-shop.jpg" download="CapitanRico-Tienda.jpg" class="block w-full bg-red-500 text-white py-3 rounded-xl font-bold shadow-lg shadow-red-200 hover:bg-red-600 active:scale-95 transition flex items-center justify-center gap-2">
+                        <i class="fas fa-download"></i> Descargar Opción 2
+                    </a>
                 </div>
             </div>
         </div>
+
+        <div class="text-center text-gray-400 text-xs mt-8">
+            <p>Rich Aroma Coffee & Food</p>
+            <p>Quimistán, Santa Bárbara</p>
+        </div>
+
     </div>
 
-    <script>
-        // --- GAME CONFIG ---
-        const config = {
-            type: Phaser.AUTO,
-            width: window.innerWidth,
-            height: window.innerHeight,
-            parent: 'game-container',
-            physics: {
-                default: 'arcade',
-                arcade: {
-                    gravity: { y: 1500 },
-                    debug: false
-                }
-            },
-            scene: {
-                preload: preload,
-                create: create,
-                update: update
-            },
-            backgroundColor: '#87CEEB'
-        };
-
-        let game;
-        let player;
-        let cursors;
-        let platforms;
-        let hearts;
-        let bombs;
-        let score = 0;
-        let scoreText;
-        let gameOver = false;
-        let speed = -200;
-        let lastObstacleTime = 0;
-        let floor;
-
-        function startGame() {
-            document.getElementById('startScreen').classList.add('hidden');
-            if (!game) {
-                game = new Phaser.Game(config);
-            } else {
-                game.scene.scenes[0].scene.restart();
-            }
-        }
-
-        function restartGame() {
-            document.getElementById('gameOverScreen').classList.add('hidden');
-            score = 0;
-            gameOver = false;
-            speed = -250;
-            game.scene.scenes[0].scene.restart();
-        }
-
-        // --- PHASER SCENE ---
-
-        function preload() {
-            // Using placeholder shapes for now - we will replace with assets later
-            this.load.path = 'https://labs.phaser.io/assets/';
-            this.load.image('sky', 'skies/space3.png'); // Placeholder BG
-            this.load.image('ground', 'sprites/platform.png');
-            this.load.image('heart', 'sprites/apple.png'); // Placeholder Heart
-            this.load.image('bomb', 'sprites/bomb.png'); // Placeholder Obstacle
-            this.load.spritesheet('dude', 'sprites/dude.png', { frameWidth: 32, frameHeight: 48 }); // Placeholder Rico
-        }
-
-        function create() {
-            const width = this.scale.width;
-            const height = this.scale.height;
-
-            // Background (Static for now)
-            this.add.rectangle(0, 0, width, height, 0x87CEEB).setOrigin(0); // Blue Sky
-            
-            // Floor
-            floor = this.physics.add.staticGroup();
-            // Scale floor to fit width and sit at bottom
-            const groundY = height - 50;
-            const ground = floor.create(width/2, groundY + 30, 'ground').setScale(width/10, 2).refreshBody();
-            ground.setVisible(false); // Invisible collider
-
-            // Visual Floor
-            this.add.rectangle(0, groundY, width, 100, 0x4B5563).setOrigin(0); // Gray road
-            this.add.rectangle(0, groundY, width, 10, 0x1F2937).setOrigin(0); // Darker edge
-
-            // Player
-            player = this.physics.add.sprite(100, groundY - 100, 'dude');
-            player.setBounce(0.1);
-            player.setCollideWorldBounds(true);
-            player.setScale(1.5);
-
-            // Animations
-            this.anims.create({
-                key: 'run',
-                frames: this.anims.generateFrameNumbers('dude', { start: 5, end: 8 }),
-                frameRate: 10,
-                repeat: -1
-            });
-
-            this.anims.create({
-                key: 'jump',
-                frames: [ { key: 'dude', frame: 4 } ],
-                frameRate: 20
-            });
-
-            player.anims.play('run', true);
-
-            // Collisions
-            this.physics.add.collider(player, floor);
-
-            // Groups
-            hearts = this.physics.add.group();
-            bombs = this.physics.add.group();
-
-            this.physics.add.collider(hearts, floor);
-            this.physics.add.collider(bombs, floor);
-            
-            this.physics.add.overlap(player, hearts, collectHeart, null, this);
-            this.physics.add.collider(player, bombs, hitBomb, null, this);
-
-            // Score UI
-            scoreText = this.add.text(20, 20, 'Score: 0', { fontSize: '32px', fill: '#fff', fontFamily: 'Fredoka' });
-            scoreText.setStroke('#000', 4);
-
-            // Input (Tap to Jump)
-            this.input.on('pointerdown', jump);
-            this.input.keyboard.on('keydown-SPACE', jump);
-
-            // Spawner Loop
-            this.time.addEvent({ delay: 1500, callback: spawnObstacle, callbackScope: this, loop: true });
-        }
-
-        function update() {
-            if (gameOver) return;
-
-            // Speed up game over time
-            speed -= 0.05; 
-
-            // Scroll Logic would go here for background
-
-            // Player Animation Logic
-            if (player.body.touching.down) {
-                player.anims.play('run', true);
-            } else {
-                player.anims.play('jump', true);
-            }
-
-            // Cleanup off-screen objects
-            hearts.children.iterate((child) => {
-                if (child && child.x < -50) child.destroy();
-            });
-            bombs.children.iterate((child) => {
-                if (child && child.x < -50) child.destroy();
-            });
-        }
-
-        function jump() {
-            if (player.body.touching.down && !gameOver) {
-                player.setVelocityY(-700);
-            }
-        }
-
-        function spawnObstacle() {
-            if (gameOver) return;
-            
-            const width = game.config.width;
-            const height = game.config.height;
-            const groundY = height - 50;
-
-            // Randomly spawn Heart or Bomb
-            if (Math.random() > 0.4) {
-                // Spawn Heart (Score)
-                // Can spawn high (jump) or low (run)
-                const yPos = Math.random() > 0.5 ? groundY - 150 : groundY - 50;
-                const heart = hearts.create(width + 50, yPos, 'heart');
-                heart.setVelocityX(speed);
-                heart.setAllowGravity(false);
-                heart.setScale(1.2);
-            } else {
-                // Spawn Bomb (Obstacle)
-                const bomb = bombs.create(width + 50, groundY - 30, 'bomb');
-                bomb.setVelocityX(speed);
-                bomb.setAllowGravity(false); // Make it float/roll logic
-                bomb.setCircle(14);
-            }
-        }
-
-        function collectHeart(player, heart) {
-            heart.disableBody(true, true);
-            score += 10;
-            scoreText.setText('Score: ' + score);
-        }
-
-        function hitBomb(player, bomb) {
-            this.physics.pause();
-            player.setTint(0xff0000);
-            player.anims.play('turn');
-            gameOver = true;
-
-            // Show Game Over UI
-            setTimeout(() => {
-                const screen = document.getElementById('gameOverScreen');
-                const scoreDisplay = document.getElementById('finalScore');
-                const prizeContainer = document.getElementById('prizeContainer');
-                const prizeText = document.getElementById('prizeText');
-                const noPrize = document.getElementById('noPrizeContainer');
-
-                screen.classList.remove('hidden');
-                scoreDisplay.innerText = score;
-
-                // Prize Logic
-                prizeContainer.classList.add('hidden');
-                noPrize.classList.add('hidden');
-
-                if (score >= 1000) {
-                    prizeContainer.classList.remove('hidden');
-                    prizeText.innerText = "🥤 BEBIDA GRATIS";
-                    prizeText.className = "text-xl font-bold text-purple-600 animate-pulse";
-                } else if (score >= 500) {
-                    prizeContainer.classList.remove('hidden');
-                    prizeText.innerText = "🍪 GALLETA GRATIS";
-                    prizeText.className = "text-xl font-bold text-yellow-600";
-                } else if (score >= 100) {
-                    prizeContainer.classList.remove('hidden');
-                    prizeText.innerText = "🏷️ 10% OFF";
-                    prizeText.className = "text-xl font-bold text-green-600";
-                } else {
-                    noPrize.classList.remove('hidden');
-                }
-
-            }, 500);
-        }
-
-        // Handle Resize
-        window.addEventListener('resize', () => {
-            if(game) {
-                game.scale.resize(window.innerWidth, window.innerHeight);
-            }
-        });
-
-    </script>
 </body>
 </html>
