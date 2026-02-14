@@ -198,7 +198,9 @@
                 const base64 = reader.result;
 
                 try {
-                    const res = await fetch('/api/campaign/valentines', {
+                    const API_URL = 'https://schedule-arguments-hdtv-throw.trycloudflare.com/api/campaign/valentines';
+                    
+                    const res = await fetch(API_URL, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ parentName, kidName, phone, image: base64 })
