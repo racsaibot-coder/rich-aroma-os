@@ -35,10 +35,17 @@
         <div class="bg-white p-5 rounded-2xl shadow-sm border border-red-100">
             <div class="flex items-center gap-3 mb-4">
                 <div class="bg-red-100 text-red-500 w-8 h-8 rounded-full flex items-center justify-center font-bold">1</div>
-                <h2 class="font-bold text-lg">Descarga e Imprime</h2>
+                <h2 class="font-bold text-lg">Elige tu Opción</h2>
             </div>
             
-            <div class="grid grid-cols-2 gap-4">
+            <!-- Tabs -->
+            <div class="flex gap-2 mb-4 bg-gray-100 p-1 rounded-xl">
+                <button onclick="switchTab('print')" id="tab-print" class="flex-1 py-2 text-sm font-bold rounded-lg bg-white shadow text-gray-800">🖨️ Imprimir</button>
+                <button onclick="switchTab('digital')" id="tab-digital" class="flex-1 py-2 text-sm font-bold rounded-lg text-gray-500 hover:bg-white hover:text-red-500 transition">📱 Digital</button>
+            </div>
+
+            <!-- Print Mode -->
+            <div id="mode-print" class="grid grid-cols-2 gap-4">
                 <a href="/assets/rico-love.jpg" download class="block group">
                     <img src="/assets/rico-love.jpg" class="rounded-xl border-2 border-dashed border-gray-200 group-hover:border-red-400 transition w-full h-32 object-cover object-top">
                     <button class="w-full mt-2 bg-red-50 text-red-500 py-2 rounded-lg text-xs font-bold hover:bg-red-100">
@@ -51,6 +58,25 @@
                         <i class="fas fa-download"></i> Opción 2
                     </button>
                 </a>
+            </div>
+
+            <!-- Digital Mode -->
+            <div id="mode-digital" class="hidden">
+                <p class="text-xs text-gray-500 mb-3 text-center">Toca para seleccionar un dibujo y empezar.</p>
+                <div class="grid grid-cols-2 gap-4">
+                    <div onclick="openCanvas('/assets/rico-love.jpg')" class="cursor-pointer group">
+                        <img src="/assets/rico-love.jpg" class="rounded-xl border-2 border-dashed border-gray-200 group-hover:border-red-400 transition w-full h-32 object-cover object-top">
+                        <button class="w-full mt-2 bg-blue-50 text-blue-500 py-2 rounded-lg text-xs font-bold hover:bg-blue-100">
+                            <i class="fas fa-paint-brush"></i> Colorear
+                        </button>
+                    </div>
+                    <div onclick="openCanvas('/assets/rico-shop.jpg')" class="cursor-pointer group">
+                        <img src="/assets/rico-shop.jpg" class="rounded-xl border-2 border-dashed border-gray-200 group-hover:border-red-400 transition w-full h-32 object-cover object-top">
+                        <button class="w-full mt-2 bg-blue-50 text-blue-500 py-2 rounded-lg text-xs font-bold hover:bg-blue-100">
+                            <i class="fas fa-paint-brush"></i> Colorear
+                        </button>
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -111,7 +137,201 @@
         </div>
     </div>
 
+    <!-- Canvas Modal -->
+    <div id="canvasModal" class="hidden fixed inset-0 bg-gray-900 z-50 flex flex-col">
+        <!-- Header -->
+        <div class="bg-white p-4 flex justify-between items-center shadow-md z-10">
+            <button onclick="closeCanvas()" class="text-gray-500 font-bold">Cancelar</button>
+            <h3 class="font-bold text-lg text-red-500">Colorear 🎨</h3>
+            <button onclick="saveCanvas()" class="bg-green-500 text-white px-4 py-2 rounded-full font-bold shadow-md">Terminar</button>
+        </div>
+
+        <!-- Canvas Area -->
+        <div class="flex-1 bg-gray-200 overflow-hidden relative flex items-center justify-center" id="canvasContainer">
+            <canvas id="paintCanvas" class="bg-white shadow-lg"></canvas>
+        </div>
+
+        <!-- Palette -->
+        <div class="bg-white p-4 pb-8 shadow-t-lg">
+            <div class="flex justify-between items-center gap-2 overflow-x-auto pb-2">
+                <!-- Colors -->
+                <div onclick="setColor('#EF4444')" class="w-10 h-10 rounded-full bg-red-500 border-4 border-transparent cursor-pointer ring-offset-2 hover:ring-2 hover:ring-gray-300 color-btn" data-color="#EF4444"></div>
+                <div onclick="setColor('#F472B6')" class="w-10 h-10 rounded-full bg-pink-400 border-4 border-transparent cursor-pointer ring-offset-2 hover:ring-2 hover:ring-gray-300 color-btn" data-color="#F472B6"></div>
+                <div onclick="setColor('#FBBF24')" class="w-10 h-10 rounded-full bg-yellow-400 border-4 border-transparent cursor-pointer ring-offset-2 hover:ring-2 hover:ring-gray-300 color-btn" data-color="#FBBF24"></div>
+                <div onclick="setColor('#34D399')" class="w-10 h-10 rounded-full bg-green-400 border-4 border-transparent cursor-pointer ring-offset-2 hover:ring-2 hover:ring-gray-300 color-btn" data-color="#34D399"></div>
+                <div onclick="setColor('#60A5FA')" class="w-10 h-10 rounded-full bg-blue-400 border-4 border-transparent cursor-pointer ring-offset-2 hover:ring-2 hover:ring-gray-300 color-btn" data-color="#60A5FA"></div>
+                <div onclick="setColor('#A78BFA')" class="w-10 h-10 rounded-full bg-purple-400 border-4 border-transparent cursor-pointer ring-offset-2 hover:ring-2 hover:ring-gray-300 color-btn" data-color="#A78BFA"></div>
+                <div onclick="setColor('#78350F')" class="w-10 h-10 rounded-full bg-yellow-900 border-4 border-transparent cursor-pointer ring-offset-2 hover:ring-2 hover:ring-gray-300 color-btn" data-color="#78350F"></div>
+                <div onclick="setColor('#FFFFFF')" class="w-10 h-10 rounded-full bg-white border-2 border-gray-300 cursor-pointer flex items-center justify-center color-btn" data-color="#FFFFFF">🧽</div>
+            </div>
+            
+            <div class="mt-4 flex gap-4 items-center">
+                <span class="text-xs font-bold text-gray-400 uppercase">Grosor</span>
+                <input type="range" min="2" max="20" value="5" class="w-full accent-red-500" onchange="setLineWidth(this.value)">
+            </div>
+        </div>
+    </div>
+
     <script>
+        // --- Tab Logic ---
+        function switchTab(mode) {
+            document.getElementById('mode-print').classList.add('hidden');
+            document.getElementById('mode-digital').classList.add('hidden');
+            document.getElementById('tab-print').className = "flex-1 py-2 text-sm font-bold rounded-lg text-gray-500 hover:bg-white hover:text-red-500 transition";
+            document.getElementById('tab-digital').className = "flex-1 py-2 text-sm font-bold rounded-lg text-gray-500 hover:bg-white hover:text-red-500 transition";
+
+            document.getElementById(`mode-${mode}`).classList.remove('hidden');
+            document.getElementById(`tab-${mode}`).className = "flex-1 py-2 text-sm font-bold rounded-lg bg-white shadow text-gray-800";
+        }
+
+        // --- Canvas Logic ---
+        let canvas, ctx;
+        let isDrawing = false;
+        let currentImage = null;
+
+        function openCanvas(imageUrl) {
+            document.getElementById('canvasModal').classList.remove('hidden');
+            document.body.style.overflow = 'hidden'; // Lock scroll
+            
+            setTimeout(() => initCanvas(imageUrl), 100);
+        }
+
+        function closeCanvas() {
+            document.getElementById('canvasModal').classList.add('hidden');
+            document.body.style.overflow = 'auto';
+        }
+
+        function initCanvas(imageUrl) {
+            const container = document.getElementById('canvasContainer');
+            canvas = document.getElementById('paintCanvas');
+            ctx = canvas.getContext('2d');
+
+            // Responsive Size
+            const width = Math.min(container.clientWidth - 20, 500); // Max width 500
+            const height = width * 1.4; // 5:7 Ratio roughly
+
+            canvas.width = width;
+            canvas.height = height;
+
+            // Load Image
+            const img = new Image();
+            img.src = imageUrl;
+            img.onload = () => {
+                ctx.drawImage(img, 0, 0, width, height);
+                currentImage = img; // Save ref for redraws if needed
+            };
+
+            // Events
+            // Mouse
+            canvas.addEventListener('mousedown', startDraw);
+            canvas.addEventListener('mousemove', draw);
+            canvas.addEventListener('mouseup', stopDraw);
+            canvas.addEventListener('mouseout', stopDraw);
+            
+            // Touch
+            canvas.addEventListener('touchstart', (e) => {
+                e.preventDefault(); // Prevent scroll
+                const touch = e.touches[0];
+                const mouseEvent = new MouseEvent("mousedown", {
+                    clientX: touch.clientX,
+                    clientY: touch.clientY
+                });
+                canvas.dispatchEvent(mouseEvent);
+            });
+            
+            canvas.addEventListener('touchmove', (e) => {
+                e.preventDefault();
+                const touch = e.touches[0];
+                const mouseEvent = new MouseEvent("mousemove", {
+                    clientX: touch.clientX,
+                    clientY: touch.clientY
+                });
+                canvas.dispatchEvent(mouseEvent);
+            });
+            
+            canvas.addEventListener('touchend', () => {
+                const mouseEvent = new MouseEvent("mouseup", {});
+                canvas.dispatchEvent(mouseEvent);
+            });
+
+            // Default Color
+            ctx.strokeStyle = '#EF4444';
+            ctx.lineWidth = 5;
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+        }
+
+        function startDraw(e) {
+            isDrawing = true;
+            draw(e);
+        }
+
+        function draw(e) {
+            if (!isDrawing) return;
+            
+            const rect = canvas.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+
+            ctx.lineTo(x, y);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.moveTo(x, y);
+        }
+
+        function stopDraw() {
+            isDrawing = false;
+            ctx.beginPath(); // Reset path
+        }
+
+        function setColor(color) {
+            ctx.strokeStyle = color;
+            // Highlight logic
+            document.querySelectorAll('.color-btn').forEach(b => b.style.transform = 'scale(1)');
+            const btn = document.querySelector(`[data-color="${color}"]`);
+            if(btn) btn.style.transform = 'scale(1.2)';
+        }
+
+        function setLineWidth(width) {
+            ctx.lineWidth = width;
+        }
+
+        function saveCanvas() {
+            const dataURL = canvas.toDataURL('image/png');
+            
+            // Auto-fill the form
+            // We need a way to pass this dataURL to the form input
+            // Since input type="file" is read-only, we'll create a hidden input for base64
+            
+            // 1. Create hidden input if not exists
+            let hiddenInput = document.getElementById('hiddenBase64');
+            if (!hiddenInput) {
+                hiddenInput = document.createElement('input');
+                hiddenInput.type = 'hidden';
+                hiddenInput.id = 'hiddenBase64';
+                document.getElementById('artForm').appendChild(hiddenInput);
+            }
+            hiddenInput.value = dataURL;
+
+            // 2. Hide File Input visually to show "Canvas Selected"
+            document.getElementById('photo').classList.add('hidden');
+            
+            let status = document.getElementById('uploadStatus');
+            if (!status) {
+                status = document.createElement('div');
+                status.id = 'uploadStatus';
+                status.className = "bg-green-50 text-green-700 p-3 rounded-xl border border-green-200 text-sm font-bold flex items-center gap-2";
+                status.innerHTML = '<i class="fas fa-check-circle"></i> Dibujo Digital Adjuntado';
+                document.getElementById('photo').parentNode.appendChild(status);
+            }
+
+            closeCanvas();
+            
+            // Scroll to form
+            document.getElementById('artForm').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        // --- Modified Submit Logic ---
         document.getElementById('artForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             const btn = e.target.querySelector('button');
@@ -122,31 +342,47 @@
             const kidName = document.getElementById('kidName').value;
             const parentName = document.getElementById('parentName').value;
             const phone = document.getElementById('phone').value;
-            const photo = document.getElementById('photo').files[0];
+            
+            const fileInput = document.getElementById('photo');
+            const hiddenBase64 = document.getElementById('hiddenBase64');
 
-            if (!kidName || !parentName || !phone || !photo) {
-                alert("Por favor llena todos los campos 😅");
+            if (!kidName || !parentName || !phone) {
+                alert("Por favor llena los nombres y teléfono 😅");
                 btn.innerText = originalText;
                 btn.disabled = false;
                 return;
             }
 
-            // Convert Image to Base64
-            const reader = new FileReader();
-            reader.onloadend = async () => {
-                const base64 = reader.result;
+            // Determine image source
+            let base64 = null;
+            if (hiddenBase64 && hiddenBase64.value) {
+                base64 = hiddenBase64.value;
+                submit(base64);
+            } else if (fileInput.files[0]) {
+                const reader = new FileReader();
+                reader.onloadend = () => {
+                    base64 = reader.result;
+                    submit(base64);
+                };
+                reader.readAsDataURL(fileInput.files[0]);
+            } else {
+                alert("Falta el dibujo (Sube foto o colorea digital) 🎨");
+                btn.innerText = originalText;
+                btn.disabled = false;
+                return;
+            }
 
+            async function submit(imgData) {
                 try {
                     const res = await fetch('/api/campaign/valentines', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ name: parentName, kidName: kidName, phone, image: base64 })
+                        body: JSON.stringify({ name: parentName, kidName: kidName, phone, image: imgData })
                     });
 
                     const data = await res.json();
                     if (data.success) {
                         document.getElementById('successModal').classList.remove('hidden');
-                        // Confetti effect here if we had the library
                     } else {
                         alert("Error: " + data.error);
                     }
@@ -154,11 +390,9 @@
                     console.error(err);
                     alert("Error de conexión 📡");
                 }
-                
                 btn.innerText = originalText;
                 btn.disabled = false;
-            };
-            reader.readAsDataURL(photo);
+            }
         });
     </script>
 
