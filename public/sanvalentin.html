@@ -215,6 +215,7 @@
             reader.readAsDataURL(fileInput.files[0]);
             reader.onload = async () => {
                 const base64 = reader.result;
+                const referredBy = localStorage.getItem('ra_ref');
 
                 try {
                     const API_URL = 'https://schedule-arguments-hdtv-throw.trycloudflare.com/api/campaign/valentines';
@@ -222,7 +223,7 @@
                     const res = await fetch(API_URL, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ parentName, kidName, phone, pin, image: base64 })
+                        body: JSON.stringify({ parentName, kidName, phone, pin, image: base64, referredBy })
                     });
 
                     const data = await res.json();
@@ -242,8 +243,18 @@
                 btn.innerHTML = originalText;
                 btn.disabled = false;
                 btn.classList.remove('opacity-75');
+                
+                // Store phone for profile fetching
+                localStorage.setItem('ra_phone', phone);
             };
         });
+        
+        // Check for referral
+        const urlParams = new URLSearchParams(window.location.search);
+        const refCode = urlParams.get('ref');
+        if (refCode) {
+            localStorage.setItem('ra_ref', refCode);
+        }
     </script>
 
 </body>

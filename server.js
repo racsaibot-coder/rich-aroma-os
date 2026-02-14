@@ -372,7 +372,10 @@ app.post('/api/campaign/valentines', async (req, res) => {
             .eq('phone', cleanPhone)
             .single();
             
+        let customerId;
+        
         if (existing) {
+            customerId = existing.id;
             // Update PIN if not set, or overwrite? Let's overwrite for recovery behavior.
             await supabase
                 .from('customers')
@@ -385,18 +388,42 @@ app.post('/api/campaign/valentines', async (req, res) => {
             // Create New
             const { data: maxId } = await supabase.from('customers').select('id').order('id', { ascending: false }).limit(1);
             const nextNum = maxId?.length ? parseInt(maxId[0].id.slice(1)) + 1 : 1;
-            const newId = `C${String(nextNum).padStart(3, '0')}`;
+            customerId = `C${String(nextNum).padStart(3, '0')}`;
             
+            // Generate Referral Code for this new user
+            const refCode = (parentName.slice(0,3).toUpperCase() + cleanPhone.slice(-4)).replace(/\s/g, 'X');
+
             await supabase.from('customers').insert({
-                id: newId,
+                id: customerId,
                 name: parentName,
                 phone: cleanPhone,
                 pin: pin,
                 points: 50, // Sign up bonus
                 tier: 'bronze',
+                referral_code: refCode,
                 notes: `Source: Coloring Campaign 2026`,
                 tags: ['coloring_contest']
             });
+        }
+
+        // HANDLE REFERRAL
+        if (req.body.referredBy) {
+            const { data: referrer } = await supabase
+                .from('customers')
+                .select('*')
+                .eq('referral_code', req.body.referredBy)
+                .single();
+                
+            if (referrer) {
+                // Award points to referrer
+                const bonusPoints = 50;
+                await supabase
+                    .from('customers')
+                    .update({ points: (referrer.points || 0) + bonusPoints })
+                    .eq('id', referrer.id);
+                
+                console.log(`[Referral] ${referrer.name} referred ${parentName}. +${bonusPoints} pts.`);
+            }
         }
 
         res.json({ success: true, user: { name: parentName, phone: cleanPhone } });
