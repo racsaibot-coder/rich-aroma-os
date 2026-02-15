@@ -113,13 +113,16 @@
                 // 1. Clean Phone
                 const cleanPhone = countryCode.replace(/\D/g, '') + phoneRaw.replace(/\D/g, '');
                 
+                console.log("Attempting signup for:", cleanPhone);
+
                 // 2. Check Exists
-                const { data: existing } = await supabase
+                const { data: existing, error: searchError } = await supabase
                     .from('customers')
                     .select('id')
                     .eq('phone', cleanPhone)
                     .single();
-                    
+                
+                // If error is "not found", that's good. If existing is found, block.
                 if (existing) {
                     alert("Este número ya está registrado. Intenta iniciar sesión.");
                     window.location.href = '/login.html';
@@ -138,10 +141,13 @@
                 const nextNum = maxId?.length ? parseInt(maxId[0].id.slice(1)) + 1 : Math.floor(Math.random() * 1000) + 100;
                 const newId = `C${String(nextNum).padStart(3, '0')}`;
                 
-                const refCode = (name.slice(0,3).toUpperCase() + cleanPhone.slice(-4)).replace(/\s/g, 'X');
+                // Fix: Ensure name is not empty for ref code
+                const safeName = (name || "REF").slice(0,3).toUpperCase();
+                const safePhone = cleanPhone.slice(-4);
+                const refCode = `${safeName}${safePhone}`;
 
                 // 4. Insert
-                const { error } = await supabase
+                const { error: insertError } = await supabase
                     .from('customers')
                     .insert({
                         id: newId,
@@ -154,15 +160,17 @@
                         tags: ['simple_signup', 'serverless']
                     });
 
-                if (error) throw error;
+                if (insertError) {
+                    throw insertError;
+                }
 
                 // Success
                 localStorage.setItem('ra_phone', cleanPhone);
                 window.location.href = `/welcome.html?name=${encodeURIComponent(name)}`;
 
             } catch (err) {
-                console.error(err);
-                alert("Error: " + err.message);
+                console.error("Signup error:", err);
+                alert("Error: " + (err.message || "Error desconocido"));
                 btn.innerHTML = originalText;
                 btn.disabled = false;
             }
