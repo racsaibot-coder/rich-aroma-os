@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Crear Cuenta | Rich Aroma</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'brand-gold': '#C9A66B',
+                        'brand-brown': '#1E1610',
+                        'brand-dark': '#120C09'
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap');
+        body { font-family: 'Fredoka', sans-serif; background-color: #FFFDF5; }
+        .pattern-bg {
+            background-image: radial-gradient(#C9A66B 0.5px, transparent 0.5px);
+            background-size: 20px 20px;
+        }
+    </style>
+</head>
+<body class="pattern-bg min-h-screen text-brand-brown flex items-center justify-center">
+
+    <div class="max-w-xs w-full p-6">
+        
+        <div class="text-center mb-8">
+            <img src="/assets/rich-aroma-logo.jpg" class="w-24 h-24 rounded-full border-4 border-brand-gold shadow-lg mx-auto mb-4 animate-bounce-slow">
+            <h1 class="text-2xl font-bold text-brand-brown">Crear Cuenta</h1>
+            <p class="text-gray-500 text-sm">Gana L. 50 de bienvenida 🎉</p>
+        </div>
+
+        <form id="signupForm" class="space-y-4 bg-white p-6 rounded-3xl shadow-xl border border-brand-gold/20">
+            <div>
+                <label class="block text-xs font-bold text-gray-500 mb-1 ml-1">Tu Nombre</label>
+                <div class="relative">
+                    <i class="fas fa-user absolute left-4 top-3.5 text-gray-300"></i>
+                    <input type="text" id="name" required class="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 pl-10 outline-none focus:border-brand-gold transition" placeholder="Ej. Carlos Perez">
+                </div>
+            </div>
+
+            <div>
+                <label class="block text-xs font-bold text-gray-500 mb-1 ml-1">Teléfono</label>
+                <div class="relative flex">
+                    <select id="countryCode" class="bg-gray-100 border border-gray-200 rounded-l-xl p-3 text-sm outline-none focus:border-brand-gold appearance-none w-20 text-center font-bold text-gray-600">
+                        <option value="+504" selected>🇭🇳 +504</option>
+                        <option value="+1">🇺🇸 +1</option>
+                        <option value="+502">🇬🇹 +502</option>
+                        <option value="+503">🇸🇻 +503</option>
+                        <option value="+34">🇪🇸 +34</option>
+                    </select>
+                    <input type="tel" id="phone" required class="w-full bg-gray-50 border border-l-0 border-gray-200 rounded-r-xl p-3 outline-none focus:border-brand-gold transition" placeholder="9988-7766">
+                </div>
+            </div>
+
+            <div>
+                <label class="block text-xs font-bold text-gray-500 mb-1 ml-1">Crea un PIN (4 dígitos)</label>
+                <div class="relative">
+                    <i class="fas fa-lock absolute left-4 top-3.5 text-gray-300"></i>
+                    <input type="tel" id="pin" required maxlength="4" class="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 pl-10 outline-none focus:border-brand-gold transition -webkit-text-security:disc;" placeholder="••••">
+                </div>
+                <p class="text-[10px] text-gray-400 ml-1 mt-1">Usarás este PIN para entrar después.</p>
+            </div>
+
+            <button type="submit" class="w-full bg-brand-brown text-white font-bold py-4 rounded-xl shadow-lg hover:bg-gray-800 transition transform active:scale-95">
+                Crear Cuenta
+            </button>
+        </form>
+
+        <div class="mt-8 text-center space-y-4">
+            <a href="/login.html" class="block text-sm text-brand-gold font-bold hover:underline">
+                ¿Ya tienes cuenta? Inicia Sesión
+            </a>
+            <a href="/" class="block text-xs text-gray-400 underline">Volver al Inicio</a>
+        </div>
+
+    </div>
+
+    <script>
+        document.getElementById('signupForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const btn = e.target.querySelector('button');
+            const originalText = btn.innerHTML;
+            
+            const name = document.getElementById('name').value;
+            const phone = document.getElementById('phone').value;
+            const pin = document.getElementById('pin').value;
+            const countryCode = document.getElementById('countryCode').value;
+
+            if (pin.length < 4) {
+                alert("El PIN debe tener 4 números");
+                return;
+            }
+
+            btn.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i> Creando...';
+            btn.disabled = true;
+
+            try {
+                // Use the tunnel URL directly
+                const API_URL = 'https://schedule-arguments-hdtv-throw.trycloudflare.com/api/auth/signup-simple';
+                
+                const res = await fetch(API_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name, phone, pin, countryCode })
+                });
+
+                const data = await res.json();
+
+                if (data.success) {
+                    // Save ref code for hydration
+                    if (data.user.referral_code) {
+                        localStorage.setItem('ra_ref_self', data.user.referral_code);
+                    }
+                    localStorage.setItem('ra_phone', data.user.phone);
+                    
+                    // Redirect to welcome/dashboard
+                    window.location.href = `/welcome.html?name=${encodeURIComponent(data.user.name)}`;
+                } else {
+                    alert(data.error || "Error al crear cuenta");
+                    btn.innerHTML = originalText;
+                    btn.disabled = false;
+                }
+            } catch (err) {
+                console.error(err);
+                alert("Error de conexión");
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+            }
+        });
+    </script>
+</body>
+</html>
