@@ -75,7 +75,12 @@
 
     </div>
 
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script>
+        const SB_URL = 'https://zcqubacfcettwawcimsy.supabase.co';
+        const SB_KEY = 'sb_publishable_hRVyru_6sektmVGQyJFfwQ_4b2-7MKq';
+        const supabase = window.supabase.createClient(SB_URL, SB_KEY);
+
         document.getElementById('loginForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             const btn = e.target.querySelector('button');
@@ -85,30 +90,38 @@
             btn.disabled = true;
 
             const countryCode = document.getElementById('countryCode').value;
-            const rawPhone = document.getElementById('phone').value;
-            const fullPhone = countryCode + rawPhone.replace(/\D/g, ''); // Combine
+            const phoneRaw = document.getElementById('phone').value;
             const pin = document.getElementById('pin').value;
 
             try {
-                // Use the tunnel URL directly
-                const API_URL = 'https://decade-shall-procurement-activities.trycloudflare.com/api/auth/login';
-                
-                const res = await fetch(API_URL, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ phone: fullPhone, pin, type: 'phone' })
-                });
+                // Clean Phone
+                const cleanPhone = countryCode.replace(/\D/g, '') + phoneRaw.replace(/\D/g, '');
 
-                const data = await res.json();
+                // Check Supabase
+                const { data: user, error } = await supabase
+                    .from('customers')
+                    .select('*')
+                    .eq('phone', cleanPhone)
+                    .single();
 
-                if (data.success) {
-                    // Redirect to welcome/dashboard
-                    window.location.href = `/welcome.html?name=${encodeURIComponent(data.user.name)}`;
-                } else {
-                    alert(data.error || "Login fallido");
+                if (error || !user) {
+                    alert("Usuario no encontrado.");
                     btn.innerHTML = originalText;
                     btn.disabled = false;
+                    return;
                 }
+
+                if (user.pin !== pin) {
+                    alert("PIN incorrecto.");
+                    btn.innerHTML = originalText;
+                    btn.disabled = false;
+                    return;
+                }
+
+                // Success
+                localStorage.setItem('ra_phone', cleanPhone);
+                window.location.href = `/welcome.html?name=${encodeURIComponent(user.name)}`;
+
             } catch (err) {
                 console.error(err);
                 alert("Error de conexión");
