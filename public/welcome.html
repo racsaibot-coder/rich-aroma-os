@@ -164,11 +164,12 @@
         </div>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script>
+    <script type="module">
+        import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm'
+
         const SB_URL = 'https://zcqubacfcettwawcimsy.supabase.co';
         const SB_KEY = 'sb_publishable_hRVyru_6sektmVGQyJFfwQ_4b2-7MKq';
-        const supabase = window.supabase.createClient(SB_URL, SB_KEY);
+        const supabase = createClient(SB_URL, SB_KEY);
 
         // Confetti Logic
         const canvas = document.getElementById('confetti');
