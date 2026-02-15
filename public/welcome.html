@@ -294,7 +294,7 @@
                 const phone = localStorage.getItem('ra_phone');
                 if (phone) {
                     try {
-                        const API_URL = 'https://photographic-red-responses-cigarette.trycloudflare.com/api/customer/profile?phone=' + phone;
+                        const API_URL = 'https://decade-shall-procurement-activities.trycloudflare.com/api/customer/profile?phone=' + phone;
                         const res = await fetch(API_URL);
                         const data = await res.json();
                         
@@ -361,7 +361,7 @@
             btn.innerHTML = '⏳ Guardando...';
             
             try {
-                const API_URL = 'https://photographic-red-responses-cigarette.trycloudflare.com/api/customer/notify';
+                const API_URL = 'https://decade-shall-procurement-activities.trycloudflare.com/api/customer/notify';
                 await fetch(API_URL, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
