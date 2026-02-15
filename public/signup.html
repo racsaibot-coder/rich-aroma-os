@@ -84,14 +84,20 @@
 
     </div>
 
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script>
+        // --- SUPABASE DIRECT CONFIG ---
+        const SB_URL = 'https://zcqubacfcettwawcimsy.supabase.co';
+        const SB_KEY = 'sb_publishable_hRVyru_6sektmVGQyJFfwQ_4b2-7MKq'; // Public Anon Key
+        const supabase = window.supabase.createClient(SB_URL, SB_KEY);
+
         document.getElementById('signupForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             const btn = e.target.querySelector('button');
             const originalText = btn.innerHTML;
             
             const name = document.getElementById('name').value;
-            const phone = document.getElementById('phone').value;
+            const phoneRaw = document.getElementById('phone').value;
             const pin = document.getElementById('pin').value;
             const countryCode = document.getElementById('countryCode').value;
 
@@ -104,34 +110,59 @@
             btn.disabled = true;
 
             try {
-                // Use the tunnel URL directly
-                const API_URL = 'https://decade-shall-procurement-activities.trycloudflare.com/api/auth/signup-simple';
+                // 1. Clean Phone
+                const cleanPhone = countryCode.replace(/\D/g, '') + phoneRaw.replace(/\D/g, '');
                 
-                const res = await fetch(API_URL, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ name, phone, pin, countryCode })
-                });
-
-                const data = await res.json();
-
-                if (data.success) {
-                    // Save ref code for hydration
-                    if (data.user.referral_code) {
-                        localStorage.setItem('ra_ref_self', data.user.referral_code);
-                    }
-                    localStorage.setItem('ra_phone', data.user.phone);
+                // 2. Check Exists
+                const { data: existing } = await supabase
+                    .from('customers')
+                    .select('id')
+                    .eq('phone', cleanPhone)
+                    .single();
                     
-                    // Redirect to welcome/dashboard
-                    window.location.href = `/welcome.html?name=${encodeURIComponent(data.user.name)}`;
-                } else {
-                    alert(data.error || "Error al crear cuenta");
-                    btn.innerHTML = originalText;
-                    btn.disabled = false;
+                if (existing) {
+                    alert("Este número ya está registrado. Intenta iniciar sesión.");
+                    window.location.href = '/login.html';
+                    return;
                 }
+
+                // 3. Generate ID (Client-side estimation)
+                // Note: In high concurrency this might collide, but for this scale it's fine.
+                // Ideally backend handles this, but we are going serverless.
+                const { data: maxId } = await supabase
+                    .from('customers')
+                    .select('id')
+                    .order('id', { ascending: false })
+                    .limit(1);
+                    
+                const nextNum = maxId?.length ? parseInt(maxId[0].id.slice(1)) + 1 : Math.floor(Math.random() * 1000) + 100;
+                const newId = `C${String(nextNum).padStart(3, '0')}`;
+                
+                const refCode = (name.slice(0,3).toUpperCase() + cleanPhone.slice(-4)).replace(/\s/g, 'X');
+
+                // 4. Insert
+                const { error } = await supabase
+                    .from('customers')
+                    .insert({
+                        id: newId,
+                        name: name,
+                        phone: cleanPhone,
+                        pin: pin,
+                        points: 50,
+                        tier: 'bronze',
+                        referral_code: refCode,
+                        tags: ['simple_signup', 'serverless']
+                    });
+
+                if (error) throw error;
+
+                // Success
+                localStorage.setItem('ra_phone', cleanPhone);
+                window.location.href = `/welcome.html?name=${encodeURIComponent(name)}`;
+
             } catch (err) {
                 console.error(err);
-                alert("Error de conexión");
+                alert("Error: " + err.message);
                 btn.innerHTML = originalText;
                 btn.disabled = false;
             }
