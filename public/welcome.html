@@ -171,7 +171,56 @@
         const SB_KEY = 'sb_publishable_hRVyru_6sektmVGQyJFfwQ_4b2-7MKq';
         const supabase = createClient(SB_URL, SB_KEY);
 
-        // Confetti Logic
+        // ... (Confetti code) ...
+
+        // Wait for DOM to load, then attach notify function to window for the button click
+        window.notifyMe = async function(btn) {
+            const phone = localStorage.getItem('ra_phone');
+            if(!phone) {
+                alert("Por favor inicia sesión primero");
+                window.location.href = '/login.html';
+                return;
+            }
+
+            const originalText = btn.innerHTML;
+            btn.innerHTML = '⏳ Guardando...';
+            btn.disabled = true;
+            
+            try {
+                // Fetch current tags
+                const { data: customer, error } = await supabase
+                    .from('customers')
+                    .select('tags')
+                    .eq('phone', phone)
+                    .single();
+                    
+                if (customer) {
+                    let tags = customer.tags || [];
+                    if (!tags.includes('founder_launch')) {
+                        tags.push('founder_launch');
+                        const { error: updateError } = await supabase
+                            .from('customers')
+                            .update({ tags: tags })
+                            .eq('phone', phone);
+                            
+                        if (updateError) throw updateError;
+                    }
+                    
+                    btn.innerHTML = '✅ ¡Anotado! Te escribiremos.';
+                    btn.classList.remove('bg-brand-gold', 'text-brand-dark');
+                    btn.classList.add('bg-green-500', 'text-white');
+                } else {
+                    alert("Error: Usuario no encontrado");
+                    btn.innerHTML = originalText;
+                    btn.disabled = false;
+                }
+            } catch(e) {
+                console.error(e);
+                alert("Error de conexión: " + e.message);
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+            }
+        }
         const canvas = document.getElementById('confetti');
         const ctx = canvas.getContext('2d');
         canvas.width = window.innerWidth;
