@@ -133,8 +133,15 @@
                         currentCustomer = await res.json();
                         // Update UI header
                         const headerDiv = document.querySelector('header div:first-child');
-                        headerDiv.innerHTML += `<div class="mt-1 inline-block bg-gold/20 text-gold text-[10px] px-2 py-1 rounded-full"><i class="fas fa-star"></i> Hola, ${currentCustomer.name.split(' ')[0]} (${currentCustomer.points || 0} pts)</div>`;
-                        document.getElementById('checkout-btn-text').innerText = 'Confirmar Orden';
+                        const balance = (currentCustomer.cash_balance || 0) + (currentCustomer.membership_credit || 0);
+                        let html = `<div class="mt-1 inline-block bg-gold/20 text-gold text-[10px] px-2 py-1 rounded-full"><i class="fas fa-star"></i> Hola, ${currentCustomer.name.split(' ')[0]} | Rico Cash: L ${balance.toFixed(2)}</div>`;
+                        
+                        if (balance === 0) {
+                            html += ` <button onclick="claimTestCash()" class="text-[10px] bg-green-500 text-white px-2 py-0.5 rounded-full ml-1 font-bold shadow animate-pulse">🎁 Reclamar L.500</button>`;
+                        }
+                        
+                        headerDiv.innerHTML += html;
+                        document.getElementById('checkout-btn-text').innerText = 'Pagar con Rico Cash';
                     } else {
                         document.getElementById('checkout-btn-text').innerText = 'Iniciar Sesión para Ordenar';
                     }
@@ -147,6 +154,22 @@
             }
         }
         window.addEventListener('DOMContentLoaded', loadProfile);
+
+        async function claimTestCash() {
+            const phone = localStorage.getItem('ra_phone');
+            if (!phone) return;
+            try {
+                const res = await fetch('/api/customer/test-cash', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ phone })
+                });
+                if(res.ok) {
+                    alert('¡L.500 de prueba acreditados a tu cuenta!');
+                    window.location.reload();
+                }
+            } catch(e) { console.error('Error claiming cash', e); }
+        }
 
         function addToCart(name, price) {
             cart.push({ name, price });
@@ -201,8 +224,8 @@
                     items,
                     subtotal: total,
                     total,
-                    paymentMethod: 'cash',
-                    notes: 'Online Order (Pickup)'
+                    paymentMethod: 'rico_balance',
+                    notes: 'Online Order (Test Rico Cash)'
                 };
                 if (currentCustomer) {
                     payload.customerId = currentCustomer.id;

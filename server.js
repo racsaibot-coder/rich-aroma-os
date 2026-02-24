@@ -485,6 +485,37 @@ app.get('/api/customer/profile', async (req, res) => {
     }
 });
 
+// Test Cash (Public for Soft Opening Testing)
+app.post('/api/customer/test-cash', async (req, res) => {
+    const { phone } = req.body;
+    const cleanPhone = phone.replace(/\D/g, '');
+    
+    const { data: customer } = await supabase
+        .from('customers')
+        .select('*')
+        .eq('phone', cleanPhone)
+        .single();
+        
+    if (!customer) return res.status(404).json({ error: 'Customer not found' });
+    
+    const currentCash = parseFloat(customer.cash_balance) || 0;
+    const newCash = currentCash + 500;
+    
+    await supabase
+        .from('customers')
+        .update({ cash_balance: newCash })
+        .eq('id', customer.id);
+        
+    await supabase.from('balance_history').insert({
+        customer_id: customer.id,
+        type: 'load',
+        amount: 500,
+        notes: 'TEST CASH CLAIMED'
+    });
+    
+    res.json({ success: true, newBalance: newCash });
+});
+
 // Notify Interest
 app.post('/api/customer/notify', async (req, res) => {
     const { phone, topic } = req.body;

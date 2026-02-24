@@ -1,0 +1,9 @@
+tunnel: rich-aroma-os
+credentials-file: /Users/racs/.cloudflared/8d1286c7-3b03-4554-949e-108269557451.json
+
+ingress:
+  - hostname: richaromacoffee.com
+    service: http://localhost:8083
+  - hostname: www.richaromacoffee.com
+    service: http://localhost:8083
+  - service: http_status:404
