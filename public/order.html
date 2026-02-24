@@ -114,7 +114,7 @@
             <span id="cart-total" class="text-dark font-display font-bold text-xl">L 0.00</span>
         </div>
         <button onclick="checkout()" class="bg-dark text-gold px-6 py-3 rounded-xl font-bold text-sm shadow-lg flex items-center gap-2 active:scale-95 transition-transform">
-            <span>Confirmar Orden</span>
+            <span id="checkout-btn-text">Confirmar Orden</span>
         </button>
     </div>
 
@@ -134,8 +134,16 @@
                         // Update UI header
                         const headerDiv = document.querySelector('header div:first-child');
                         headerDiv.innerHTML += `<div class="mt-1 inline-block bg-gold/20 text-gold text-[10px] px-2 py-1 rounded-full"><i class="fas fa-star"></i> Hola, ${currentCustomer.name.split(' ')[0]} (${currentCustomer.points || 0} pts)</div>`;
+                        document.getElementById('checkout-btn-text').innerText = 'Confirmar Orden';
+                    } else {
+                        document.getElementById('checkout-btn-text').innerText = 'Iniciar Sesión para Ordenar';
                     }
-                } catch(e) { console.error('Error loading profile', e); }
+                } catch(e) { 
+                    console.error('Error loading profile', e); 
+                    document.getElementById('checkout-btn-text').innerText = 'Iniciar Sesión para Ordenar';
+                }
+            } else {
+                document.getElementById('checkout-btn-text').innerText = 'Iniciar Sesión para Ordenar';
             }
         }
         window.addEventListener('DOMContentLoaded', loadProfile);
@@ -163,6 +171,12 @@
         }
 
         async function checkout() {
+            if (!currentCustomer) {
+                // Not logged in, redirect to login page where they enter Phone + PIN
+                alert("Debes iniciar sesión con tu número y PIN para poder ordenar.");
+                window.location.href = '/login.html';
+                return;
+            }
             if (cart.length === 0) return;
             const btn = document.querySelector('#cart-bar button');
             const originalText = btn.innerHTML;
