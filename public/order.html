@@ -114,14 +114,31 @@
             <span id="cart-total" class="text-dark font-display font-bold text-xl">L 0.00</span>
         </div>
         <button onclick="checkout()" class="bg-dark text-gold px-6 py-3 rounded-xl font-bold text-sm shadow-lg flex items-center gap-2 active:scale-95 transition-transform">
-            <span>Pedir por WhatsApp</span>
-            <i class="fab fa-whatsapp text-lg"></i>
+            <span>Confirmar Orden</span>
         </button>
     </div>
 
     <script>
         let cart = [];
         const SHOP_PHONE = "50495200236"; // Replace with actual shop number
+        let currentCustomer = null;
+
+        // Load customer profile if logged in
+        async function loadProfile() {
+            const phone = localStorage.getItem('ra_phone');
+            if (phone) {
+                try {
+                    const res = await fetch(`/api/customer/profile?phone=${phone}`);
+                    if (res.ok) {
+                        currentCustomer = await res.json();
+                        // Update UI header
+                        const headerDiv = document.querySelector('header div:first-child');
+                        headerDiv.innerHTML += `<div class="mt-1 inline-block bg-gold/20 text-gold text-[10px] px-2 py-1 rounded-full"><i class="fas fa-star"></i> Hola, ${currentCustomer.name.split(' ')[0]} (${currentCustomer.points || 0} pts)</div>`;
+                    }
+                } catch(e) { console.error('Error loading profile', e); }
+            }
+        }
+        window.addEventListener('DOMContentLoaded', loadProfile);
 
         function addToCart(name, price) {
             cart.push({ name, price });
@@ -145,30 +162,55 @@
             }
         }
 
-        function checkout() {
+        async function checkout() {
             if (cart.length === 0) return;
+            const btn = document.querySelector('#cart-bar button');
+            const originalText = btn.innerHTML;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Procesando...';
+            btn.disabled = true;
 
-            // Group items
             const counts = {};
             cart.forEach(item => {
                 counts[item.name] = (counts[item.name] || 0) + 1;
             });
 
-            let message = "👋 Hola Rich Aroma! Quiero ordenar:\n\n";
+            const items = [];
             let total = 0;
-
             for (const [name, count] of Object.entries(counts)) {
                 const item = cart.find(i => i.name === name);
-                const subtotal = item.price * count;
-                total += subtotal;
-                message += `▪️ ${count}x ${name} (L ${subtotal})\n`;
+                items.push({ id: name.toLowerCase().replace(/ /g, '_'), name: name, price: item.price, quantity: count });
+                total += item.price * count;
             }
 
-            message += `\n💰 *Total: L ${total.toFixed(2)}*`;
-            message += "\n📍 Para recoger en tienda.";
-
-            const url = `https://wa.me/${SHOP_PHONE}?text=${encodeURIComponent(message)}`;
-            window.location.href = url;
+            try {
+                const payload = {
+                    items,
+                    subtotal: total,
+                    total,
+                    paymentMethod: 'cash',
+                    notes: 'Online Order (Pickup)'
+                };
+                if (currentCustomer) {
+                    payload.customerId = currentCustomer.id;
+                }
+                const res = await fetch('/api/orders', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                
+                if (!res.ok) throw new Error('Error saving order');
+                
+                alert('¡Orden recibida! La estamos preparando.');
+                cart = [];
+                updateCartUI();
+            } catch (err) {
+                alert('Hubo un error, por favor intenta de nuevo.');
+                console.error(err);
+            } finally {
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+            }
         }
     </script>
 </body>
