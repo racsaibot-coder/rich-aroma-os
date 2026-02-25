@@ -24,11 +24,30 @@
                 <p class="text-4xl font-bold text-purple-600" id="totalPhotos">0</p>
             </div>
             <div class="bg-white p-6 rounded-2xl shadow-sm">
-                <h3 class="text-gray-500 text-xs font-bold uppercase">Interested Founders</h3>
-                <p class="text-4xl font-bold text-yellow-600" id="totalFounders">0</p>
+                <h3 class="text-gray-500 text-xs font-bold uppercase">Recent Orders</h3>
+                <p class="text-4xl font-bold text-green-600" id="totalOrders">0</p>
             </div>
         </div>
 
+        <h2 class="text-xl font-bold mb-4">Recent Orders</h2>
+        <div class="bg-white rounded-2xl shadow-lg overflow-hidden mb-8">
+            <table class="w-full text-left border-collapse">
+                <thead class="bg-gray-50 text-gray-500 text-xs uppercase">
+                    <tr>
+                        <th class="p-4">Order #</th>
+                        <th class="p-4">Items</th>
+                        <th class="p-4">Total</th>
+                        <th class="p-4">Status</th>
+                        <th class="p-4">Time</th>
+                    </tr>
+                </thead>
+                <tbody id="ordersTable" class="divide-y divide-gray-100 text-sm">
+                    <!-- Injected via JS -->
+                </tbody>
+            </table>
+        </div>
+
+        <h2 class="text-xl font-bold mb-4">Registered Leads</h2>
         <div class="bg-white rounded-2xl shadow-lg overflow-hidden">
             <table class="w-full text-left border-collapse">
                 <thead class="bg-gray-50 text-gray-500 text-xs uppercase">
@@ -95,6 +114,40 @@
                     `;
                     tbody.appendChild(row);
                 });
+
+                // Load Orders
+                const ORDERS_API_URL = 'https://vancouver-lunch-looks-power.trycloudflare.com/api/orders';
+                const ordersRes = await fetch(ORDERS_API_URL, { headers });
+                if (ordersRes.ok) {
+                    const ordersData = await ordersRes.json();
+                    const orders = ordersData.orders || [];
+                    document.getElementById('totalOrders').innerText = orders.length;
+                    
+                    const ordersTbody = document.getElementById('ordersTable');
+                    ordersTbody.innerHTML = '';
+                    
+                    orders.forEach(order => {
+                        const row = document.createElement('tr');
+                        const statusColors = {
+                            'pending': 'bg-yellow-100 text-yellow-800',
+                            'paid': 'bg-blue-100 text-blue-800',
+                            'partial_paid': 'bg-orange-100 text-orange-800',
+                            'completed': 'bg-green-100 text-green-800'
+                        };
+                        const statusClass = statusColors[order.status] || 'bg-gray-100 text-gray-800';
+                        
+                        const itemsList = order.items.map(i => `${i.quantity || i.qty || 1}x ${i.name}`).join(', ');
+                        
+                        row.innerHTML = `
+                            <td class="p-4 font-bold text-gray-700">#${order.order_number}</td>
+                            <td class="p-4 text-sm text-gray-600 truncate max-w-xs" title="${itemsList}">${itemsList}</td>
+                            <td class="p-4 font-bold text-green-600">L ${parseFloat(order.total).toFixed(2)}</td>
+                            <td class="p-4"><span class="px-2 py-1 rounded-full text-[10px] font-bold uppercase ${statusClass}">${order.status}</span></td>
+                            <td class="p-4 text-gray-500 text-xs">${new Date(order.created_at || Date.now()).toLocaleString()}</td>
+                        `;
+                        ordersTbody.appendChild(row);
+                    });
+                }
 
             } catch (e) {
                 console.error(e);
