@@ -70,7 +70,7 @@
         async function loadData() {
             // Fetch directly from API
             // Use the public tunnel URL to bypass Vercel
-            const API_URL = 'https://vancouver-lunch-looks-power.trycloudflare.com/api/admin/leads?token=TEST_TOKEN_ADMIN';
+            const API_URL = 'https://reverse-chocolate-shipment-characters.trycloudflare.com/api/admin/leads?token=TEST_TOKEN_ADMIN';
             
             // Add AUTH header because middleware checks it
             const headers = {
@@ -116,7 +116,7 @@
                 });
 
                 // Load Orders
-                const ORDERS_API_URL = 'https://vancouver-lunch-looks-power.trycloudflare.com/api/orders';
+                const ORDERS_API_URL = 'https://reverse-chocolate-shipment-characters.trycloudflare.com/api/orders';
                 const ordersRes = await fetch(ORDERS_API_URL, { headers });
                 if (ordersRes.ok) {
                     const ordersData = await ordersRes.json();
