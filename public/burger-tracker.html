@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>🍔 Burger Tracker | Rich Aroma</title>
+    <style>
+        :root {
+            --bg-color: #1E1610; /* Espresso Black */
+            --text-color: #F5F5F5;
+            --accent-color: #C9A66B; /* Gold */
+            --danger-color: #E63946;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            box-sizing: border-box;
+        }
+        h1 {
+            color: var(--accent-color);
+            text-align: center;
+            margin-bottom: 5px;
+            font-size: 28px;
+        }
+        .subtitle {
+            color: #aaa;
+            margin-bottom: 30px;
+            font-size: 14px;
+            text-align: center;
+        }
+        .counter-box {
+            background: #2A2018;
+            border-radius: 20px;
+            padding: 30px;
+            text-align: center;
+            width: 100%;
+            max-width: 400px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            margin-bottom: 30px;
+        }
+        .count {
+            font-size: 80px;
+            font-weight: 800;
+            color: var(--accent-color);
+            margin: 10px 0;
+            line-height: 1;
+        }
+        .goal {
+            font-size: 20px;
+            color: #888;
+            margin-bottom: 20px;
+        }
+        .progress-container {
+            width: 100%;
+            background-color: #111;
+            border-radius: 10px;
+            margin: 20px 0;
+            overflow: hidden;
+            height: 20px;
+        }
+        .progress-bar {
+            height: 100%;
+            background-color: var(--accent-color);
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+        .revenue {
+            font-size: 24px;
+            font-weight: bold;
+            color: #4CAF50;
+            margin-top: 10px;
+        }
+        .btn-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            width: 100%;
+            max-width: 400px;
+        }
+        button {
+            background-color: var(--accent-color);
+            color: var(--bg-color);
+            border: none;
+            border-radius: 15px;
+            padding: 20px;
+            font-size: 24px;
+            font-weight: bold;
+            cursor: pointer;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+            transition: transform 0.1s, background-color 0.2s;
+            touch-action: manipulation;
+        }
+        button:active {
+            transform: scale(0.95);
+        }
+        .btn-minus {
+            background-color: transparent;
+            color: var(--danger-color);
+            border: 2px solid var(--danger-color);
+            padding: 10px;
+            font-size: 18px;
+            grid-column: span 2;
+            margin-top: 10px;
+        }
+        .btn-minus:active {
+            background-color: rgba(230, 57, 70, 0.2);
+        }
+        .btn-reset {
+            background-color: transparent;
+            color: #666;
+            border: none;
+            box-shadow: none;
+            font-size: 14px;
+            margin-top: 30px;
+            padding: 10px;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>🍔 Burger Sunday</h1>
+    <div class="subtitle">Goal: L 26,500 (176 Burgers)</div>
+
+    <div class="counter-box">
+        <div class="goal">Burgers Sold</div>
+        <div class="count" id="countDisplay">0</div>
+        <div class="progress-container">
+            <div class="progress-bar" id="progressBar"></div>
+        </div>
+        <div class="revenue" id="revenueDisplay">L 0</div>
+    </div>
+
+    <div class="btn-grid">
+        <button onclick="add(1)">+1 Burger<br><span style="font-size: 14px; font-weight: normal;">(L 150)</span></button>
+        <button onclick="add(4)">+4 Pack<br><span style="font-size: 14px; font-weight: normal;">(L 600)</span></button>
+        <button class="btn-minus" onclick="add(-1)">-1 (Undo)</button>
+    </div>
+
+    <button class="btn-reset" onclick="resetCount()">Reset Counter</button>
+
+    <script>
+        const GOAL = 176;
+        const PRICE_PER_BURGER = 150;
+        let count = parseInt(localStorage.getItem('burgerCount')) || 0;
+
+        function updateDisplay() {
+            document.getElementById('countDisplay').innerText = count;
+            
+            const revenue = count * PRICE_PER_BURGER;
+            document.getElementById('revenueDisplay').innerText = `L ${revenue.toLocaleString()}`;
+            
+            const progress = Math.min((count / GOAL) * 100, 100);
+            document.getElementById('progressBar').style.width = `${progress}%`;
+            
+            if (count >= GOAL) {
+                document.getElementById('progressBar').style.backgroundColor = '#4CAF50';
+            } else {
+                document.getElementById('progressBar').style.backgroundColor = 'var(--accent-color)';
+            }
+        }
+
+        function add(amount) {
+            count += amount;
+            if (count < 0) count = 0;
+            localStorage.setItem('burgerCount', count);
+            updateDisplay();
+            
+            // Haptic feedback if supported
+            if (window.navigator && window.navigator.vibrate) {
+                window.navigator.vibrate(50);
+            }
+        }
+
+        function resetCount() {
+            if (confirm("Are you sure you want to reset the counter to zero?")) {
+                count = 0;
+                localStorage.setItem('burgerCount', count);
+                updateDisplay();
+            }
+        }
+
+        // Initialize
+        updateDisplay();
+    </script>
+</body>
+</html>

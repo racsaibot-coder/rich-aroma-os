@@ -558,6 +558,14 @@ app.post('/api/auth/register', async (req, res) => {
     const { name, phone, email, secret, type } = req.body; 
     // type: 'phone' (secret=PIN) or 'email' (secret=password)
 
+    // Validation to prevent ghost signups
+    if (!name || name.trim() === '') {
+        return res.status(400).json({ error: 'Name is required' });
+    }
+    if (!phone || phone.trim() === '') {
+        return res.status(400).json({ error: 'Phone number is required' });
+    }
+
     try {
         // 1. Check existing
         const cleanPhone = phone ? phone.replace(/\D/g, '') : null;
@@ -1091,6 +1099,66 @@ app.get('/api/employees', ensureAuthenticated, async (req, res) => {
     const client = req.supabase || supabase;
     const { data } = await client.from('employees').select('*').eq('active', true);
     res.json({ employees: data || [] });
+});
+
+// Distance Calculation (Haversine) for GPS checking
+function getDistanceFromLatLonInKm(lat1, lon1, lat2, lon2) {
+    const R = 6371; // Radius of the earth in km
+    const dLat = (lat2 - lat1) * (Math.PI / 180);
+    const dLon = (lon2 - lon1) * (Math.PI / 180);
+    const a = 
+        Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+        Math.cos(lat1 * (Math.PI / 180)) * Math.cos(lat2 * (Math.PI / 180)) * 
+        Math.sin(dLon / 2) * Math.sin(dLon / 2); 
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)); 
+    return R * c; 
+}
+
+// Mobile NFC Clock-In Endpoint
+app.post('/api/clock', async (req, res) => {
+    const { employeeId, type, lat, lng, bypassGps } = req.body;
+
+    if (!employeeId || !type) {
+        return res.status(400).json({ error: 'Missing employee ID or punch type' });
+    }
+
+    // Rich Aroma approximate coordinates (Quimistan)
+    const SHOP_LAT = 15.3524;
+    const SHOP_LNG = -88.4000;
+    const MAX_DISTANCE_METERS = 50;
+
+    if (!bypassGps) {
+        if (!lat || !lng) {
+            return res.status(400).json({ error: 'GPS location required to clock in.' });
+        }
+        const distance = getDistanceFromLatLonInKm(SHOP_LAT, SHOP_LNG, lat, lng) * 1000;
+        if (distance > MAX_DISTANCE_METERS) {
+            return res.status(403).json({ error: `You are too far from the shop (${Math.round(distance)}m away). You must be within ${MAX_DISTANCE_METERS}m to clock in.` });
+        }
+    }
+
+    // Verify Employee
+    const { data: employee } = await supabase
+        .from('employees')
+        .select('*')
+        .eq('id', employeeId)
+        .single();
+        
+    if (!employee) return res.status(404).json({ error: 'Employee not found' });
+
+    // Record Punch
+    const { data, error } = await supabase
+        .from('timeclock')
+        .insert({
+            employee_id: employeeId,
+            type: type
+        })
+        .select()
+        .single();
+
+    if (error) return res.status(500).json({ error: error.message });
+
+    res.json({ success: true, punch: data, employee: employee.name });
 });
 
 // TIMECLOCK (Protected)

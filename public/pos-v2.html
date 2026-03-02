@@ -169,7 +169,7 @@
                 <span>Total:</span>
                 <span id="cart-total">L. 0.00</span>
             </div>
-            <button class="w-full bg-green-600 text-white py-4 rounded-xl font-bold text-xl shadow hover:bg-green-700">
+            <button onclick="processCheckout()" class="w-full bg-green-600 text-white py-4 rounded-xl font-bold text-xl shadow hover:bg-green-700">
                 CHARGE (Enter)
             </button>
         </div>
@@ -573,6 +573,49 @@
         } catch (e) {
             console.error(e);
             alert("Network error");
+        }
+    }
+
+    // --- CHECKOUT LOGIC ---
+    async function processCheckout() {
+        if (cart.length === 0) {
+            alert("Cart is empty");
+            return;
+        }
+
+        const total = cart.reduce((sum, item) => sum + item.finalPrice, 0);
+
+        const orderPayload = {
+            items: cart,
+            subtotal: total,
+            tax: total * 0.15,
+            discount: 0,
+            total: total * 1.15, // rough tax estimate or exact match
+            paymentMethod: currentCustomerId ? 'rico_balance' : 'cash',
+            customerId: currentCustomerId
+        };
+
+        try {
+            const res = await fetch('/api/orders', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(orderPayload)
+            });
+
+            if (res.ok) {
+                alert("✅ Order Placed Successfully!");
+                cart = [];
+                currentCustomerId = null;
+                document.getElementById('cust-id').value = '';
+                document.getElementById('cust-profile').classList.add('hidden');
+                renderCart();
+            } else {
+                const err = await res.json();
+                alert("Error placing order: " + (err.error || "Unknown"));
+            }
+        } catch (e) {
+            console.error(e);
+            alert("Network error placing order");
         }
     }
 

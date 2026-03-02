@@ -119,13 +119,19 @@
 
         async function fetchOrders() {
             try {
-                const res = await fetch('/api/orders');
+                const res = await fetch('/api/orders', {
+                    headers: {
+                        'Authorization': 'Bearer TEST_TOKEN_ADMIN'
+                    }
+                });
+                if (!res.ok) throw new Error("API returned " + res.status);
                 const data = await res.json();
-                orders = data.orders || mockOrders; // Fallback to mock if empty
+                orders = data.orders || []; 
                 render();
             } catch(e) {
-                console.log("Offline mode / API Error");
-                orders = mockOrders;
+                console.log("Offline mode / API Error", e);
+                // Fallback to mock orders if network fails, to allow testing UI offline
+                if (orders.length === 0) orders = mockOrders;
                 render();
             }
         }

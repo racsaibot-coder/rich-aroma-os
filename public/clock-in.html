@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rich Aroma Clock In</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        body { background-color: #1E1610; color: white; }
+    </style>
+</head>
+<body class="flex flex-col items-center justify-center h-screen px-4">
+
+    <div class="bg-gray-800 p-8 rounded-2xl shadow-2xl w-full max-w-md text-center">
+        <h1 class="text-3xl font-bold text-[#C9A66B] mb-2"><i class="fas fa-clock"></i> Tap to Punch</h1>
+        <p class="text-gray-400 mb-8">NFC / GPS Enabled</p>
+
+        <div class="mb-6">
+            <input type="text" id="employee-id" placeholder="Employee ID (e.g. EMP-001)" class="w-full p-4 rounded-xl text-black font-bold text-center text-xl outline-none border-4 border-transparent focus:border-[#C9A66B]">
+        </div>
+
+        <div class="grid grid-cols-2 gap-4 mb-6">
+            <button onclick="clock('clock_in')" class="bg-green-600 hover:bg-green-500 text-white font-bold py-4 rounded-xl text-xl shadow-lg transition">
+                <i class="fas fa-sign-in-alt"></i> IN
+            </button>
+            <button onclick="clock('clock_out')" class="bg-red-600 hover:bg-red-500 text-white font-bold py-4 rounded-xl text-xl shadow-lg transition">
+                <i class="fas fa-sign-out-alt"></i> OUT
+            </button>
+        </div>
+
+        <label class="flex items-center justify-center gap-2 text-gray-400 cursor-pointer">
+            <input type="checkbox" id="bypass-gps" class="w-5 h-5 accent-[#C9A66B]">
+            <span>Stress Test (Bypass GPS)</span>
+        </label>
+
+        <div id="status" class="mt-6 text-lg font-bold hidden p-3 rounded-lg"></div>
+    </div>
+
+    <script>
+        async function clock(type) {
+            const empId = document.getElementById('employee-id').value;
+            const statusDiv = document.getElementById('status');
+            const bypassGps = document.getElementById('bypass-gps').checked;
+
+            if (!empId) {
+                showStatus('Enter Employee ID', 'error');
+                return;
+            }
+
+            statusDiv.classList.remove('hidden');
+            statusDiv.className = 'mt-6 text-lg font-bold p-3 rounded-lg bg-blue-900 text-blue-200';
+            statusDiv.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Getting Location...';
+
+            if (bypassGps) {
+                await sendPunch(empId, type, null, null, true);
+            } else {
+                if (navigator.geolocation) {
+                    navigator.geolocation.getCurrentPosition(
+                        async (position) => {
+                            await sendPunch(empId, type, position.coords.latitude, position.coords.longitude, false);
+                        },
+                        (error) => {
+                            showStatus('GPS Error: ' + error.message, 'error');
+                        },
+                        { enableHighAccuracy: true }
+                    );
+                } else {
+                    showStatus('Geolocation is not supported by this browser.', 'error');
+                }
+            }
+        }
+
+        async function sendPunch(employeeId, type, lat, lng, bypassGps) {
+            try {
+                const res = await fetch('/api/clock', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ employeeId, type, lat, lng, bypassGps })
+                });
+
+                const data = await res.json();
+
+                if (res.ok) {
+                    const action = type === 'clock_in' ? 'Clocked In' : 'Clocked Out';
+                    showStatus(`✅ ${action} successfully!<br><span class="text-sm font-normal">${data.employee}</span>`, 'success');
+                    document.getElementById('employee-id').value = '';
+                } else {
+                    showStatus('❌ ' + data.error, 'error');
+                }
+            } catch (err) {
+                showStatus('❌ Network Error', 'error');
+            }
+        }
+
+        function showStatus(msg, type) {
+            const statusDiv = document.getElementById('status');
+            statusDiv.classList.remove('hidden');
+            if (type === 'error') {
+                statusDiv.className = 'mt-6 text-lg font-bold p-3 rounded-lg bg-red-900 text-red-200';
+            } else {
+                statusDiv.className = 'mt-6 text-lg font-bold p-3 rounded-lg bg-green-900 text-green-200';
+            }
+            statusDiv.innerHTML = msg;
+            
+            if (type === 'success') {
+                setTimeout(() => { statusDiv.classList.add('hidden'); }, 5000);
+            }
+        }
+    </script>
+</body>
+</html>
