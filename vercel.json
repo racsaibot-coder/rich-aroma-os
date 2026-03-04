@@ -24,6 +24,7 @@
     { "src": "/api/customer/test-cash", "dest": "/api/store.js?action=customer_test_cash" },
     { "src": "/api/customers/phone/(.*)", "dest": "/api/store.js?action=customer_by_phone&query=$1" },
     { "src": "/api/customers/(.*)", "dest": "/api/store.js?action=customer_update&id=$1" },
+    { "src": "/api/customers", "dest": "/api/store.js?action=customer_create" },
     { "src": "/api/menu", "dest": "/api/store.js?action=menu" },
     { "src": "/api/orders/(.*)/assign", "dest": "/api/store.js?action=order_assign&id=$1" },
     { "src": "/api/orders/(.*)", "dest": "/api/store.js?action=order_update&id=$1" },

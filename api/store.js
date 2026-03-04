@@ -42,6 +42,23 @@ export default async function handler(req, res) {
     }
 
     // CUSTOMER UPDATE (PIN etc)
+    if (action === 'customer_create' && req.method === 'POST') {
+        const { data: existing } = await supabase.from('customers').select('id').order('id', { ascending: false }).limit(1);
+        const nextNum = existing?.length ? parseInt(existing[0].id.slice(1)) + 1 : 1;
+        
+        const newCustomer = {
+            id: `C${String(nextNum).padStart(3, '0')}`,
+            name: req.body.name,
+            phone: req.body.phone.replace(/\D/g, ''),
+            email: req.body.email,
+            points: 0,
+            cash_balance: 0
+        };
+        const { data, error } = await supabase.from('customers').insert(newCustomer).select().single();
+        if (error) return res.status(500).json({ error: error.message });
+        return res.json(data);
+    }
+
     if (action === 'customer_update' && req.method === 'PATCH') {
         const id = req.query.id;
         const { pin, notes } = req.body;
