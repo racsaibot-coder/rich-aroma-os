@@ -449,17 +449,17 @@
     </script>
 
     <!-- Inline Login Modal -->
-    <div id="loginModal" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] hidden items-center justify-center p-4">
+    <div id="loginModal" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] hidden items-center justify-center p-4 text-dark">
         <div class="bg-white rounded-3xl shadow-2xl p-6 w-full max-w-sm relative transform scale-95 opacity-0 transition-all duration-300" id="loginModalContent">
             <button onclick="closeLoginModal()" class="absolute top-4 right-4 w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center text-gray-500 hover:bg-gray-200">
                 <i class="fas fa-times"></i>
             </button>
             
             <div class="text-center mb-6">
-                <div class="w-16 h-16 bg-brand-gold/10 rounded-full flex items-center justify-center mx-auto mb-3 text-brand-gold text-2xl">
+                <div class="w-16 h-16 bg-gold/10 rounded-full flex items-center justify-center mx-auto mb-3 text-gold text-2xl">
                     <i class="fas fa-lock"></i>
                 </div>
-                <h2 class="text-xl font-bold text-brand-brown">Inicia Sesión</h2>
+                <h2 class="text-xl font-bold text-dark">Inicia Sesión</h2>
                 <p class="text-gray-500 text-xs mt-1">Para enviar tu orden, necesitamos tu cuenta.</p>
             </div>
 
@@ -471,21 +471,21 @@
                             <option value="+504" selected>🇭🇳</option>
                             <option value="+1">🇺🇸</option>
                         </select>
-                        <input type="tel" id="modalPhone" required class="w-full bg-gray-50 border border-l-0 border-gray-200 rounded-r-xl p-3 outline-none focus:border-brand-gold" placeholder="9988-7766">
+                        <input type="tel" id="modalPhone" required class="w-full bg-gray-50 border border-l-0 border-gray-200 rounded-r-xl p-3 outline-none focus:border-gold" placeholder="9988-7766">
                     </div>
                 </div>
 
                 <div>
                     <label class="block text-xs font-bold text-gray-500 mb-1 ml-1">PIN (4 dígitos)</label>
-                    <input type="tel" id="modalPin" required maxlength="4" class="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 outline-none focus:border-brand-gold text-center tracking-widest text-lg" placeholder="••••" style="-webkit-text-security:disc;">
+                    <input type="tel" id="modalPin" required maxlength="4" class="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 outline-none focus:border-gold text-center tracking-widest text-lg" placeholder="••••" style="-webkit-text-security:disc;">
                 </div>
 
-                <button type="submit" id="modalLoginBtn" class="w-full bg-brand-gold text-white font-bold py-3.5 rounded-xl shadow-lg hover:bg-yellow-600 transition flex justify-center items-center gap-2">
+                <button type="submit" id="modalLoginBtn" class="w-full bg-gold text-dark font-bold py-3.5 rounded-xl shadow-lg hover:brightness-110 transition flex justify-center items-center gap-2">
                     Ingresar y Ordenar <i class="fas fa-arrow-right"></i>
                 </button>
             </form>
             <div class="mt-4 text-center">
-                <a href="/signup.html?return_to=cart" class="text-xs text-brand-gold font-bold underline">Crear cuenta nueva</a>
+                <a href="/signup.html?return_to=cart" class="text-xs text-gold font-bold underline">Crear cuenta nueva</a>
             </div>
         </div>
     </div>
@@ -527,18 +527,16 @@
             const pin = document.getElementById('modalPin').value;
 
             try {
-                const { data: user, error } = await window.supabaseClient
-                    .from('customers')
-                    .select('*')
-                    .eq('phone', phone)
-                    .single();
+                const res = await fetch(`/api/customer/profile?phone=${phone}`);
 
-                if (error || !user) {
+                if (!res.ok) {
                     alert("Usuario no encontrado.");
                     btn.innerHTML = originalText;
                     btn.disabled = false;
                     return;
                 }
+
+                const user = await res.json();
 
                 if (user.pin !== pin) {
                     alert("PIN incorrecto.");
