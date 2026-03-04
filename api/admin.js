@@ -10,7 +10,126 @@ export default async function handler(req, res) {
 
     const { action, id } = req.query; // ?action=founders, ?action=verify-founder
 
-    // GET FOUNDERS
+    // SECURE ADMIN ENDPOINTS
+
+    // MENU MANAGER (GET ALL, PATCH, POST)
+    if (action === 'menu' && req.method === 'GET') {
+        const { data } = await supabase.from('menu_items').select('*').order('category', { ascending: true });
+        return res.json({ items: data });
+    }
+
+    if (action === 'menu' && req.method === 'POST') {
+        const { name, category, price, available, image_url } = req.body;
+        const id = category.toLowerCase() + '_' + name.toLowerCase().replace(/[^a-z0-9]/g, '_');
+        const { data, error } = await supabase.from('menu_items')
+            .insert({ id, name, category, price, available, image_url })
+            .select().single();
+        if (error) return res.status(500).json({ error: error.message });
+        return res.json(data);
+    }
+
+    if (action === 'menu_update' && req.method === 'PATCH') {
+        const { id, price, available, image_url } = req.body;
+        const { data, error } = await supabase.from('menu_items')
+            .update({ price, available, image_url })
+            .eq('id', id)
+            .select().single();
+        if (error) return res.status(500).json({ error: error.message });
+        return res.json(data);
+    }
+
+    // MODIFIER MANAGER
+    if (action === 'modifiers' && req.method === 'GET') {
+        const { data: modGroups } = await supabase.from('modifier_groups').select('*');
+        const { data: modOptions } = await supabase.from('modifier_options').select('*');
+        return res.json({ modGroups, modOptions });
+    }
+
+    if (action === 'modifier_option_update' && req.method === 'PATCH') {
+        const { id, price_adjustment } = req.body;
+        const { data, error } = await supabase.from('modifier_options')
+            .update({ price_adjustment })
+            .eq('id', id)
+            .select().single();
+        if (error) return res.status(500).json({ error: error.message });
+        return res.json(data);
+    }
+    if (action === 'kpi' && req.method === 'GET') {
+        // Fetch today's orders
+        const today = new Date();
+        today.setHours(0,0,0,0);
+        
+        const { data: orders, error } = await supabase.from('orders')
+            .select('total, status, items, created_at')
+            .gte('created_at', today.toISOString());
+            
+        if (error) return res.status(500).json({ error: error.message });
+
+        const completedOrders = orders.filter(o => o.status === 'completed' || o.status === 'paid');
+        const revenue = completedOrders.reduce((sum, o) => sum + (o.total || 0), 0);
+        const orderCount = completedOrders.length;
+        
+        // Items sold count
+        let itemsSold = 0;
+        completedOrders.forEach(o => {
+            if(o.items) {
+                o.items.forEach(i => itemsSold += (i.qty || 1));
+            }
+        });
+
+        return res.json({
+            todayRevenue: revenue,
+            todayOrders: orderCount,
+            todayItemsSold: itemsSold,
+            orders: completedOrders.slice(0, 20) // recent 20 for feed
+        });
+    }
+
+    // TIMECLOCK
+    if (action === 'timeclock' && req.method === 'POST') {
+        const { pin, type } = req.body; // type = 'in' or 'out'
+        
+        // Find employee by PIN
+        const { data: emp, error: empErr } = await supabase.from('employees').select('id, name').eq('pin', pin).single();
+        if (empErr || !emp) return res.status(401).json({ error: 'Invalid PIN' });
+
+        const { data, error } = await supabase.from('time_entries').insert({
+            employee_id: emp.id,
+            type: type,
+            timestamp: new Date().toISOString()
+        }).select().single();
+
+        if (error) return res.status(500).json({ error: error.message });
+        return res.json({ success: true, employee: emp.name, type });
+    }
+
+    if (action === 'timeclock_status' && req.method === 'GET') {
+        // Get latest punch for all employees today
+        const today = new Date();
+        today.setHours(0,0,0,0);
+        const { data, error } = await supabase.from('time_entries')
+            .select('employee_id, type, timestamp, employees(name)')
+            .gte('timestamp', today.toISOString())
+            .order('timestamp', { ascending: false });
+            
+        if (error) return res.status(500).json({ error: error.message });
+        
+        // Group by employee to find current status
+        const statusMap = {};
+        if (data) {
+            data.forEach(entry => {
+                if (!statusMap[entry.employee_id]) {
+                    statusMap[entry.employee_id] = {
+                        name: entry.employees?.name,
+                        status: entry.type === 'in' ? 'Clocked In' : 'Clocked Out',
+                        time: entry.timestamp
+                    };
+                }
+            });
+        }
+        
+        return res.json({ active: Object.values(statusMap) });
+    }
     if (action === 'founders' && req.method === 'GET') {
         const { data: founders } = await supabase.from('founders').select('*').order('created_at', { ascending: false });
         const confirmed = (founders || []).filter(f => f.status === 'confirmed');

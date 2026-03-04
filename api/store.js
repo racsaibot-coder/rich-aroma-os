@@ -11,24 +11,98 @@ export default async function handler(req, res) {
 
     const { action } = req.query; 
 
+    // CUSTOMER LOOKUP
+    if (action === 'customer_by_phone' && req.method === 'GET') {
+        const query = req.query.query;
+        if (!query) return res.status(400).json({ error: 'Missing query' });
+        const { data, error } = await supabase.from('customers').select('*').eq('phone', query).single();
+        if (error || !data) return res.status(404).json({ error: 'Not found' });
+        return res.json(data);
+    }
+
+    // CUSTOMER PROFILE
+    if (action === 'customer_profile' && req.method === 'GET') {
+        const query = req.query.phone;
+        if (!query) return res.status(400).json({ error: 'Missing phone' });
+        const { data, error } = await supabase.from('customers').select('*').eq('phone', query).single();
+        if (error || !data) return res.status(404).json({ error: 'Not found' });
+        return res.json(data);
+    }
+
+    if (action === 'customer_test_cash' && req.method === 'POST') {
+        const { phone } = req.body;
+        const { data: customer } = await supabase.from('customers').select('*').eq('phone', phone).single();
+        if (!customer) return res.status(404).json({ error: 'Not found' });
+        
+        const { data, error } = await supabase.from('customers').update({ 
+            cash_balance: (customer.cash_balance || 0) + 500 
+        }).eq('phone', phone).select().single();
+        
+        return res.json(data);
+    }
+
+    // CUSTOMER UPDATE (PIN etc)
+    if (action === 'customer_update' && req.method === 'PATCH') {
+        const id = req.query.id;
+        const { pin, notes } = req.body;
+        const { data, error } = await supabase.from('customers').update({ pin, notes }).eq('id', id).select().single();
+        if (error) return res.status(500).json({ error: error.message });
+        return res.json(data);
+    }
+
     // MENU
     if (action === 'menu' && req.method === 'GET') {
         const { data: items } = await supabase.from('menu_items').select('*').eq('available', true);
-        const { data: modifiers } = await supabase.from('menu_modifiers').select('*');
-        // (Grouping logic omitted for brevity - frontend can handle or we copy paste)
-        return res.json({ items, modifiers, taxRate: 0.15 });
+        
+        // Fetch new dynamic modifiers
+        const { data: itemModGroups } = await supabase.from('item_modifier_groups').select('item_id, group_id, display_order');
+        const { data: modGroups } = await supabase.from('modifier_groups').select('*');
+        const { data: modOptions } = await supabase.from('modifier_options').select('*');
+        
+        return res.json({ items, itemModGroups, modGroups, modOptions, taxRate: 0.15 });
     }
 
     // ORDERS
+    if (action === 'orders' && req.method === 'GET') {
+        const { data, error } = await supabase.from('orders').select('*').order('created_at', { ascending: false }).limit(50);
+        if (error) return res.status(500).json({ error: error.message });
+        return res.json({ orders: data });
+    }
+
     if (action === 'orders' && req.method === 'POST') {
-        const { items, total, customerId, paymentMethod, notes } = req.body;
+        const { items, subtotal, tax, discount, total, customerId, paymentMethod, notes } = req.body;
         const { data: maxOrder } = await supabase.from('orders').select('order_number').order('order_number', { ascending: false }).limit(1);
         const orderNum = (maxOrder?.[0]?.order_number || 0) + 1;
         const id = `ORD-${String(orderNum).padStart(4, '0')}`;
-        const { data } = await supabase.from('orders').insert({
-            id, order_number: orderNum, items, total, customer_id: customerId, payment_method: paymentMethod, status: 'pending', notes
+        
+        const { data, error } = await supabase.from('orders').insert({
+            id, order_number: orderNum, items, subtotal: subtotal || 0, tax: tax || 0, discount: discount || 0, total, customer_id: customerId, payment_method: paymentMethod, status: 'pending', notes
         }).select().single();
+        
+        if (error) {
+            console.error("Order Insert Error:", error);
+            return res.status(500).json({ error: error.message });
+        }
         return res.json(data);
+    }
+
+    if (action === 'order_update' && req.method === 'PATCH') {
+        const id = req.query.id;
+        const { status } = req.body;
+        const { data } = await supabase.from('orders').update({ status }).eq('id', id).select().single();
+        return res.json(data);
+    }
+
+    if (action === 'order_assign' && req.method === 'PATCH') {
+        const id = req.query.id;
+        const { driverId } = req.body;
+        const { data } = await supabase.from('orders').update({ driver_id: driverId }).eq('id', id).select().single();
+        return res.json(data);
+    }
+
+    if (action === 'employees' && req.method === 'GET') {
+        const { data } = await supabase.from('employees').select('*');
+        return res.json({ employees: data });
     }
 
     // LIVE DROP
