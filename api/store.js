@@ -51,8 +51,7 @@ export default async function handler(req, res) {
             name: req.body.name,
             phone: req.body.phone.replace(/\D/g, ''),
             email: req.body.email,
-            points: 0,
-            cash_balance: 0
+            points: 0
         };
         const { data, error } = await supabase.from('customers').insert(newCustomer).select().single();
         if (error) return res.status(500).json({ error: error.message });
