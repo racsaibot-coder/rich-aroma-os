@@ -46,66 +46,44 @@
     </header>
 
     <!-- Menu Section -->
-    <main class="px-4 py-6 space-y-8">
-        
-        <!-- Category: Bebidas -->
-        <div>
-            <h2 class="text-gold text-sm font-bold uppercase tracking-widest mb-4 border-l-2 border-gold pl-3">Bebidas Signature</h2>
-            <div class="space-y-4">
-                <!-- Item 1 -->
-                <div class="item-card rounded-2xl p-4 flex gap-4 items-center">
-                    <div class="w-20 h-20 bg-charcoal rounded-xl flex items-center justify-center text-3xl">☕️</div>
-                    <div class="flex-1">
-                        <h3 class="font-bold text-lg">Latte Macchiato</h3>
-                        <p class="text-xs text-white/60 mb-2">Espresso doble, leche texturizada.</p>
-                        <div class="flex justify-between items-center">
-                            <span class="text-gold font-mono font-bold">L 65.00</span>
-                            <button onclick="addToCart('Latte Macchiato', 65)" class="w-8 h-8 rounded-full bg-gold text-dark flex items-center justify-center quantity-btn">
-                                <i class="fas fa-plus text-xs"></i>
-                            </button>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Item 2 -->
-                <div class="item-card rounded-2xl p-4 flex gap-4 items-center">
-                    <div class="w-20 h-20 bg-charcoal rounded-xl flex items-center justify-center text-3xl">🧊</div>
-                    <div class="flex-1">
-                        <h3 class="font-bold text-lg">Cold Brew #42</h3>
-                        <p class="text-xs text-white/60 mb-2">Maceración en frío 18h. Notas a chocolate.</p>
-                        <div class="flex justify-between items-center">
-                            <span class="text-gold font-mono font-bold">L 75.00</span>
-                            <button onclick="addToCart('Cold Brew #42', 75)" class="w-8 h-8 rounded-full bg-gold text-dark flex items-center justify-center quantity-btn">
-                                <i class="fas fa-plus text-xs"></i>
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Category: Comida -->
-        <div>
-            <h2 class="text-gold text-sm font-bold uppercase tracking-widest mb-4 border-l-2 border-gold pl-3">Comida</h2>
-            <div class="space-y-4">
-                <!-- Item 3 -->
-                <div class="item-card rounded-2xl p-4 flex gap-4 items-center">
-                    <div class="w-20 h-20 bg-charcoal rounded-xl flex items-center justify-center text-3xl">🥞</div>
-                    <div class="flex-1">
-                        <h3 class="font-bold text-lg">Crêpe Clásico</h3>
-                        <p class="text-xs text-white/60 mb-2">Nutella, fresas frescas, azúcar glass.</p>
-                        <div class="flex justify-between items-center">
-                            <span class="text-gold font-mono font-bold">L 95.00</span>
-                            <button onclick="addToCart('Crêpe Clásico', 95)" class="w-8 h-8 rounded-full bg-gold text-dark flex items-center justify-center quantity-btn">
-                                <i class="fas fa-plus text-xs"></i>
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
+    <main class="px-4 py-6 space-y-8" id="menu-container">
+        <p class="text-center text-white/50 py-10">Cargando menú...</p>
     </main>
+
+    <!-- MODIFIER MODAL (Hidden by default) -->
+    <div id="modifier-modal" class="hidden fixed inset-0 bg-black/80 backdrop-blur-sm z-[100] flex flex-col justify-end">
+        <div class="bg-dark w-full max-h-[85vh] rounded-t-3xl shadow-2xl flex flex-col overflow-hidden border-t border-gold/20 relative animate-[slideUp_0.3s_ease-out]">
+            <!-- Handle -->
+            <div class="absolute top-3 left-1/2 -translate-x-1/2 w-12 h-1.5 bg-white/20 rounded-full"></div>
+            
+            <!-- Header -->
+            <div class="p-6 pt-8 pb-4 border-b border-white/5 flex justify-between items-center">
+                <div>
+                    <h2 class="text-2xl font-bold text-white font-display" id="mod-item-name">Latte</h2>
+                    <p class="text-gold font-mono text-xl font-bold mt-1" id="mod-item-price">L. 55.00</p>
+                </div>
+                <button onclick="closeModal()" class="w-10 h-10 rounded-full bg-white/10 text-white hover:bg-white/20 flex items-center justify-center transition-colors">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+
+            <!-- Scrollable Options -->
+            <div class="flex-1 overflow-y-auto p-6 space-y-8" id="mod-dynamic-container">
+                <!-- Dynamic groups injected here -->
+            </div>
+
+            <!-- Footer Action -->
+            <div class="p-6 bg-dark/95 backdrop-blur-md border-t border-white/5 pb-8">
+                <button onclick="confirmItem()" class="w-full gold-btn py-4 rounded-2xl font-bold text-lg shadow-xl shadow-gold/20 flex justify-between items-center px-8 active:scale-95 transition-transform">
+                    <span>Agregar a la Orden</span>
+                    <span id="mod-final-price" class="font-mono bg-dark/20 px-3 py-1 rounded-lg">L. 55.00</span>
+                </button>
+            </div>
+        </div>
+    </div>
+    <style>
+        @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+    </style>
 
     <!-- Floating Cart -->
     <div id="cart-bar" class="fixed bottom-6 left-4 right-4 bg-gold rounded-2xl p-4 floating-cart flex justify-between items-center transform translate-y-[150%] transition-transform duration-300 z-50">
@@ -122,6 +100,220 @@
         let cart = [];
         const SHOP_PHONE = "50495200236"; // Replace with actual shop number
         let currentCustomer = null;
+        let menuItems = [];
+        let modGroups = [];
+        let modOptions = [];
+        let itemModGroups = [];
+        
+        let currentItem = null;
+        let currentMods = {};
+
+        async function loadMenu() {
+            try {
+                const res = await fetch('/api/menu');
+                const data = await res.json();
+                if (data && data.items) {
+                    menuItems = data.items;
+                    modGroups = data.modGroups || [];
+                    modOptions = data.modOptions || [];
+                    itemModGroups = data.itemModGroups || [];
+                    renderMenu();
+                }
+            } catch(e) {
+                console.error('Error loading menu', e);
+            }
+        }
+
+        function renderMenu() {
+            const container = document.getElementById('menu-container');
+            const categories = {};
+            
+            menuItems.forEach(item => {
+                const cat = item.category || 'Otros';
+                if(!categories[cat]) categories[cat] = [];
+                categories[cat].push(item);
+            });
+
+            let html = '';
+            for (const [category, items] of Object.entries(categories)) {
+                const catName = category.charAt(0).toUpperCase() + category.slice(1);
+                html += `
+                <div>
+                    <h2 class="text-gold text-sm font-bold uppercase tracking-widest mb-4 border-l-2 border-gold pl-3">${catName}</h2>
+                    <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                `;
+                
+                items.forEach(item => {
+                    const fallbackImg = 'https://images.unsplash.com/photo-1510591509098-f4fdc6d0ff04?w=400&q=80';
+                    const imgUrl = item.image_url || fallbackImg;
+                    
+                    html += `
+                        <div class="item-card rounded-2xl overflow-hidden flex flex-col group hover:border-gold/50 transition-colors cursor-pointer" onclick="openModifier('${item.id}')">
+                            <div class="w-full h-36 bg-charcoal overflow-hidden relative">
+                                <img src="${imgUrl}" alt="${item.name}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500">
+                                <div class="absolute inset-0 bg-gradient-to-t from-dark/90 to-transparent"></div>
+                                <div class="absolute bottom-2 right-2 w-8 h-8 rounded-full bg-gold text-dark flex items-center justify-center shadow-lg transform translate-y-2 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all">
+                                    <i class="fas fa-plus text-xs"></i>
+                                </div>
+                            </div>
+                            <div class="p-4 flex-1 flex flex-col justify-between">
+                                <h3 class="font-bold text-base leading-tight mb-2">${item.name}</h3>
+                                <span class="text-gold font-mono font-bold">L ${parseFloat(item.price).toFixed(2)}</span>
+                            </div>
+                        </div>
+                    `;
+                });
+                
+                html += `</div></div>`;
+            }
+            container.innerHTML = html;
+        }
+
+        // --- MODIFIER LOGIC ---
+        function openModifier(id) {
+            currentItem = menuItems.find(i => i.id === id);
+            
+            // Find relevant dynamic groups
+            const relevantGroups = itemModGroups.filter(img => img.item_id === id).sort((a,b)=>a.display_order - b.display_order).map(img => img.group_id);
+            
+            // Skip modal for items with no modifiers
+            if(relevantGroups.length === 0) {
+                addToCart(currentItem.id, currentItem.name, currentItem.price);
+                return;
+            }
+
+            // Reset mods
+            currentMods = {};
+            
+            // Build dynamic HTML
+            const container = document.getElementById('mod-dynamic-container');
+            let html = '';
+
+            relevantGroups.forEach(groupId => {
+                const group = modGroups.find(g => g.id === groupId);
+                if (!group) return;
+                const options = modOptions.filter(o => o.group_id === groupId);
+                
+                // Set defaults
+                const defaultOpt = options.find(o => o.is_default);
+                if (defaultOpt) {
+                    currentMods[groupId] = [defaultOpt.id];
+                } else {
+                    currentMods[groupId] = [];
+                }
+
+                html += `
+                    <div class="mb-6">
+                        <h3 class="text-white/60 uppercase text-xs tracking-widest font-bold mb-3">${group.name}</h3>
+                        <div class="grid grid-cols-2 gap-3">
+                            ${options.map(opt => `
+                                <button onclick="toggleDynamicMod('${group.id}', '${opt.id}', ${group.max_selections})" id="mod-btn-${opt.id}" class="mod-btn transition-colors duration-200 p-4 rounded-2xl font-bold text-sm text-left flex justify-between items-center ${currentMods[groupId].includes(opt.id) ? 'border-2 border-gold bg-gold/10 text-gold' : 'border border-white/10 bg-white/5 text-white hover:bg-white/10'}">
+                                    <span>${opt.name}</span>
+                                    ${opt.price_adjustment > 0 ? `<span class="text-xs opacity-70">+L.${opt.price_adjustment}</span>` : ''}
+                                </button>
+                            `).join('')}
+                        </div>
+                    </div>
+                `;
+            });
+            
+            html += `
+                <div class="mb-6">
+                    <h3 class="text-white/60 uppercase text-xs tracking-widest font-bold mb-3">Custom Note / Nota</h3>
+                    <input type="text" id="mod-note" placeholder="e.g. Extra hot..." class="w-full p-4 bg-white/5 border border-white/10 text-white rounded-2xl text-base focus:outline-none focus:border-gold placeholder:text-white/30 transition-colors">
+                </div>
+            `;
+            
+            container.innerHTML = html;
+
+            document.getElementById('mod-item-name').innerText = currentItem.name;
+            updateDynamicModPrice();
+            document.getElementById('modifier-modal').classList.remove('hidden');
+        }
+
+        function closeModal() {
+            document.getElementById('modifier-modal').classList.add('hidden');
+        }
+
+        function toggleDynamicMod(groupId, optionId, maxSelections) {
+            let selected = currentMods[groupId] || [];
+            
+            if (selected.includes(optionId)) {
+                selected = selected.filter(id => id !== optionId);
+            } else {
+                if (maxSelections === 1) {
+                    selected = [optionId];
+                } else {
+                    if (selected.length < maxSelections) {
+                        selected.push(optionId);
+                    } else {
+                        selected.shift(); // remove oldest
+                        selected.push(optionId);
+                    }
+                }
+            }
+            currentMods[groupId] = selected;
+            
+            // Update UI
+            const options = modOptions.filter(o => o.group_id === groupId);
+            options.forEach(opt => {
+                const btn = document.getElementById(`mod-btn-${opt.id}`);
+                if (btn) {
+                    if (selected.includes(opt.id)) {
+                        btn.className = "mod-btn transition-colors duration-200 p-4 rounded-2xl font-bold text-sm text-left flex justify-between items-center border-2 border-gold bg-gold/10 text-gold";
+                    } else {
+                        btn.className = "mod-btn transition-colors duration-200 p-4 rounded-2xl font-bold text-sm text-left flex justify-between items-center border border-white/10 bg-white/5 text-white hover:bg-white/10";
+                    }
+                }
+            });
+            
+            updateDynamicModPrice();
+        }
+
+        function updateDynamicModPrice() {
+            let total = currentItem.price;
+            for (const groupId in currentMods) {
+                currentMods[groupId].forEach(optId => {
+                    const opt = modOptions.find(o => o.id === optId);
+                    if (opt) total += parseFloat(opt.price_adjustment);
+                });
+            }
+            document.getElementById('mod-item-price').innerText = `L. ${total.toFixed(2)}`;
+            document.getElementById('mod-final-price').innerText = `L. ${total.toFixed(2)}`;
+        }
+
+        function confirmItem() {
+            const mods = [];
+            for (const groupId in currentMods) {
+                currentMods[groupId].forEach(optId => {
+                    const opt = modOptions.find(o => o.id === optId);
+                    if (opt && (!opt.is_default || opt.price_adjustment > 0)) {
+                        mods.push({ name: opt.name });
+                    }
+                });
+            }
+
+            const note = document.getElementById('mod-note').value;
+            if (note) {
+                mods.push({ name: `📝 ${note}` });
+            }
+
+            const finalPrice = parseFloat(document.getElementById('mod-final-price').innerText.replace('L. ', ''));
+            
+            // Re-use addToCart logic but pass object
+            const finalItem = {
+                id: currentItem.id,
+                name: currentItem.name,
+                price: currentItem.price,
+                finalPrice: finalPrice,
+                mods: mods,
+                qty: 1
+            };
+            
+            cart.push(finalItem);
+            updateCartUI();
+            closeModal();
+        }
 
         // Load customer profile if logged in
         async function loadProfile() {
@@ -153,7 +345,10 @@
                 document.getElementById('checkout-btn-text').innerText = 'Iniciar Sesión para Ordenar';
             }
         }
-        window.addEventListener('DOMContentLoaded', loadProfile);
+        window.addEventListener('DOMContentLoaded', () => {
+            loadProfile();
+            loadMenu();
+        });
 
         async function claimTestCash() {
             const phone = localStorage.getItem('ra_phone');
@@ -171,8 +366,8 @@
             } catch(e) { console.error('Error claiming cash', e); }
         }
 
-        function addToCart(name, price) {
-            cart.push({ name, price });
+        function addToCart(id, name, price) {
+            cart.push({ id, name, price, finalPrice: price, qty: 1 });
             updateCartUI();
             
             // Subtle feedback
@@ -195,9 +390,8 @@
 
         async function checkout() {
             if (!currentCustomer) {
-                // Not logged in, redirect to login page where they enter Phone + PIN
-                alert("Debes iniciar sesión con tu número y PIN para poder ordenar.");
-                window.location.href = '/login.html';
+                // Show inline login modal instead of wiping cart and redirecting
+                showLoginModal();
                 return;
             }
             if (cart.length === 0) return;
@@ -206,26 +400,29 @@
             btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Procesando...';
             btn.disabled = true;
 
-            const counts = {};
+            const itemsMap = {};
             cart.forEach(item => {
-                counts[item.name] = (counts[item.name] || 0) + 1;
+                if (!itemsMap[item.id]) {
+                    itemsMap[item.id] = { ...item, qty: 0 };
+                }
+                itemsMap[item.id].qty += 1;
             });
 
-            const items = [];
-            let total = 0;
-            for (const [name, count] of Object.entries(counts)) {
-                const item = cart.find(i => i.name === name);
-                items.push({ id: name.toLowerCase().replace(/ /g, '_'), name: name, price: item.price, quantity: count });
-                total += item.price * count;
-            }
+            const items = Object.values(itemsMap);
+            let subtotal = 0;
+            items.forEach(i => subtotal += (i.price * i.qty));
+            const tax = subtotal * 0.15;
+            const total = subtotal + tax;
 
             try {
                 const payload = {
                     items,
-                    subtotal: total,
+                    subtotal,
+                    tax,
+                    discount: 0,
                     total,
                     paymentMethod: 'rico_balance',
-                    notes: 'Online Order (Test Rico Cash)'
+                    notes: 'Online Mobile Order'
                 };
                 if (currentCustomer) {
                     payload.customerId = currentCustomer.id;
@@ -250,5 +447,126 @@
             }
         }
     </script>
+
+    <!-- Inline Login Modal -->
+    <div id="loginModal" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] hidden items-center justify-center p-4">
+        <div class="bg-white rounded-3xl shadow-2xl p-6 w-full max-w-sm relative transform scale-95 opacity-0 transition-all duration-300" id="loginModalContent">
+            <button onclick="closeLoginModal()" class="absolute top-4 right-4 w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center text-gray-500 hover:bg-gray-200">
+                <i class="fas fa-times"></i>
+            </button>
+            
+            <div class="text-center mb-6">
+                <div class="w-16 h-16 bg-brand-gold/10 rounded-full flex items-center justify-center mx-auto mb-3 text-brand-gold text-2xl">
+                    <i class="fas fa-lock"></i>
+                </div>
+                <h2 class="text-xl font-bold text-brand-brown">Inicia Sesión</h2>
+                <p class="text-gray-500 text-xs mt-1">Para enviar tu orden, necesitamos tu cuenta.</p>
+            </div>
+
+            <form id="quickLoginForm" class="space-y-4">
+                <div>
+                    <label class="block text-xs font-bold text-gray-500 mb-1 ml-1">Teléfono</label>
+                    <div class="flex">
+                        <select id="modalCountryCode" class="bg-gray-100 border border-gray-200 rounded-l-xl p-3 text-sm outline-none w-20 text-center font-bold text-gray-600">
+                            <option value="+504" selected>🇭🇳</option>
+                            <option value="+1">🇺🇸</option>
+                        </select>
+                        <input type="tel" id="modalPhone" required class="w-full bg-gray-50 border border-l-0 border-gray-200 rounded-r-xl p-3 outline-none focus:border-brand-gold" placeholder="9988-7766">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-gray-500 mb-1 ml-1">PIN (4 dígitos)</label>
+                    <input type="tel" id="modalPin" required maxlength="4" class="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 outline-none focus:border-brand-gold text-center tracking-widest text-lg" placeholder="••••" style="-webkit-text-security:disc;">
+                </div>
+
+                <button type="submit" id="modalLoginBtn" class="w-full bg-brand-gold text-white font-bold py-3.5 rounded-xl shadow-lg hover:bg-yellow-600 transition flex justify-center items-center gap-2">
+                    Ingresar y Ordenar <i class="fas fa-arrow-right"></i>
+                </button>
+            </form>
+            <div class="mt-4 text-center">
+                <a href="/signup.html?return_to=cart" class="text-xs text-brand-gold font-bold underline">Crear cuenta nueva</a>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        function showLoginModal() {
+            const modal = document.getElementById('loginModal');
+            const content = document.getElementById('loginModalContent');
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+            // Trigger animation
+            setTimeout(() => {
+                content.classList.remove('scale-95', 'opacity-0');
+                content.classList.add('scale-100', 'opacity-100');
+            }, 10);
+        }
+        
+        function closeLoginModal() {
+            const modal = document.getElementById('loginModal');
+            const content = document.getElementById('loginModalContent');
+            content.classList.remove('scale-100', 'opacity-100');
+            content.classList.add('scale-95', 'opacity-0');
+            setTimeout(() => {
+                modal.classList.add('hidden');
+                modal.classList.remove('flex');
+            }, 300);
+        }
+
+        document.getElementById('quickLoginForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const btn = document.getElementById('modalLoginBtn');
+            const originalText = btn.innerHTML;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Verificando...';
+            btn.disabled = true;
+
+            const code = document.getElementById('modalCountryCode').value.replace(/D/g, '');
+            const num = document.getElementById('modalPhone').value.replace(/D/g, '');
+            const phone = code + num;
+            const pin = document.getElementById('modalPin').value;
+
+            try {
+                const { data: user, error } = await window.supabaseClient
+                    .from('customers')
+                    .select('*')
+                    .eq('phone', phone)
+                    .single();
+
+                if (error || !user) {
+                    alert("Usuario no encontrado.");
+                    btn.innerHTML = originalText;
+                    btn.disabled = false;
+                    return;
+                }
+
+                if (user.pin !== pin) {
+                    alert("PIN incorrecto.");
+                    btn.innerHTML = originalText;
+                    btn.disabled = false;
+                    return;
+                }
+
+                // Success! Save to local storage
+                localStorage.setItem('ra_phone', phone);
+                currentCustomer = user;
+                
+                // Close modal and automatically trigger checkout
+                closeLoginModal();
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+                
+                // Run checkout now that we are logged in
+                setTimeout(() => checkout(), 400);
+
+            } catch (err) {
+                console.error(err);
+                alert("Error de conexión");
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+            }
+        });
+    </script>
+
 </body>
 </html>
