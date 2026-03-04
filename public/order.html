@@ -521,8 +521,8 @@
             btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Verificando...';
             btn.disabled = true;
 
-            const code = document.getElementById('modalCountryCode').value.replace(/D/g, '');
-            const num = document.getElementById('modalPhone').value.replace(/D/g, '');
+            const code = document.getElementById('modalCountryCode').value.replace(/\D/g, '');
+            const num = document.getElementById('modalPhone').value.replace(/\D/g, '');
             const phone = code + num;
             const pin = document.getElementById('modalPin').value;
 
