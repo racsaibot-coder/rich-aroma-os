@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rich Aroma OS - System Health</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { background-color: #1a1714; color: #f5f0eb; font-family: 'Inter', sans-serif; }
+        .card { background-color: #2c2520; border: 1px solid #4a3f35; }
+    </style>
+</head>
+<body class="p-6">
+    <div class="max-w-4xl mx-auto">
+        <div class="flex justify-between items-center mb-8">
+            <h1 class="text-3xl font-bold text-[#D4A574]">System Health Dashboard</h1>
+            <button onclick="checkHealth()" class="bg-[#D4A574] text-[#1a1714] px-4 py-2 rounded font-bold hover:bg-[#b88c5d] transition">
+                Refresh Status
+            </button>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+            <!-- API Status -->
+            <div class="card p-6 rounded-xl shadow-lg">
+                <div class="flex justify-between items-start mb-4">
+                    <h3 class="text-lg font-semibold text-gray-300">API Connection</h3>
+                    <div id="api-status" class="w-4 h-4 rounded-full bg-gray-500"></div>
+                </div>
+                <p id="api-text" class="text-sm text-gray-400">Waiting for check...</p>
+                <p id="api-latency" class="text-xs text-gray-500 mt-2"></p>
+            </div>
+
+            <!-- Database Status -->
+            <div class="card p-6 rounded-xl shadow-lg">
+                <div class="flex justify-between items-start mb-4">
+                    <h3 class="text-lg font-semibold text-gray-300">Database (Menu)</h3>
+                    <div id="db-status" class="w-4 h-4 rounded-full bg-gray-500"></div>
+                </div>
+                <p id="db-text" class="text-sm text-gray-400">Waiting for check...</p>
+                <p id="db-latency" class="text-xs text-gray-500 mt-2"></p>
+            </div>
+
+            <!-- Database Orders -->
+            <div class="card p-6 rounded-xl shadow-lg">
+                <div class="flex justify-between items-start mb-4">
+                    <h3 class="text-lg font-semibold text-gray-300">Database (Orders)</h3>
+                    <div id="order-status" class="w-4 h-4 rounded-full bg-gray-500"></div>
+                </div>
+                <p id="order-text" class="text-sm text-gray-400">Waiting for check...</p>
+                <p id="order-latency" class="text-xs text-gray-500 mt-2"></p>
+            </div>
+        </div>
+
+        <div class="card p-6 rounded-xl shadow-lg mb-8">
+            <h3 class="text-xl font-bold mb-4 border-b border-[#4a3f35] pb-2 text-[#D4A574]">Diagnostic Log</h3>
+            <pre id="log" class="text-xs font-mono text-green-400 bg-black/50 p-4 rounded h-64 overflow-y-auto whitespace-pre-wrap">Initializing diagnostics...\n</pre>
+        </div>
+    </div>
+
+    <script>
+        function log(msg) {
+            const pre = document.getElementById('log');
+            const time = new Date().toLocaleTimeString();
+            pre.innerHTML += `[${time}] ${msg}\n`;
+            pre.scrollTop = pre.scrollHeight;
+        }
+
+        function setStatus(id, ok, msg, latencyMs = null) {
+            const dot = document.getElementById(`${id}-status`);
+            const text = document.getElementById(`${id}-text`);
+            const lat = document.getElementById(`${id}-latency`);
+            
+            dot.className = `w-4 h-4 rounded-full ${ok ? 'bg-green-500 shadow-[0_0_10px_rgba(34,197,94,0.8)]' : 'bg-red-500 shadow-[0_0_10px_rgba(239,68,68,0.8)]'}`;
+            text.innerText = msg;
+            if (latencyMs !== null) {
+                lat.innerText = `${latencyMs}ms latency`;
+            } else {
+                lat.innerText = '';
+            }
+        }
+
+        async function checkHealth() {
+            log('--- Starting health check ---');
+            
+            // 1. Basic API Check
+            try {
+                const start = performance.now();
+                const res = await fetch('/api/health');
+                const time = Math.round(performance.now() - start);
+                
+                if (res.ok) {
+                    setStatus('api', true, 'API is reachable', time);
+                    log(`API Check: OK (${time}ms)`);
+                } else {
+                    setStatus('api', false, `HTTP Error ${res.status}`);
+                    log(`API Check: FAILED (${res.status})`);
+                }
+            } catch (err) {
+                setStatus('api', false, 'Connection Refused');
+                log(`API Check: ERROR - ${err.message}`);
+            }
+
+            // 2. Database Menu Check
+            try {
+                const start = performance.now();
+                const res = await fetch('/api/menu');
+                const time = Math.round(performance.now() - start);
+                
+                if (res.ok) {
+                    const data = await res.json();
+                    const itemCount = (data.items || []).length;
+                    setStatus('db', true, `Loaded ${itemCount} items`, time);
+                    log(`Menu DB Check: OK (${time}ms) - Found ${itemCount} items`);
+                } else {
+                    setStatus('db', false, `HTTP Error ${res.status}`);
+                    log(`Menu DB Check: FAILED (${res.status})`);
+                }
+            } catch (err) {
+                setStatus('db', false, 'Database Unreachable');
+                log(`Menu DB Check: ERROR - ${err.message}`);
+            }
+
+            // 3. Database Orders Check
+            try {
+                const start = performance.now();
+                const res = await fetch('/api/orders');
+                const time = Math.round(performance.now() - start);
+                
+                if (res.ok) {
+                    const data = await res.json();
+                    const orderCount = (data.orders || []).length;
+                    setStatus('order', true, `Recent orders: ${orderCount}`, time);
+                    log(`Order DB Check: OK (${time}ms) - Found ${orderCount} recent orders`);
+                } else {
+                    setStatus('order', false, `HTTP Error ${res.status}`);
+                    log(`Order DB Check: FAILED (${res.status})`);
+                }
+            } catch (err) {
+                setStatus('order', false, 'Database Unreachable');
+                log(`Order DB Check: ERROR - ${err.message}`);
+            }
+            
+            log('--- Health check complete ---');
+        }
+
+        // Run on load
+        window.addEventListener('DOMContentLoaded', checkHealth);
+    </script>
+</body>
+</html>
