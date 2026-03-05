@@ -105,6 +105,21 @@ export default async function handler(req, res) {
     if (action === 'order_update' && req.method === 'PATCH') {
         const id = req.query.id;
         const { status } = req.body;
+        
+        // If order is being completed, award points to customer based on total
+        if (status === 'completed') {
+            const { data: orderData } = await supabase.from('orders').select('customer_id, total').eq('id', id).single();
+            if (orderData && orderData.customer_id) {
+                const pointsEarned = Math.floor(orderData.total); // 1 point per L.1 spent
+                const { data: customerData } = await supabase.from('customers').select('points').eq('id', orderData.customer_id).single();
+                if (customerData) {
+                    await supabase.from('customers').update({ 
+                        points: (customerData.points || 0) + pointsEarned 
+                    }).eq('id', orderData.customer_id);
+                }
+            }
+        }
+        
         const { data } = await supabase.from('orders').update({ status }).eq('id', id).select().single();
         return res.json(data);
     }
