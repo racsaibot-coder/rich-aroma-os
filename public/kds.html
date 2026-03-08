@@ -166,26 +166,21 @@
             else renderKDS();
         }
 
+        // Store previously rendered order IDs to avoid full DOM redraws
+        let renderedOrderIds = new Set();
+
         function renderKDS() {
             const grid = document.getElementById('kds-grid');
             grid.innerHTML = '';
-
+            
             // Filter orders that are NOT completed
             const activeOrders = orders.filter(o => o.status !== 'completed');
-
+            
             activeOrders.forEach(order => {
                 // Filter Items based on Mode
-                // Assume logic: Drink items vs Food items.
-                // For MVP, show all items but highlight relevant ones?
-                // Or better: filter out items not for this station.
-                
-                // Hack: We don't have 'type' in DB yet, so we guess by name
-                // Drink keywords: Latte, Brew, Cappuccino, Tea, Icee
-                // Food: Crêpe, Sandwich, Bowl, Muffin
-                
                 const relevantItems = (order.items || []).filter(item => {
                     const name = (item.name || '').toLowerCase();
-                    const isDrink = name.includes('latte') || name.includes('brew') || name.includes('capp') || name.includes('tea') || name.includes('icee') || name.includes('espresso');
+                    const isDrink = name.includes('latte') || name.includes('brew') || name.includes('capp') || name.includes('tea') || name.includes('icee') || name.includes('espresso') || name.includes('mocha') || name.includes('matcha') || name.includes('frappe') || name.includes('macchiato');
                     
                     if(currentMode === 'drinks') return isDrink;
                     if(currentMode === 'food') return !isDrink; // Everything else is food
@@ -193,7 +188,7 @@
                 });
 
                 if(relevantItems.length === 0) return; // Skip ticket if nothing for this station
-
+                
                 // Time Color
                 const elapsed = (new Date() - new Date(order.created_at)) / 1000 / 60; // Mins
                 let timeColor = 'bg-white/5';
@@ -201,29 +196,31 @@
                 if(elapsed > 10) timeColor = 'bg-red-500/10 border-red-500/50';
 
                 const card = document.createElement('div');
-                card.className = `p-4 rounded-xl border border-white/10 flex flex-col gap-3 ${timeColor} break-inside-avoid mb-4`;
+                card.id = `kds-order-${order.id}`;
+                card.className = `p-4 rounded-xl border border-white/10 flex flex-col gap-3 ${timeColor} break-inside-avoid mb-4 transition-all duration-300 transform`;
                 
                 card.innerHTML = `
                     <div class="flex justify-between items-start border-b border-white/10 pb-3">
                         <div>
-                            <h3 class="font-bold text-xl text-white">#${order.order_number}</h3>
+                            <h3 class="font-bold text-xl text-white">#${order.order_number} <span class="text-xs bg-white/20 px-2 py-0.5 rounded text-white/70 font-normal ml-2">${order.fulfillment_type === 'delivery' ? '🚗 DOMICILIO' : order.fulfillment_type === 'pickup' ? '🚶 LLEVAR' : '🍽️ MESA'}</span></h3>
                             <p class="text-sm text-white/50">${order.customers?.name || 'Guest'}</p>
                         </div>
-                        <span class="font-mono text-xs text-white/40">${Math.floor(elapsed)}m</span>
+                        <span class="font-mono text-xs text-white/40 timer-display" data-time="${order.created_at}">${Math.floor(elapsed)}m</span>
                     </div>
                     
                     <div class="space-y-2 flex-1">
                         ${relevantItems.map(i => `
                             <div class="flex justify-between items-center text-lg">
-                                <span class="font-bold text-gold">${i.quantity || 1}x</span>
+                                <span class="font-bold text-gold">${i.quantity || i.qty || 1}x</span>
                                 <span class="text-white/90 flex-1 ml-3">${i.name}</span>
                             </div>
-                            ${i.modifiers ? `<p class="text-xs text-white/40 ml-8">+ ${i.modifiers.map(m=>m.name).join(', ')}</p>` : ''}
+                            ${i.mods && i.mods.length > 0 ? `<p class="text-xs text-white/40 ml-8">+ ${i.mods.map(m=>m.name).join(', ')}</p>` : ''}
                         `).join('')}
+                        ${order.notes ? `<div class="mt-2 text-xs bg-red-500/20 text-red-200 p-2 rounded border border-red-500/30 font-bold"><i class="fas fa-exclamation-circle"></i> NOTA: ${order.notes}</div>` : ''}
                     </div>
 
-                    <button onclick="completeOrder('${order.id}')" class="w-full py-3 bg-white/10 hover:bg-green-600 hover:text-white text-white/60 font-bold rounded-lg transition-all mt-2">
-                        DONE
+                    <button onclick="completeOrder('${order.id}')" class="w-full py-3 bg-white/10 hover:bg-green-600 hover:text-white text-white/60 font-bold rounded-lg transition-all mt-2 active:scale-95">
+                        LISTO ✓
                     </button>
                 `;
                 grid.appendChild(card);

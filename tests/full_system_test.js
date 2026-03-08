@@ -5,7 +5,7 @@ const supabaseUrl = 'https://zcqubacfcettwawcimsy.supabase.co';
 const supabaseKey = 'sb_publishable_hRVyru_6sektmVGQyJFfwQ_4b2-7MKq';
 const supabase = createClient(supabaseUrl, supabaseKey);
 
-const baseUrl = 'http://localhost:8083';
+const baseUrl = 'https://rich-aroma-os.vercel.app';
 
 async function runTest() {
     console.log('🧪 Starting Full System Test...');
@@ -82,18 +82,19 @@ async function runTest() {
     console.log('✅ Order verified in DB (Pending)');
 
     // 4. Mark Order Complete
-    // Using Supabase direct update to bypass API auth for test simplicity
+    // Using API instead of direct DB so backend logic triggers points
     console.log('Marking Order Complete...');
-    const { error: updateError } = await supabase
-        .from('orders')
-        .update({ status: 'completed', completed_at: new Date().toISOString() })
-        .eq('id', order.id);
+    const completeRes = await fetch(`${baseUrl}/api/orders/${order.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: 'completed' })
+    });
     
-    if (updateError) {
-        console.error('❌ Failed to update order:', updateError);
+    if (!completeRes.ok) {
+        console.error('❌ Failed to update order:', await completeRes.text());
         process.exit(1);
     }
-    console.log('✅ Order marked completed');
+    console.log('✅ Order marked completed via API');
 
     // 5. Verify Loyalty Points Update
     // Points should be added.

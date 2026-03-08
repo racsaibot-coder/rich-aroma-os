@@ -29,7 +29,8 @@
         .gold-btn { background: linear-gradient(135deg, #C9A66B 0%, #B08D55 100%); color: #1E1610; }
         .item-card { background: rgba(44, 36, 30, 0.6); border: 1px solid rgba(201, 166, 107, 0.1); backdrop-filter: blur(10px); }
         .floating-cart { box-shadow: 0 -4px 20px rgba(0,0,0,0.4); }
-        .quantity-btn:active { transform: scale(0.95); }
+        .hide-scrollbar::-webkit-scrollbar { display: none; }
+        .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
     </style>
 </head>
 <body class="pb-24">
@@ -40,23 +41,95 @@
             <h1 class="font-display text-xl text-gold font-bold tracking-wide">RICH AROMA</h1>
             <p class="text-xs text-white/50 tracking-widest uppercase">Quimistán, HN</p>
         </div>
-        <div class="w-10 h-10 rounded-full bg-gold/10 flex items-center justify-center">
-            <i class="fas fa-coffee text-gold"></i>
+        <div class="w-10 h-10 rounded-full bg-gold/10 flex items-center justify-center cursor-pointer" onclick="showTrackingIfActive()">
+            <i class="fas fa-receipt text-gold" id="header-icon"></i>
         </div>
     </header>
 
-    <!-- Menu Section -->
-    <main class="px-4 py-6 space-y-8" id="menu-container">
-        <p class="text-center text-white/50 py-10">Cargando menú...</p>
-    </main>
+    <!-- Fulfillment Type -->
+    <div class="flex gap-3 p-4 bg-dark border-b border-white/5 overflow-x-auto hide-scrollbar" id="fulfillment-selector">
+        <button id="btn-pickup" class="fulfillment-btn px-5 py-2 rounded-full border border-gold bg-gold text-dark text-sm font-bold whitespace-nowrap" onclick="setFulfillment('pickup')">
+            <i class="fas fa-walking mr-1"></i> Para Llevar
+        </button>
+        <button id="btn-dinein" class="fulfillment-btn px-5 py-2 rounded-full border border-white/20 text-white/70 text-sm font-bold whitespace-nowrap" onclick="setFulfillment('dinein')">
+            <i class="fas fa-utensils mr-1"></i> En Restaurante
+        </button>
+        <button id="btn-delivery" class="fulfillment-btn px-5 py-2 rounded-full border border-white/20 text-white/70 text-sm font-bold whitespace-nowrap" onclick="setFulfillment('delivery')">
+            <i class="fas fa-motorcycle mr-1"></i> A Domicilio
+        </button>
+    </div>
 
-    <!-- MODIFIER MODAL (Hidden by default) -->
+    <!-- Main View: Menu -->
+    <div id="main-view">
+        <main class="px-4 py-6 space-y-8" id="menu-container">
+            <p class="text-center text-white/50 py-10">Cargando menú...</p>
+        </main>
+    </div>
+
+    <!-- Active Order / Tracking View -->
+    <div id="tracking-view" class="hidden px-4 py-8 max-w-md mx-auto">
+        <div class="text-center mb-8">
+            <div class="w-20 h-20 bg-gold/20 text-gold rounded-full flex items-center justify-center text-3xl mx-auto mb-4 animate-pulse">
+                <i class="fas fa-clock"></i>
+            </div>
+            <h2 class="text-2xl font-display font-bold text-white mb-2" id="track-status-title">Preparando tu Orden</h2>
+            <p class="text-white/50 text-sm" id="track-status-desc">Orden #<span id="track-order-num">---</span> • <span id="track-time">00:00</span></p>
+        </div>
+
+        <div class="bg-charcoal rounded-3xl p-6 border border-white/10 mb-6">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="font-bold text-white">Estado de la Orden</h3>
+                <span class="text-xs bg-gold/20 text-gold px-3 py-1 rounded-full font-bold" id="track-type">Para Llevar</span>
+            </div>
+            
+            <div class="space-y-6 relative before:absolute before:inset-0 before:ml-5 before:-translate-x-px md:before:mx-auto md:before:translate-x-0 before:h-full before:w-0.5 before:bg-gradient-to-b before:from-gold before:via-white/10 before:to-transparent">
+                <div class="relative flex items-center justify-between md:justify-normal md:odd:flex-row-reverse group is-active">
+                    <div class="flex items-center justify-center w-10 h-10 rounded-full border-4 border-charcoal bg-gold text-dark font-bold shrink-0 md:order-1 md:group-odd:-translate-x-1/2 md:group-even:translate-x-1/2 shadow">
+                        <i class="fas fa-check"></i>
+                    </div>
+                    <div class="w-[calc(100%-4rem)] md:w-[calc(50%-2.5rem)] p-4 rounded-xl shadow bg-white/5 border border-white/10">
+                        <div class="font-bold text-white">Recibida</div>
+                        <div class="text-xs text-white/50">Ya la tenemos en el sistema.</div>
+                    </div>
+                </div>
+
+                <div class="relative flex items-center justify-between md:justify-normal md:odd:flex-row-reverse group">
+                    <div class="flex items-center justify-center w-10 h-10 rounded-full border-4 border-charcoal bg-white/10 text-white/50 font-bold shrink-0 md:order-1 md:group-odd:-translate-x-1/2 md:group-even:translate-x-1/2 shadow" id="step-prep-icon">
+                        <i class="fas fa-fire"></i>
+                    </div>
+                    <div class="w-[calc(100%-4rem)] md:w-[calc(50%-2.5rem)] p-4 rounded-xl shadow bg-white/5 border border-white/10">
+                        <div class="font-bold text-white/50" id="step-prep-text">En Cocina</div>
+                        <div class="text-xs text-white/40">Nuestros baristas están en ello.</div>
+                    </div>
+                </div>
+
+                <div class="relative flex items-center justify-between md:justify-normal md:odd:flex-row-reverse group">
+                    <div class="flex items-center justify-center w-10 h-10 rounded-full border-4 border-charcoal bg-white/10 text-white/50 font-bold shrink-0 md:order-1 md:group-odd:-translate-x-1/2 md:group-even:translate-x-1/2 shadow" id="step-ready-icon">
+                        <i class="fas fa-box-open"></i>
+                    </div>
+                    <div class="w-[calc(100%-4rem)] md:w-[calc(50%-2.5rem)] p-4 rounded-xl shadow bg-white/5 border border-white/10">
+                        <div class="font-bold text-white/50" id="step-ready-text">Lista</div>
+                        <div class="text-xs text-white/40">Lista para entregar.</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Add on feature -->
+        <div class="bg-gold/10 border border-gold/30 rounded-3xl p-6 text-center" id="addon-box">
+            <h3 class="text-gold font-bold mb-2"><i class="fas fa-plus-circle"></i> ¿Olvidaste algo?</h3>
+            <p class="text-white/60 text-sm mb-4">Aún puedes agregar a esta orden sin hacer otra transacción. Tienes <span id="addon-timer" class="font-mono font-bold text-gold">05:00</span> min.</p>
+            <button onclick="showMenuForAddon()" class="w-full bg-gold text-dark py-3 rounded-xl font-bold shadow hover:brightness-110 transition">Agregar a esta Orden</button>
+        </div>
+        
+        <button onclick="newOrder()" class="w-full bg-white/5 border border-white/10 text-white py-3 rounded-xl font-bold shadow hover:bg-white/10 transition mt-4 hidden" id="new-order-btn">Hacer Otra Orden</button>
+    </div>
+
+    <!-- MODIFIER MODAL -->
     <div id="modifier-modal" class="hidden fixed inset-0 bg-black/80 backdrop-blur-sm z-[100] flex flex-col justify-end">
         <div class="bg-dark w-full max-h-[85vh] rounded-t-3xl shadow-2xl flex flex-col overflow-hidden border-t border-gold/20 relative animate-[slideUp_0.3s_ease-out]">
-            <!-- Handle -->
             <div class="absolute top-3 left-1/2 -translate-x-1/2 w-12 h-1.5 bg-white/20 rounded-full"></div>
             
-            <!-- Header -->
             <div class="p-6 pt-8 pb-4 border-b border-white/5 flex justify-between items-center">
                 <div>
                     <h2 class="text-2xl font-bold text-white font-display" id="mod-item-name">Latte</h2>
@@ -67,46 +140,94 @@
                 </button>
             </div>
 
-            <!-- Scrollable Options -->
-            <div class="flex-1 overflow-y-auto p-6 space-y-8" id="mod-dynamic-container">
-                <!-- Dynamic groups injected here -->
-            </div>
+            <div class="flex-1 overflow-y-auto p-6 space-y-8" id="mod-dynamic-container"></div>
 
-            <!-- Footer Action -->
             <div class="p-6 bg-dark/95 backdrop-blur-md border-t border-white/5 pb-8">
                 <button onclick="confirmItem()" class="w-full gold-btn py-4 rounded-2xl font-bold text-lg shadow-xl shadow-gold/20 flex justify-between items-center px-8 active:scale-95 transition-transform">
-                    <span>Agregar a la Orden</span>
+                    <span id="mod-confirm-text">Agregar</span>
                     <span id="mod-final-price" class="font-mono bg-dark/20 px-3 py-1 rounded-lg">L. 55.00</span>
                 </button>
             </div>
         </div>
     </div>
+
+    <!-- CART REVIEW MODAL -->
+    <div id="cart-modal" class="hidden fixed inset-0 bg-black/80 backdrop-blur-sm z-[100] flex flex-col justify-end">
+        <div class="bg-dark w-full max-h-[90vh] rounded-t-3xl shadow-2xl flex flex-col overflow-hidden border-t border-gold/20 relative animate-[slideUp_0.3s_ease-out]">
+            <div class="absolute top-3 left-1/2 -translate-x-1/2 w-12 h-1.5 bg-white/20 rounded-full"></div>
+            
+            <div class="p-6 pt-8 pb-4 border-b border-white/5 flex justify-between items-center">
+                <h2 class="text-2xl font-bold text-white font-display">Tu Orden</h2>
+                <button onclick="closeCartModal()" class="w-10 h-10 rounded-full bg-white/10 text-white hover:bg-white/20 flex items-center justify-center transition-colors">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+
+            <div class="flex-1 overflow-y-auto p-6">
+                <!-- Cart Items -->
+                <div id="cart-review-items" class="space-y-4 mb-6"></div>
+
+                <!-- Special Instructions -->
+                <div class="mb-6">
+                    <label class="text-white/60 uppercase text-xs tracking-widest font-bold mb-2 block">Instrucciones Especiales</label>
+                    <textarea id="order-notes" rows="2" placeholder="Ej. Tocar el timbre, alérgico a nueces..." class="w-full p-4 bg-white/5 border border-white/10 text-white rounded-2xl text-sm focus:outline-none focus:border-gold placeholder:text-white/30 transition-colors"></textarea>
+                </div>
+                
+                <!-- Summary -->
+                <div class="bg-charcoal rounded-2xl p-4 border border-white/5 space-y-2">
+                    <div class="flex justify-between text-sm text-white/60">
+                        <span>Subtotal</span>
+                        <span id="review-subtotal" class="font-mono">L 0.00</span>
+                    </div>
+                    <div class="flex justify-between text-sm text-white/60">
+                        <span>ISV (15%)</span>
+                        <span id="review-tax" class="font-mono">L 0.00</span>
+                    </div>
+                    <div class="flex justify-between items-center pt-2 border-t border-white/10 mt-2">
+                        <span class="text-white font-bold">Total</span>
+                        <span id="review-total" class="text-gold font-bold font-mono text-xl">L 0.00</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="p-6 bg-dark/95 backdrop-blur-md border-t border-white/5 pb-8">
+                <button id="final-checkout-btn" onclick="submitOrder()" class="w-full gold-btn py-4 rounded-2xl font-bold text-lg shadow-xl shadow-gold/20 flex justify-center items-center gap-2 active:scale-95 transition-transform">
+                    <span>Enviar Orden</span> <i class="fas fa-arrow-right"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+    
     <style>
         @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
     </style>
 
-    <!-- Floating Cart -->
+    <!-- Floating Cart Bar -->
     <div id="cart-bar" class="fixed bottom-6 left-4 right-4 bg-gold rounded-2xl p-4 floating-cart flex justify-between items-center transform translate-y-[150%] transition-transform duration-300 z-50">
-        <div class="flex flex-col">
-            <span class="text-dark text-xs font-bold uppercase tracking-wider">Total</span>
+        <div class="flex flex-col cursor-pointer" onclick="openCartModal()">
+            <span class="text-dark text-xs font-bold uppercase tracking-wider"><span id="cart-count" class="bg-dark text-gold px-2 py-0.5 rounded-full text-[10px] mr-1">0</span> Total</span>
             <span id="cart-total" class="text-dark font-display font-bold text-xl">L 0.00</span>
         </div>
-        <button onclick="checkout()" class="bg-dark text-gold px-6 py-3 rounded-xl font-bold text-sm shadow-lg flex items-center gap-2 active:scale-95 transition-transform">
-            <span id="checkout-btn-text">Confirmar Orden</span>
+        <button onclick="openCartModal()" class="bg-dark text-gold px-6 py-3 rounded-xl font-bold text-sm shadow-lg flex items-center gap-2 active:scale-95 transition-transform">
+            Ver Orden
         </button>
     </div>
 
+    <!-- Scripts -->
     <script>
         let cart = [];
-        const SHOP_PHONE = "50495200236"; // Replace with actual shop number
         let currentCustomer = null;
         let menuItems = [];
         let modGroups = [];
         let modOptions = [];
         let itemModGroups = [];
-        
         let currentItem = null;
         let currentMods = {};
+        
+        let fulfillmentType = 'pickup'; // default
+        let activeOrder = null;
+        let addonTimer = null;
+        let isAddonMode = false;
 
         async function loadMenu() {
             try {
@@ -119,15 +240,23 @@
                     itemModGroups = data.itemModGroups || [];
                     renderMenu();
                 }
-            } catch(e) {
-                console.error('Error loading menu', e);
-            }
+            } catch(e) { console.error('Error loading menu', e); }
+        }
+
+        function setFulfillment(type) {
+            fulfillmentType = type;
+            document.querySelectorAll('.fulfillment-btn').forEach(btn => {
+                btn.classList.remove('bg-gold', 'text-dark', 'border-gold');
+                btn.classList.add('bg-transparent', 'text-white/70', 'border-white/20');
+            });
+            const activeBtn = document.getElementById('btn-' + type);
+            activeBtn.classList.remove('bg-transparent', 'text-white/70', 'border-white/20');
+            activeBtn.classList.add('bg-gold', 'text-dark', 'border-gold');
         }
 
         function renderMenu() {
             const container = document.getElementById('menu-container');
             const categories = {};
-            
             menuItems.forEach(item => {
                 const cat = item.category || 'Otros';
                 if(!categories[cat]) categories[cat] = [];
@@ -136,56 +265,38 @@
 
             let html = '';
             for (const [category, items] of Object.entries(categories)) {
-                const catName = category.charAt(0).toUpperCase() + category.slice(1);
-                html += `
-                <div>
-                    <h2 class="text-gold text-sm font-bold uppercase tracking-widest mb-4 border-l-2 border-gold pl-3">${catName}</h2>
-                    <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                `;
-                
+                html += `<div><h2 class="text-gold text-sm font-bold uppercase tracking-widest mb-4 border-l-2 border-gold pl-3">${category}</h2><div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">`;
                 items.forEach(item => {
-                    const fallbackImg = 'https://images.unsplash.com/photo-1510591509098-f4fdc6d0ff04?w=400&q=80';
-                    const imgUrl = item.image_url || fallbackImg;
-                    
+                    const imgUrl = item.image_url || 'https://images.unsplash.com/photo-1510591509098-f4fdc6d0ff04?w=400&q=80';
                     html += `
                         <div class="item-card rounded-2xl overflow-hidden flex flex-col group hover:border-gold/50 transition-colors cursor-pointer" onclick="openModifier('${item.id}')">
                             <div class="w-full h-36 bg-charcoal overflow-hidden relative">
-                                <img src="${imgUrl}" alt="${item.name}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500">
+                                <img src="${imgUrl}" class="w-full h-full object-cover">
                                 <div class="absolute inset-0 bg-gradient-to-t from-dark/90 to-transparent"></div>
-                                <div class="absolute bottom-2 right-2 w-8 h-8 rounded-full bg-gold text-dark flex items-center justify-center shadow-lg transform translate-y-2 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all">
-                                    <i class="fas fa-plus text-xs"></i>
-                                </div>
+                                <div class="absolute bottom-2 right-2 w-8 h-8 rounded-full bg-gold text-dark flex items-center justify-center shadow-lg"><i class="fas fa-plus text-xs"></i></div>
                             </div>
                             <div class="p-4 flex-1 flex flex-col justify-between">
                                 <h3 class="font-bold text-base leading-tight mb-2">${item.name}</h3>
                                 <span class="text-gold font-mono font-bold">L ${parseFloat(item.price).toFixed(2)}</span>
                             </div>
-                        </div>
-                    `;
+                        </div>`;
                 });
-                
                 html += `</div></div>`;
             }
             container.innerHTML = html;
         }
 
-        // --- MODIFIER LOGIC ---
         function openModifier(id) {
             currentItem = menuItems.find(i => i.id === id);
-            
-            // Find relevant dynamic groups
             const relevantGroups = itemModGroups.filter(img => img.item_id === id).sort((a,b)=>a.display_order - b.display_order).map(img => img.group_id);
             
-            // Skip modal for items with no modifiers
             if(relevantGroups.length === 0) {
-                addToCart(currentItem.id, currentItem.name, currentItem.price);
+                // If no mods, just add directly
+                openNoteOnlyModal();
                 return;
             }
 
-            // Reset mods
             currentMods = {};
-            
-            // Build dynamic HTML
             const container = document.getElementById('mod-dynamic-container');
             let html = '';
 
@@ -193,80 +304,58 @@
                 const group = modGroups.find(g => g.id === groupId);
                 if (!group) return;
                 const options = modOptions.filter(o => o.group_id === groupId);
-                
-                // Set defaults
                 const defaultOpt = options.find(o => o.is_default);
-                if (defaultOpt) {
-                    currentMods[groupId] = [defaultOpt.id];
-                } else {
-                    currentMods[groupId] = [];
-                }
+                currentMods[groupId] = defaultOpt ? [defaultOpt.id] : [];
 
-                html += `
-                    <div class="mb-6">
-                        <h3 class="text-white/60 uppercase text-xs tracking-widest font-bold mb-3">${group.name}</h3>
-                        <div class="grid grid-cols-2 gap-3">
-                            ${options.map(opt => `
-                                <button onclick="toggleDynamicMod('${group.id}', '${opt.id}', ${group.max_selections})" id="mod-btn-${opt.id}" class="mod-btn transition-colors duration-200 p-4 rounded-2xl font-bold text-sm text-left flex justify-between items-center ${currentMods[groupId].includes(opt.id) ? 'border-2 border-gold bg-gold/10 text-gold' : 'border border-white/10 bg-white/5 text-white hover:bg-white/10'}">
-                                    <span>${opt.name}</span>
-                                    ${opt.price_adjustment > 0 ? `<span class="text-xs opacity-70">+L.${opt.price_adjustment}</span>` : ''}
-                                </button>
-                            `).join('')}
-                        </div>
-                    </div>
-                `;
+                html += `<div class="mb-6"><h3 class="text-white/60 uppercase text-xs tracking-widest font-bold mb-3">${group.name}</h3><div class="grid grid-cols-2 gap-3">`;
+                options.forEach(opt => {
+                    const sel = currentMods[groupId].includes(opt.id) ? 'border-2 border-gold bg-gold/10 text-gold' : 'border border-white/10 bg-white/5 text-white';
+                    html += `<button onclick="toggleDynamicMod('${group.id}', '${opt.id}', ${group.max_selections})" id="mod-btn-${opt.id}" class="mod-btn transition-colors duration-200 p-4 rounded-2xl font-bold text-sm text-left flex justify-between items-center ${sel}"><span>${opt.name}</span>${opt.price_adjustment > 0 ? `<span class="text-xs opacity-70">+L.${opt.price_adjustment}</span>` : ''}</button>`;
+                });
+                html += `</div></div>`;
             });
             
-            html += `
-                <div class="mb-6">
-                    <h3 class="text-white/60 uppercase text-xs tracking-widest font-bold mb-3">Custom Note / Nota</h3>
-                    <input type="text" id="mod-note" placeholder="e.g. Extra hot..." class="w-full p-4 bg-white/5 border border-white/10 text-white rounded-2xl text-base focus:outline-none focus:border-gold placeholder:text-white/30 transition-colors">
-                </div>
-            `;
+            html += `<div class="mb-6"><h3 class="text-white/60 uppercase text-xs tracking-widest font-bold mb-3">Instrucciones para este plato</h3><input type="text" id="mod-note" placeholder="Ej. Sin cebolla..." class="w-full p-4 bg-white/5 border border-white/10 text-white rounded-2xl text-base focus:outline-none focus:border-gold"></div>`;
             
             container.innerHTML = html;
-
             document.getElementById('mod-item-name').innerText = currentItem.name;
             updateDynamicModPrice();
+            document.getElementById('mod-confirm-text').innerText = isAddonMode ? 'Agregar a Orden Activa' : 'Agregar';
             document.getElementById('modifier-modal').classList.remove('hidden');
         }
 
-        function closeModal() {
-            document.getElementById('modifier-modal').classList.add('hidden');
+        function openNoteOnlyModal() {
+            currentMods = {};
+            const container = document.getElementById('mod-dynamic-container');
+            container.innerHTML = `<div class="mb-6"><h3 class="text-white/60 uppercase text-xs tracking-widest font-bold mb-3">Instrucciones para este plato</h3><input type="text" id="mod-note" placeholder="Ej. Bien caliente..." class="w-full p-4 bg-white/5 border border-white/10 text-white rounded-2xl text-base focus:outline-none focus:border-gold"></div>`;
+            document.getElementById('mod-item-name').innerText = currentItem.name;
+            document.getElementById('mod-item-price').innerText = `L. ${currentItem.price.toFixed(2)}`;
+            document.getElementById('mod-final-price').innerText = `L. ${currentItem.price.toFixed(2)}`;
+            document.getElementById('mod-confirm-text').innerText = isAddonMode ? 'Agregar a Orden Activa' : 'Agregar';
+            document.getElementById('modifier-modal').classList.remove('hidden');
         }
+
+        function closeModal() { document.getElementById('modifier-modal').classList.add('hidden'); }
 
         function toggleDynamicMod(groupId, optionId, maxSelections) {
             let selected = currentMods[groupId] || [];
-            
-            if (selected.includes(optionId)) {
-                selected = selected.filter(id => id !== optionId);
-            } else {
-                if (maxSelections === 1) {
-                    selected = [optionId];
-                } else {
-                    if (selected.length < maxSelections) {
-                        selected.push(optionId);
-                    } else {
-                        selected.shift(); // remove oldest
-                        selected.push(optionId);
-                    }
+            if (selected.includes(optionId)) selected = selected.filter(id => id !== optionId);
+            else {
+                if (maxSelections === 1) selected = [optionId];
+                else {
+                    if (selected.length < maxSelections) selected.push(optionId);
+                    else { selected.shift(); selected.push(optionId); }
                 }
             }
             currentMods[groupId] = selected;
             
-            // Update UI
             const options = modOptions.filter(o => o.group_id === groupId);
             options.forEach(opt => {
                 const btn = document.getElementById(`mod-btn-${opt.id}`);
                 if (btn) {
-                    if (selected.includes(opt.id)) {
-                        btn.className = "mod-btn transition-colors duration-200 p-4 rounded-2xl font-bold text-sm text-left flex justify-between items-center border-2 border-gold bg-gold/10 text-gold";
-                    } else {
-                        btn.className = "mod-btn transition-colors duration-200 p-4 rounded-2xl font-bold text-sm text-left flex justify-between items-center border border-white/10 bg-white/5 text-white hover:bg-white/10";
-                    }
+                    btn.className = `mod-btn transition-colors duration-200 p-4 rounded-2xl font-bold text-sm text-left flex justify-between items-center ${selected.includes(opt.id) ? 'border-2 border-gold bg-gold/10 text-gold' : 'border border-white/10 bg-white/5 text-white'}`;
                 }
             });
-            
             updateDynamicModPrice();
         }
 
@@ -287,284 +376,292 @@
             for (const groupId in currentMods) {
                 currentMods[groupId].forEach(optId => {
                     const opt = modOptions.find(o => o.id === optId);
-                    if (opt && (!opt.is_default || opt.price_adjustment > 0)) {
-                        mods.push({ name: opt.name });
-                    }
+                    if (opt && (!opt.is_default || opt.price_adjustment > 0)) mods.push({ name: opt.name });
                 });
             }
-
             const note = document.getElementById('mod-note').value;
-            if (note) {
-                mods.push({ name: `📝 ${note}` });
-            }
+            if (note) mods.push({ name: `📝 ${note}` });
 
             const finalPrice = parseFloat(document.getElementById('mod-final-price').innerText.replace('L. ', ''));
+            const cartItem = { id: currentItem.id, name: currentItem.name, price: currentItem.price, finalPrice, mods, qty: 1 };
             
-            // Re-use addToCart logic but pass object
-            const finalItem = {
-                id: currentItem.id,
-                name: currentItem.name,
-                price: currentItem.price,
-                finalPrice: finalPrice,
-                mods: mods,
-                qty: 1
-            };
-            
-            cart.push(finalItem);
-            updateCartUI();
+            if (isAddonMode) {
+                // Instantly submit add-on
+                submitAddon(cartItem);
+            } else {
+                cart.push(cartItem);
+                updateCartUI();
+            }
             closeModal();
         }
 
-        // Load customer profile if logged in
-        async function loadProfile() {
-            const phone = localStorage.getItem('ra_phone');
-            if (phone) {
-                try {
-                    const res = await fetch(`/api/customer/profile?phone=${phone}`);
-                    if (res.ok) {
-                        currentCustomer = await res.json();
-                        // Update UI header
-                        const headerDiv = document.querySelector('header div:first-child');
-                        const balance = (currentCustomer.cash_balance || 0) + (currentCustomer.membership_credit || 0);
-                        let html = `<div class="mt-1 inline-block bg-gold/20 text-gold text-[10px] px-2 py-1 rounded-full"><i class="fas fa-star"></i> Hola, ${currentCustomer.name.split(' ')[0]} | Rico Cash: L ${balance.toFixed(2)}</div>`;
-                        
-                        if (balance === 0) {
-                            html += ` <button onclick="claimTestCash()" class="text-[10px] bg-green-500 text-white px-2 py-0.5 rounded-full ml-1 font-bold shadow animate-pulse">🎁 Reclamar L.500</button>`;
-                        }
-                        
-                        headerDiv.innerHTML += html;
-                        document.getElementById('checkout-btn-text').innerText = 'Pagar con Rico Cash';
-                    } else {
-                        document.getElementById('checkout-btn-text').innerText = 'Iniciar Sesión para Ordenar';
-                    }
-                } catch(e) { 
-                    console.error('Error loading profile', e); 
-                    document.getElementById('checkout-btn-text').innerText = 'Iniciar Sesión para Ordenar';
-                }
-            } else {
-                document.getElementById('checkout-btn-text').innerText = 'Iniciar Sesión para Ordenar';
-            }
-        }
-        window.addEventListener('DOMContentLoaded', () => {
-            loadProfile();
-            loadMenu();
-        });
-
-        async function claimTestCash() {
-            const phone = localStorage.getItem('ra_phone');
-            if (!phone) return;
-            try {
-                const res = await fetch('/api/customer/test-cash', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ phone })
-                });
-                if(res.ok) {
-                    alert('¡L.500 de prueba acreditados a tu cuenta!');
-                    window.location.reload();
-                }
-            } catch(e) { console.error('Error claiming cash', e); }
-        }
-
-        function addToCart(id, name, price) {
-            cart.push({ id, name, price, finalPrice: price, qty: 1 });
-            updateCartUI();
-            
-            // Subtle feedback
-            const btn = event.currentTarget;
-            btn.classList.add('scale-90');
-            setTimeout(() => btn.classList.remove('scale-90'), 100);
-        }
-
         function updateCartUI() {
-            const total = cart.reduce((sum, item) => sum + item.price, 0);
+            const total = cart.reduce((sum, item) => sum + item.finalPrice, 0);
             document.getElementById('cart-total').innerText = `L ${total.toFixed(2)}`;
+            document.getElementById('cart-count').innerText = cart.length;
             
             const cartBar = document.getElementById('cart-bar');
-            if (cart.length > 0) {
-                cartBar.classList.remove('translate-y-[150%]');
-            } else {
-                cartBar.classList.add('translate-y-[150%]');
-            }
+            if (cart.length > 0 && !isAddonMode) cartBar.classList.remove('translate-y-[150%]');
+            else cartBar.classList.add('translate-y-[150%]');
         }
 
-        async function checkout() {
-            if (!currentCustomer) {
-                // Show inline login modal instead of wiping cart and redirecting
-                showLoginModal();
-                return;
+        function openCartModal() {
+            const container = document.getElementById('cart-review-items');
+            if(cart.length === 0) {
+                container.innerHTML = `<div class="text-white/50 text-center py-6">Tu carrito está vacío</div>`;
+            } else {
+                container.innerHTML = cart.map((item, index) => `
+                    <div class="flex justify-between items-start bg-white/5 border border-white/10 p-4 rounded-xl">
+                        <div>
+                            <div class="font-bold text-white">${item.name}</div>
+                            ${item.mods && item.mods.length > 0 ? `<div class="text-xs text-white/50 mt-1">${item.mods.map(m=>m.name).join(', ')}</div>` : ''}
+                        </div>
+                        <div class="flex items-center gap-3">
+                            <span class="font-mono text-gold font-bold">L ${item.finalPrice.toFixed(2)}</span>
+                            <button onclick="removeCartItem(${index})" class="text-white/30 hover:text-red-400"><i class="fas fa-trash"></i></button>
+                        </div>
+                    </div>
+                `).join('');
             }
+
+            const subtotal = cart.reduce((sum, item) => sum + item.finalPrice, 0);
+            const tax = subtotal * 0.15;
+            document.getElementById('review-subtotal').innerText = `L ${subtotal.toFixed(2)}`;
+            document.getElementById('review-tax').innerText = `L ${tax.toFixed(2)}`;
+            document.getElementById('review-total').innerText = `L ${(subtotal + tax).toFixed(2)}`;
+            
+            // Re-evaluate payment options based on customer profile & total
+            const total = subtotal + tax;
+            const checkoutBtn = document.getElementById('final-checkout-btn');
+            const hasRicoCash = currentCustomer && (currentCustomer.cash_balance + (currentCustomer.membership_credit || 0)) >= total;
+            
+            if (hasRicoCash) {
+                checkoutBtn.innerHTML = `<span>Pagar con Rico Cash</span> <i class="fas fa-arrow-right"></i>`;
+                checkoutBtn.className = "w-full gold-btn py-4 rounded-2xl font-bold text-lg shadow-xl shadow-gold/20 flex justify-center items-center gap-2 active:scale-95 transition-transform";
+                checkoutBtn.onclick = () => submitOrder('rico_balance');
+            } else {
+                checkoutBtn.innerHTML = `<span>Pedir Recarga por WhatsApp</span> <i class="fab fa-whatsapp"></i>`;
+                checkoutBtn.className = "w-full bg-green-500 text-white py-4 rounded-2xl font-bold text-lg shadow-xl shadow-green-500/20 flex justify-center items-center gap-2 active:scale-95 transition-transform";
+                checkoutBtn.onclick = () => requestTopup(total);
+            }
+            
+            document.getElementById('cart-modal').classList.remove('hidden');
+        }
+
+        function requestTopup(totalAmount) {
+            const phone = currentCustomer ? currentCustomer.phone : '';
+            const msg = `¡Hola! Necesito recargar Rico Cash para completar mi orden de L.${totalAmount.toFixed(2)}. ${phone ? 'Mi número es ' + phone : ''}`;
+            const shopPhone = "50495200236"; // Update this with your actual shop WhatsApp number
+            window.open(`https://wa.me/${shopPhone}?text=${encodeURIComponent(msg)}`, '_blank');
+        }
+
+        function removeCartItem(index) {
+            cart.splice(index, 1);
+            updateCartUI();
+            if(cart.length === 0) closeCartModal();
+            else openCartModal(); // re-render
+        }
+
+        function closeCartModal() { document.getElementById('cart-modal').classList.add('hidden'); }
+
+        async function submitOrder(paymentMethod = 'cash') {
             if (cart.length === 0) return;
-            const btn = document.querySelector('#cart-bar button');
-            const originalText = btn.innerHTML;
+            const btn = document.getElementById('final-checkout-btn');
+            const ogText = btn.innerHTML;
             btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Procesando...';
             btn.disabled = true;
 
             const itemsMap = {};
             cart.forEach(item => {
-                if (!itemsMap[item.id]) {
-                    itemsMap[item.id] = { ...item, qty: 0 };
-                }
-                itemsMap[item.id].qty += 1;
+                // Using stringified mods as key so different mods don't stack qty
+                const key = item.id + JSON.stringify(item.mods); 
+                if (!itemsMap[key]) itemsMap[key] = { ...item, qty: 0 };
+                itemsMap[key].qty += 1;
             });
 
             const items = Object.values(itemsMap);
-            let subtotal = 0;
-            items.forEach(i => subtotal += (i.price * i.qty));
+            let subtotal = cart.reduce((sum, item) => sum + item.finalPrice, 0);
             const tax = subtotal * 0.15;
-            const total = subtotal + tax;
+            const notes = document.getElementById('order-notes').value;
 
             try {
                 const payload = {
-                    items,
-                    subtotal,
-                    tax,
-                    discount: 0,
-                    total,
-                    paymentMethod: 'rico_balance',
-                    notes: 'Online Mobile Order'
+                    items, subtotal, tax, discount: 0, total: subtotal+tax,
+                    paymentMethod: paymentMethod,
+                    fulfillment: fulfillmentType,
+                    notes: `Mobile Order (${fulfillmentType}) ${notes ? '- ' + notes : ''}`
                 };
-                if (currentCustomer) {
-                    payload.customerId = currentCustomer.id;
-                }
+                if (currentCustomer) payload.customerId = currentCustomer.id;
+
                 const res = await fetch('/api/orders', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(payload)
                 });
                 
-                if (!res.ok) throw new Error('Error saving order');
+                if (!res.ok) throw new Error('Error saving');
+                const savedOrder = await res.json();
                 
-                alert('¡Orden recibida! La estamos preparando.');
                 cart = [];
                 updateCartUI();
+                closeCartModal();
+                
+                // Switch to tracking view
+                activeOrder = savedOrder;
+                showTracking();
+
             } catch (err) {
                 alert('Hubo un error, por favor intenta de nuevo.');
                 console.error(err);
-            } finally {
-                btn.innerHTML = originalText;
+                btn.innerHTML = ogText;
                 btn.disabled = false;
             }
         }
-    </script>
 
-    <!-- Inline Login Modal -->
-    <div id="loginModal" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] hidden items-center justify-center p-4 text-dark">
-        <div class="bg-white rounded-3xl shadow-2xl p-6 w-full max-w-sm relative transform scale-95 opacity-0 transition-all duration-300" id="loginModalContent">
-            <button onclick="closeLoginModal()" class="absolute top-4 right-4 w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center text-gray-500 hover:bg-gray-200">
-                <i class="fas fa-times"></i>
-            </button>
+        // --- TRACKING & ADDON LOGIC ---
+        let statusPollingTimer = null;
+
+        function showTracking() {
+            document.getElementById('main-view').classList.add('hidden');
+            document.getElementById('fulfillment-selector').classList.add('hidden');
+            document.getElementById('tracking-view').classList.remove('hidden');
             
-            <div class="text-center mb-6">
-                <div class="w-16 h-16 bg-gold/10 rounded-full flex items-center justify-center mx-auto mb-3 text-gold text-2xl">
-                    <i class="fas fa-lock"></i>
-                </div>
-                <h2 class="text-xl font-bold text-dark">Inicia Sesión</h2>
-                <p class="text-gray-500 text-xs mt-1">Para enviar tu orden, necesitamos tu cuenta.</p>
-            </div>
-
-            <form id="quickLoginForm" class="space-y-4">
-                <div>
-                    <label class="block text-xs font-bold text-gray-500 mb-1 ml-1">Teléfono</label>
-                    <div class="flex">
-                        <select id="modalCountryCode" class="bg-gray-100 border border-gray-200 rounded-l-xl p-3 text-sm outline-none w-20 text-center font-bold text-gray-600">
-                            <option value="+504" selected>🇭🇳</option>
-                            <option value="+1">🇺🇸</option>
-                        </select>
-                        <input type="tel" id="modalPhone" required class="w-full bg-gray-50 border border-l-0 border-gray-200 rounded-r-xl p-3 outline-none focus:border-gold" placeholder="9988-7766">
-                    </div>
-                </div>
-
-                <div>
-                    <label class="block text-xs font-bold text-gray-500 mb-1 ml-1">PIN (4 dígitos)</label>
-                    <input type="tel" id="modalPin" required maxlength="4" class="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 outline-none focus:border-gold text-center tracking-widest text-lg" placeholder="••••" style="-webkit-text-security:disc;">
-                </div>
-
-                <button type="submit" id="modalLoginBtn" class="w-full bg-gold text-dark font-bold py-3.5 rounded-xl shadow-lg hover:brightness-110 transition flex justify-center items-center gap-2">
-                    Ingresar y Ordenar <i class="fas fa-arrow-right"></i>
-                </button>
-            </form>
-            <div class="mt-4 text-center">
-                <a href="/signup.html?return_to=cart" class="text-xs text-gold font-bold underline">Crear cuenta nueva</a>
-            </div>
-        </div>
-    </div>
-    
-    <script>
-        function showLoginModal() {
-            const modal = document.getElementById('loginModal');
-            const content = document.getElementById('loginModalContent');
-            modal.classList.remove('hidden');
-            modal.classList.add('flex');
-            // Trigger animation
-            setTimeout(() => {
-                content.classList.remove('scale-95', 'opacity-0');
-                content.classList.add('scale-100', 'opacity-100');
-            }, 10);
-        }
-        
-        function closeLoginModal() {
-            const modal = document.getElementById('loginModal');
-            const content = document.getElementById('loginModalContent');
-            content.classList.remove('scale-100', 'opacity-100');
-            content.classList.add('scale-95', 'opacity-0');
-            setTimeout(() => {
-                modal.classList.add('hidden');
-                modal.classList.remove('flex');
-            }, 300);
+            document.getElementById('track-order-num').innerText = activeOrder.order_number || activeOrder.id;
+            const types = { pickup: 'Para Llevar', dinein: 'Restaurante', delivery: 'A Domicilio' };
+            document.getElementById('track-type').innerText = types[activeOrder.fulfillment_type || fulfillmentType];
+            
+            // Start Addon Timer (5 mins)
+            let timeLeft = 5 * 60;
+            clearInterval(addonTimer);
+            document.getElementById('addon-box').classList.remove('hidden');
+            document.getElementById('new-order-btn').classList.add('hidden');
+            
+            addonTimer = setInterval(() => {
+                timeLeft--;
+                if(timeLeft <= 0) {
+                    clearInterval(addonTimer);
+                    document.getElementById('addon-box').classList.add('hidden');
+                    document.getElementById('new-order-btn').classList.remove('hidden');
+                } else {
+                    const m = Math.floor(timeLeft / 60).toString().padStart(2,'0');
+                    const s = (timeLeft % 60).toString().padStart(2,'0');
+                    document.getElementById('addon-timer').innerText = `${m}:${s}`;
+                }
+            }, 1000);
+            
+            // Start live polling for status
+            clearInterval(statusPollingTimer);
+            statusPollingTimer = setInterval(async () => {
+                try {
+                    // This assumes we add a GET /api/orders/:id endpoint later.
+                    // For now we can fetch the user's past orders or the full orders list to find it
+                    const res = await fetch('/api/orders'); 
+                    if(res.ok) {
+                        const data = await res.json();
+                        const currentOrder = data.orders.find(o => o.id === activeOrder.id);
+                        if(currentOrder) {
+                            if(currentOrder.status === 'preparing') setStep('prep');
+                            if(currentOrder.status === 'completed' || currentOrder.status === 'ready') {
+                                setStep('ready');
+                                clearInterval(statusPollingTimer); // Stop polling when done
+                            }
+                        }
+                    }
+                } catch(e) { console.error('Status poll error', e); }
+            }, 3000);
         }
 
-        document.getElementById('quickLoginForm').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const btn = document.getElementById('modalLoginBtn');
-            const originalText = btn.innerHTML;
-            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Verificando...';
-            btn.disabled = true;
+        function showTrackingIfActive() {
+            if(activeOrder) {
+                document.getElementById('main-view').classList.add('hidden');
+                document.getElementById('fulfillment-selector').classList.add('hidden');
+                document.getElementById('tracking-view').classList.remove('hidden');
+            }
+        }
 
-            const code = document.getElementById('modalCountryCode').value.replace(/\D/g, '');
-            const num = document.getElementById('modalPhone').value.replace(/\D/g, '');
-            const phone = code + num;
-            const pin = document.getElementById('modalPin').value;
+        function setStep(step) {
+            if(step === 'prep') {
+                document.getElementById('step-prep-icon').classList.replace('bg-white/10', 'bg-gold');
+                document.getElementById('step-prep-icon').classList.replace('text-white/50', 'text-dark');
+                document.getElementById('step-prep-text').classList.replace('text-white/50', 'text-white');
+            }
+            if(step === 'ready') {
+                document.getElementById('step-ready-icon').classList.replace('bg-white/10', 'bg-gold');
+                document.getElementById('step-ready-icon').classList.replace('text-white/50', 'text-dark');
+                document.getElementById('step-ready-text').classList.replace('text-white/50', 'text-white');
+                document.getElementById('track-status-title').innerText = "¡Orden Lista!";
+                document.querySelector('.animate-pulse').classList.remove('animate-pulse');
+            }
+        }
 
+        function showMenuForAddon() {
+            isAddonMode = true;
+            document.getElementById('tracking-view').classList.add('hidden');
+            document.getElementById('main-view').classList.remove('hidden');
+            alert("Selecciona el artículo que deseas agregar a tu orden actual.");
+        }
+
+        async function submitAddon(cartItem) {
             try {
-                const res = await fetch(`/api/customer/profile?phone=${phone}`);
+                // Here we would ideally hit a PATCH endpoint to add to the existing order
+                // For MVP without backend changes, we create a new order and flag it in notes
+                const payload = {
+                    items: [cartItem], 
+                    subtotal: cartItem.finalPrice, 
+                    tax: cartItem.finalPrice * 0.15, 
+                    discount: 0, 
+                    total: cartItem.finalPrice * 1.15,
+                    paymentMethod: 'cash',
+                    fulfillment: fulfillmentType,
+                    notes: `ADD-ON to Order #${activeOrder.order_number}`
+                };
 
-                if (!res.ok) {
-                    alert("Usuario no encontrado.");
-                    btn.innerHTML = originalText;
-                    btn.disabled = false;
-                    return;
-                }
-
-                const user = await res.json();
-
-                if (user.pin !== pin) {
-                    alert("PIN incorrecto.");
-                    btn.innerHTML = originalText;
-                    btn.disabled = false;
-                    return;
-                }
-
-                // Success! Save to local storage
-                localStorage.setItem('ra_phone', phone);
-                currentCustomer = user;
+                const res = await fetch('/api/orders', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
                 
-                // Close modal and automatically trigger checkout
-                closeLoginModal();
-                btn.innerHTML = originalText;
-                btn.disabled = false;
-                
-                // Run checkout now that we are logged in
-                setTimeout(() => checkout(), 400);
+                if (res.ok) {
+                    alert('¡Artículo agregado a tu orden exitosamente!');
+                    isAddonMode = false;
+                    showTracking(); // go back
+                }
+            } catch(e) { console.error(e); }
+        }
 
-            } catch (err) {
-                console.error(err);
-                alert("Error de conexión");
-                btn.innerHTML = originalText;
-                btn.disabled = false;
+        function newOrder() {
+            activeOrder = null;
+            clearInterval(addonTimer);
+            isAddonMode = false;
+            document.getElementById('tracking-view').classList.add('hidden');
+            document.getElementById('main-view').classList.remove('hidden');
+            document.getElementById('fulfillment-selector').classList.remove('hidden');
+            document.getElementById('track-status-title').innerText = "Preparando tu Orden";
+            
+            // Reset steps
+            ['prep', 'ready'].forEach(s => {
+                document.getElementById(`step-${s}-icon`).classList.replace('bg-gold', 'bg-white/10');
+                document.getElementById(`step-${s}-icon`).classList.replace('text-dark', 'text-white/50');
+                document.getElementById(`step-${s}-text`).classList.replace('text-white', 'text-white/50');
+            });
+        }
+
+        // Init
+        window.addEventListener('DOMContentLoaded', () => {
+            loadMenu();
+            setFulfillment('pickup');
+            
+            // Auto login logic for testing
+            const phone = localStorage.getItem('ra_phone');
+            if (phone) {
+                fetch(`/api/customer/profile?phone=${phone}`)
+                .then(r => r.json())
+                .then(u => currentCustomer = u)
+                .catch(e => console.error(e));
             }
         });
-    </script>
 
+    </script>
 </body>
 </html>

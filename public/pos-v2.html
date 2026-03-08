@@ -44,6 +44,93 @@
         </div>
     </div>
 
+    
+    <!-- START SHIFT MODAL -->
+    <div id="shift-modal" class="fixed inset-0 bg-black bg-opacity-90 flex items-center justify-center z-[100] transition-all">
+        <div class="bg-white w-full max-w-md rounded-3xl shadow-2xl p-8 text-center border-t-8 border-blue-500">
+            <div class="w-20 h-20 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center mx-auto mb-6 text-3xl">
+                <i class="fas fa-cash-register"></i>
+            </div>
+            <h2 class="text-3xl font-bold text-gray-800 mb-2">Open Shift</h2>
+            <p class="text-gray-500 mb-8">Enter your PIN and starting cash</p>
+            
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-left text-sm font-bold text-gray-700 mb-1">Employee PIN</label>
+                    <input type="password" id="shift-pin" maxlength="4" class="text-center text-3xl tracking-[1em] w-full border-2 border-gray-200 rounded-xl p-4 focus:border-blue-500 outline-none" placeholder="****">
+                </div>
+                <div>
+                    <label class="block text-left text-sm font-bold text-gray-700 mb-1">Starting Cash (Lempiras)</label>
+                    <input type="number" id="shift-cash" class="text-center text-3xl w-full border-2 border-gray-200 rounded-xl p-4 focus:border-blue-500 outline-none" placeholder="0.00">
+                </div>
+            </div>
+            
+            <button onclick="startShift()" class="w-full bg-blue-600 text-white py-4 rounded-xl font-bold text-xl mt-8 shadow-lg shadow-blue-500/30 hover:bg-blue-700 active:scale-95 transition">Open Register</button>
+        </div>
+    </div>
+
+    <!-- TENDER MODAL -->
+    <div id="tender-modal" class="hidden fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-[70] backdrop-blur-sm">
+        <div class="bg-white w-full max-w-lg rounded-2xl shadow-2xl p-8">
+            <h2 class="text-2xl font-bold text-gray-800 mb-6 text-center border-b pb-4">Select Payment Method</h2>
+            
+            <div class="grid grid-cols-2 gap-4 mb-6">
+                <button onclick="setTender('cash')" id="btn-tender-cash" class="py-6 rounded-xl border-2 border-green-500 bg-green-50 text-green-700 font-bold text-xl flex flex-col items-center gap-2 hover:bg-green-100 transition"><i class="fas fa-money-bill-wave text-3xl"></i> Cash</button>
+                <button onclick="setTender('card')" id="btn-tender-card" class="py-6 rounded-xl border-2 border-gray-200 text-gray-500 font-bold text-xl flex flex-col items-center gap-2 hover:bg-gray-50 transition"><i class="fas fa-credit-card text-3xl"></i> Card</button>
+            </div>
+
+            <div id="cash-calculator" class="hidden space-y-4 mb-8 bg-gray-50 p-4 rounded-xl border border-gray-200">
+                <div class="flex justify-between items-center text-lg"><span class="text-gray-500">Total Due:</span><span class="font-bold" id="tender-due">L. 0.00</span></div>
+                <div class="flex justify-between items-center"><span class="text-gray-500">Cash Received:</span><input type="number" id="tender-received" onkeyup="calculateChange()" class="w-1/2 p-2 border rounded text-right text-lg font-bold" placeholder="0.00"></div>
+                <div class="flex justify-between items-center text-xl text-green-600 font-bold pt-2 border-t border-gray-200"><span>Change:</span><span id="tender-change">L. 0.00</span></div>
+            </div>
+
+            <div class="flex gap-4">
+                <button onclick="document.getElementById('tender-modal').classList.add('hidden')" class="w-1/3 bg-gray-200 text-gray-800 py-4 rounded-xl font-bold hover:bg-gray-300 transition">Cancel</button>
+                <button onclick="processCheckout()" id="confirm-tender-btn" class="w-2/3 bg-gray-900 text-white py-4 rounded-xl font-bold text-xl shadow-lg hover:bg-black transition flex items-center justify-center gap-2"><i class="fas fa-check"></i> Complete Sale</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ADMIN PIN MODAL -->
+    <div id="admin-pin-modal" class="hidden fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50">
+        <div class="bg-white w-1/3 rounded-2xl shadow-2xl p-8 text-center">
+            <div class="mb-4 text-red-500 text-5xl"><i class="fas fa-lock"></i></div>
+            <h2 class="text-2xl font-bold text-gray-800 mb-2">Manager Access</h2>
+            <p class="text-gray-600 mb-6">Enter Admin PIN</p>
+            
+            <input type="password" id="admin-pin" maxlength="4" class="text-center text-4xl tracking-widest w-full border-2 border-gray-300 rounded-xl p-4 mb-6 focus:border-red-500 outline-none" placeholder="****">
+            
+            <div class="flex gap-4">
+                <button onclick="document.getElementById('admin-pin-modal').classList.add('hidden')" class="w-1/2 bg-gray-200 text-gray-800 py-4 rounded-xl font-bold text-xl hover:bg-gray-300">Cancel</button>
+                <button onclick="verifyAdminPin()" class="w-1/2 bg-red-600 text-white py-4 rounded-xl font-bold text-xl shadow-lg hover:bg-red-700">Login</button>
+            </div>
+        </div>
+    </div>
+
+    
+    <!-- ADMIN DASHBOARD PANEL -->
+    <div id="admin-dashboard" class="hidden fixed inset-0 bg-gray-100 z-[60] flex flex-col">
+        <div class="bg-gray-900 text-white p-4 flex justify-between items-center shadow-md">
+            <h1 class="text-2xl font-bold"><i class="fas fa-lock"></i> Admin Dashboard</h1>
+            <button onclick="closeAdminDashboard()" class="bg-gray-700 hover:bg-gray-600 px-4 py-2 rounded font-bold">Exit Admin</button>
+        </div>
+        <div class="p-8 flex gap-8 h-full">
+            <!-- Quick Actions -->
+            <div class="w-1/4 space-y-4">
+                <button onclick="showAdminTab('menu')" class="w-full bg-white p-6 rounded-xl shadow border-l-4 border-blue-500 text-left font-bold text-lg hover:bg-gray-50">Menu Manager</button>
+                <button onclick="showAdminTab('orders')" class="w-full bg-white p-6 rounded-xl shadow border-l-4 border-purple-500 text-left font-bold text-lg hover:bg-gray-50">Today's Orders</button>
+            </div>
+            <!-- Content Area -->
+            <div class="flex-1 bg-white rounded-xl shadow p-8 overflow-y-auto" id="admin-content-area">
+                <h2 class="text-2xl font-bold mb-4 text-gray-800">Welcome to Admin</h2>
+                <p class="text-gray-500 mb-6">Select an option from the left.</p>
+            </div>
+        </div>
+    </div>
+
+    </div>
+
     <!-- MODIFIER MODAL (Hidden by default) -->
     <div id="modifier-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
         <div class="bg-white w-2/3 h-3/4 rounded-2xl shadow-2xl flex flex-col overflow-hidden">
@@ -57,46 +144,14 @@
             </div>
 
             <!-- Scrollable Options -->
-            <div class="flex-1 overflow-y-auto p-6 space-y-8">
+            <div class="flex-1 overflow-y-auto p-6 space-y-8" id="mod-dynamic-container">
+                <!-- Dynamic groups injected here -->
                 
-                <!-- Milk Section -->
-                <div>
-                    <h3 class="font-bold text-gray-500 uppercase text-sm mb-3">Milk / Leche</h3>
-                    <div class="grid grid-cols-4 gap-3" id="mod-milk">
-                        <button onclick="selectMod('milk', 'Whole', 0, this)" class="mod-btn selected border-2 border-blue-500 bg-blue-50 p-4 rounded-xl font-bold">Whole (Std)</button>
-                        <button onclick="selectMod('milk', 'Oat', 15, this)" class="mod-btn border border-gray-200 p-4 rounded-xl hover:bg-gray-50">Oat (+15)</button>
-                        <button onclick="selectMod('milk', 'Almond', 15, this)" class="mod-btn border border-gray-200 p-4 rounded-xl hover:bg-gray-50">Almond (+15)</button>
-                        <button onclick="selectMod('milk', 'Soy', 15, this)" class="mod-btn border border-gray-200 p-4 rounded-xl hover:bg-gray-50">Soy (+15)</button>
-                    </div>
-                </div>
-
-                <!-- Syrup Section -->
-                <div>
-                    <h3 class="font-bold text-gray-500 uppercase text-sm mb-3">Flavor / Sabor</h3>
-                    <div class="grid grid-cols-4 gap-3" id="mod-syrup">
-                        <button onclick="selectMod('syrup', 'None', 0, this)" class="mod-btn selected border-2 border-blue-500 bg-blue-50 p-4 rounded-xl font-bold">None</button>
-                        <button onclick="selectMod('syrup', 'Vanilla', 10, this)" class="mod-btn border border-gray-200 p-4 rounded-xl hover:bg-gray-50">Vanilla (+10)</button>
-                        <button onclick="selectMod('syrup', 'Caramel', 10, this)" class="mod-btn border border-gray-200 p-4 rounded-xl hover:bg-gray-50">Caramel (+10)</button>
-                        <button onclick="selectMod('syrup', 'Hazelnut', 10, this)" class="mod-btn border border-gray-200 p-4 rounded-xl hover:bg-gray-50">Hazelnut (+10)</button>
-                    </div>
-                </div>
-
-                <!-- Shots Section -->
-                <div>
-                    <h3 class="font-bold text-gray-500 uppercase text-sm mb-3">Espresso Shots</h3>
-                    <div class="flex items-center gap-4 bg-gray-100 p-2 rounded-xl w-max">
-                        <button onclick="adjustShots(-1)" class="w-12 h-12 bg-white rounded-lg shadow font-bold text-xl hover:bg-gray-50">-</button>
-                        <span id="shot-count" class="text-2xl font-bold w-8 text-center">1</span>
-                        <button onclick="adjustShots(1)" class="w-12 h-12 bg-white rounded-lg shadow font-bold text-xl hover:bg-gray-50">+</button>
-                    </div>
-                </div>
-
                 <!-- Custom Note -->
                 <div>
                     <h3 class="font-bold text-gray-500 uppercase text-sm mb-3">Custom Note / Nota</h3>
                     <input type="text" id="mod-note" placeholder="e.g. Extra hot, no foam..." class="w-full p-4 border border-gray-300 rounded-xl text-lg">
                 </div>
-
             </div>
 
             <!-- Footer Action -->
@@ -114,8 +169,14 @@
         
         <!-- Header -->
         <div class="bg-white p-4 flex justify-between items-center shadow-sm">
-            <h1 class="text-2xl font-bold text-gray-800">☕️ POS v2.0</h1>
+            <h1 class="text-2xl font-bold text-gray-800 cursor-pointer select-none" onclick="triggerAdmin()">☕️ POS v2.0</h1>
             <div class="flex gap-3">
+                <button onclick="endShift()" class="bg-red-100 text-red-600 px-4 py-2 rounded-lg font-bold hover:bg-red-200 transition flex items-center gap-2">
+                    <i class="fas fa-door-closed"></i> Close Shift
+                </button>
+                <button onclick="connectHardware()" class="bg-gray-200 text-gray-700 px-4 py-2 rounded-lg font-bold hover:bg-gray-300 transition flex items-center gap-2">
+                    <i class="fas fa-print"></i> <span id="printer-status">Connect Hardware</span>
+                </button>
                 <button onclick="toggleVoice()" id="mic-btn" class="bg-blue-600 text-white px-6 py-2 rounded-full font-bold shadow-lg hover:bg-blue-700 transition flex items-center gap-2">
                     <i class="fas fa-microphone"></i> Voice Order
                 </button>
@@ -196,6 +257,9 @@
     // --- DATA ---
     // Updated with Stock Images
     let menu = [];
+    let modGroups = [];
+    let modOptions = [];
+    let itemModGroups = [];
 
     // --- INIT ---
     window.onload = async () => {
@@ -211,6 +275,9 @@
                     icon: "☕",
                     image: i.image_url || "https://images.unsplash.com/photo-1510591509098-f4fdc6d0ff04?w=400&q=80"
                 }));
+                modGroups = data.modGroups || [];
+                modOptions = data.modOptions || [];
+                itemModGroups = data.itemModGroups || [];
             }
         } catch (e) {
             console.error("Failed to load menu", e);
@@ -258,12 +325,59 @@
     let cart = [];
     let recognition;
 
-    // --- INIT ---
-    // window.onload replaced
-        renderMenu();
-        checkInventoryUpsell();
-        simulateWhatsAppTraffic();
-    };
+    // Fixed init duplications
+
+    
+    // --- SHIFT LOGIC ---
+    let currentCashier = null;
+    let startingCash = 0;
+    let currentTenderMethod = 'cash';
+
+    function startShift() {
+        const pin = document.getElementById('shift-pin').value;
+        const cash = parseFloat(document.getElementById('shift-cash').value);
+        
+        if (!pin || isNaN(cash)) {
+            alert("Please enter PIN and starting cash amount.");
+            return;
+        }
+        
+        // Mock validation
+        currentCashier = "Employee " + pin;
+        startingCash = cash;
+        
+        document.getElementById('shift-modal').classList.add('hidden');
+        renderMenu(); // Load UI
+    }
+
+    function endShift() {
+        const finalCash = prompt("Enter final cash in drawer:");
+        if (finalCash === null) return;
+        
+        const parsedCash = parseFloat(finalCash);
+        if (isNaN(parsedCash)) {
+            alert("Invalid amount.");
+            return;
+        }
+        
+        alert(`Shift Closed.\nStarting Cash: L. ${startingCash}\nFinal Count: L. ${parsedCash}\n\nSystem locking...`);
+        
+        // Reset App State
+        cart = [];
+        currentCustomerId = null;
+        renderCart();
+        document.getElementById('customer-display').innerHTML = `
+            <div class="w-10 h-10 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center">
+                <i class="fas fa-user"></i>
+            </div>
+            <div>
+                <div class="text-sm text-gray-500 font-bold uppercase tracking-wider">Walk-in Customer</div>
+            </div>
+        `;
+        document.getElementById('shift-pin').value = '';
+        document.getElementById('shift-cash').value = '';
+        document.getElementById('shift-modal').classList.remove('hidden');
+    }
 
     let currentItem = null;
     let currentMods = {
@@ -272,6 +386,83 @@
         shots: 1,
         note: ''
     };
+
+    // --- ADMIN DASHBOARD ---
+    let adminClickCount = 0;
+    let adminClickTimer = null;
+
+    function triggerAdmin() {
+        adminClickCount++;
+        if (adminClickCount >= 5) {
+            document.getElementById('admin-pin-modal').classList.remove('hidden');
+            document.getElementById('admin-pin').value = '';
+            document.getElementById('admin-pin').focus();
+            adminClickCount = 0;
+        }
+        
+        clearTimeout(adminClickTimer);
+        adminClickTimer = setTimeout(() => { adminClickCount = 0; }, 2000);
+    }
+
+    function verifyAdminPin() {
+        const pin = document.getElementById('admin-pin').value;
+        if (pin === '1234') { // Default pin
+            document.getElementById('admin-pin-modal').classList.add('hidden');
+            document.getElementById('admin-dashboard').classList.remove('hidden');
+        } else {
+            alert('Incorrect PIN');
+            document.getElementById('admin-pin').value = '';
+        }
+    }
+
+    
+    function closeAdminDashboard() {
+        document.getElementById('admin-dashboard').classList.add('hidden');
+    }
+
+    // --- ADMIN LOGIC ---
+    async function showAdminTab(tab) {
+        const content = document.getElementById('admin-content-area');
+        if (tab === 'menu') {
+            content.innerHTML = `
+                <h2 class="text-2xl font-bold mb-4 text-gray-800">Menu Manager</h2>
+                <div class="bg-blue-50 text-blue-800 p-4 rounded-lg">
+                    <i class="fas fa-info-circle"></i> Use the Supabase dashboard to edit items for now. GUI coming soon.
+                </div>
+            `;
+        } else if (tab === 'orders') {
+            content.innerHTML = '<div class="text-center mt-10"><i class="fas fa-spinner fa-spin text-3xl text-gray-400"></i></div>';
+            try {
+                const res = await fetch('/api/orders');
+                const data = await res.json();
+                const orders = data.orders || [];
+                
+                let html = `<h2 class="text-2xl font-bold mb-6 text-gray-800">Today's Orders (${orders.length})</h2>`;
+                html += `<div class="space-y-4">`;
+                
+                orders.forEach(o => {
+                    const time = new Date(o.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+                    let badge = o.status === 'completed' ? '<span class="bg-green-100 text-green-800 px-2 py-1 rounded text-xs">Completed</span>' : '<span class="bg-yellow-100 text-yellow-800 px-2 py-1 rounded text-xs">Pending</span>';
+                    
+                    html += `
+                        <div class="p-4 border rounded-xl flex justify-between items-center hover:bg-gray-50">
+                            <div>
+                                <div class="font-bold text-lg">Order #${o.order_number} ${badge}</div>
+                                <div class="text-sm text-gray-500">${time} • ${o.items.length} items • ${o.payment_method.toUpperCase()}</div>
+                            </div>
+                            <div class="text-xl font-bold text-gray-800">L. ${o.total.toFixed(2)}</div>
+                        </div>
+                    `;
+                });
+                
+                html += `</div>`;
+                content.innerHTML = html;
+            } catch (e) {
+                content.innerHTML = `<div class="text-red-500">Error loading orders.</div>`;
+            }
+        }
+    }
+
 
     // --- RENDER MENU ---
     function renderMenu() {
@@ -293,28 +484,60 @@
     function openModifier(id) {
         currentItem = menu.find(i => i.id === id);
         
-        // Skip modal for simple items (food)
-        if(currentItem.category === 'food') {
+        // Find relevant dynamic groups
+        const relevantGroups = itemModGroups.filter(img => img.item_id === id).sort((a,b)=>a.display_order - b.display_order).map(img => img.group_id);
+        
+        // Skip modal for items with no modifiers
+        if(relevantGroups.length === 0) {
             addToCart(currentItem);
             return;
         }
 
         // Reset mods
-        currentMods = { milk: { name: 'Whole', price: 0 }, syrup: { name: 'None', price: 0 }, shots: 1, note: '' };
-        document.getElementById('shot-count').innerText = "1";
-        document.getElementById('mod-note').value = "";
+        currentMods = {};
         
-        // Reset UI selection
-        document.querySelectorAll('.mod-btn').forEach(btn => {
-            btn.classList.remove('selected', 'border-2', 'border-blue-500', 'bg-blue-50');
-            btn.classList.add('border', 'border-gray-200');
-            if(btn.innerText.includes('Whole') || btn.innerText.includes('None')) {
-                btn.classList.add('selected', 'border-2', 'border-blue-500', 'bg-blue-50');
+        // Build dynamic HTML
+        const container = document.getElementById('mod-dynamic-container');
+        let html = '';
+
+        relevantGroups.forEach(groupId => {
+            const group = modGroups.find(g => g.id === groupId);
+            if (!group) return;
+            const options = modOptions.filter(o => o.group_id === groupId);
+            
+            // Set defaults
+            const defaultOpt = options.find(o => o.is_default);
+            if (defaultOpt) {
+                currentMods[groupId] = [defaultOpt.id];
+            } else {
+                currentMods[groupId] = [];
             }
+
+            html += `
+                <div>
+                    <h3 class="font-bold text-gray-500 uppercase text-sm mb-3">${group.name}</h3>
+                    <div class="grid grid-cols-4 gap-3">
+                        ${options.map(opt => `
+                            <button onclick="toggleDynamicMod('${group.id}', '${opt.id}', ${group.max_selections})" id="mod-btn-${opt.id}" class="mod-btn ${currentMods[groupId].includes(opt.id) ? 'selected border-2 border-blue-500 bg-blue-50' : 'border border-gray-200'} p-4 rounded-xl font-bold hover:bg-gray-50 text-sm">
+                                ${opt.name} ${opt.price_adjustment > 0 ? '(+' + opt.price_adjustment + ')' : ''}
+                            </button>
+                        `).join('')}
+                    </div>
+                </div>
+            `;
         });
+        
+        html += `
+            <div>
+                <h3 class="font-bold text-gray-500 uppercase text-sm mb-3">Custom Note / Nota</h3>
+                <input type="text" id="mod-note" placeholder="e.g. Extra hot, no foam..." class="w-full p-4 border border-gray-300 rounded-xl text-lg">
+            </div>
+        `;
+        
+        container.innerHTML = html;
 
         document.getElementById('mod-item-name').innerText = currentItem.name;
-        updateModPrice();
+        updateDynamicModPrice();
         document.getElementById('modifier-modal').classList.remove('hidden');
     }
 
@@ -322,45 +545,76 @@
         document.getElementById('modifier-modal').classList.add('hidden');
     }
 
-    function selectMod(type, name, price, btnElement) {
-        currentMods[type] = { name, price };
+    function toggleDynamicMod(groupId, optionId, maxSelections) {
+        let selected = currentMods[groupId] || [];
         
-        // UI Update
-        const parent = btnElement.parentElement;
-        parent.querySelectorAll('button').forEach(b => {
-            b.classList.remove('selected', 'border-2', 'border-blue-500', 'bg-blue-50');
-            b.classList.add('border', 'border-gray-200');
+        if (selected.includes(optionId)) {
+            // Deselect logic
+            selected = selected.filter(id => id !== optionId);
+        } else {
+            // Select logic
+            if (maxSelections === 1) {
+                selected = [optionId];
+            } else {
+                if (selected.length < maxSelections) {
+                    selected.push(optionId);
+                } else {
+                    selected.shift(); // remove oldest
+                    selected.push(optionId);
+                }
+            }
+        }
+        currentMods[groupId] = selected;
+        
+        // Update UI
+        const options = modOptions.filter(o => o.group_id === groupId);
+        options.forEach(opt => {
+            const btn = document.getElementById(`mod-btn-${opt.id}`);
+            if (btn) {
+                if (selected.includes(opt.id)) {
+                    btn.className = "mod-btn selected border-2 border-blue-500 bg-blue-50 p-4 rounded-xl font-bold hover:bg-gray-50 text-sm";
+                } else {
+                    btn.className = "mod-btn border border-gray-200 p-4 rounded-xl font-bold hover:bg-gray-50 text-sm";
+                }
+            }
         });
-        btnElement.classList.remove('border', 'border-gray-200');
-        btnElement.classList.add('selected', 'border-2', 'border-blue-500', 'bg-blue-50');
         
-        updateModPrice();
+        updateDynamicModPrice();
     }
 
-    function adjustShots(delta) {
-        currentMods.shots += delta;
-        if(currentMods.shots < 1) currentMods.shots = 1;
-        document.getElementById('shot-count').innerText = currentMods.shots;
-        updateModPrice();
-    }
-
-    function updateModPrice() {
+    function updateDynamicModPrice() {
         let total = currentItem.price;
-        total += currentMods.milk.price;
-        total += currentMods.syrup.price;
-        // Logic: Extra shots cost +10 (Shot 1 included in base price)
-        if(currentMods.shots > 1) total += (currentMods.shots - 1) * 10;
-        
+        for (const groupId in currentMods) {
+            currentMods[groupId].forEach(optId => {
+                const opt = modOptions.find(o => o.id === optId);
+                if (opt) total += parseFloat(opt.price_adjustment);
+            });
+        }
         document.getElementById('mod-item-price').innerText = `L. ${total.toFixed(2)}`;
         document.getElementById('mod-final-price').innerText = `L. ${total.toFixed(2)}`;
     }
 
     function confirmItem() {
+        const mods = [];
+        for (const groupId in currentMods) {
+            currentMods[groupId].forEach(optId => {
+                const opt = modOptions.find(o => o.id === optId);
+                if (opt && (!opt.is_default || opt.price_adjustment > 0)) {
+                    mods.push({ name: opt.name });
+                }
+            });
+        }
+
+        const note = document.getElementById('mod-note').value;
+        if (note) {
+            mods.push({ name: `📝 ${note}` });
+        }
+
         const finalItem = {
             ...currentItem,
-            mods: { ...currentMods }, // Clone
+            mods: mods, // Standardized KDS array
             finalPrice: parseFloat(document.getElementById('mod-final-price').innerText.replace('L. ', '')),
-            note: document.getElementById('mod-note').value
+            note: note
         };
         addToCart(finalItem);
         closeModal();
@@ -371,9 +625,13 @@
         // Handle direct ID call (from upsell/voice) vs object (from modal)
         let item;
         if (typeof itemOrId === 'string' || typeof itemOrId === 'number') {
-            item = { ...menu.find(i => i.id === itemOrId), finalPrice: menu.find(i => i.id === itemOrId).price };
+            const found = menu.find(i => i.id === itemOrId);
+            item = { ...found, finalPrice: found.price };
         } else {
-            item = itemOrId;
+            item = { ...itemOrId };
+            if (item.finalPrice === undefined) {
+                item.finalPrice = item.price;
+            }
         }
         
         cart.push(item);
@@ -392,8 +650,8 @@
             // Build modifier string
             let modString = "";
             if (item.mods) {
-                if (item.mods.milk.name !== 'Whole') modString += `• ${item.mods.milk.name} `;
-                if (item.mods.syrup.name !== 'None') modString += `• ${item.mods.syrup.name} `;
+                if (item.mods.milk && item.mods.milk.name !== 'Whole') modString += `• ${item.mods.milk.name} `;
+                if (item.mods.syrup && item.mods.syrup.name !== 'None') modString += `• ${item.mods.syrup.name} `;
                 if (item.mods.shots > 1) modString += `• ${item.mods.shots} shots `;
                 if (item.note) modString += `• 📝 "${item.note}"`;
             }
@@ -625,6 +883,136 @@
     }
 
     // --- CHECKOUT LOGIC ---
+    function openTenderModal() {
+        if (cart.length === 0) return;
+        const total = cart.reduce((sum, item) => sum + item.finalPrice, 0) * 1.15;
+        
+        document.getElementById('tender-due').innerText = `L. ${total.toFixed(2)}`;
+        document.getElementById('tender-received').value = '';
+        document.getElementById('tender-change').innerText = 'L. 0.00';
+        
+        setTender('cash'); // Default
+        document.getElementById('tender-modal').classList.remove('hidden');
+    }
+
+    function setTender(method) {
+        currentTenderMethod = method;
+        const btnCash = document.getElementById('btn-tender-cash');
+        const btnCard = document.getElementById('btn-tender-card');
+        const calc = document.getElementById('cash-calculator');
+        
+        btnCash.className = "py-6 rounded-xl border-2 font-bold text-xl flex flex-col items-center gap-2 transition " + (method === 'cash' ? "border-green-500 bg-green-50 text-green-700" : "border-gray-200 text-gray-500 bg-white hover:bg-gray-50");
+        btnCard.className = "py-6 rounded-xl border-2 font-bold text-xl flex flex-col items-center gap-2 transition " + (method === 'card' ? "border-blue-500 bg-blue-50 text-blue-700" : "border-gray-200 text-gray-500 bg-white hover:bg-gray-50");
+        
+        if(method === 'cash') calc.classList.remove('hidden');
+        else calc.classList.add('hidden');
+    }
+
+    function calculateChange() {
+        const total = cart.reduce((sum, item) => sum + item.finalPrice, 0) * 1.15;
+        const received = parseFloat(document.getElementById('tender-received').value) || 0;
+        const change = received - total;
+        
+        const changeEl = document.getElementById('tender-change');
+        changeEl.innerText = `L. ${Math.max(0, change).toFixed(2)}`;
+        if(change < 0 && received > 0) changeEl.classList.replace('text-green-600', 'text-red-500');
+        else changeEl.classList.replace('text-red-500', 'text-green-600');
+    }
+
+    let printPort = null;
+    let printWriter = null;
+
+    async function connectHardware() {
+        if (!navigator.serial) {
+            alert("Web Serial API not supported in this browser. Use Chrome or Edge on Desktop/Android.");
+            return;
+        }
+        try {
+            printPort = await navigator.serial.requestPort();
+            await printPort.open({ baudRate: 9600 }); // Common default, adjust if needed (e.g., 115200)
+            
+            printWriter = printPort.writable.getWriter();
+            
+            const btn = document.getElementById('printer-status').parentElement;
+            btn.classList.replace('bg-gray-200', 'bg-green-600');
+            btn.classList.replace('text-gray-700', 'text-white');
+            document.getElementById('printer-status').innerText = 'Hardware 🟢';
+            alert("✅ Wired Hardware connected successfully!");
+            
+        } catch (err) {
+            console.error(err);
+            alert("Hardware connection failed: " + err.message);
+        }
+    }
+
+    async function printReceiptAndKickDrawer(orderPayload, orderId) {
+        if (!printWriter) return;
+        try {
+            const encoder = new TextEncoder();
+            let receipt = "\x1B\x40"; // Init
+            
+            // Header
+            receipt += "\x1B\x61\x01"; // Center align
+            receipt += "\x1B\x21\x10"; // Double height text
+            receipt += "RICH AROMA\n";
+            receipt += "\x1B\x21\x00"; // Normal text
+            receipt += "Cafe & Comida\n";
+            receipt += "Quimistan, Honduras\n";
+            receipt += "--------------------------------\n";
+            
+            // Body
+            receipt += "\x1B\x61\x00"; // Left align
+            receipt += `Order: #${orderId || 'NEW'}\n`;
+            receipt += `Time: ${new Date().toLocaleString()}\n`;
+            receipt += "--------------------------------\n";
+            
+            orderPayload.items.forEach(item => {
+                const line = `${item.qty || 1}x ${item.name.substring(0, 20)}`;
+                const price = `L.${item.finalPrice.toFixed(2)}`;
+                // Pad space to right align price
+                receipt += line + " ".repeat(Math.max(0, 32 - line.length - price.length)) + price + "\n";
+                if (item.mods) {
+                    item.mods.forEach(mod => {
+                        receipt += `   - ${mod.name}\n`;
+                    });
+                }
+            });
+            
+            receipt += "--------------------------------\n";
+            const subLine = `SUBTOTAL:`;
+            const subPrice = `L.${orderPayload.subtotal.toFixed(2)}`;
+            receipt += subLine + " ".repeat(32 - subLine.length - subPrice.length) + subPrice + "\n";
+            
+            const taxLine = `TAX (15%):`;
+            const taxPrice = `L.${orderPayload.tax.toFixed(2)}`;
+            receipt += taxLine + " ".repeat(32 - taxLine.length - taxPrice.length) + taxPrice + "\n";
+            
+            receipt += "\x1B\x21\x10"; // Double height
+            const totLine = `TOTAL:`;
+            const totPrice = `L.${orderPayload.total.toFixed(2)}`;
+            receipt += totLine + " ".repeat(Math.max(0, 32 - totLine.length - totPrice.length)) + totPrice + "\n";
+            receipt += "\x1B\x21\x00"; // Normal
+            
+            receipt += "\n\x1B\x61\x01"; // Center align
+            receipt += "Thank you for your order!\n";
+            receipt += "Captain Rico awaits you.\n\n\n\n";
+            
+            // Cut paper (GS V m)
+            receipt += "\x1D\x56\x42\x00"; 
+
+            // Kick Cash Drawer (ESC p 0 25 250)
+            receipt += "\x1B\x70\x00\x19\xFA";
+
+            // Send Data
+            const data = encoder.encode(receipt);
+            await printWriter.write(data);
+
+        } catch (err) {
+            console.error("Print/Drawer error:", err);
+            alert("Hardware error: " + err.message);
+        }
+    }
+
     async function processCheckout() {
         if (cart.length === 0) {
             alert("Cart is empty");
@@ -633,13 +1021,35 @@
 
         const total = cart.reduce((sum, item) => sum + item.finalPrice, 0);
 
+        // Format items for KDS standard: mods array
+        const formattedItems = cart.map(item => {
+            const formattedItem = { ...item, qty: item.qty || 1 };
+            if (item.mods && !Array.isArray(item.mods)) {
+                formattedItem.mods = [];
+                if (item.mods.milk && item.mods.milk.name !== 'Whole') {
+                    formattedItem.mods.push({ name: item.mods.milk.name + ' Milk' });
+                }
+                if (item.mods.syrup && item.mods.syrup.name !== 'None') {
+                    formattedItem.mods.push({ name: item.mods.syrup.name + ' Syrup' });
+                }
+                if (item.mods.shots > 1) {
+                    formattedItem.mods.push({ name: item.mods.shots + ' Shots' });
+                }
+            }
+            if (item.note) {
+                formattedItem.mods = formattedItem.mods || [];
+                formattedItem.mods.push({ name: `📝 ${item.note}` });
+            }
+            return formattedItem;
+        });
+
         const orderPayload = {
-            items: cart,
+            items: formattedItems,
             subtotal: total,
             tax: total * 0.15,
             discount: 0,
             total: total * 1.15, // rough tax estimate or exact match
-            paymentMethod: currentCustomerId ? 'rico_balance' : 'cash',
+            paymentMethod: currentTenderMethod,
             customerId: currentCustomerId
         };
 
@@ -651,6 +1061,13 @@
             });
 
             if (res.ok) {
+                const savedOrder = await res.json();
+                
+                // Trigger Hardware
+                await printReceiptAndKickDrawer(orderPayload, savedOrder.order_number);
+
+                document.getElementById('tender-modal').classList.add('hidden');
+
                 alert("✅ Order Placed Successfully!");
                 cart = [];
                 currentCustomerId = null;

@@ -2,460 +2,584 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Rich Aroma Command Center</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Rich Aroma OS | Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="theme-color" content="#1e1610">
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-        
-        :root {
-            --gold: #C9A66B;
-            --espresso: #1E1610;
-            --cream: #F5F0E8;
-            --success: #22C55E;
-            --warning: #F59E0B;
-            --danger: #EF4444;
-        }
-        
-        body {
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-            background: linear-gradient(135deg, var(--espresso) 0%, #2D2418 100%);
-            min-height: 100vh;
-            color: var(--cream);
-        }
-        
-        .header {
-            background: rgba(0,0,0,0.3);
-            padding: 20px;
-            text-align: center;
-            border-bottom: 2px solid var(--gold);
-        }
-        
-        .header h1 {
-            font-size: 2rem;
-            color: var(--gold);
-            margin-bottom: 5px;
-        }
-        
-        .header p {
-            opacity: 0.7;
-            font-size: 0.9rem;
-        }
-        
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 20px;
-        }
-        
-        .grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
-            gap: 20px;
-            margin-bottom: 20px;
-        }
-        
-        .card {
-            background: rgba(255,255,255,0.05);
-            border-radius: 15px;
-            padding: 20px;
-            border: 1px solid rgba(201, 166, 107, 0.2);
-            backdrop-filter: blur(10px);
-        }
-        
-        .card h2 {
-            color: var(--gold);
-            font-size: 1.1rem;
-            margin-bottom: 15px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-        
-        .stat-grid {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 15px;
-        }
-        
-        .stat {
-            text-align: center;
-            padding: 15px;
-            background: rgba(0,0,0,0.2);
-            border-radius: 10px;
-        }
-        
-        .stat-value {
-            font-size: 2rem;
-            font-weight: bold;
-            color: var(--gold);
-        }
-        
-        .stat-label {
-            font-size: 0.8rem;
-            opacity: 0.7;
-            margin-top: 5px;
-        }
-        
-        .checklist {
-            list-style: none;
-        }
-        
-        .checklist li {
-            padding: 10px 0;
-            border-bottom: 1px solid rgba(255,255,255,0.1);
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-        
-        .checklist li:last-child {
-            border-bottom: none;
-        }
-        
-        .check {
-            width: 20px;
-            height: 20px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 0.7rem;
-        }
-        
-        .check.done {
-            background: var(--success);
-        }
-        
-        .check.pending {
-            background: var(--warning);
-        }
-        
-        .asset-list {
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-        }
-        
-        .asset {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 10px 15px;
-            background: rgba(0,0,0,0.2);
-            border-radius: 8px;
-        }
-        
-        .asset-name {
-            font-size: 0.9rem;
-        }
-        
-        .asset-type {
-            font-size: 0.7rem;
-            padding: 3px 8px;
-            border-radius: 20px;
-            background: var(--gold);
-            color: var(--espresso);
-        }
-        
-        .progress-bar {
-            height: 8px;
-            background: rgba(255,255,255,0.1);
-            border-radius: 10px;
-            overflow: hidden;
-            margin-top: 15px;
-        }
-        
-        .progress-fill {
-            height: 100%;
-            background: linear-gradient(90deg, var(--gold), #E8D4A8);
-            border-radius: 10px;
-            transition: width 0.5s ease;
-        }
-        
-        .progress-label {
-            display: flex;
-            justify-content: space-between;
-            margin-top: 8px;
-            font-size: 0.8rem;
-            opacity: 0.7;
-        }
-        
-        .quick-actions {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 10px;
-        }
-        
-        .action-btn {
-            padding: 15px;
-            border: none;
-            border-radius: 10px;
-            cursor: pointer;
-            font-family: inherit;
-            font-weight: 600;
-            transition: all 0.3s;
-            font-size: 0.85rem;
-        }
-        
-        .action-btn:hover {
-            transform: translateY(-2px);
-        }
-        
-        .action-btn.primary {
-            background: var(--gold);
-            color: var(--espresso);
-        }
-        
-        .action-btn.secondary {
-            background: rgba(255,255,255,0.1);
-            color: var(--cream);
-            border: 1px solid rgba(201, 166, 107, 0.3);
-        }
-        
-        .timeline {
-            position: relative;
-            padding-left: 25px;
-        }
-        
-        .timeline::before {
-            content: '';
-            position: absolute;
-            left: 8px;
-            top: 0;
-            bottom: 0;
-            width: 2px;
-            background: var(--gold);
-            opacity: 0.3;
-        }
-        
-        .timeline-item {
-            position: relative;
-            padding-bottom: 20px;
-        }
-        
-        .timeline-item::before {
-            content: '';
-            position: absolute;
-            left: -21px;
-            top: 5px;
-            width: 10px;
-            height: 10px;
-            border-radius: 50%;
-            background: var(--gold);
-        }
-        
-        .timeline-date {
-            font-size: 0.75rem;
-            opacity: 0.6;
-        }
-        
-        .timeline-title {
-            font-weight: 600;
-            margin: 3px 0;
-        }
-        
-        .timeline-desc {
-            font-size: 0.85rem;
-            opacity: 0.8;
-        }
-        
-        .brand-preview {
-            display: flex;
-            gap: 15px;
-            align-items: center;
-        }
-        
-        .color-swatch {
-            width: 50px;
-            height: 50px;
-            border-radius: 10px;
-            display: flex;
-            align-items: flex-end;
-            justify-content: center;
-            padding-bottom: 5px;
-            font-size: 0.6rem;
-            font-weight: bold;
-        }
-        
-        .status-badge {
-            display: inline-flex;
-            align-items: center;
-            gap: 5px;
-            padding: 5px 12px;
-            border-radius: 20px;
-            font-size: 0.8rem;
-            font-weight: 600;
-        }
-        
-        .status-badge.live {
-            background: rgba(34, 197, 94, 0.2);
-            color: var(--success);
-        }
-        
-        .status-badge.prep {
-            background: rgba(245, 158, 11, 0.2);
-            color: var(--warning);
-        }
-        
-        @media (max-width: 768px) {
-            .grid {
-                grid-template-columns: 1fr;
-            }
-            .stat-grid {
-                grid-template-columns: 1fr 1fr;
-            }
-            .quick-actions {
-                grid-template-columns: 1fr;
-            }
-        }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background-color: #f3f4f6; }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+        .bottom-nav { background: #1e1610; }
+        .nav-item { color: #8a8a8a; }
+        .nav-item.active { color: #C9A66B; }
     </style>
 </head>
-<body>
-    <div class="header">
-        <h1>☕ Rich Aroma Command Center</h1>
-        <p>Café & Comida • Quimistán, Honduras</p>
+<body class="pb-20">
+
+    <!-- SECURE PIN LOGIN -->
+    <div id="login-screen" class="fixed inset-0 bg-[#1e1610] z-50 flex flex-col items-center justify-center text-white px-6">
+        <h1 class="text-4xl font-bold mb-2 text-[#C9A66B]">RICH AROMA</h1>
+        <p class="text-gray-400 mb-8 tracking-widest text-sm">OPERATING SYSTEM</p>
+        
+        <div class="w-full max-w-sm">
+            <input type="password" id="admin-pin" class="w-full bg-gray-800 text-center text-3xl tracking-[1em] py-4 rounded-xl mb-4 border border-gray-700 outline-none focus:border-[#C9A66B] transition" placeholder="PIN" maxlength="4">
+            <button onclick="login()" class="w-full bg-[#C9A66B] text-[#1e1610] py-4 rounded-xl font-bold text-xl hover:bg-[#b08e56]">ENTER</button>
+        </div>
+        <p id="login-error" class="text-red-400 mt-4 hidden">Incorrect PIN.</p>
     </div>
-    
-    <div class="container">
-        <!-- Status Overview -->
-        <div class="grid">
-            <div class="card">
-                <h2>📊 Opening Status</h2>
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
-                    <span class="status-badge prep">🔧 In Preparation</span>
-                    <span style="opacity: 0.7; font-size: 0.85rem;">Target: Feb 2026</span>
-                </div>
-                <div class="stat-grid">
-                    <div class="stat">
-                        <div class="stat-value">24</div>
-                        <div class="stat-label">Checklist Items</div>
-                    </div>
-                    <div class="stat">
-                        <div class="stat-value">8</div>
-                        <div class="stat-label">Completed</div>
-                    </div>
-                    <div class="stat">
-                        <div class="stat-value">9</div>
-                        <div class="stat-label">Videos Created</div>
-                    </div>
-                    <div class="stat">
-                        <div class="stat-value">25</div>
-                        <div class="stat-label">Photos Ready</div>
-                    </div>
-                </div>
-                <div class="progress-bar">
-                    <div class="progress-fill" style="width: 33%"></div>
-                </div>
-                <div class="progress-label">
-                    <span>Progress</span>
-                    <span>33%</span>
-                </div>
+
+    <!-- HEADER -->
+    <div class="bg-white p-4 shadow-sm flex justify-between items-center sticky top-0 z-40">
+        <h1 class="font-bold text-xl text-gray-800" id="header-title">KPI Dashboard</h1>
+        <span class="bg-green-100 text-green-800 text-xs px-2 py-1 rounded font-bold">LIVE 🟢</span>
+    </div>
+
+    <!-- TAB 1: KPI DASHBOARD -->
+    <div id="tab-kpi" class="tab-content active p-4 space-y-4">
+        <!-- Summary Cards -->
+        <div class="grid grid-cols-2 gap-4">
+            <div class="bg-white p-4 rounded-2xl shadow-sm border border-gray-100">
+                <p class="text-gray-500 text-xs font-bold uppercase">Today's Revenue</p>
+                <p class="text-2xl font-bold text-gray-800 mt-1" id="kpi-rev">L. 0</p>
             </div>
-            
-            <div class="card">
-                <h2>🎬 Content Assets</h2>
-                <div class="asset-list">
-                    <div class="asset">
-                        <span class="asset-name">Grand Opening Promo (ES)</span>
-                        <span class="asset-type">VIDEO</span>
-                    </div>
-                    <div class="asset">
-                        <span class="asset-name">Hiring Manager (ES)</span>
-                        <span class="asset-type">VIDEO</span>
-                    </div>
-                    <div class="asset">
-                        <span class="asset-name">Morning Vibes Script</span>
-                        <span class="asset-type">SCRIPT</span>
-                    </div>
-                    <div class="asset">
-                        <span class="asset-name">Captain Rico Intro</span>
-                        <span class="asset-type">SCRIPT</span>
-                    </div>
-                    <div class="asset">
-                        <span class="asset-name">25 Product Photos</span>
-                        <span class="asset-type">PHOTOS</span>
-                    </div>
+            <div class="bg-white p-4 rounded-2xl shadow-sm border border-gray-100">
+                <p class="text-gray-500 text-xs font-bold uppercase">Orders</p>
+                <p class="text-2xl font-bold text-gray-800 mt-1" id="kpi-orders">0</p>
+            </div>
+            <div class="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 col-span-2 flex justify-between items-center">
+                <div>
+                    <p class="text-gray-500 text-xs font-bold uppercase">Items Sold</p>
+                    <p class="text-2xl font-bold text-gray-800 mt-1" id="kpi-items">0</p>
+                </div>
+                <div class="bg-blue-50 p-3 rounded-full text-blue-500">
+                    <i class="fas fa-chart-line text-xl"></i>
                 </div>
             </div>
         </div>
-        
-        <div class="grid">
-            <div class="card">
-                <h2>✅ Opening Checklist</h2>
-                <ul class="checklist">
-                    <li><span class="check done">✓</span> Brand identity finalized</li>
-                    <li><span class="check done">✓</span> Photo assets captured</li>
-                    <li><span class="check done">✓</span> Social media scripts ready</li>
-                    <li><span class="check pending">○</span> Signs (street, drive-thru)</li>
-                    <li><span class="check pending">○</span> Employee t-shirts (blue/white)</li>
-                    <li><span class="check pending">○</span> Window decals</li>
-                    <li><span class="check pending">○</span> Solar lights (indoor/outdoor)</li>
-                    <li><span class="check pending">○</span> Kitchen equipment complete</li>
-                    <li><span class="check pending">○</span> Hire General Manager</li>
-                </ul>
-            </div>
-            
-            <div class="card">
-                <h2>⏰ Recent Activity</h2>
-                <div class="timeline">
-                    <div class="timeline-item">
-                        <div class="timeline-date">Feb 5, 2026</div>
-                        <div class="timeline-title">Bored Gazette Interview</div>
-                        <div class="timeline-desc">Quote provided for BAYC article</div>
-                    </div>
-                    <div class="timeline-item">
-                        <div class="timeline-date">Feb 5, 2026</div>
-                        <div class="timeline-title">GM Hiring Video Created</div>
-                        <div class="timeline-desc">Spanish voiceover ready for posting</div>
-                    </div>
-                    <div class="timeline-item">
-                        <div class="timeline-date">Feb 5, 2026</div>
-                        <div class="timeline-title">Checklist Updated</div>
-                        <div class="timeline-desc">NeeNee added signage & equipment items</div>
-                    </div>
-                    <div class="timeline-item">
-                        <div class="timeline-date">Feb 4, 2026</div>
-                        <div class="timeline-title">UGC Scripts Written</div>
-                        <div class="timeline-desc">5 Spanish social media scripts ready</div>
-                    </div>
-                </div>
-            </div>
-        </div>
-        
-        <div class="grid">
-            <div class="card">
-                <h2>🎨 Brand Identity</h2>
-                <div class="brand-preview">
-                    <div class="color-swatch" style="background: #C9A66B; color: #1E1610;">Gold</div>
-                    <div class="color-swatch" style="background: #1E1610; color: #C9A66B;">Espresso</div>
-                    <div class="color-swatch" style="background: #F5F0E8; color: #1E1610;">Cream</div>
-                </div>
-                <div style="margin-top: 20px;">
-                    <p style="font-size: 0.9rem; opacity: 0.8;"><strong>Tagline:</strong> Café & Comida</p>
-                    <p style="font-size: 0.9rem; opacity: 0.8; margin-top: 5px;"><strong>Mascot:</strong> Captain Rico 🦧</p>
-                    <p style="font-size: 0.9rem; opacity: 0.8; margin-top: 5px;"><strong>Vibe:</strong> Premium local coffee, community hub</p>
-                </div>
-            </div>
-            
-            <div class="card">
-                <h2>⚡ Quick Actions</h2>
-                <div class="quick-actions">
-                    <button class="action-btn primary" onclick="alert('Run: python3 ugc-video.py grand-opening es-female')">📹 Create Video</button>
-                    <button class="action-btn secondary" onclick="window.open('https://docs.google.com/spreadsheets/')">📋 View Full Checklist</button>
-                    <button class="action-btn secondary" onclick="alert('Ask Racs to generate content!')">✍️ New Script</button>
-                    <button class="action-btn secondary" onclick="alert('Check /projects/rich-aroma-ugc/output/')">📁 View Assets</button>
-                </div>
-            </div>
+
+        <!-- Recent Feed -->
+        <h2 class="font-bold text-gray-700 mt-6 mb-2 text-sm uppercase">Live Order Feed</h2>
+        <div class="space-y-3" id="kpi-feed">
+            <p class="text-sm text-gray-500 text-center py-4">Loading data...</p>
         </div>
     </div>
-    
-    <script>
-        // Auto-refresh every 5 minutes
-        setTimeout(() => location.reload(), 300000);
-    </script>
+
+    <!-- TAB 2: MENU MANAGER -->
+    <div id="tab-menu" class="tab-content p-4">
+        <div class="mb-4 flex gap-2">
+            <input type="text" id="menu-search" placeholder="Search items..." class="flex-1 p-3 rounded-xl border border-gray-200 shadow-sm focus:outline-none focus:ring-2 focus:ring-[#C9A66B]">
+            <button onclick="openNewMenu()" class="bg-[#C9A66B] text-white px-5 rounded-xl font-bold shadow-sm hover:bg-[#b08e56]"><i class="fas fa-plus"></i></button>
+        </div>
+        <div class="space-y-3" id="menu-list">
+            <p class="text-sm text-gray-500 text-center py-4">Loading menu...</p>
+        </div>
+    </div>
+
+    <!-- TAB 3: MODIFIERS MANAGER -->
+    <div id="tab-mods" class="tab-content p-4">
+        <div class="space-y-6" id="mod-list">
+            <p class="text-sm text-gray-500 text-center py-4">Loading modifiers...</p>
+        </div>
+    </div>
+
+    <!-- TAB 4: TIMECLOCK -->
+    <div id="tab-time" class="tab-content p-4">
+        <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 mb-6 text-center">
+            <div class="text-4xl font-mono font-bold text-gray-800 mb-2" id="live-clock">00:00:00</div>
+            <p class="text-gray-500 text-sm mb-6" id="live-date">Monday, March 2</p>
+
+            <input type="password" id="emp-pin" class="w-full bg-gray-50 text-center text-2xl tracking-[0.5em] py-3 rounded-xl border border-gray-200 mb-4 focus:outline-none" placeholder="EMP PIN" maxlength="4">
+            
+            <div class="grid grid-cols-2 gap-3">
+                <button onclick="punchClock('in')" class="bg-green-500 text-white font-bold py-3 rounded-xl shadow hover:bg-green-600"><i class="fas fa-sign-in-alt mr-2"></i> CLOCK IN</button>
+                <button onclick="punchClock('out')" class="bg-red-500 text-white font-bold py-3 rounded-xl shadow hover:bg-red-600"><i class="fas fa-sign-out-alt mr-2"></i> CLOCK OUT</button>
+            </div>
+        </div>
+
+        <h2 class="font-bold text-gray-700 mt-6 mb-2 text-sm uppercase">Currently Clocked In</h2>
+        <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden" id="active-employees">
+            <!-- Renders dynamically -->
+        </div>
+    </div>
+
+    <!-- BOTTOM NAVIGATION -->
+    <div class="bottom-nav fixed bottom-0 w-full flex justify-around p-3 pb-6 border-t border-gray-800 z-40">
+        <button onclick="switchTab('kpi')" class="nav-item active flex flex-col items-center gap-1 w-1/4" id="nav-kpi">
+            <i class="fas fa-chart-bar text-xl"></i>
+            <span class="text-[10px] font-bold tracking-wider">KPIs</span>
+        </button>
+        <button onclick="switchTab('menu')" class="nav-item flex flex-col items-center gap-1 w-1/4" id="nav-menu">
+            <i class="fas fa-hamburger text-xl"></i>
+            <span class="text-[10px] font-bold tracking-wider">MENU</span>
+        </button>
+        <button onclick="switchTab('mods')" class="nav-item flex flex-col items-center gap-1 w-1/4" id="nav-mods">
+            <i class="fas fa-sliders-h text-xl"></i>
+            <span class="text-[10px] font-bold tracking-wider">MODS</span>
+        </button>
+        <button onclick="switchTab('time')" class="nav-item flex flex-col items-center gap-1 w-1/4" id="nav-time">
+            <i class="fas fa-user-clock text-xl"></i>
+            <span class="text-[10px] font-bold tracking-wider">TIME</span>
+        </button>
+    </div>
+
+    <!-- EDIT MENU MODAL -->
+    <div id="edit-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+        <div class="bg-white w-full max-w-sm rounded-2xl p-6 shadow-2xl">
+            <h2 class="text-xl font-bold mb-4" id="edit-name-header">Edit Item</h2>
+            <input type="hidden" id="edit-id">
+            
+            <div id="edit-new-fields" class="hidden">
+                <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Name</label>
+                <input type="text" id="edit-name-input" class="w-full p-3 border border-gray-200 rounded-xl mb-4 text-base font-bold">
+                
+                <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Category</label>
+                <select id="edit-category" class="w-full p-3 border border-gray-200 rounded-xl mb-4 text-sm bg-white">
+                    <option value="coffee">Coffee (Hot)</option>
+                    <option value="drinks">Drinks (Cold)</option>
+                    <option value="food">Food</option>
+                </select>
+            </div>
+            
+            <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Price (L.)</label>
+            <input type="number" id="edit-price" class="w-full p-3 border border-gray-200 rounded-xl mb-4 text-lg font-mono">
+            
+            <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Image URL or Upload</label>
+            <div class="flex gap-2 mb-4">
+                <input type="text" id="edit-img" class="flex-1 p-3 border border-gray-200 rounded-xl text-sm" placeholder="https://...">
+                <button onclick="document.getElementById('img-upload').click()" class="bg-gray-100 text-gray-600 px-4 rounded-xl hover:bg-gray-200 shadow-sm border border-gray-200"><i class="fas fa-upload"></i></button>
+                <input type="file" id="img-upload" class="hidden" accept="image/*" onchange="handleImageUpload(event)">
+            </div>
+
+            <div class="flex items-center justify-between p-4 bg-gray-50 rounded-xl mb-4">
+                <span class="font-bold text-gray-700">Available (86 Item)</span>
+                <label class="relative inline-flex items-center cursor-pointer">
+                    <input type="checkbox" id="edit-avail" class="sr-only peer">
+                    <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#C9A66B]"></div>
+                </label>
+            </div>
+
+            <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Modifier Groups</label>
+            <div id="edit-mod-groups-container" class="space-y-2 mb-6 max-h-32 overflow-y-auto p-3 border border-gray-200 rounded-xl bg-gray-50">
+                <!-- Injected via JS -->
+            </div>
+
+            <div class="flex gap-3">
+                <button onclick="document.getElementById('edit-modal').classList.add('hidden')" class="w-1/3 bg-gray-100 text-gray-700 py-3 rounded-xl font-bold">Cancel</button>
+                <button id="btn-delete-item" onclick="deleteMenuItem()" class="w-1/3 bg-red-100 text-red-600 py-3 rounded-xl font-bold hidden hover:bg-red-200">Delete</button>
+                <button onclick="saveMenuEdit()" class="flex-1 bg-blue-600 text-white py-3 rounded-xl font-bold shadow hover:bg-blue-700">Save</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- EDIT MODIFIER MODAL -->
+    <div id="edit-mod-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+        <div class="bg-white w-full max-w-sm rounded-2xl p-6 shadow-2xl">
+            <h2 class="text-xl font-bold mb-4" id="edit-mod-name">Edit Modifier</h2>
+            <input type="hidden" id="edit-mod-id">
+            
+            <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Price (+ L.)</label>
+            <input type="number" id="edit-mod-price" class="w-full p-3 border border-gray-200 rounded-xl mb-6 text-lg font-mono">
+            
+            <div class="flex gap-3">
+                <button onclick="document.getElementById('edit-mod-modal').classList.add('hidden')" class="w-1/2 bg-gray-100 text-gray-700 py-3 rounded-xl font-bold">Cancel</button>
+                <button onclick="saveModEdit()" class="w-1/2 bg-blue-600 text-white py-3 rounded-xl font-bold shadow hover:bg-blue-700">Save</button>
+            </div>
+        </div>
+    </div>
+
+<script>
+    // --- AUTH ---
+    function login() {
+        const pin = document.getElementById('admin-pin').value;
+        if(pin === '1234') { // Secure server-side later, ok for now as requested
+            document.getElementById('login-screen').classList.add('hidden');
+            loadKPIs();
+        } else {
+            document.getElementById('login-error').classList.remove('hidden');
+        }
+    }
+
+    // --- NAVIGATION ---
+    const titles = { 'kpi': 'Live KPIs', 'menu': 'Menu Manager', 'mods': 'Modifiers', 'time': 'Timeclock & Staff' };
+    function switchTab(tabId) {
+        document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+        document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+        
+        document.getElementById(`tab-${tabId}`).classList.add('active');
+        document.getElementById(`nav-${tabId}`).classList.add('active');
+        document.getElementById('header-title').innerText = titles[tabId];
+
+        if(tabId === 'kpi') loadKPIs();
+        if(tabId === 'menu') loadMenu();
+        if(tabId === 'mods') loadMods();
+        if(tabId === 'time') loadTimeclock();
+    }
+
+    // --- KPI LOGIC ---
+    async function loadKPIs() {
+        try {
+            const res = await fetch('/api/admin/kpi');
+            const data = await res.json();
+            
+            document.getElementById('kpi-rev').innerText = `L. ${data.todayRevenue.toFixed(2)}`;
+            document.getElementById('kpi-orders').innerText = data.todayOrders;
+            document.getElementById('kpi-items').innerText = data.todayItemsSold;
+
+            const feed = document.getElementById('kpi-feed');
+            if(!data.orders || data.orders.length === 0) {
+                feed.innerHTML = '<p class="text-sm text-gray-500 text-center">No orders today yet.</p>';
+                return;
+            }
+
+            feed.innerHTML = data.orders.map(o => {
+                const time = new Date(o.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+                const summary = o.items ? o.items.map(i => `${i.qty}x ${i.name}`).join(', ') : 'Custom Order';
+                return `
+                <div class="bg-white p-3 rounded-xl shadow-sm border border-gray-100 flex justify-between items-center">
+                    <div class="flex-1 truncate pr-4">
+                        <div class="flex items-center gap-2">
+                            <span class="text-xs font-bold text-gray-400">${time}</span>
+                            <span class="text-xs bg-green-100 text-green-700 px-2 rounded-full">PAID</span>
+                        </div>
+                        <p class="text-sm font-medium text-gray-800 truncate mt-1">${summary}</p>
+                    </div>
+                    <div class="font-mono font-bold text-gray-800">L.${o.total.toFixed(2)}</div>
+                </div>
+                `;
+            }).join('');
+        } catch(e) { console.error(e); }
+    }
+
+    // --- MENU MANAGER LOGIC ---
+    let menuData = [];
+    async function loadMenu() {
+        try {
+            const res = await fetch('/api/admin/menu');
+            const data = await res.json();
+            menuData = data.items;
+            if (modGroupsData.length === 0) await loadMods();
+            renderMenuManager();
+        } catch(e) { console.error(e); }
+    }
+
+    function renderMenuManager() {
+        const list = document.getElementById('menu-list');
+        const query = document.getElementById('menu-search').value.toLowerCase();
+        
+        const filtered = menuData.filter(i => i.name.toLowerCase().includes(query));
+        
+        list.innerHTML = filtered.map(item => `
+            <div class="bg-white p-3 rounded-xl shadow-sm border border-gray-100 flex justify-between items-center ${!item.available ? 'opacity-50' : ''}" onclick="openEditMenu('${item.id}')">
+                <div class="flex items-center gap-3">
+                    <img src="${item.image_url || 'https://images.unsplash.com/photo-1510591509098-f4fdc6d0ff04?w=100&q=80'}" class="w-12 h-12 rounded-lg object-cover">
+                    <div>
+                        <p class="font-bold text-gray-800 leading-tight">${item.name}</p>
+                        <p class="text-xs text-gray-500 font-mono">L. ${item.price}</p>
+                    </div>
+                </div>
+                <div>
+                    ${item.available ? '<span class="text-green-500"><i class="fas fa-check-circle"></i></span>' : '<span class="text-red-500 font-bold text-xs bg-red-100 px-2 py-1 rounded">86\'d</span>'}
+                </div>
+            </div>
+        `).join('');
+    }
+
+    document.getElementById('menu-search').addEventListener('input', renderMenuManager);
+
+    function renderModifierGroupsCheckboxes(selectedIds = []) {
+        const container = document.getElementById('edit-mod-groups-container');
+        if (!modGroupsData || modGroupsData.length === 0) {
+            container.innerHTML = '<p class="text-xs text-gray-400">No modifier groups available.</p>';
+            return;
+        }
+        container.innerHTML = modGroupsData.map(g => `
+            <label class="flex items-center gap-2 text-sm text-gray-700 cursor-pointer">
+                <input type="checkbox" value="${g.id}" class="mod-group-cb rounded text-[#C9A66B] focus:ring-[#C9A66B]" ${selectedIds.includes(g.id) ? 'checked' : ''}>
+                ${g.name}
+            </label>
+        `).join('');
+    }
+
+    function openNewMenu() {
+        document.getElementById('edit-id').value = 'NEW';
+        document.getElementById('edit-name-header').innerText = 'Add New Item';
+        
+        document.getElementById('edit-new-fields').classList.remove('hidden');
+        document.getElementById('edit-name-input').value = '';
+        document.getElementById('edit-category').value = 'coffee';
+        
+        document.getElementById('edit-price').value = '';
+        document.getElementById('edit-img').value = '';
+        document.getElementById('edit-avail').checked = true;
+        
+        renderModifierGroupsCheckboxes([]);
+
+        document.getElementById('btn-delete-item').classList.add('hidden');
+        document.getElementById('edit-modal').classList.remove('hidden');
+    }
+
+    function openEditMenu(id) {
+        const item = menuData.find(i => i.id === id);
+        if(!item) return;
+        
+        document.getElementById('edit-id').value = item.id;
+        document.getElementById('edit-name-header').innerText = `Edit: ${item.name}`;
+        
+        document.getElementById('edit-new-fields').classList.remove('hidden');
+        document.getElementById('edit-name-input').value = item.name;
+        document.getElementById('edit-category').value = item.category || 'coffee';
+        
+        document.getElementById('edit-price').value = item.price;
+        document.getElementById('edit-img').value = item.image_url || '';
+        document.getElementById('edit-avail').checked = item.available;
+        
+        renderModifierGroupsCheckboxes(item.modifier_groups || []);
+
+        document.getElementById('btn-delete-item').classList.remove('hidden');
+        document.getElementById('edit-modal').classList.remove('hidden');
+    }
+
+    function handleImageUpload(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            const img = new Image();
+            img.onload = () => {
+                const canvas = document.createElement('canvas');
+                const MAX_SIZE = 400;
+                let width = img.width;
+                let height = img.height;
+
+                if (width > height) {
+                    if (width > MAX_SIZE) {
+                        height *= MAX_SIZE / width;
+                        width = MAX_SIZE;
+                    }
+                } else {
+                    if (height > MAX_SIZE) {
+                        width *= MAX_SIZE / height;
+                        height = MAX_SIZE;
+                    }
+                }
+
+                canvas.width = width;
+                canvas.height = height;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(img, 0, 0, width, height);
+
+                const dataUrl = canvas.toDataURL('image/webp', 0.8);
+                document.getElementById('edit-img').value = dataUrl;
+            };
+            img.src = e.target.result;
+        };
+        reader.readAsDataURL(file);
+    }
+
+    async function saveMenuEdit() {
+        const id = document.getElementById('edit-id').value;
+        
+        // Grab checked modifier groups
+        const modifier_groups = Array.from(document.querySelectorAll('.mod-group-cb:checked')).map(cb => cb.value);
+
+        const payload = {
+            price: parseFloat(document.getElementById('edit-price').value),
+            image_url: document.getElementById('edit-img').value,
+            available: document.getElementById('edit-avail').checked,
+            name: document.getElementById('edit-name-input').value,
+            category: document.getElementById('edit-category').value,
+            modifier_groups
+        };
+        
+        let method = 'PATCH';
+        let url = `/api/admin/menu/${id}`;
+
+        if (id === 'NEW') {
+            method = 'POST';
+            url = '/api/admin/menu';
+            if (!payload.name || isNaN(payload.price)) {
+                alert("Please fill out name and price.");
+                return;
+            }
+        } else {
+            payload.id = id;
+        }
+
+        try {
+            const res = await fetch(url, {
+                method: method,
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            if(res.ok) {
+                document.getElementById('edit-modal').classList.add('hidden');
+                loadMenu(); // refresh
+            } else {
+                alert("Failed to save.");
+            }
+        } catch(e) { console.error(e); }
+    }
+
+    async function deleteMenuItem() {
+        const id = document.getElementById('edit-id').value;
+        if (id === 'NEW') return;
+        if (!confirm("Are you sure you want to delete this item?")) return;
+        
+        try {
+            const res = await fetch(`/api/admin/menu/${id}`, {
+                method: 'DELETE'
+            });
+            if (res.ok) {
+                document.getElementById('edit-modal').classList.add('hidden');
+                loadMenu();
+            } else {
+                alert("Failed to delete.");
+            }
+        } catch(e) { console.error(e); }
+    }
+
+    // --- MODIFIERS LOGIC ---
+    let modGroupsData = [];
+    let modOptionsData = [];
+
+    async function loadMods() {
+        try {
+            const res = await fetch('/api/admin/modifiers');
+            const data = await res.json();
+            modGroupsData = data.modGroups || [];
+            modOptionsData = data.modOptions || [];
+            renderMods();
+        } catch(e) { console.error(e); }
+    }
+
+    function renderMods() {
+        const container = document.getElementById('mod-list');
+        let html = '';
+
+        modGroupsData.forEach(group => {
+            html += `
+                <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-100">
+                    <h3 class="font-bold text-gray-800 uppercase tracking-widest text-sm mb-3 border-b pb-2">${group.name}</h3>
+                    <div class="space-y-2">
+            `;
+            
+            const options = modOptionsData.filter(o => o.group_id === group.id);
+            options.forEach(opt => {
+                html += `
+                    <div class="flex justify-between items-center p-2 hover:bg-gray-50 rounded-lg cursor-pointer transition-colors" onclick="openModEdit('${opt.id}')">
+                        <div>
+                            <p class="font-medium text-gray-700">${opt.name}</p>
+                            ${opt.is_default ? '<span class="text-[10px] bg-green-100 text-green-700 px-2 py-0.5 rounded-full font-bold">DEFAULT</span>' : ''}
+                        </div>
+                        <div class="font-mono text-sm font-bold text-gold">
+                            ${opt.price_adjustment > 0 ? '+L. ' + opt.price_adjustment : 'L. 0'} <i class="fas fa-chevron-right text-gray-300 ml-2"></i>
+                        </div>
+                    </div>
+                `;
+            });
+
+            html += `</div></div>`;
+        });
+
+        container.innerHTML = html;
+    }
+
+    function openModEdit(id) {
+        const opt = modOptionsData.find(o => o.id === id);
+        if(!opt) return;
+        
+        document.getElementById('edit-mod-id').value = opt.id;
+        document.getElementById('edit-mod-name').innerText = `Edit: ${opt.name}`;
+        document.getElementById('edit-mod-price').value = opt.price_adjustment;
+        
+        document.getElementById('edit-mod-modal').classList.remove('hidden');
+    }
+
+    async function saveModEdit() {
+        const id = document.getElementById('edit-mod-id').value;
+        const price_adjustment = parseFloat(document.getElementById('edit-mod-price').value);
+
+        try {
+            const res = await fetch(`/api/admin/modifiers/${id}`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ id, price_adjustment })
+            });
+            if(res.ok) {
+                document.getElementById('edit-mod-modal').classList.add('hidden');
+                loadMods();
+            } else {
+                alert("Failed to save modifier.");
+            }
+        } catch(e) { console.error(e); }
+    }
+
+    // --- TIMECLOCK LOGIC ---
+    setInterval(() => {
+        const now = new Date();
+        document.getElementById('live-clock').innerText = now.toLocaleTimeString();
+        document.getElementById('live-date').innerText = now.toLocaleDateString([], {weekday:'long', month:'long', day:'numeric'});
+    }, 1000);
+
+    async function loadTimeclock() {
+        try {
+            const res = await fetch('/api/admin/timeclock_status');
+            const data = await res.json();
+            const container = document.getElementById('active-employees');
+            
+            const activeList = data.active.filter(e => e.status === 'Clocked In');
+            
+            if (activeList.length === 0) {
+                container.innerHTML = '<div class="p-4 text-center text-gray-500 text-sm">No one is currently clocked in.</div>';
+                return;
+            }
+
+            container.innerHTML = activeList.map(e => {
+                const timeStr = new Date(e.time).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
+                return `
+                <div class="p-4 border-b border-gray-50 flex justify-between items-center">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold">
+                            ${e.name.charAt(0)}
+                        </div>
+                        <div>
+                            <p class="font-bold text-gray-800">${e.name}</p>
+                            <p class="text-xs text-green-600 font-bold flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-green-500 block"></span> In since ${timeStr}</p>
+                        </div>
+                    </div>
+                </div>
+                `;
+            }).join('');
+            
+        } catch (e) { console.error(e); }
+    }
+
+    async function punchClock(type) {
+        const pin = document.getElementById('emp-pin').value;
+        if(pin.length !== 4) return alert('Enter 4 digit PIN');
+        
+        try {
+            const res = await fetch('/api/admin/timeclock', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ pin, type })
+            });
+            const data = await res.json();
+            
+            if(res.ok) {
+                alert(`✅ ${data.employee} successfully clocked ${data.type}!`);
+                document.getElementById('emp-pin').value = '';
+                loadTimeclock();
+            } else {
+                alert(`Error: ${data.error}`);
+            }
+        } catch(e) { console.error(e); }
+    }
+
+</script>
 </body>
 </html>

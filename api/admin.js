@@ -19,23 +19,36 @@ export default async function handler(req, res) {
     }
 
     if (action === 'menu' && req.method === 'POST') {
-        const { name, category, price, available, image_url } = req.body;
+        const { name, category, price, available, image_url, modifier_groups } = req.body;
         const id = category.toLowerCase() + '_' + name.toLowerCase().replace(/[^a-z0-9]/g, '_');
         const { data, error } = await supabase.from('menu_items')
-            .insert({ id, name, category, price, available, image_url })
+            .insert({ id, name, category, price, available, image_url, modifier_groups: modifier_groups || [] })
             .select().single();
         if (error) return res.status(500).json({ error: error.message });
         return res.json(data);
     }
 
     if (action === 'menu_update' && req.method === 'PATCH') {
-        const { id, price, available, image_url } = req.body;
+        const { id, price, available, image_url, name, category, modifier_groups } = req.body;
+        const updateData = { price, available, image_url };
+        if (name) updateData.name = name;
+        if (category) updateData.category = category;
+        if (modifier_groups) updateData.modifier_groups = modifier_groups;
         const { data, error } = await supabase.from('menu_items')
-            .update({ price, available, image_url })
-            .eq('id', id)
+            .update(updateData)
+            .eq('id', req.query.id || id)
             .select().single();
         if (error) return res.status(500).json({ error: error.message });
         return res.json(data);
+    }
+
+    if (action === 'menu_update' && req.method === 'DELETE') {
+        const itemId = req.query.id;
+        const { error } = await supabase.from('menu_items')
+            .delete()
+            .eq('id', itemId);
+        if (error) return res.status(500).json({ error: error.message });
+        return res.json({ success: true });
     }
 
     // MODIFIER MANAGER

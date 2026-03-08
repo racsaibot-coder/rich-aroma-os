@@ -11,7 +11,7 @@
     { "src": "/api/auth/register", "dest": "/api/auth.js?action=register" },
 
     { "src": "/api/admin/menu", "dest": "/api/admin.js?action=menu" },
-    { "src": "/api/admin/menu/(.*)", "dest": "/api/admin.js?action=menu_update" },
+    { "src": "/api/admin/menu/(.*)", "dest": "/api/admin.js?action=menu_update&id=$1" },
     { "src": "/api/admin/modifiers", "dest": "/api/admin.js?action=modifiers" },
     { "src": "/api/admin/modifiers/(.*)", "dest": "/api/admin.js?action=modifier_option_update" },
     { "src": "/api/admin/kpi", "dest": "/api/admin.js?action=kpi" },
@@ -27,14 +27,22 @@
     { "src": "/api/customers", "dest": "/api/store.js?action=customer_create" },
     { "src": "/api/menu", "dest": "/api/store.js?action=menu" },
     { "src": "/api/orders/(.*)/assign", "dest": "/api/store.js?action=order_assign&id=$1" },
+    { "src": "/api/orders/(.*)/delivery-status", "dest": "/api/store.js?action=order_delivery_status&id=$1" },
     { "src": "/api/orders/(.*)", "dest": "/api/store.js?action=order_update&id=$1" },
     { "src": "/api/orders", "dest": "/api/store.js?action=orders" },
+    { "src": "/api/driver/login", "dest": "/api/store.js?action=driver_login" },
+    { "src": "/api/driver/orders", "dest": "/api/store.js?action=driver_orders" },
+    { "src": "/api/driver/orders/(.*)/claim", "dest": "/api/store.js?action=driver_claim&id=$1" },
     { "src": "/api/employees", "dest": "/api/store.js?action=employees" },
     { "src": "/api/live/status", "dest": "/api/store.js?action=live-status" },
     { "src": "/api/upload-receipt", "dest": "/api/store.js?action=upload-receipt" },
     { "src": "/api/campaign/valentines", "dest": "/api/store.js?action=valentines" },
 
-    { "src": "/sanvalentin", "dest": "/public/sanvalentin.html" },
+    { "src": "/order", "dest": "/public/order.html" },
+    { "src": "/driver", "dest": "/src/driver/dashboard.html" },
+    { "src": "/creators/review", "dest": "/src/creators/review.html" },
+    { "src": "/creators", "dest": "/src/creators/creators.html" },
+    { "src": "/admin", "dest": "/public/admin.html" },
     { "src": "/(.*)", "dest": "/public/$1" }
   ]
 }

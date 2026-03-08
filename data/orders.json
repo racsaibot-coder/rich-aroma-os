@@ -1,6 +1,29 @@
 {
   "orders": [
     {
+      "id": "ORD-0044",
+      "order_number": 44,
+      "items": [
+        {
+          "name": "Test Coffee",
+          "price": 50,
+          "qty": 1
+        },
+        {
+          "name": "Test Muffin",
+          "price": 40,
+          "qty": 1
+        }
+      ],
+      "subtotal": 90,
+      "tax": 0,
+      "discount": 0,
+      "total": 90,
+      "status": "pending",
+      "payment_method": "cash",
+      "customer_id": "C016"
+    },
+    {
       "id": "ORD-0001",
       "order_number": 1,
       "items": [
