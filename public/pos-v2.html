@@ -847,12 +847,20 @@
 
             if (res.ok) {
                 currentCustomerId = data.id;
+                
+                if (data.usual_item) {
+                    window.currentUsualItem = data.usual_item;
+                } else {
+                    window.currentUsualItem = null;
+                }
+
                 const profile = document.getElementById('cust-profile');
                 profile.innerHTML = `
                     <div class="flex justify-between items-center">
                         <div>
                             <h3 class="font-bold text-lg text-blue-600">${data.name} ${data.is_vip ? '⭐️ VIP' : ''}</h3>
                             <p class="text-sm text-gray-500">Balance: L. ${data.cash_balance || 0} • Pts: ${data.points || 0}</p>
+                            ${data.usual_item ? `<button onclick="addToCart(window.currentUsualItem)" class="mt-1 text-xs bg-purple-100 text-purple-700 font-semibold px-2 py-1 rounded shadow-sm hover:bg-purple-200">✨ The Usual: ${data.usual_item.name}</button>` : ''}
                         </div>
                         <button onclick="openRecargaModal()" class="bg-gold text-dark font-bold text-xs px-3 py-2 rounded-lg shadow-sm hover:bg-yellow-500">
                             + RECARGA

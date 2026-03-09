@@ -1263,6 +1263,34 @@ app.get('/api/customers/phone/:phone', async (req, res) => {
         .single();
     
     if (error || !data) return res.status(404).json({ error: 'Customer not found' });
+
+    // Calculate "The Usual"
+    const { data: orders } = await supabase.from('orders').select('items').eq('customer_id', data.id);
+    if (orders && orders.length > 0) {
+        const itemCounts = {};
+        const itemObjects = {};
+        orders.forEach(order => {
+            if (order.items && Array.isArray(order.items)) {
+                order.items.forEach(item => {
+                    const key = item.id || item.name;
+                    itemCounts[key] = (itemCounts[key] || 0) + 1;
+                    itemObjects[key] = item;
+                });
+            }
+        });
+        let maxCount = 0;
+        let usualItem = null;
+        for (const key in itemCounts) {
+            if (itemCounts[key] > maxCount) {
+                maxCount = itemCounts[key];
+                usualItem = itemObjects[key];
+            }
+        }
+        if (usualItem) {
+            data.usual_item = usualItem;
+        }
+    }
+
     res.json(data);
 });
 

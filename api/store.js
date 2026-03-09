@@ -17,6 +17,34 @@ export default async function handler(req, res) {
         if (!query) return res.status(400).json({ error: 'Missing query' });
         const { data, error } = await supabase.from('customers').select('*').eq('phone', query).single();
         if (error || !data) return res.status(404).json({ error: 'Not found' });
+
+        // Calculate "The Usual"
+        const { data: orders } = await supabase.from('orders').select('items').eq('customer_id', data.id);
+        if (orders && orders.length > 0) {
+            const itemCounts = {};
+            const itemObjects = {};
+            orders.forEach(order => {
+                if (order.items && Array.isArray(order.items)) {
+                    order.items.forEach(item => {
+                        const key = item.id || item.name;
+                        itemCounts[key] = (itemCounts[key] || 0) + 1;
+                        itemObjects[key] = item;
+                    });
+                }
+            });
+            let maxCount = 0;
+            let usualItem = null;
+            for (const key in itemCounts) {
+                if (itemCounts[key] > maxCount) {
+                    maxCount = itemCounts[key];
+                    usualItem = itemObjects[key];
+                }
+            }
+            if (usualItem) {
+                data.usual_item = usualItem;
+            }
+        }
+
         return res.json(data);
     }
 
