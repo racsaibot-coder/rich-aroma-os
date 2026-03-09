@@ -49,8 +49,8 @@ export default async function handler(req, res) {
         const newCustomer = {
             id: `C${String(nextNum).padStart(3, '0')}`,
             name: req.body.name,
-            phone: req.body.phone.replace(/\D/g, ''),
-            email: req.body.email,
+            phone: (req.body.phone || '').replace(/\D/g, ''),
+            email: req.body.email || null,
             points: 0
         };
         const { data, error } = await supabase.from('customers').insert(newCustomer).select().single();
