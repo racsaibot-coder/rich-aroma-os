@@ -174,7 +174,12 @@
             grid.innerHTML = '';
             
             // Filter orders that are NOT completed
-            const activeOrders = orders.filter(o => o.status !== 'completed');
+            const activeOrders = orders.filter(o => {
+                if (o.status === 'completed') return false;
+                if (currentMode === 'drinks' && o.status === 'drinks_ready') return false;
+                if (currentMode === 'food' && o.status === 'food_ready') return false;
+                return true;
+            });
             
             activeOrders.forEach(order => {
                 // Filter Items based on Mode
@@ -263,15 +268,38 @@
         }
 
         async function completeOrder(id) {
+            const order = orders.find(o => o.id === id);
+            if (!order) return;
+
+            let hasDrinks = false;
+            let hasFood = false;
+
+            (order.items || []).forEach(item => {
+                const name = (item.name || '').toLowerCase();
+                const isDrink = name.includes('latte') || name.includes('brew') || name.includes('capp') || name.includes('tea') || name.includes('icee') || name.includes('espresso') || name.includes('mocha') || name.includes('matcha') || name.includes('frappe') || name.includes('macchiato');
+                if (isDrink) hasDrinks = true;
+                else hasFood = true;
+            });
+
+            let newStatus = 'completed';
+
+            if (hasDrinks && hasFood) {
+                if (currentMode === 'drinks') {
+                    newStatus = order.status === 'food_ready' ? 'completed' : 'drinks_ready';
+                } else if (currentMode === 'food') {
+                    newStatus = order.status === 'drinks_ready' ? 'completed' : 'food_ready';
+                }
+            }
+
             // Optimistic UI
-            orders = orders.filter(o => o.id !== id);
+            order.status = newStatus;
             render();
             
             // API Call
             await fetch(`/api/orders/${id}`, {
                 method: 'PATCH',
                 headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({ status: 'completed' })
+                body: JSON.stringify({ status: newStatus })
             });
         }
     </script>
