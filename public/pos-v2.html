@@ -837,8 +837,36 @@
 
             } else {
                 if(confirm("Customer not found. Create new profile?")) {
-                    // Simple quick create logic could go here
-                    alert("Quick create not implemented in V2 prototype yet.");
+                    const name = prompt("Enter customer name:");
+                    if (name) {
+                        try {
+                            const createRes = await fetch('/api/customers', {
+                                method: 'POST',
+                                headers: {'Content-Type': 'application/json'},
+                                body: JSON.stringify({ phone: query, name: name })
+                            });
+                            const newCust = await createRes.json();
+                            if (createRes.ok) {
+                                currentCustomerId = newCust.id;
+                                document.getElementById('cust-profile').classList.remove('hidden');
+                                document.getElementById('cust-name').innerText = newCust.name;
+                                document.getElementById('cust-balance').innerText = 'L.0.00';
+                                document.getElementById('customer-display').innerHTML = `
+                                    <div class="w-10 h-10 rounded-full bg-gold text-dark flex items-center justify-center font-bold text-lg">
+                                        ${newCust.name.charAt(0).toUpperCase()}
+                                    </div>
+                                    <div>
+                                        <div class="text-sm font-bold text-white">${newCust.name}</div>
+                                        <div class="text-xs text-gold">L.0.00 Rico Cash</div>
+                                    </div>
+                                `;
+                            } else {
+                                alert("Failed to create customer.");
+                            }
+                        } catch(e) {
+                            alert("Error creating customer.");
+                        }
+                    }
                 }
             }
         } catch (e) {
