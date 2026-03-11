@@ -32,7 +32,7 @@ export default async function handler(req, res) {
         const pinToUse = pin || employeeId; 
         
         if (pinToUse) {
-            const { data: emp } = await supabase.from('employees').select('id, name').eq('pin', pinToUse).single();
+            const { data: emp } = await supabase.from('employees').select('id, name').eq('pin', pinToUse).limit(1).single();
             if (!emp) return res.status(401).json({ error: 'Invalid PIN' });
             empId = emp.id;
         }
