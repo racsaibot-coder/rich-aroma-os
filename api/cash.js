@@ -18,6 +18,7 @@ export default async function handler(req, res) {
             .limit(1)
             .single();
 
+        // Let it pass without shift if PGRST116 (No rows found)
         if (error && error.code !== 'PGRST116') return res.status(500).json({ error: error.message });
         return res.json({ shift: data || null });
     }
@@ -27,8 +28,11 @@ export default async function handler(req, res) {
         
         let empId = employeeId;
         
-        if (pin) {
-            const { data: emp } = await supabase.from('employees').select('id, name').eq('pin', pin).single();
+        // Use PIN if passed or if employeeId is used as PIN fallback from UI
+        const pinToUse = pin || employeeId; 
+        
+        if (pinToUse) {
+            const { data: emp } = await supabase.from('employees').select('id, name').eq('pin', pinToUse).single();
             if (!emp) return res.status(401).json({ error: 'Invalid PIN' });
             empId = emp.id;
         }
@@ -67,7 +71,6 @@ export default async function handler(req, res) {
             
         if (shiftErr || !shift) return res.status(404).json({ error: 'Shift not found' });
         
-        // Sum cash orders during this shift (simplistic calculation for now)
         const { data: orders } = await supabase
             .from('orders')
             .select('total')
@@ -76,7 +79,6 @@ export default async function handler(req, res) {
             
         const cashSales = (orders || []).reduce((sum, o) => sum + o.total, 0);
         
-        // Sum payouts
         const { data: txns } = await supabase
             .from('cash_transactions')
             .select('amount, type')
