@@ -24,6 +24,10 @@
     { "src": "/api/admin/employees/(.*)", "dest": "/api/admin.js?action=employee_update&id=$1" },
     { "src": "/api/admin/leads", "dest": "/api/admin.js?action=leads" },
 
+    { "src": "/api/cash/current-shift", "dest": "/api/cash.js?action=current-shift" },
+    { "src": "/api/cash/open-shift", "dest": "/api/cash.js?action=open-shift" },
+    { "src": "/api/cash/close-shift", "dest": "/api/cash.js?action=close-shift" },
+
     { "src": "/api/customer/profile", "dest": "/api/store.js?action=customer_profile" },
     { "src": "/api/customer/test-cash", "dest": "/api/store.js?action=customer_test_cash" },
     { "src": "/api/customers/phone/(.*)", "dest": "/api/store.js?action=customer_by_phone&query=$1" },
