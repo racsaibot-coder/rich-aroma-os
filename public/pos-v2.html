@@ -89,29 +89,33 @@
     <!-- TENDER MODAL -->
     <div id="tender-modal" class="hidden fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-[70] backdrop-blur-sm">
         <div class="bg-white w-full max-w-lg rounded-2xl shadow-2xl p-8">
-            <h2 class="text-2xl font-bold text-gray-800 mb-6 text-center border-b pb-4">Select Payment Method</h2>
+            <h2 class="text-2xl font-bold text-gray-800 mb-2 text-center border-b pb-4">Método de Pago</h2>
+            
+            <div class="flex justify-between items-center text-2xl mb-6 mt-4 p-4 bg-gray-100 rounded-xl">
+                <span class="text-gray-500 font-bold">Total a Pagar:</span>
+                <span class="font-bold text-black" id="tender-due">L. 0.00</span>
+            </div>
             
             <div class="grid grid-cols-3 gap-4 mb-6">
-                <button onclick="setTender('cash')" id="btn-tender-cash" class="py-6 rounded-xl border-2 border-green-500 bg-green-50 text-green-700 font-bold text-xl flex flex-col items-center gap-2 hover:bg-green-100 transition"><i class="fas fa-money-bill-wave text-3xl"></i> Cash</button>
-                <button onclick="setTender('card')" id="btn-tender-card" class="py-6 rounded-xl border-2 border-gray-200 text-gray-500 font-bold text-xl flex flex-col items-center gap-2 hover:bg-gray-50 transition"><i class="fas fa-credit-card text-3xl"></i> Card</button>
+                <button onclick="setTender('cash')" id="btn-tender-cash" class="py-6 rounded-xl border-2 border-green-500 bg-green-50 text-green-700 font-bold text-xl flex flex-col items-center gap-2 hover:bg-green-100 transition"><i class="fas fa-money-bill-wave text-3xl"></i> Efectivo</button>
+                <button onclick="setTender('card')" id="btn-tender-card" class="py-6 rounded-xl border-2 border-gray-200 text-gray-500 font-bold text-xl flex flex-col items-center gap-2 hover:bg-gray-50 transition"><i class="fas fa-credit-card text-3xl"></i> Tarjeta</button>
                 <button onclick="setTender('transfer')" id="btn-tender-transfer" class="py-6 rounded-xl border-2 border-gray-200 text-gray-500 font-bold text-xl flex flex-col items-center gap-2 hover:bg-gray-50 transition"><i class="fas fa-exchange-alt text-3xl"></i> Transf</button>
             </div>
             
             <div id="transfer-instructions" class="hidden mb-6 p-4 bg-purple-50 text-purple-800 rounded-xl border border-purple-200 text-center">
                 <i class="fas fa-info-circle mb-2 text-2xl"></i>
                 <p class="font-bold">Transferencia Bancaria</p>
-                <p class="text-sm mt-1">Verify screenshot on WhatsApp before completing sale.</p>
+                <p class="text-sm mt-1">Verificar captura en WhatsApp antes de completar.</p>
             </div>
 
             <div id="cash-calculator" class="hidden space-y-4 mb-8 bg-gray-50 p-4 rounded-xl border border-gray-200">
-                <div class="flex justify-between items-center text-lg"><span class="text-gray-500">Total Due:</span><span class="font-bold" id="tender-due">L. 0.00</span></div>
-                <div class="flex justify-between items-center"><span class="text-gray-500">Cash Received:</span><input type="number" id="tender-received" onkeyup="calculateChange()" class="w-1/2 p-2 border rounded text-right text-lg font-bold" placeholder="0.00"></div>
-                <div class="flex justify-between items-center text-xl text-green-600 font-bold pt-2 border-t border-gray-200"><span>Change:</span><span id="tender-change">L. 0.00</span></div>
+                <div class="flex justify-between items-center"><span class="text-gray-500">Efectivo Recibido:</span><input type="number" id="tender-received" onkeyup="calculateChange()" class="w-1/2 p-2 border rounded text-right text-lg font-bold" placeholder="0.00"></div>
+                <div class="flex justify-between items-center text-xl text-green-600 font-bold pt-2 border-t border-gray-200"><span>Cambio:</span><span id="tender-change">L. 0.00</span></div>
             </div>
 
             <div class="flex gap-4">
-                <button onclick="document.getElementById('tender-modal').classList.add('hidden')" class="w-1/3 bg-gray-200 text-gray-800 py-4 rounded-xl font-bold hover:bg-gray-300 transition">Cancel</button>
-                <button onclick="processCheckout()" id="confirm-tender-btn" class="w-2/3 bg-gray-900 text-white py-4 rounded-xl font-bold text-xl shadow-lg hover:bg-black transition flex items-center justify-center gap-2"><i class="fas fa-check"></i> Complete Sale</button>
+                <button onclick="document.getElementById('tender-modal').classList.add('hidden')" class="w-1/3 bg-gray-200 text-gray-800 py-4 rounded-xl font-bold hover:bg-gray-300 transition">Cancelar</button>
+                <button onclick="processCobrar()" id="confirm-tender-btn" class="w-2/3 bg-gray-900 text-white py-4 rounded-xl font-bold text-xl shadow-lg hover:bg-black transition flex items-center justify-center gap-2"><i class="fas fa-check"></i> Cobrar</button>
             </div>
         </div>
     </div>
@@ -120,8 +124,8 @@
     <div id="admin-pin-modal" class="hidden fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50">
         <div class="bg-white w-1/3 rounded-2xl shadow-2xl p-8 text-center">
             <div class="mb-4 text-red-500 text-5xl"><i class="fas fa-lock"></i></div>
-            <h2 class="text-2xl font-bold text-gray-800 mb-2">Manager Access</h2>
-            <p class="text-gray-600 mb-6">Enter Admin PIN</p>
+            <h2 class="text-2xl font-bold text-gray-800 mb-2">Acceso de Gerente</h2>
+            <p class="text-gray-600 mb-6">Enter PIN de Admin</p>
             
             <input type="password" id="admin-pin" maxlength="4" class="text-center text-4xl tracking-widest w-full border-2 border-gray-300 rounded-xl p-4 mb-6 focus:border-red-500 outline-none" placeholder="****">
             
@@ -204,7 +208,7 @@
                 <button onclick="toggleVoice()" id="mic-btn" class="bg-blue-600 text-white px-6 py-2 rounded-full font-bold shadow-lg hover:bg-blue-700 transition flex items-center gap-2">
                     <i class="fas fa-microphone"></i> Voice Order
                 </button>
-                <div class="bg-green-100 text-green-800 px-4 py-2 rounded-lg font-mono">
+                <div id="connection-status" class="bg-green-100 text-green-800 px-4 py-2 rounded-lg font-mono transition-colors duration-300">
                     System: ONLINE 🟢
                 </div>
             </div>
@@ -245,7 +249,7 @@
         <!-- Cart Items -->
         <div class="flex-1 overflow-y-auto p-4" id="cart-items">
             <!-- Cart items go here -->
-            <div class="text-center text-gray-400 mt-10">Cart is empty</div>
+            <div class="text-center text-gray-400 mt-10">El carrito está vacío</div>
         </div>
 
         <!-- Totals -->
@@ -341,6 +345,51 @@
             ];
         }
         
+        // Restore shift state from Database
+        try {
+            const shiftRes = await fetch('/api/cash/current-shift');
+            if (shiftRes.ok) {
+                const shiftData = await shiftRes.json();
+                if (shiftData && shiftData.shift && shiftData.shift.status === 'open') {
+                    currentShiftId = shiftData.shift.id;
+                    currentCashier = "Employee " + shiftData.shift.employee_id;
+                    startingCash = shiftData.shift.opening_amount;
+                    document.getElementById('shift-modal').classList.add('hidden');
+                }
+            }
+        } catch (e) {
+            console.error("Failed to load shift state", e);
+            // Fallback to localStorage if offline
+            const savedShift = localStorage.getItem('pos_active_shift');
+            if (savedShift) {
+                const shiftData = JSON.parse(savedShift);
+                currentShiftId = shiftData.shiftId;
+                currentCashier = shiftData.cashier;
+                startingCash = shiftData.startingCash;
+                document.getElementById('shift-modal').classList.add('hidden');
+            }
+        }
+
+        // Restore Cart State
+        const savedCartStr = localStorage.getItem('pos_cart_state');
+        if (savedCartStr) {
+            try {
+                const savedData = JSON.parse(savedCartStr);
+                cart = savedData.cart || [];
+                currentCustomerId = savedData.customerId || null;
+                window.currentUsualItem = savedData.usualItem || null;
+                
+                if (currentCustomerId) {
+                    // Re-render customer UI if needed
+                    document.getElementById('cust-profile').classList.remove('hidden');
+                }
+                
+                renderCart();
+            } catch(e) {
+                console.error("Failed to restore cart state", e);
+            }
+        }
+        
         renderMenu();
         checkInventoryUpsell();
         simulateWhatsAppTraffic();
@@ -354,10 +403,11 @@
     
     // --- SHIFT LOGIC ---
     let currentCashier = null;
+    let currentShiftId = null;
     let startingCash = 0;
     let currentTenderMethod = 'cash';
 
-    function startShift() {
+    async function startShift() {
         const pin = document.getElementById('shift-pin').value;
         const cash = parseFloat(document.getElementById('shift-cash').value);
         
@@ -366,15 +416,43 @@
             return;
         }
         
-        // Mock validation
-        currentCashier = "Employee " + pin;
-        startingCash = cash;
-        
-        document.getElementById('shift-modal').classList.add('hidden');
-        renderMenu(); // Load UI
+        try {
+            const res = await fetch('/api/cash/open-shift', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ 
+                    employeeId: pin,
+                    openingAmount: cash 
+                })
+            });
+            
+            const data = await res.json();
+            
+            if (res.ok) {
+                currentShiftId = data.id;
+                currentCashier = "Employee " + pin;
+                startingCash = cash;
+                
+                // Fallback cache
+                localStorage.setItem('pos_active_shift', JSON.stringify({
+                    shiftId: currentShiftId,
+                    cashier: currentCashier,
+                    startingCash: startingCash,
+                    startTime: new Date().toISOString()
+                }));
+                
+                document.getElementById('shift-modal').classList.add('hidden');
+                renderMenu(); // Load UI
+            } else {
+                alert(data.error || "Failed to open shift.");
+            }
+        } catch (e) {
+            console.error("Shift error:", e);
+            alert("Network error opening shift. Please try again.");
+        }
     }
 
-    function endShift() {
+    async function endShift() {
         const finalCash = prompt("Enter final cash in drawer:");
         if (finalCash === null) return;
         
@@ -384,10 +462,30 @@
             return;
         }
         
-        alert(`Shift Closed.\nStarting Cash: L. ${startingCash}\nFinal Count: L. ${parsedCash}\n\nSystem locking...`);
-        
-        // Reset App State
+        try {
+            const res = await fetch('/api/cash/close-shift', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ 
+                    shiftId: currentShiftId,
+                    closingAmount: parsedCash,
+                    notes: 'Closed from POS v2'
+                })
+            });
+            
+            const data = await res.json();
+            
+            if (res.ok) {
+                const diff = (data.shift.closing_amount - data.shift.expected_amount).toFixed(2);
+                alert(`Shift Closed.\nStarting Cash: L. ${startingCash}\nFinal Count: L. ${parsedCash}\nExpected: L. ${data.shift.expected_amount}\nDifference: L. ${diff}\n\nSystem locking...`);
+                
+                // Clear from localStorage
+                localStorage.removeItem('pos_active_shift');
+                currentShiftId = null;
+                
+                // Reset App State
         cart = [];
+        saveCartState();
         currentCustomerId = null;
         renderCart();
         document.getElementById('customer-display').innerHTML = `
@@ -659,13 +757,22 @@
         }
         
         cart.push(item);
+        saveCartState();
         renderCart();
+    }
+
+    function saveCartState() {
+        localStorage.setItem('pos_cart_state', JSON.stringify({
+            cart: cart,
+            customerId: currentCustomerId,
+            usualItem: window.currentUsualItem
+        }));
     }
 
     function renderCart() {
         const container = document.getElementById('cart-items');
         if (cart.length === 0) {
-            container.innerHTML = '<div class="text-center text-gray-400 mt-10">Cart is empty</div>';
+            container.innerHTML = '<div class="text-center text-gray-400 mt-10">El carrito está vacío</div>';
             document.getElementById('cart-total').innerText = 'L. 0.00';
             return;
         }
@@ -702,6 +809,7 @@
 
     function removeFromCart(index) {
         cart.splice(index, 1);
+        saveCartState();
         renderCart();
     }
 
@@ -1116,9 +1224,9 @@
         }
     }
 
-    async function processCheckout() {
+    async function processCobrar() {
         if (cart.length === 0) {
-            alert("Cart is empty");
+            alert("El carrito está vacío");
             return;
         }
 
@@ -1156,6 +1264,10 @@
             customerId: currentCustomerId
         };
 
+        const confirmBtn = document.getElementById('confirm-tender-btn');
+        confirmBtn.disabled = true;
+        confirmBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
+
         try {
             const res = await fetch('/api/orders', {
                 method: 'POST',
@@ -1171,9 +1283,10 @@
 
                 document.getElementById('tender-modal').classList.add('hidden');
 
-                alert("✅ Order Placed Successfully!");
+                alert("✅ ¡Orden Completada!");
                 cart = [];
                 currentCustomerId = null;
+                saveCartState();
                 document.getElementById('cust-id').value = '';
                 document.getElementById('cust-profile').classList.add('hidden');
                 renderCart();
@@ -1184,8 +1297,29 @@
         } catch (e) {
             console.error(e);
             alert("Network error placing order");
+        } finally {
+            confirmBtn.disabled = false;
+            confirmBtn.innerHTML = '<i class="fas fa-check"></i> Complete Sale';
         }
     }
+
+    // --- CONNECTION STATUS MONITORING ---
+    function updateOnlineStatus() {
+        const statusEl = document.getElementById('connection-status');
+        if (navigator.onLine) {
+            statusEl.className = "bg-green-100 text-green-800 px-4 py-2 rounded-lg font-mono transition-colors duration-300";
+            statusEl.innerHTML = "System: ONLINE 🟢";
+        } else {
+            statusEl.className = "bg-red-100 text-red-800 px-4 py-2 rounded-lg font-mono transition-colors duration-300";
+            statusEl.innerHTML = "System: OFFLINE 🔴";
+        }
+    }
+
+    window.addEventListener('online', updateOnlineStatus);
+    window.addEventListener('offline', updateOnlineStatus);
+    
+    // Initial check
+    updateOnlineStatus();
 
 </script>
 </body>
