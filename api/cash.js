@@ -101,9 +101,9 @@ export default async function handler(req, res) {
             .update({
                 status: 'closed',
                 closed_at: new Date().toISOString(),
-                closing_amount: closingAmount,
+                closing_amount_declared: closingAmount,
                 expected_amount: expected,
-                difference: diff,
+                discrepancy: diff,
                 notes: notes
             })
             .eq('id', shiftId)
