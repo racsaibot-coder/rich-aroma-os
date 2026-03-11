@@ -6,6 +6,7 @@
     <meta name="theme-color" content="#1a1410">
     <title>Kitchen | Rich Aroma</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         :root {
             --espresso: #5D4037;
@@ -178,9 +179,21 @@
             <h1>🍳 Kitchen Display</h1>
             <div id="lastUpdated" style="font-size: 0.75rem; color: var(--text-muted); margin-top: 4px;">Connecting...</div>
         </div>
-        <span class="pending-count" id="pendingCount">0 orders</span>
+        <div style="display:flex; gap:10px; align-items:center;">
+            <button onclick="openHistoryModal()" style="padding: 0.5rem 1rem; background: var(--text-muted); color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer;"><i class="fas fa-history"></i> History / Recall</button>
+            <span class="pending-count" id="pendingCount">0 orders</span>
+        </div>
     </header>
     <div class="orders" id="orders"></div>
+
+    <!-- History Modal -->
+    <div id="historyModal" class="modal-overlay">
+        <div class="modal" style="max-width: 500px;">
+            <h2>🕒 Recently Bumped Orders</h2>
+            <div id="historyList" class="driver-list" style="gap: 1rem;">Loading...</div>
+            <button class="close-modal" onclick="closeHistoryModal()">Close</button>
+        </div>
+    </div>
 
     <!-- Modal -->
     <div id="driverModal" class="modal-overlay">
@@ -339,6 +352,61 @@
                 body: JSON.stringify({ status: 'completed' })
             });
             delete startTimes[orderId];
+            loadOrders();
+        }
+
+        // History / Recall Logic
+        function openHistoryModal() {
+            document.getElementById('historyModal').style.display = 'flex';
+            loadHistory();
+        }
+
+        function closeHistoryModal() {
+            document.getElementById('historyModal').style.display = 'none';
+        }
+
+        async function loadHistory() {
+            const list = document.getElementById('historyList');
+            list.innerHTML = 'Loading...';
+            try {
+                const res = await fetch('/api/orders', { headers: { 'Authorization': 'Bearer TEST_TOKEN_ADMIN' }});
+                const data = await res.json();
+                const bumped = (data.orders || [])
+                    .filter(o => o.status === 'completed')
+                    .sort((a,b) => new Date(b.created_at) - new Date(a.created_at))
+                    .slice(0, 10);
+                
+                if(bumped.length === 0) {
+                    list.innerHTML = '<div style="color:var(--text-muted)">No recently bumped orders.</div>';
+                    return;
+                }
+                
+                list.innerHTML = bumped.map(o => `
+                    <div style="background: rgba(255,255,255,0.05); padding: 1rem; border-radius: 8px; display: flex; justify-content: space-between; align-items: center;">
+                        <div>
+                            <div style="font-weight: bold; font-size: 1.1rem; margin-bottom: 4px;">#${o.order_number}</div>
+                            <div style="font-size: 0.85rem; color: var(--text-muted)">${o.items.map(i => i.qty + 'x ' + i.name).join(', ')}</div>
+                        </div>
+                        <button onclick="recallOrder('${o.id}')" style="background: var(--warning); color: black; border: none; padding: 0.6rem 1rem; border-radius: 6px; font-weight: bold; cursor: pointer;">
+                            <i class="fas fa-undo"></i> Recall
+                        </button>
+                    </div>
+                `).join('');
+            } catch(e) {
+                list.innerHTML = '<div style="color:var(--danger)">Failed to load history</div>';
+            }
+        }
+
+        async function recallOrder(orderId) {
+            await fetch(`/api/orders/${orderId}`, {
+                method: 'PATCH',
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'Authorization': 'Bearer TEST_TOKEN_ADMIN'
+                },
+                body: JSON.stringify({ status: 'paid' })
+            });
+            closeHistoryModal();
             loadOrders();
         }
 
