@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Hungry Tiger Game!</title>
+    <style>
+        body {
+            font-family: 'Comic Sans MS', cursive, sans-serif;
+            background-color: #a8e6cf;
+            margin: 0;
+            padding: 0;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            overflow: hidden;
+            touch-action: manipulation;
+        }
+        #score-board {
+            font-size: 2rem;
+            color: #d84315;
+            margin-top: 20px;
+            font-weight: bold;
+            background: white;
+            padding: 10px 30px;
+            border-radius: 20px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            z-index: 10;
+        }
+        #game-area {
+            flex: 1;
+            width: 100%;
+            position: relative;
+        }
+        .tiger {
+            font-size: 5rem;
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            transition: left 0.1s ease-out;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+            z-index: 5;
+        }
+        .food {
+            font-size: 3rem;
+            position: absolute;
+            top: -50px;
+            transition: top 0.05s linear;
+        }
+        #start-btn {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 2rem;
+            padding: 15px 40px;
+            background-color: #ff8a65;
+            color: white;
+            border: none;
+            border-radius: 50px;
+            font-weight: bold;
+            box-shadow: 0 6px 0 #d84315;
+            cursor: pointer;
+            z-index: 20;
+        }
+        #start-btn:active {
+            top: calc(50% + 6px);
+            box-shadow: 0 0 0 #d84315;
+        }
+    </style>
+</head>
+<body>
+    <div id="score-board">Score: <span id="score">0</span></div>
+    <div id="game-area">
+        <div class="tiger" id="tiger">🐯</div>
+        <button id="start-btn">PLAY!</button>
+    </div>
+
+    <script>
+        const tiger = document.getElementById('tiger');
+        const gameArea = document.getElementById('game-area');
+        const scoreElement = document.getElementById('score');
+        const startBtn = document.getElementById('start-btn');
+        
+        let score = 0;
+        let gameInterval;
+        let isPlaying = false;
+        const foods = ['🥩', '🍗', '🍖'];
+        const badFoods = ['🌶️', '🥦'];
+        
+        // Move tiger to touch/click position
+        gameArea.addEventListener('touchmove', (e) => {
+            if(!isPlaying) return;
+            const touchX = e.touches[0].clientX;
+            moveTiger(touchX);
+            e.preventDefault();
+        }, {passive: false});
+
+        gameArea.addEventListener('mousemove', (e) => {
+            if(!isPlaying) return;
+            moveTiger(e.clientX);
+        });
+
+        function moveTiger(x) {
+            const areaRect = gameArea.getBoundingClientRect();
+            // keep tiger inside bounds
+            let newX = x;
+            if(newX < 40) newX = 40;
+            if(newX > areaRect.width - 40) newX = areaRect.width - 40;
+            tiger.style.left = newX + 'px';
+        }
+
+        startBtn.addEventListener('click', startGame);
+
+        function startGame() {
+            score = 0;
+            scoreElement.innerText = score;
+            startBtn.style.display = 'none';
+            isPlaying = true;
+            tiger.innerText = '🐯';
+            
+            // clear old foods
+            document.querySelectorAll('.food').forEach(f => f.remove());
+
+            dropFood();
+        }
+
+        function dropFood() {
+            if(!isPlaying) return;
+
+            const isBad = Math.random() < 0.2; // 20% chance of bad food
+            const foodArr = isBad ? badFoods : foods;
+            const foodEmoji = foodArr[Math.floor(Math.random() * foodArr.length)];
+            
+            const foodEl = document.createElement('div');
+            foodEl.classList.add('food');
+            foodEl.innerText = foodEmoji;
+            foodEl.dataset.isBad = isBad;
+            
+            const areaWidth = gameArea.getBoundingClientRect().width;
+            foodEl.style.left = (Math.random() * (areaWidth - 60) + 10) + 'px';
+            foodEl.style.top = '-50px';
+            
+            gameArea.appendChild(foodEl);
+
+            let currentTop = -50;
+            const speed = 5 + (score * 0.2); // gets faster
+
+            const fallInterval = setInterval(() => {
+                if(!isPlaying) {
+                    clearInterval(fallInterval);
+                    return;
+                }
+
+                currentTop += speed;
+                foodEl.style.top = currentTop + 'px';
+
+                const foodRect = foodEl.getBoundingClientRect();
+                const tigerRect = tiger.getBoundingClientRect();
+
+                // Check collision
+                if (foodRect.bottom > tigerRect.top + 20 && 
+                    foodRect.top < tigerRect.bottom && 
+                    foodRect.right > tigerRect.left + 20 && 
+                    foodRect.left < tigerRect.right - 20) {
+                    
+                    clearInterval(fallInterval);
+                    foodEl.remove();
+
+                    if(isBad) {
+                        gameOver();
+                    } else {
+                        score++;
+                        scoreElement.innerText = score;
+                        tiger.innerText = '😻';
+                        setTimeout(() => {
+                            if(isPlaying) tiger.innerText = '🐯';
+                        }, 300);
+                    }
+                }
+
+                // Missed food
+                if (currentTop > gameArea.getBoundingClientRect().height) {
+                    clearInterval(fallInterval);
+                    foodEl.remove();
+                }
+            }, 20);
+
+            // Drop next food
+            setTimeout(dropFood, Math.max(500, 1500 - (score * 50)));
+        }
+
+        function gameOver() {
+            isPlaying = false;
+            tiger.innerText = '😿';
+            startBtn.innerText = 'PLAY AGAIN';
+            startBtn.style.display = 'block';
+        }
+    </script>
+</body>
+</html>
