@@ -208,8 +208,8 @@
                 <button onclick="connectHardware()" class="bg-gray-200 text-gray-700 px-4 py-2 rounded-lg font-bold hover:bg-gray-300 transition flex items-center gap-2">
                     <i class="fas fa-print"></i> <span id="printer-status">Connect Hardware</span>
                 </button>
-                <button onclick="toggleVoice()" id="mic-btn" class="bg-blue-600 text-white px-6 py-2 rounded-full font-bold shadow-lg hover:bg-blue-700 transition flex items-center gap-2">
-                    <i class="fas fa-microphone"></i> Voice Order
+                <button onclick="openKitchenStatus()" id="kitchen-btn" class="bg-yellow-600 text-white px-6 py-2 rounded-full font-bold shadow-lg hover:bg-yellow-700 transition flex items-center gap-2">
+                    <i class="fas fa-eye"></i> Kitchen Status
                 </button>
                 <div id="connection-status" class="bg-green-100 text-green-800 px-4 py-2 rounded-lg font-mono transition-colors duration-300">
                     System: ONLINE 🟢
@@ -295,6 +295,19 @@
             </div>
         </div>
 
+    </div>
+
+    <!-- KITCHEN STATUS MODAL -->
+    <div id="kitchen-modal" class="hidden fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-[110] backdrop-blur-sm">
+        <div class="bg-white w-full max-w-4xl h-3/4 rounded-2xl shadow-2xl flex flex-col overflow-hidden border-t-8 border-yellow-500">
+            <div class="p-6 border-b border-gray-200 flex justify-between items-center bg-gray-900 text-white">
+                <h2 class="text-2xl font-bold"><i class="fas fa-eye text-yellow-500 mr-2"></i> Kitchen Status</h2>
+                <button onclick="closeKitchenStatus()" class="text-gray-400 hover:text-white text-3xl">&times;</button>
+            </div>
+            <div class="flex-1 overflow-y-auto p-6 bg-gray-100" id="kitchen-orders-container">
+                <div class="text-center text-gray-500 mt-10"><i class="fas fa-spinner fa-spin text-3xl mb-4"></i><br>Loading active orders...</div>
+            </div>
+        </div>
     </div>
 
 <script>
@@ -1400,6 +1413,91 @@
     
     // Initial check
     updateOnlineStatus();
+
+    // --- KITCHEN STATUS LOGIC ---
+    let kitchenPollInterval = null;
+
+    async function loadKitchenOrders() {
+        const container = document.getElementById('kitchen-orders-container');
+        try {
+            const res = await fetch('/api/orders');
+            const data = await res.json();
+            const orders = data.orders || [];
+            
+            const activeOrders = orders.filter(o => ['pending', 'prep', 'ready'].includes(o.status));
+            
+            if (activeOrders.length === 0) {
+                container.innerHTML = '<div class="text-center text-gray-500 mt-10 text-xl"><i class="fas fa-check-circle text-green-500 text-4xl mb-4"></i><br>No active orders in kitchen!</div>';
+                return;
+            }
+            
+            let html = '<div class="grid grid-cols-2 gap-4">';
+            activeOrders.forEach(o => {
+                let statusColor = 'bg-yellow-100 text-yellow-800';
+                let statusText = 'PENDING';
+                if (o.status === 'prep') { statusColor = 'bg-blue-100 text-blue-800'; statusText = 'IN PREP'; }
+                if (o.status === 'ready') { statusColor = 'bg-green-100 text-green-800 border-2 border-green-500'; statusText = 'READY'; }
+                
+                const timeStr = new Date(o.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+                
+                html += `
+                    <div class="bg-white p-4 rounded-xl shadow-md border border-gray-200 flex flex-col justify-between">
+                        <div>
+                            <div class="flex justify-between items-start mb-2">
+                                <span class="font-bold text-lg">Order #${o.order_number}</span>
+                                <span class="px-2 py-1 rounded text-xs font-bold ${statusColor}">${statusText}</span>
+                            </div>
+                            <div class="text-sm text-gray-500 mb-2">${timeStr} • ${o.items.length} items</div>
+                            <ul class="text-sm list-disc pl-5 mb-4 space-y-1 text-gray-700">
+                                ${o.items.map(item => `<li>${item.qty || 1}x ${item.name}</li>`).join('')}
+                            </ul>
+                        </div>
+                        ${o.status === 'ready' ? `
+                            <button onclick="markOrderCompleted('${o.id}')" class="w-full bg-green-600 text-white font-bold py-2 rounded shadow hover:bg-green-700 transition flex justify-center items-center gap-2">
+                                <i class="fas fa-check"></i> Clear / Mark Delivered
+                            </button>
+                        ` : ''}
+                    </div>
+                `;
+            });
+            html += '</div>';
+            container.innerHTML = html;
+        } catch (e) {
+            console.error("Error loading kitchen orders", e);
+            container.innerHTML = '<div class="text-center text-red-500 mt-10">Error loading orders.</div>';
+        }
+    }
+
+    function openKitchenStatus() {
+        document.getElementById('kitchen-modal').classList.remove('hidden');
+        loadKitchenOrders();
+        // Poll every 5 seconds while modal is open
+        kitchenPollInterval = setInterval(loadKitchenOrders, 5000);
+    }
+
+    function closeKitchenStatus() {
+        document.getElementById('kitchen-modal').classList.add('hidden');
+        if (kitchenPollInterval) clearInterval(kitchenPollInterval);
+    }
+
+    async function markOrderCompleted(orderId) {
+        if (!confirm("Mark this order as delivered/completed?")) return;
+        try {
+            const res = await fetch(`/api/orders/${orderId}/status`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ status: 'completed' })
+            });
+            if (res.ok) {
+                loadKitchenOrders(); // Refresh list
+            } else {
+                alert("Failed to update status.");
+            }
+        } catch (e) {
+            console.error("Error updating status", e);
+            alert("Network error.");
+        }
+    }
 
 </script>
 </body>
