@@ -196,23 +196,51 @@
     <div class="w-2/3 flex flex-col border-r border-gray-300">
         
         <!-- Header -->
-        <div class="bg-white p-4 flex justify-between items-center shadow-sm">
-            <h1 class="text-2xl font-bold text-gray-800 cursor-pointer select-none" onclick="triggerAdmin()">☕️ POS v2.0</h1>
-            <div class="flex gap-3">
-                <button onclick="toggleSoloMode()" id="solo-mode-btn" class="bg-orange-100 text-orange-600 px-4 py-2 rounded-lg font-bold hover:bg-orange-200 transition flex items-center gap-2">
-                    <i class="fas fa-user-shield"></i> Solo Mode: OFF
-                </button>
-                <button onclick="endShift()" class="bg-red-100 text-red-600 px-4 py-2 rounded-lg font-bold hover:bg-red-200 transition flex items-center gap-2">
-                    <i class="fas fa-door-closed"></i> Close Shift
-                </button>
-                <button onclick="connectHardware()" class="bg-gray-200 text-gray-700 px-4 py-2 rounded-lg font-bold hover:bg-gray-300 transition flex items-center gap-2">
-                    <i class="fas fa-print"></i> <span id="printer-status">Connect Hardware</span>
-                </button>
-                <button onclick="openKitchenStatus()" id="kitchen-btn" class="bg-yellow-600 text-white px-6 py-2 rounded-full font-bold shadow-lg hover:bg-yellow-700 transition flex items-center gap-2">
+        <div class="bg-white p-4 flex justify-between items-center shadow-sm z-50 relative">
+            <div class="flex items-center gap-4">
+                <h1 class="text-2xl font-bold text-gray-800 cursor-pointer select-none" onclick="triggerAdmin()">☕️ POS v2.0</h1>
+                
+                <!-- Store Status Toggle -->
+                <div class="flex items-center gap-2 bg-gray-100 p-1.5 rounded-full border border-gray-200 shadow-inner">
+                    <span id="store-status-label" class="text-sm font-bold text-green-600 px-2 w-16 text-center">ABIERTO</span>
+                    <label class="relative inline-flex items-center cursor-pointer">
+                      <input type="checkbox" id="store-status-toggle" class="sr-only peer" checked onchange="toggleStoreStatus(this)">
+                      <div class="w-11 h-6 bg-gray-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-green-500"></div>
+                    </label>
+                </div>
+            </div>
+
+            <div class="flex gap-3 items-center">
+                <div id="connection-status" class="bg-green-100 text-green-800 px-3 py-1.5 rounded-lg font-mono text-sm transition-colors duration-300">
+                    ONLINE 🟢
+                </div>
+                
+                <button onclick="openKitchenStatus()" id="kitchen-btn" class="bg-yellow-600 text-white px-4 py-2 rounded-lg font-bold shadow hover:bg-yellow-700 transition flex items-center gap-2 text-sm">
                     <i class="fas fa-eye"></i> Kitchen Status
                 </button>
-                <div id="connection-status" class="bg-green-100 text-green-800 px-4 py-2 rounded-lg font-mono transition-colors duration-300">
-                    System: ONLINE 🟢
+
+                <!-- Config Dropdown -->
+                <div class="relative inline-block text-left">
+                    <button onclick="document.getElementById('config-menu').classList.toggle('hidden')" class="bg-gray-800 text-white px-3 py-2 rounded-lg font-bold hover:bg-gray-700 transition flex items-center gap-2 text-sm">
+                        <i class="fas fa-cog"></i> Config ▾
+                    </button>
+                    <div id="config-menu" class="hidden origin-top-right absolute right-0 mt-2 w-56 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 divide-y divide-gray-100 z-[60]">
+                        <div class="py-1">
+                            <button onclick="toggleSoloMode(); document.getElementById('config-menu').classList.add('hidden')" id="solo-mode-btn" class="text-gray-700 group flex items-center px-4 py-2 text-sm w-full hover:bg-gray-100">
+                                <i class="fas fa-user-shield mr-3 text-orange-500"></i> Solo Mode: OFF
+                            </button>
+                        </div>
+                        <div class="py-1">
+                            <button onclick="connectHardware(); document.getElementById('config-menu').classList.add('hidden')" class="text-gray-700 group flex items-center px-4 py-2 text-sm w-full hover:bg-gray-100">
+                                <i class="fas fa-print mr-3 text-blue-500"></i> <span id="printer-status">Connect Hardware</span>
+                            </button>
+                        </div>
+                        <div class="py-1">
+                            <button onclick="endShift(); document.getElementById('config-menu').classList.add('hidden')" class="text-red-600 group flex items-center px-4 py-2 text-sm w-full hover:bg-red-50 font-bold">
+                                <i class="fas fa-door-closed mr-3"></i> Close Shift
+                            </button>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -222,23 +250,14 @@
             ⚠️ SOLO SHIFT ACTIVE: DRINKS ONLY. FOOD ORDERS LOCKED TO PREVENT BOTTLENECKS.
         </div>
 
-        <!-- Smart Upsell Banner (Dynamic) -->
-        <div id="upsell-banner" class="hidden bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-4 mx-4 mt-4 rounded shadow-md flex justify-between items-center">
-            <div>
-                <p class="font-bold"><i class="fas fa-lightbulb"></i> Smart Suggestion:</p>
-                <p id="upsell-text">We have excess 🍌 Bananas. Upsell Banana Bread @ 50% OFF?</p>
-            </div>
-            <button onclick="addUpsell()" class="bg-yellow-500 text-white px-4 py-2 rounded font-bold hover:bg-yellow-600">
-                Add to Cart (+L.45)
-            </button>
-        </div>
+        <!-- Smart Upsell Banner Removed -->
 
         <!-- Category Toggles -->
-        <div class="px-4 pt-4 flex gap-2 overflow-x-auto no-scrollbar">
-            <button onclick="filterCategory('all', this)" class="cat-btn bg-gray-800 text-white px-6 py-2 rounded-full font-bold shadow-md hover:bg-gray-700 transition flex-shrink-0">Todos</button>
-            <button onclick="filterCategory('coffee', this)" class="cat-btn bg-white text-gray-600 px-6 py-2 rounded-full font-bold shadow-sm hover:bg-gray-50 border border-gray-200 transition flex-shrink-0">Café</button>
-            <button onclick="filterCategory('drinks', this)" class="cat-btn bg-white text-gray-600 px-6 py-2 rounded-full font-bold shadow-sm hover:bg-gray-50 border border-gray-200 transition flex-shrink-0">Drinks</button>
-            <button onclick="filterCategory('food', this)" class="cat-btn bg-white text-gray-600 px-6 py-2 rounded-full font-bold shadow-sm hover:bg-gray-50 border border-gray-200 transition flex-shrink-0">Food</button>
+        <div class="px-4 pt-4 pb-2 flex gap-3 overflow-x-auto no-scrollbar">
+            <button onclick="filterCategory('all', this)" class="cat-btn bg-blue-600 text-white px-8 py-3 rounded-full font-extrabold shadow-lg hover:bg-blue-700 transition flex-shrink-0 text-lg tracking-wide border-2 border-blue-600">Todos</button>
+            <button onclick="filterCategory('coffee', this)" class="cat-btn bg-blue-50 text-blue-800 px-8 py-3 rounded-full font-extrabold shadow hover:bg-blue-100 border-2 border-blue-300 transition flex-shrink-0 text-lg tracking-wide">Café</button>
+            <button onclick="filterCategory('drinks', this)" class="cat-btn bg-blue-50 text-blue-800 px-8 py-3 rounded-full font-extrabold shadow hover:bg-blue-100 border-2 border-blue-300 transition flex-shrink-0 text-lg tracking-wide">Drinks</button>
+            <button onclick="filterCategory('food', this)" class="cat-btn bg-blue-50 text-blue-800 px-8 py-3 rounded-full font-extrabold shadow hover:bg-blue-100 border-2 border-blue-300 transition flex-shrink-0 text-lg tracking-wide">Food</button>
         </div>
 
         <!-- Menu Grid -->
@@ -423,7 +442,6 @@
         }
         
         renderMenu();
-        checkInventoryUpsell();
         simulateWhatsAppTraffic();
     };
 
@@ -682,10 +700,10 @@
         // Update active styles
         const buttons = document.querySelectorAll('.cat-btn');
         buttons.forEach(btn => {
-            btn.className = "cat-btn bg-white text-gray-600 px-6 py-2 rounded-full font-bold shadow-sm hover:bg-gray-50 border border-gray-200 transition flex-shrink-0";
+            btn.className = "cat-btn bg-blue-50 text-blue-800 px-8 py-3 rounded-full font-extrabold shadow hover:bg-blue-100 border-2 border-blue-300 transition flex-shrink-0 text-lg tracking-wide";
         });
         if(btnEl) {
-            btnEl.className = "cat-btn bg-gray-800 text-white px-6 py-2 rounded-full font-bold shadow-md hover:bg-gray-700 transition flex-shrink-0";
+            btnEl.className = "cat-btn bg-blue-600 text-white px-8 py-3 rounded-full font-extrabold shadow-lg hover:bg-blue-700 transition flex-shrink-0 text-lg tracking-wide border-2 border-blue-600";
         }
         
         let filtered = menu;
@@ -906,24 +924,7 @@
         renderCart();
     }
 
-    // --- FEATURE 1: SMART UPSELL (INVENTORY LOGIC) ---
-    function checkInventoryUpsell() {
-        // Mocking an inventory check. In real app, fetch from /api/inventory
-        const expiringItem = "Banana Bread"; // Logic: High stock + near expiry
-        const discountPrice = 45; // Logic: 50% off
-        
-        setTimeout(() => {
-            const banner = document.getElementById('upsell-banner');
-            document.getElementById('upsell-text').innerHTML = `Only <b>5</b> ${expiringItem}s left! Suggest <b>Upsell</b>?`;
-            banner.classList.remove('hidden');
-            banner.classList.add('flex');
-        }, 2000);
-    }
-
-    function addUpsell() {
-        addToCart(6); // Add Banana Bread
-        document.getElementById('upsell-banner').classList.add('hidden');
-    }
+    // --- FEATURE 1: SMART UPSELL (INVENTORY LOGIC) REMOVED ---
 
     // --- FEATURE 2: VOICE ORDER (WEB SPEECH API) ---
     function toggleVoice() {
@@ -1498,6 +1499,70 @@
             alert("Network error.");
         }
     }
+
+    // --- STORE STATUS LOGIC ---
+    async function toggleStoreStatus(checkbox) {
+        const isOpen = checkbox.checked;
+        const label = document.getElementById('store-status-label');
+        
+        try {
+            const res = await fetch('/api/store/status', {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ isOpen })
+            });
+            
+            if (res.ok) {
+                if (isOpen) {
+                    label.innerText = 'ABIERTO';
+                    label.className = 'text-sm font-bold text-green-600 px-2 w-16 text-center';
+                } else {
+                    label.innerText = 'CERRADO';
+                    label.className = 'text-sm font-bold text-red-600 px-2 w-16 text-center';
+                }
+            } else {
+                // Revert on error
+                checkbox.checked = !isOpen;
+                alert("Failed to update store status.");
+            }
+        } catch (e) {
+            console.error("Store status update error:", e);
+            checkbox.checked = !isOpen;
+            alert("Network error updating store status.");
+        }
+    }
+
+    async function fetchStoreStatus() {
+        try {
+            const res = await fetch('/api/store/status');
+            const data = await res.json();
+            const checkbox = document.getElementById('store-status-toggle');
+            const label = document.getElementById('store-status-label');
+            
+            checkbox.checked = data.isOpen;
+            if (data.isOpen) {
+                label.innerText = 'ABIERTO';
+                label.className = 'text-sm font-bold text-green-600 px-2 w-16 text-center';
+            } else {
+                label.innerText = 'CERRADO';
+                label.className = 'text-sm font-bold text-red-600 px-2 w-16 text-center';
+            }
+        } catch (e) {
+            console.error("Failed to fetch store status", e);
+        }
+    }
+
+    // Fetch store status on load
+    fetchStoreStatus();
+
+    // Close config menu if clicked outside
+    document.addEventListener('click', function(event) {
+        const menu = document.getElementById('config-menu');
+        const button = menu.previousElementSibling;
+        if (!menu.contains(event.target) && !button.contains(event.target)) {
+            menu.classList.add('hidden');
+        }
+    });
 
 </script>
 </body>
