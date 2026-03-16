@@ -35,6 +35,15 @@
 </head>
 <body class="pb-24">
 
+    <!-- Closed Overlay -->
+    <div id="closed-overlay" class="hidden fixed inset-0 bg-dark z-[200] flex flex-col items-center justify-center p-6 text-center backdrop-blur-md">
+        <div class="w-24 h-24 bg-red-500/20 text-red-500 rounded-full flex items-center justify-center text-4xl mb-6">
+            <i class="fas fa-store-slash"></i>
+        </div>
+        <h2 class="text-3xl font-display font-bold text-white mb-4">Estamos cerrados.</h2>
+        <p class="text-white/60 mb-8 text-lg">¡Te esperamos pronto!</p>
+    </div>
+
     <!-- Header -->
     <header class="sticky top-0 z-50 bg-dark/95 backdrop-blur-md border-b border-white/5 px-6 py-4 flex justify-between items-center">
         <div>
@@ -66,6 +75,15 @@
 
     <!-- Main View: Menu -->
     <div id="main-view">
+        <!-- Category Filter -->
+        <div class="px-4 py-3 overflow-x-auto hide-scrollbar border-b border-white/5 bg-dark sticky top-[73px] z-40">
+            <div class="flex gap-2 min-w-max" id="category-filters">
+                <button class="cat-btn px-6 py-2 rounded-full border border-gold bg-gold text-dark text-sm font-bold shadow-lg" onclick="filterCategory('all', this)">Todos</button>
+                <button class="cat-btn px-6 py-2 rounded-full border border-white/10 bg-white/5 text-white/70 text-sm font-bold hover:bg-white/10 transition-colors" onclick="filterCategory('Café', this)">Café</button>
+                <button class="cat-btn px-6 py-2 rounded-full border border-white/10 bg-white/5 text-white/70 text-sm font-bold hover:bg-white/10 transition-colors" onclick="filterCategory('Bebidas', this)">Bebidas</button>
+                <button class="cat-btn px-6 py-2 rounded-full border border-white/10 bg-white/5 text-white/70 text-sm font-bold hover:bg-white/10 transition-colors" onclick="filterCategory('Comida', this)">Comida</button>
+            </div>
+        </div>
         <main class="px-4 py-6 space-y-8" id="menu-container">
             <p class="text-center text-white/50 py-10">Cargando menú...</p>
         </main>
@@ -273,11 +291,44 @@
             activeBtn.classList.add('bg-gold', 'text-dark', 'border-gold');
         }
 
+        let activeCategory = 'all';
+
+        function filterCategory(cat, btnEl) {
+            activeCategory = cat;
+            
+            const buttons = document.querySelectorAll('.cat-btn');
+            buttons.forEach(btn => {
+                btn.className = "cat-btn px-6 py-2 rounded-full border border-white/10 bg-white/5 text-white/70 text-sm font-bold hover:bg-white/10 transition-colors";
+            });
+            if(btnEl) {
+                btnEl.className = "cat-btn px-6 py-2 rounded-full border border-gold bg-gold text-dark text-sm font-bold shadow-lg";
+            }
+            
+            renderMenu();
+        }
+
         function renderMenu() {
             const container = document.getElementById('menu-container');
             const categories = {};
-            menuItems.forEach(item => {
-                const cat = item.category || 'Otros';
+            
+            let filteredItems = menuItems;
+            if (activeCategory !== 'all') {
+                filteredItems = menuItems.filter(item => {
+                    const itemCat = (item.category || 'Otros').toLowerCase();
+                    const searchCat = activeCategory.toLowerCase();
+                    if (searchCat === 'café') return itemCat === 'coffee' || itemCat.includes('caf');
+                    if (searchCat === 'bebidas') return itemCat === 'drinks' || itemCat.includes('bebida');
+                    if (searchCat === 'comida') return itemCat === 'food' || itemCat.includes('comida');
+                    return itemCat === searchCat;
+                });
+            }
+
+            filteredItems.forEach(item => {
+                let cat = item.category || 'Otros';
+                if (cat.toLowerCase() === 'coffee') cat = 'Café';
+                if (cat.toLowerCase() === 'drinks') cat = 'Bebidas';
+                if (cat.toLowerCase() === 'food') cat = 'Comida';
+                
                 if(!categories[cat]) categories[cat] = [];
                 categories[cat].push(item);
             });
@@ -733,7 +784,19 @@
         }
 
         // Init
-        window.addEventListener('DOMContentLoaded', () => {
+        window.addEventListener('DOMContentLoaded', async () => {
+            try {
+                const res = await fetch('/api/store/status');
+                const data = await res.json();
+                if (!data.isOpen) {
+                    document.getElementById('closed-overlay').classList.remove('hidden');
+                    document.getElementById('cart-bar').style.display = 'none';
+                    return; // Stop initialization if closed
+                }
+            } catch (e) {
+                console.error("Store status check failed", e);
+            }
+
             loadMenu();
             setFulfillment('pickup');
             
