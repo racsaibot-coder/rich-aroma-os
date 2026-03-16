@@ -609,7 +609,8 @@ app.post('/api/auth/register', async (req, res) => {
             phone: cleanPhone,
             email: cleanEmail,
             points: 0,
-            tier: 'bronze'
+            tier: 'bronze',
+            membership_credit: 30 // Instant bribe
         };
 
         if (type === 'phone') {

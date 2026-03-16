@@ -180,6 +180,12 @@
                 <!-- Cart Items -->
                 <div id="cart-review-items" class="space-y-4 mb-6"></div>
 
+                <!-- Instant Bribe Banner -->
+                <div id="guest-bribe-banner" class="hidden bg-gold/10 border border-gold/30 rounded-2xl p-4 mb-6 text-center">
+                    <p class="text-gold font-bold text-sm mb-2">🎁 Crea una cuenta hoy y recibe L. 30 en Rico Cash al instante para esta orden.</p>
+                    <a href="join.html" class="inline-block bg-gold text-dark font-bold py-2 px-6 rounded-xl text-sm shadow hover:brightness-110 transition">Crear Cuenta</a>
+                </div>
+
                 <!-- Special Instructions -->
                 <div class="mb-6">
                     <label class="text-white/60 uppercase text-xs tracking-widest font-bold mb-2 block">Instrucciones Especiales</label>
@@ -420,6 +426,15 @@
 
         function openCartModal() {
             const container = document.getElementById('cart-review-items');
+            const bribeBanner = document.getElementById('guest-bribe-banner');
+            if (bribeBanner) {
+                if (!currentCustomer) {
+                    bribeBanner.classList.remove('hidden');
+                } else {
+                    bribeBanner.classList.add('hidden');
+                }
+            }
+            
             if(cart.length === 0) {
                 container.innerHTML = `<div class="text-white/50 text-center py-6">Tu carrito está vacío</div>`;
             } else {
