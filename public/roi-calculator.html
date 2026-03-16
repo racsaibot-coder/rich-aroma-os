@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rich Aroma | Break-Even & ROI Calculator</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: { gold: '#C9A66B', dark: '#1E1610', charcoal: '#2C241E', cream: '#F5F5F0' },
+                    fontFamily: { sans: ['Inter', 'sans-serif'], display: ['Playfair Display', 'serif'] }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-dark text-cream font-sans min-h-screen p-6">
+    <div class="max-w-md mx-auto">
+        <header class="mb-8 text-center">
+            <h1 class="font-display text-3xl text-gold font-bold mb-2">Break-Even Calculator</h1>
+            <p class="text-white/60 text-sm">Calculate exactly how many extra sales you need to pay for new hires, rent, or equipment.</p>
+        </header>
+
+        <div class="bg-charcoal rounded-3xl p-6 border border-white/10 mb-6 shadow-xl">
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-xs font-bold text-white/60 uppercase tracking-wider mb-2">1. New Monthly Expense (Lps)</label>
+                    <input type="number" id="expense" class="w-full bg-dark border border-white/10 rounded-xl p-4 text-white focus:border-gold outline-none text-lg font-mono" placeholder="e.g. 9000 (Salary)">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-white/60 uppercase tracking-wider mb-2">2. Average Ticket Size (Lps)</label>
+                    <input type="number" id="ticket" class="w-full bg-dark border border-white/10 rounded-xl p-4 text-white focus:border-gold outline-none text-lg font-mono" value="140" placeholder="e.g. 140">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-white/60 uppercase tracking-wider mb-2">3. Gross Margin (%)</label>
+                    <input type="number" id="margin" class="w-full bg-dark border border-white/10 rounded-xl p-4 text-white focus:border-gold outline-none text-lg font-mono" value="70" placeholder="e.g. 70">
+                    <p class="text-xs text-white/40 mt-1">Coffee/food usually sits around 70-75% margin.</p>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-white/60 uppercase tracking-wider mb-2">4. Days Open Per Month</label>
+                    <input type="number" id="days" class="w-full bg-dark border border-white/10 rounded-xl p-4 text-white focus:border-gold outline-none text-lg font-mono" value="30">
+                </div>
+
+                <button onclick="calculate()" class="w-full bg-gold text-dark font-bold text-lg rounded-xl py-4 mt-4 shadow-lg shadow-gold/20 active:scale-95 transition-transform">
+                    Calculate Required Sales
+                </button>
+            </div>
+        </div>
+
+        <div id="results" class="hidden animate-[slideUp_0.3s_ease-out]">
+            <h2 class="text-gold text-sm font-bold uppercase tracking-widest mb-4 border-l-2 border-gold pl-3">The Target</h2>
+            
+            <div class="grid grid-cols-2 gap-4 mb-4">
+                <div class="bg-white/5 rounded-2xl p-4 border border-white/10 text-center">
+                    <div class="text-white/50 text-xs font-bold uppercase mb-1">Extra Sales/Mo</div>
+                    <div class="text-2xl font-mono text-white" id="res-monthly-sales">L 0</div>
+                </div>
+                <div class="bg-white/5 rounded-2xl p-4 border border-white/10 text-center">
+                    <div class="text-white/50 text-xs font-bold uppercase mb-1">Extra Sales/Day</div>
+                    <div class="text-2xl font-mono text-white" id="res-daily-sales">L 0</div>
+                </div>
+            </div>
+
+            <div class="bg-gradient-to-br from-gold/20 to-transparent border border-gold/30 rounded-3xl p-6 text-center shadow-lg">
+                <div class="text-white/70 text-sm mb-2">You need this many extra customers per day:</div>
+                <div class="text-6xl font-display font-bold text-gold mb-2" id="res-customers">0</div>
+                <div class="text-white/50 text-xs">If each spends the average ticket size.</div>
+            </div>
+        </div>
+    </div>
+
+    <style>
+        @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+    </style>
+
+    <script>
+        function calculate() {
+            const expense = parseFloat(document.getElementById('expense').value);
+            const ticket = parseFloat(document.getElementById('ticket').value);
+            const margin = parseFloat(document.getElementById('margin').value) / 100;
+            const days = parseFloat(document.getElementById('days').value);
+
+            if(!expense || !ticket || !margin || !days) return alert('Please fill all fields');
+
+            // Math
+            // To get $X in gross profit, we need $X / margin in total sales.
+            const targetMonthlySales = expense / margin;
+            const targetDailySales = targetMonthlySales / days;
+            const extraCustomersPerDay = targetDailySales / ticket;
+
+            // Format
+            document.getElementById('res-monthly-sales').innerText = 'L ' + Math.round(targetMonthlySales).toLocaleString();
+            document.getElementById('res-daily-sales').innerText = 'L ' + Math.round(targetDailySales).toLocaleString();
+            document.getElementById('res-customers').innerText = Math.ceil(extraCustomersPerDay);
+
+            document.getElementById('results').classList.remove('hidden');
+        }
+    </script>
+</body>
+</html>

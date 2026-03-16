@@ -36,24 +36,41 @@
       ]
     },
     {
+      "id": "combos",
+      "name": "Combos",
+      "icon": "🍱",
+      "items": [
+        {"id": "combo_1", "name": "Combo 1: Chicken Salad Bowl + Jugo", "price": 200, "modifiers": []},
+        {"id": "combo_2", "name": "Combo 2: Chicken Melt + Papas + Jugo", "price": 250, "modifiers": []},
+        {"id": "combo_3", "name": "Combo 3: Grill Cheese con Jamón + Papas + Jugo", "price": 230, "modifiers": []},
+        {"id": "combo_4", "name": "Combo 4: Grill Cheese + Papas + Jugo", "price": 200, "modifiers": []}
+      ]
+    },
+    {
       "id": "food",
-      "name": "Food",
+      "name": "Food & A La Carte",
       "icon": "🥗",
       "items": [
-        {"id": "chicken_hummus_bowl", "name": "Chicken Salad Bowl w/ Hummus", "price": 140, "modifiers": []},
-        {"id": "bean_rice_bowl", "name": "Bean & Rice Bowl w/ Pico", "price": 120, "modifiers": []},
-        {"id": "acai_bowl", "name": "Açaí Bowl", "price": 125, "modifiers": ["extra_granola", "extra_fruit"]},
-        {"id": "acai_cup", "name": "Açaí Cup", "price": 85, "modifiers": ["extra_granola", "extra_fruit"]},
-        {"id": "burgers_fries", "name": "Burgers and Fries", "price": 150, "modifiers": ["extra_cheese", "add_bacon"]},
-        {"id": "sourdough_ham_turkey", "name": "Sourdough Ham/Turkey", "price": 110, "modifiers": []},
-        {"id": "grill_cheese", "name": "Grill Cheese", "price": 80, "modifiers": ["add_bacon"]},
-        {"id": "avocado_toast", "name": "Avocado Toast", "price": 85, "modifiers": ["add_boil_egg"]},
-        {"id": "overnight_oats", "name": "Overnight Oats", "price": 95, "modifiers": []}
+        {"id": "chicken_salad_bowl", "name": "Chicken Salad Bowl", "price": 150, "modifiers": ["add_huevo", "add_avocado", "add_queso_crema"]},
+        {"id": "chicken_melt", "name": "Chicken Melt", "price": 150, "modifiers": ["add_huevo", "add_avocado", "add_queso_crema"]},
+        {"id": "grill_cheese_jamon", "name": "Grill Cheese con Jamón", "price": 125, "modifiers": ["add_huevo", "add_avocado"]},
+        {"id": "grill_cheese", "name": "Grill Cheese", "price": 100, "modifiers": ["add_huevo", "add_avocado"]},
+        {"id": "papas", "name": "Papas", "price": 80, "modifiers": []},
+        {"id": "baleadas", "name": "Baleadas", "price": 25, "modifiers": ["add_huevo", "add_avocado"]},
+        {"id": "avocado_toast_huevo", "name": "Avocado Toast con Huevo", "price": 125, "modifiers": ["add_queso_crema"]},
+        {"id": "banano_almond_toast", "name": "Banano y Almond Butter Toast", "price": 95, "modifiers": []},
+        {"id": "crepas_1", "name": "Crepas (Una)", "price": 90, "modifiers": []},
+        {"id": "crepas_3", "name": "Crepas (Tres)", "price": 240, "modifiers": []},
+        {"id": "dubai_chocolate_1", "name": "Dubai Chocolate (Una)", "price": 250, "modifiers": []},
+        {"id": "dubai_chocolate_3", "name": "Dubai Chocolate (Tres)", "price": 700, "modifiers": []}
       ]
     }
   ],
   "modifiers": {
     "add_boil_egg": {"name": "Add Boiled Egg", "type": "toggle", "price": 15},
+    "add_huevo": {"name": "Extra Huevo", "type": "toggle", "price": 10},
+    "add_avocado": {"name": "Extra Avocado", "type": "toggle", "price": 20},
+    "add_queso_crema": {"name": "Extra Queso Crema", "type": "toggle", "price": 25},
     "hot_size": {
       "name": "Size",
       "type": "select",

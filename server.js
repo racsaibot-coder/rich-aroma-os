@@ -2,6 +2,8 @@ const express = require('express');
 const path = require('path');
 const fs = require('fs');
 const cors = require('cors');
+const multer = require('multer');
+const upload = multer({ dest: 'public/uploads/' });
 const { createClient } = require('@supabase/supabase-js');
 
 const app = express();
@@ -636,7 +638,7 @@ app.post('/api/auth/register', async (req, res) => {
 // MENU (Public Read)
 app.get('/api/menu', async (req, res) => {
     const { data: items } = await supabase.from('menu_items').select('*').eq('available', true);
-    const { data: modifiers } = await supabase.from('menu_modifiers').select('*');
+    const { data: modifiers } = await supabase.from('modifier_options').select('*');
     
     // Category metadata
     const categoryMeta = {
@@ -708,7 +710,7 @@ app.post('/api/orders', async (req, res) => {
         payment_method: req.body.paymentMethod,
         customer_id: req.body.customerId,
         discount_code: req.body.discountCode,
-        notes: req.body.notes,
+        notes: req.body.notes, scheduled_for: req.body.scheduledFor || null,
         fulfillment_type: req.body.fulfillment || 'pickup',
         delivery_address: req.body.deliveryAddress || null,
         delivery_status: req.body.fulfillment === 'delivery' ? 'pending' : null
@@ -1869,6 +1871,54 @@ app.patch('/api/orders/:id/delivery-status', async (req, res) => {
 });
 
 // ============== ADMIN API ROUTES (Strictly Secured) ==============
+
+
+// ADMIN: Modifier Management
+app.get('/api/admin/modifiers', requireAdmin, async (req, res) => {
+    const client = req.supabase || supabase;
+    const { data: modGroups } = await client.from('modifier_groups').select('*').order('created_at');
+    const { data: modOptions } = await client.from('modifier_options').select('*').order('created_at');
+    res.json({ modGroups: modGroups || [], modOptions: modOptions || [] });
+});
+
+app.patch('/api/admin/modifiers/:id', requireAdmin, async (req, res) => {
+    const client = req.supabase || supabase;
+    const { price_adjustment } = req.body;
+    
+    const { data, error } = await client
+        .from('modifier_options')
+        .update({ price_adjustment })
+        .eq('id', req.params.id)
+        .select()
+        .single();
+        
+    if (error) return res.status(500).json({ error: error.message });
+    res.json(data);
+});
+
+
+app.post('/api/admin/modifiers/groups', requireAdmin, async (req, res) => {
+    const client = req.supabase || supabase;
+    const { name, max_selections, required } = req.body;
+    const { data, error } = await client.from('modifier_groups').insert({ name, max_selections, required }).select().single();
+    if (error) return res.status(500).json({ error: error.message });
+    res.json(data);
+});
+
+app.post('/api/admin/modifiers/options', requireAdmin, async (req, res) => {
+    const client = req.supabase || supabase;
+    const { group_id, name, price_adjustment, is_default } = req.body;
+    const { data, error } = await client.from('modifier_options').insert({ group_id, name, price_adjustment, is_default }).select().single();
+    if (error) return res.status(500).json({ error: error.message });
+    res.json(data);
+});
+
+app.delete('/api/admin/modifiers/options/:id', requireAdmin, async (req, res) => {
+    const client = req.supabase || supabase;
+    const { error } = await client.from('modifier_options').delete().eq('id', req.params.id);
+    if (error) return res.status(500).json({ error: error.message });
+    res.json({ success: true });
+});
 
 // ADMIN: Menu Management
 app.get('/api/admin/menu', requireAdmin, async (req, res) => {

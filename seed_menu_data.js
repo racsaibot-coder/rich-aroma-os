@@ -30,14 +30,25 @@ const menuItems = [
     { id: 'cold_licuado', name: 'Licuado', price: 60, category: 'drinks', available: true },
     { id: 'cold_niahs_licuadito', name: "Niah's Licuadito", price: 50, category: 'drinks', available: true },
 
-    // Food
-    { id: 'food_chicken_hummus', name: 'Chicken Salad Bowl w/ Hummus', price: 140, category: 'food', available: true },
-    { id: 'food_bean_rice', name: 'Bean & Rice Bowl w/ Pico', price: 120, category: 'food', available: true },
-    { id: 'food_acai_bowl', name: 'Açaí Bowl', price: 125, category: 'food', available: true },
-    { id: 'food_acai_cup', name: 'Açaí Cup', price: 85, category: 'food', available: true },
-    { id: 'food_burgers_fries', name: 'Burgers and Fries', price: 150, category: 'food', available: true },
-    { id: 'food_sourdough_ham', name: 'Sourdough Ham/Turkey', price: 110, category: 'food', available: true },
-    { id: 'food_grill_cheese', name: 'Grill Cheese', price: 80, category: 'food', available: true }
+    // Combos
+    { id: 'combo_1', name: 'Combo 1: Chicken Salad Bowl + Jugo', price: 200, category: 'food', available: true },
+    { id: 'combo_2', name: 'Combo 2: Chicken Melt + Papas + Jugo', price: 250, category: 'food', available: true },
+    { id: 'combo_3', name: 'Combo 3: Grill Cheese con Jamón + Papas + Jugo', price: 230, category: 'food', available: true },
+    { id: 'combo_4', name: 'Combo 4: Grill Cheese + Papas + Jugo', price: 200, category: 'food', available: true },
+
+    // Food & A La Carte
+    { id: 'food_chicken_salad_bowl', name: 'Chicken Salad Bowl', price: 150, category: 'food', available: true },
+    { id: 'food_chicken_melt', name: 'Chicken Melt', price: 150, category: 'food', available: true },
+    { id: 'food_grill_cheese_jamon', name: 'Grill Cheese con Jamón', price: 125, category: 'food', available: true },
+    { id: 'food_grill_cheese', name: 'Grill Cheese', price: 100, category: 'food', available: true },
+    { id: 'food_papas', name: 'Papas', price: 80, category: 'food', available: true },
+    { id: 'food_baleadas', name: 'Baleadas', price: 25, category: 'food', available: true },
+    { id: 'food_avocado_toast_huevo', name: 'Avocado Toast con Huevo', price: 125, category: 'food', available: true },
+    { id: 'food_banano_almond_toast', name: 'Banano y Almond Butter Toast', price: 95, category: 'food', available: true },
+    { id: 'food_crepas_1', name: 'Crepas (Una)', price: 90, category: 'food', available: true },
+    { id: 'food_crepas_3', name: 'Crepas (Tres)', price: 240, category: 'food', available: true },
+    { id: 'food_dubai_chocolate_1', name: 'Dubai Chocolate (Una)', price: 250, category: 'food', available: true },
+    { id: 'food_dubai_chocolate_3', name: 'Dubai Chocolate (Tres)', price: 700, category: 'food', available: true }
 ];
 
 async function seed() {

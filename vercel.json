@@ -1,56 +1,195 @@
 {
   "version": 2,
   "builds": [
-    { "src": "api/*.js", "use": "@vercel/node" },
-    { "src": "public/**/*", "use": "@vercel/static" },
-    { "src": "src/**/*", "use": "@vercel/static" }
+    {
+      "src": "api/*.js",
+      "use": "@vercel/node"
+    },
+    {
+      "src": "public/**/*",
+      "use": "@vercel/static"
+    },
+    {
+      "src": "src/**/*",
+      "use": "@vercel/static"
+    }
   ],
   "routes": [
-    { "src": "/api/health", "dest": "/api/health.js" },
-
-    { "src": "/api/auth/login", "dest": "/api/auth.js?action=login" },
-    { "src": "/api/auth/register", "dest": "/api/auth.js?action=register" },
-
-    { "src": "/api/admin/menu", "dest": "/api/admin.js?action=menu" },
-    { "src": "/api/admin/menu/(.*)", "dest": "/api/admin.js?action=menu_update&id=$1" },
-    { "src": "/api/admin/modifiers", "dest": "/api/admin.js?action=modifiers" },
-    { "src": "/api/admin/modifiers/(.*)", "dest": "/api/admin.js?action=modifier_option_update" },
-    { "src": "/api/admin/kpi", "dest": "/api/admin.js?action=kpi" },
-    { "src": "/api/admin/timeclock", "dest": "/api/admin.js?action=timeclock" },
-    { "src": "/api/admin/timeclock_status", "dest": "/api/admin.js?action=timeclock_status" },
-    { "src": "/api/admin/founders", "dest": "/api/admin.js?action=founders" },
-    { "src": "/api/admin/verify-founder", "dest": "/api/admin.js?action=verify-founder" },
-    { "src": "/api/admin/employees", "dest": "/api/admin.js?action=employees" },
-    { "src": "/api/admin/employees/(.*)", "dest": "/api/admin.js?action=employee_update&id=$1" },
-    { "src": "/api/admin/leads", "dest": "/api/admin.js?action=leads" },
-
-    { "src": "/api/cash/current-shift", "dest": "/api/cash.js?action=current-shift" },
-    { "src": "/api/cash/open-shift", "dest": "/api/cash.js?action=open-shift" },
-    { "src": "/api/cash/close-shift", "dest": "/api/cash.js?action=close-shift" },
-
-    { "src": "/api/customer/profile", "dest": "/api/store.js?action=customer_profile" },
-    { "src": "/api/customer/test-cash", "dest": "/api/store.js?action=customer_test_cash" },
-    { "src": "/api/customers/phone/(.*)", "dest": "/api/store.js?action=customer_by_phone&query=$1" },
-    { "src": "/api/customers/(.*)", "dest": "/api/store.js?action=customer_update&id=$1" },
-    { "src": "/api/customers", "dest": "/api/store.js?action=customer_create" },
-    { "src": "/api/menu", "dest": "/api/store.js?action=menu" },
-    { "src": "/api/orders/(.*)/assign", "dest": "/api/store.js?action=order_assign&id=$1" },
-    { "src": "/api/orders/(.*)/delivery-status", "dest": "/api/store.js?action=order_delivery_status&id=$1" },
-    { "src": "/api/orders/(.*)", "dest": "/api/store.js?action=order_update&id=$1" },
-    { "src": "/api/orders", "dest": "/api/store.js?action=orders" },
-    { "src": "/api/driver/login", "dest": "/api/store.js?action=driver_login" },
-    { "src": "/api/driver/orders", "dest": "/api/store.js?action=driver_orders" },
-    { "src": "/api/driver/orders/(.*)/claim", "dest": "/api/store.js?action=driver_claim&id=$1" },
-    { "src": "/api/employees", "dest": "/api/store.js?action=employees" },
-    { "src": "/api/live/status", "dest": "/api/store.js?action=live-status" },
-    { "src": "/api/upload-receipt", "dest": "/api/store.js?action=upload-receipt" },
-    { "src": "/api/campaign/valentines", "dest": "/api/store.js?action=valentines" },
-
-    { "src": "/order", "dest": "/public/order.html" },
-    { "src": "/driver", "dest": "/src/driver/dashboard.html" },
-    { "src": "/creators/review", "dest": "/src/creators/review.html" },
-    { "src": "/creators", "dest": "/src/creators/creators.html" },
-    { "src": "/admin", "dest": "/public/admin.html" },
-    { "src": "/(.*)", "dest": "/public/$1" }
+    {
+      "src": "/api/health",
+      "dest": "/api/health.js"
+    },
+    {
+      "src": "/api/auth/login",
+      "dest": "/api/auth.js?action=login"
+    },
+    {
+      "src": "/api/auth/register",
+      "dest": "/api/auth.js?action=register"
+    },
+    {
+      "src": "/api/admin/menu",
+      "dest": "/api/admin.js?action=menu"
+    },
+    {
+      "src": "/api/admin/menu/(.*)",
+      "dest": "/api/admin.js?action=menu_update&id=$1"
+    },
+    {
+      "src": "/api/admin/modifiers",
+      "dest": "/api/admin.js?action=modifiers"
+    },
+    {
+      "src": "/api/admin/modifiers/groups",
+      "dest": "/api/admin.js?action=modifiers_group_create"
+    },
+    {
+      "src": "/api/admin/modifiers/options",
+      "dest": "/api/admin.js?action=modifiers_option_create"
+    },
+    {
+      "src": "/api/admin/modifiers/options/(.*)",
+      "dest": "/api/admin.js?action=modifier_option_delete&id=$1"
+    },
+    {
+      "src": "/api/admin/modifiers/(.*)",
+      "dest": "/api/admin.js?action=modifier_option_update"
+    },
+    {
+      "src": "/api/admin/kpi",
+      "dest": "/api/admin.js?action=kpi"
+    },
+    {
+      "src": "/api/admin/timeclock",
+      "dest": "/api/admin.js?action=timeclock"
+    },
+    {
+      "src": "/api/admin/timeclock_status",
+      "dest": "/api/admin.js?action=timeclock_status"
+    },
+    {
+      "src": "/api/admin/founders",
+      "dest": "/api/admin.js?action=founders"
+    },
+    {
+      "src": "/api/admin/verify-founder",
+      "dest": "/api/admin.js?action=verify-founder"
+    },
+    {
+      "src": "/api/admin/employees",
+      "dest": "/api/admin.js?action=employees"
+    },
+    {
+      "src": "/api/admin/employees/(.*)",
+      "dest": "/api/admin.js?action=employee_update&id=$1"
+    },
+    {
+      "src": "/api/admin/leads",
+      "dest": "/api/admin.js?action=leads"
+    },
+    {
+      "src": "/api/cash/current-shift",
+      "dest": "/api/cash.js?action=current-shift"
+    },
+    {
+      "src": "/api/cash/open-shift",
+      "dest": "/api/cash.js?action=open-shift"
+    },
+    {
+      "src": "/api/cash/close-shift",
+      "dest": "/api/cash.js?action=close-shift"
+    },
+    {
+      "src": "/api/customer/profile",
+      "dest": "/api/store.js?action=customer_profile"
+    },
+    {
+      "src": "/api/customer/test-cash",
+      "dest": "/api/store.js?action=customer_test_cash"
+    },
+    {
+      "src": "/api/customers/phone/(.*)",
+      "dest": "/api/store.js?action=customer_by_phone&query=$1"
+    },
+    {
+      "src": "/api/customers/(.*)",
+      "dest": "/api/store.js?action=customer_update&id=$1"
+    },
+    {
+      "src": "/api/customers",
+      "dest": "/api/store.js?action=customer_create"
+    },
+    {
+      "src": "/api/menu",
+      "dest": "/api/store.js?action=menu"
+    },
+    {
+      "src": "/api/orders/(.*)/assign",
+      "dest": "/api/store.js?action=order_assign&id=$1"
+    },
+    {
+      "src": "/api/orders/(.*)/delivery-status",
+      "dest": "/api/store.js?action=order_delivery_status&id=$1"
+    },
+    {
+      "src": "/api/orders/(.*)",
+      "dest": "/api/store.js?action=order_update&id=$1"
+    },
+    {
+      "src": "/api/orders",
+      "dest": "/api/store.js?action=orders"
+    },
+    {
+      "src": "/api/driver/login",
+      "dest": "/api/store.js?action=driver_login"
+    },
+    {
+      "src": "/api/driver/orders",
+      "dest": "/api/store.js?action=driver_orders"
+    },
+    {
+      "src": "/api/driver/orders/(.*)/claim",
+      "dest": "/api/store.js?action=driver_claim&id=$1"
+    },
+    {
+      "src": "/api/employees",
+      "dest": "/api/store.js?action=employees"
+    },
+    {
+      "src": "/api/live/status",
+      "dest": "/api/store.js?action=live-status"
+    },
+    {
+      "src": "/api/upload-receipt",
+      "dest": "/api/store.js?action=upload-receipt"
+    },
+    {
+      "src": "/api/campaign/valentines",
+      "dest": "/api/store.js?action=valentines"
+    },
+    {
+      "src": "/order",
+      "dest": "/public/order.html"
+    },
+    {
+      "src": "/driver",
+      "dest": "/src/driver/dashboard.html"
+    },
+    {
+      "src": "/creators/review",
+      "dest": "/src/creators/review.html"
+    },
+    {
+      "src": "/creators",
+      "dest": "/src/creators/creators.html"
+    },
+    {
+      "src": "/admin",
+      "dest": "/public/admin.html"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/public/$1"
+    }
   ]
 }

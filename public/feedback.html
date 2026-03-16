@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Rich Aroma - Rate Your Visit</title>
+    <style>
+        :root {
+            --primary: #C9A66B;
+            --bg: #1E1610;
+            --text: #ffffff;
+            --card: rgba(255, 255, 255, 0.05);
+            --star-inactive: #444;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+        }
+        .container {
+            width: 100%;
+            max-width: 400px;
+            background: var(--card);
+            padding: 24px;
+            border-radius: 16px;
+            box-sizing: border-box;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+        h1 {
+            color: var(--primary);
+            text-align: center;
+            margin-top: 0;
+            margin-bottom: 8px;
+            font-size: 24px;
+        }
+        p.subtitle {
+            text-align: center;
+            color: #aaa;
+            font-size: 14px;
+            margin-bottom: 30px;
+        }
+        .question {
+            margin-bottom: 24px;
+        }
+        .question label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            font-size: 16px;
+        }
+        .stars {
+            display: flex;
+            justify-content: space-between;
+            font-size: 32px;
+            cursor: pointer;
+        }
+        .star {
+            color: var(--star-inactive);
+            transition: color 0.2s;
+        }
+        .star.active {
+            color: var(--primary);
+        }
+        input[type="text"], input[type="tel"], textarea {
+            width: 100%;
+            padding: 12px;
+            background: rgba(0,0,0,0.2);
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 8px;
+            color: white;
+            font-size: 16px;
+            box-sizing: border-box;
+            margin-top: 8px;
+        }
+        textarea {
+            resize: vertical;
+            height: 80px;
+        }
+        button {
+            width: 100%;
+            padding: 16px;
+            background-color: var(--primary);
+            color: var(--bg);
+            border: none;
+            border-radius: 8px;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+            margin-top: 20px;
+            transition: opacity 0.2s;
+        }
+        button:active {
+            opacity: 0.8;
+        }
+        #success-message {
+            display: none;
+            text-align: center;
+            padding: 40px 20px;
+        }
+        .hero-icon {
+            font-size: 64px;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container" id="survey-container">
+        <h1>Rate Your Visit</h1>
+        <p class="subtitle">Earn 10 Lempiras in Rico Cash instantly! 💰</p>
+
+        <form id="feedback-form">
+            <div class="question">
+                <label>How was your food/drink?</label>
+                <div class="stars" data-field="food_rating">
+                    <span class="star" data-val="1">★</span>
+                    <span class="star" data-val="2">★</span>
+                    <span class="star" data-val="3">★</span>
+                    <span class="star" data-val="4">★</span>
+                    <span class="star" data-val="5">★</span>
+                </div>
+            </div>
+
+            <div class="question">
+                <label>How was the service & speed?</label>
+                <div class="stars" data-field="service_rating">
+                    <span class="star" data-val="1">★</span>
+                    <span class="star" data-val="2">★</span>
+                    <span class="star" data-val="3">★</span>
+                    <span class="star" data-val="4">★</span>
+                    <span class="star" data-val="5">★</span>
+                </div>
+            </div>
+
+            <div class="question">
+                <label>Was the shop clean & welcoming?</label>
+                <div class="stars" data-field="cleanliness_rating">
+                    <span class="star" data-val="1">★</span>
+                    <span class="star" data-val="2">★</span>
+                    <span class="star" data-val="3">★</span>
+                    <span class="star" data-val="4">★</span>
+                    <span class="star" data-val="5">★</span>
+                </div>
+            </div>
+
+            <div class="question">
+                <label>Any additional comments? (Optional)</label>
+                <textarea id="comments" placeholder="Tell us what you loved or what we can improve..."></textarea>
+            </div>
+
+            <div class="question">
+                <label>Phone Number (for your Rico Cash)</label>
+                <input type="tel" id="phone" placeholder="e.g. 504 1234 5678" required>
+            </div>
+
+            <button type="submit" id="submit-btn">Submit & Claim Reward</button>
+        </form>
+    </div>
+
+    <div class="container" id="success-message">
+        <div class="hero-icon">🎉</div>
+        <h1>Thank You!</h1>
+        <p>Your feedback helps us grow.</p>
+        <p style="color: var(--primary); font-weight: bold; margin-top: 20px; font-size: 18px;">
+            10 Lempiras have been added to your Rico Cash balance!
+        </p>
+    </div>
+
+    <script>
+        const ratings = {
+            food_rating: 0,
+            service_rating: 0,
+            cleanliness_rating: 0
+        };
+
+        // Handle star clicks
+        document.querySelectorAll('.stars').forEach(container => {
+            const field = container.dataset.field;
+            const stars = container.querySelectorAll('.star');
+            
+            stars.forEach(star => {
+                star.addEventListener('click', () => {
+                    const val = parseInt(star.dataset.val);
+                    ratings[field] = val;
+                    
+                    // Update UI
+                    stars.forEach(s => {
+                        if (parseInt(s.dataset.val) <= val) {
+                            s.classList.add('active');
+                        } else {
+                            s.classList.remove('active');
+                        }
+                    });
+                });
+            });
+        });
+
+        document.getElementById('feedback-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            // Validate
+            if (ratings.food_rating === 0 || ratings.service_rating === 0 || ratings.cleanliness_rating === 0) {
+                alert("Please rate all three categories before submitting!");
+                return;
+            }
+
+            const phone = document.getElementById('phone').value;
+            const comments = document.getElementById('comments').value;
+            const btn = document.getElementById('submit-btn');
+
+            btn.disabled = true;
+            btn.innerText = "Submitting...";
+
+            try {
+                const res = await fetch('/api/feedback', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        phone,
+                        food_rating: ratings.food_rating,
+                        service_rating: ratings.service_rating,
+                        cleanliness_rating: ratings.cleanliness_rating,
+                        comments
+                    })
+                });
+
+                if (res.ok) {
+                    document.getElementById('survey-container').style.display = 'none';
+                    document.getElementById('success-message').style.display = 'block';
+                } else {
+                    const data = await res.json();
+                    alert(data.error || "Something went wrong. Please try again.");
+                    btn.disabled = false;
+                    btn.innerText = "Submit & Claim Reward";
+                }
+            } catch (err) {
+                alert("Network error. Please try again.");
+                btn.disabled = false;
+                btn.innerText = "Submit & Claim Reward";
+            }
+        });
+    </script>
+</body>
+</html>

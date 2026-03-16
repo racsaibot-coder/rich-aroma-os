@@ -14,86 +14,152 @@
             <i class="fas fa-user-shield text-blue-600"></i> Admin Dashboard
         </h1>
 
-        <div class="grid md:grid-cols-4 gap-6 mb-8">
-            <div class="bg-white p-6 rounded-2xl shadow-sm">
-                <h3 class="text-gray-500 text-xs font-bold uppercase">Total Leads</h3>
-                <p class="text-4xl font-bold text-gray-800" id="totalLeads">0</p>
-            </div>
-            <div class="bg-white p-6 rounded-2xl shadow-sm">
-                <h3 class="text-gray-500 text-xs font-bold uppercase">Photos</h3>
-                <p class="text-4xl font-bold text-purple-600" id="totalPhotos">0</p>
-            </div>
-            <div class="bg-white p-6 rounded-2xl shadow-sm">
-                <h3 class="text-gray-500 text-xs font-bold uppercase">Recent Orders</h3>
-                <p class="text-4xl font-bold text-green-600" id="totalOrders">0</p>
-            </div>
-            <a href="/creators/review" class="bg-blue-600 p-6 rounded-2xl shadow-sm hover:bg-blue-700 transition cursor-pointer flex flex-col justify-center h-full">
-                <h3 class="text-blue-200 text-xs font-bold uppercase">Creators</h3>
-                <p class="text-xl font-bold text-white flex items-center gap-2"><i class="fas fa-video"></i> Review Content</p>
-            </a>
+        <!-- Navigation Tabs -->
+        <div class="flex gap-4 mb-6 border-b border-gray-200 pb-2">
+            <button onclick="switchTab('overview')" id="tab-overview" class="font-bold text-blue-600 border-b-2 border-blue-600 pb-2 px-2">Overview</button>
+            <button onclick="switchTab('employees')" id="tab-employees" class="font-bold text-gray-500 hover:text-gray-800 pb-2 px-2">Employees</button>
         </div>
 
-        <h2 class="text-xl font-bold mb-4">Recent Orders</h2>
-        <div class="bg-white rounded-2xl shadow-lg overflow-hidden mb-8">
-            <table class="w-full text-left border-collapse">
-                <thead class="bg-gray-50 text-gray-500 text-xs uppercase">
-                    <tr>
-                        <th class="p-4">Order #</th>
-                        <th class="p-4">Items</th>
-                        <th class="p-4">Total</th>
-                        <th class="p-4">Status</th>
-                        <th class="p-4">Time</th>
-                    </tr>
-                </thead>
-                <tbody id="ordersTable" class="divide-y divide-gray-100 text-sm">
-                    <!-- Injected via JS -->
-                </tbody>
-            </table>
+        <!-- TAB: OVERVIEW -->
+        <div id="section-overview">
+            <div class="grid md:grid-cols-4 gap-6 mb-8">
+                <div class="bg-white p-6 rounded-2xl shadow-sm">
+                    <h3 class="text-gray-500 text-xs font-bold uppercase">Total Leads</h3>
+                    <p class="text-4xl font-bold text-gray-800" id="totalLeads">0</p>
+                </div>
+                <div class="bg-white p-6 rounded-2xl shadow-sm">
+                    <h3 class="text-gray-500 text-xs font-bold uppercase">Photos</h3>
+                    <p class="text-4xl font-bold text-purple-600" id="totalPhotos">0</p>
+                </div>
+                <div class="bg-white p-6 rounded-2xl shadow-sm">
+                    <h3 class="text-gray-500 text-xs font-bold uppercase">Recent Orders</h3>
+                    <p class="text-4xl font-bold text-green-600" id="totalOrders">0</p>
+                </div>
+                <a href="/creators/review" class="bg-blue-600 p-6 rounded-2xl shadow-sm hover:bg-blue-700 transition cursor-pointer flex flex-col justify-center h-full">
+                    <h3 class="text-blue-200 text-xs font-bold uppercase">Creators</h3>
+                    <p class="text-xl font-bold text-white flex items-center gap-2"><i class="fas fa-video"></i> Review Content</p>
+                </a>
+            </div>
+
+            <h2 class="text-xl font-bold mb-4">Recent Orders</h2>
+            <div class="bg-white rounded-2xl shadow-lg overflow-hidden mb-8">
+                <table class="w-full text-left border-collapse">
+                    <thead class="bg-gray-50 text-gray-500 text-xs uppercase">
+                        <tr>
+                            <th class="p-4">Order #</th>
+                            <th class="p-4">Items</th>
+                            <th class="p-4">Total</th>
+                            <th class="p-4">Status</th>
+                            <th class="p-4">Time</th>
+                        </tr>
+                    </thead>
+                    <tbody id="ordersTable" class="divide-y divide-gray-100 text-sm">
+                        <!-- Injected via JS -->
+                    </tbody>
+                </table>
+            </div>
+
+            <h2 class="text-xl font-bold mb-4">Registered Leads</h2>
+            <div class="bg-white rounded-2xl shadow-lg overflow-hidden">
+                <table class="w-full text-left border-collapse">
+                    <thead class="bg-gray-50 text-gray-500 text-xs uppercase">
+                        <tr>
+                            <th class="p-4">Photo</th>
+                            <th class="p-4">Name</th>
+                            <th class="p-4">Phone</th>
+                            <th class="p-4">Submitted</th>
+                            <th class="p-4">Tags</th>
+                        </tr>
+                    </thead>
+                    <tbody id="leadsTable" class="divide-y divide-gray-100 text-sm">
+                        <!-- Injected via JS -->
+                    </tbody>
+                </table>
+            </div>
         </div>
 
-        <h2 class="text-xl font-bold mb-4">Registered Leads</h2>
-        <div class="bg-white rounded-2xl shadow-lg overflow-hidden">
-            <table class="w-full text-left border-collapse">
-                <thead class="bg-gray-50 text-gray-500 text-xs uppercase">
-                    <tr>
-                        <th class="p-4">Photo</th>
-                        <th class="p-4">Name</th>
-                        <th class="p-4">Phone</th>
-                        <th class="p-4">Submitted</th>
-                        <th class="p-4">Tags</th>
-                    </tr>
-                </thead>
-                <tbody id="leadsTable" class="divide-y divide-gray-100 text-sm">
-                    <!-- Injected via JS -->
-                </tbody>
-            </table>
+        <!-- TAB: EMPLOYEES -->
+        <div id="section-employees" class="hidden">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-xl font-bold">Team Management</h2>
+                <button onclick="document.getElementById('add-emp-modal').classList.remove('hidden')" class="bg-blue-600 text-white px-4 py-2 rounded-lg font-bold shadow hover:bg-blue-700">+ Add Employee</button>
+            </div>
+            
+            <div class="bg-white rounded-2xl shadow-lg overflow-hidden mb-8">
+                <table class="w-full text-left border-collapse">
+                    <thead class="bg-gray-50 text-gray-500 text-xs uppercase">
+                        <tr>
+                            <th class="p-4">Name</th>
+                            <th class="p-4">Role</th>
+                            <th class="p-4">PIN</th>
+                            <th class="p-4">Status</th>
+                            <th class="p-4 text-right">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="employeesTable" class="divide-y divide-gray-100 text-sm">
+                        <!-- Injected via JS -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- ADD EMPLOYEE MODAL -->
+    <div id="add-emp-modal" class="hidden fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50">
+        <div class="bg-white w-full max-w-sm rounded-2xl shadow-2xl p-6">
+            <h2 class="text-2xl font-bold mb-4">New Employee</h2>
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Full Name</label>
+                    <input type="text" id="new-emp-name" class="w-full border rounded-lg p-3 outline-none focus:border-blue-500" placeholder="Juan Perez">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Role</label>
+                    <select id="new-emp-role" class="w-full border rounded-lg p-3 outline-none focus:border-blue-500">
+                        <option value="barista">Barista / Operator</option>
+                        <option value="admin">Manager / Admin</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-gray-500 uppercase mb-1">POS PIN (4 digits)</label>
+                    <input type="text" id="new-emp-pin" maxlength="4" class="w-full border rounded-lg p-3 outline-none focus:border-blue-500 tracking-widest text-lg font-mono" placeholder="1234">
+                </div>
+            </div>
+            <div class="flex gap-3 mt-6">
+                <button onclick="document.getElementById('add-emp-modal').classList.add('hidden')" class="w-1/2 bg-gray-200 text-gray-800 py-3 rounded-lg font-bold hover:bg-gray-300">Cancel</button>
+                <button onclick="saveEmployee()" id="save-emp-btn" class="w-1/2 bg-blue-600 text-white py-3 rounded-lg font-bold hover:bg-blue-700">Save</button>
+            </div>
         </div>
     </div>
 
     <script>
+        const token = localStorage.getItem('ra_admin_token') || 'EMP-admin_id_here';
+        const headers = { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' };
+
+        function switchTab(tabId) {
+            document.getElementById('section-overview').classList.add('hidden');
+            document.getElementById('section-employees').classList.add('hidden');
+            
+            document.getElementById('tab-overview').className = "font-bold text-gray-500 hover:text-gray-800 pb-2 px-2";
+            document.getElementById('tab-employees').className = "font-bold text-gray-500 hover:text-gray-800 pb-2 px-2";
+            
+            document.getElementById(`section-${tabId}`).classList.remove('hidden');
+            document.getElementById(`tab-${tabId}`).className = "font-bold text-blue-600 border-b-2 border-blue-600 pb-2 px-2";
+            
+            if(tabId === 'employees') loadEmployees();
+        }
+
         async function loadData() {
-            // Fetch directly from API
-            // Use relative URL to work on Vercel
-            const API_URL = '/api/admin/leads';
-            
-            // Assume the user is logged in and we have a token in localStorage
-            // Since we are moving fast for MVP, if admin.html is accessed, we just pass the mock token format
-            // In reality, this page needs a login wrapper.
-            const token = localStorage.getItem('ra_admin_token') || 'EMP-admin_id_here';
-            
-            // Add AUTH header because middleware checks it
-            const headers = {
-                'Authorization': `Bearer ${token}`
-            };
-            
             try {
-                const res = await fetch(API_URL, { headers });
+                const res = await fetch('/api/admin/leads', { headers });
                 if (!res.ok) throw new Error(res.statusText);
                 const data = await res.json();
                 
                 document.getElementById('totalLeads').innerText = data.length;
                 document.getElementById('totalPhotos').innerText = data.filter(d => d.image).length;
-                document.getElementById('totalFounders').innerText = data.filter(d => d.tags && d.tags.includes('founder_launch')).length;
+                // Total Founders is undefined in the old code if no length, removing for safety since it wasn't in original UI either way
+                // document.getElementById('totalFounders').innerText = data.filter(d => d.tags && d.tags.includes('founder_launch')).length;
 
                 const tbody = document.getElementById('leadsTable');
                 tbody.innerHTML = '';
@@ -112,11 +178,11 @@
                     row.innerHTML = `
                         <td class="p-4">${imgHtml}</td>
                         <td class="p-4 font-bold text-gray-700">
-                            ${lead.name}<br>
-                            <span class="text-gray-400 text-xs font-normal">Kid: ${lead.kidName || '-'}</span>
+                            ${escapeHtml(lead.name)}<br>
+                            <span class="text-gray-400 text-xs font-normal">Kid: ${escapeHtml(lead.kidName || '-')}</span>
                         </td>
                         <td class="p-4 font-mono text-gray-600">
-                            <a href="https://wa.me/${lead.phone.replace('+','')}" target="_blank" class="hover:text-green-500"><i class="fab fa-whatsapp"></i> ${lead.phone}</a>
+                            <a href="https://wa.me/${lead.phone.replace('+','')}" target="_blank" class="hover:text-green-500"><i class="fab fa-whatsapp"></i> ${escapeHtml(lead.phone)}</a>
                         </td>
                         <td class="p-4 text-gray-500 text-xs">${new Date(lead.created_at || Date.now()).toLocaleDateString()}</td>
                         <td class="p-4">${tagsHtml}</td>
@@ -125,8 +191,7 @@
                 });
 
                 // Load Orders
-                const ORDERS_API_URL = '/api/orders';
-                const ordersRes = await fetch(ORDERS_API_URL, { headers });
+                const ordersRes = await fetch('/api/orders', { headers });
                 if (ordersRes.ok) {
                     const ordersData = await ordersRes.json();
                     const orders = ordersData.orders || [];
@@ -149,7 +214,7 @@
                         
                         row.innerHTML = `
                             <td class="p-4 font-bold text-gray-700">#${order.order_number}</td>
-                            <td class="p-4 text-sm text-gray-600 truncate max-w-xs" title="${itemsList}">${itemsList}</td>
+                            <td class="p-4 text-sm text-gray-600 truncate max-w-xs" title="${escapeHtml(itemsList)}">${escapeHtml(itemsList)}</td>
                             <td class="p-4 font-bold text-green-600">L ${parseFloat(order.total).toFixed(2)}</td>
                             <td class="p-4"><span class="px-2 py-1 rounded-full text-[10px] font-bold uppercase ${statusClass}">${order.status}</span></td>
                             <td class="p-4 text-gray-500 text-xs">${new Date(order.created_at || Date.now()).toLocaleString()}</td>
@@ -164,6 +229,107 @@
             }
         }
         
+        async function loadEmployees() {
+            try {
+                const res = await fetch('/api/admin/employees', { headers });
+                if(!res.ok) throw new Error("Failed to load employees");
+                const data = await res.json();
+                
+                const tbody = document.getElementById('employeesTable');
+                tbody.innerHTML = '';
+                
+                const emps = data.employees || [];
+                emps.forEach(emp => {
+                    const row = document.createElement('tr');
+                    const isActive = emp.active !== false;
+                    const statusBadge = isActive 
+                        ? `<span class="bg-green-100 text-green-800 px-2 py-1 rounded-full text-[10px] font-bold uppercase">Active</span>`
+                        : `<span class="bg-red-100 text-red-800 px-2 py-1 rounded-full text-[10px] font-bold uppercase">Disabled</span>`;
+                        
+                    const actionBtn = isActive
+                        ? `<button onclick="toggleEmployeeStatus('${emp.id}', false)" class="text-red-500 hover:text-red-700 text-sm font-bold"><i class="fas fa-ban"></i> Disable</button>`
+                        : `<button onclick="toggleEmployeeStatus('${emp.id}', true)" class="text-green-500 hover:text-green-700 text-sm font-bold"><i class="fas fa-check-circle"></i> Enable</button>`;
+
+                    row.innerHTML = `
+                        <td class="p-4 font-bold text-gray-800">${escapeHtml(emp.name)}</td>
+                        <td class="p-4 text-gray-600 capitalize">${escapeHtml(emp.role)}</td>
+                        <td class="p-4 font-mono text-gray-600 tracking-widest">${escapeHtml(emp.pin || '----')}</td>
+                        <td class="p-4">${statusBadge}</td>
+                        <td class="p-4 text-right">${actionBtn}</td>
+                    `;
+                    tbody.appendChild(row);
+                });
+            } catch(e) {
+                console.error(e);
+            }
+        }
+        
+        async function saveEmployee() {
+            const btn = document.getElementById('save-emp-btn');
+            btn.disabled = true;
+            btn.innerText = 'Saving...';
+            
+            const payload = {
+                name: document.getElementById('new-emp-name').value,
+                role: document.getElementById('new-emp-role').value,
+                pin: document.getElementById('new-emp-pin').value,
+                active: true
+            };
+            
+            try {
+                const res = await fetch('/api/admin/employees', {
+                    method: 'POST',
+                    headers,
+                    body: JSON.stringify(payload)
+                });
+                
+                if(res.ok) {
+                    document.getElementById('add-emp-modal').classList.add('hidden');
+                    document.getElementById('new-emp-name').value = '';
+                    document.getElementById('new-emp-pin').value = '';
+                    loadEmployees();
+                } else {
+                    alert("Error saving employee.");
+                }
+            } catch(e) {
+                console.error(e);
+                alert("Network error.");
+            } finally {
+                btn.disabled = false;
+                btn.innerText = 'Save';
+            }
+        }
+        
+        async function toggleEmployeeStatus(id, isActive) {
+            if(!confirm(`Are you sure you want to ${isActive ? 'enable' : 'disable'} this employee?`)) return;
+            
+            try {
+                const res = await fetch(`/api/admin/employees/${id}`, {
+                    method: 'PUT',
+                    headers,
+                    body: JSON.stringify({ active: isActive })
+                });
+                if(res.ok) {
+                    loadEmployees();
+                } else {
+                    alert("Error updating employee.");
+                }
+            } catch(e) {
+                console.error(e);
+            }
+        }
+
+        // Basic HTML escaper to prevent XSS
+        function escapeHtml(unsafe) {
+            return (unsafe || '').toString()
+                 .replace(/&/g, "&amp;")
+                 .replace(/</g, "&lt;")
+                 .replace(/>/g, "&gt;")
+                 .replace(/"/g, "&quot;")
+                 .replace(/'/g, "&#039;");
+        }
+        
+        // Init
         loadData();
     </script>
 </body>

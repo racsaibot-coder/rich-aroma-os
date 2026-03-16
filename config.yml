@@ -1,5 +1,5 @@
 tunnel: rich-aroma-os
-credentials-file: /Users/racs/.cloudflared/8d1286c7-3b03-4554-949e-108269557451.json
+credentials-file: /Users/racs/.cloudflared/9d2ea366-d039-4088-b9d2-c5ff468b4501.json
 
 ingress:
   - hostname: richaromacoffee.com

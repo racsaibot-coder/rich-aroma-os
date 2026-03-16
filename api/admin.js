@@ -67,6 +67,28 @@ export default async function handler(req, res) {
         if (error) return res.status(500).json({ error: error.message });
         return res.json(data);
     }
+    
+    if (action === 'modifiers_group_create' && req.method === 'POST') {
+        const { name, max_selections, required } = req.body;
+        const { data, error } = await supabase.from('modifier_groups').insert({ name, max_selections, required }).select().single();
+        if (error) return res.status(500).json({ error: error.message });
+        return res.json(data);
+    }
+    
+    if (action === 'modifiers_option_create' && req.method === 'POST') {
+        const { group_id, name, price_adjustment, is_default } = req.body;
+        const { data, error } = await supabase.from('modifier_options').insert({ group_id, name, price_adjustment, is_default }).select().single();
+        if (error) return res.status(500).json({ error: error.message });
+        return res.json(data);
+    }
+
+    if (action === 'modifier_option_delete' && req.method === 'DELETE') {
+        const { id } = req.query;
+        const { error } = await supabase.from('modifier_options').delete().eq('id', id);
+        if (error) return res.status(500).json({ error: error.message });
+        return res.json({ success: true });
+    }
+
     if (action === 'kpi' && req.method === 'GET') {
         // Fetch today's orders
         const today = new Date();

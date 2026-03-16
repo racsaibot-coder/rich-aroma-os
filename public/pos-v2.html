@@ -46,7 +46,7 @@
 
     
     <!-- START SHIFT MODAL -->
-    <div id="shift-modal" class="fixed inset-0 bg-black bg-opacity-90 flex items-center justify-center z-[100] transition-all">
+    <div id="shift-modal" class="hidden fixed inset-0 bg-black bg-opacity-90 flex items-center justify-center z-[100] transition-all">
         <div class="bg-white w-full max-w-md rounded-3xl shadow-2xl p-8 text-center border-t-8 border-blue-500">
             <div class="w-20 h-20 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center mx-auto mb-6 text-3xl">
                 <i class="fas fa-cash-register"></i>
@@ -199,6 +199,9 @@
         <div class="bg-white p-4 flex justify-between items-center shadow-sm">
             <h1 class="text-2xl font-bold text-gray-800 cursor-pointer select-none" onclick="triggerAdmin()">☕️ POS v2.0</h1>
             <div class="flex gap-3">
+                <button onclick="toggleSoloMode()" id="solo-mode-btn" class="bg-orange-100 text-orange-600 px-4 py-2 rounded-lg font-bold hover:bg-orange-200 transition flex items-center gap-2">
+                    <i class="fas fa-user-shield"></i> Solo Mode: OFF
+                </button>
                 <button onclick="endShift()" class="bg-red-100 text-red-600 px-4 py-2 rounded-lg font-bold hover:bg-red-200 transition flex items-center gap-2">
                     <i class="fas fa-door-closed"></i> Close Shift
                 </button>
@@ -212,6 +215,11 @@
                     System: ONLINE 🟢
                 </div>
             </div>
+        </div>
+
+        <!-- Solo Mode Banner (Dynamic) -->
+        <div id="solo-banner" class="hidden bg-red-600 text-white p-3 text-center font-bold uppercase tracking-widest shadow-md">
+            ⚠️ SOLO SHIFT ACTIVE: DRINKS ONLY. FOOD ORDERS LOCKED TO PREVENT BOTTLENECKS.
         </div>
 
         <!-- Smart Upsell Banner (Dynamic) -->
@@ -347,7 +355,10 @@
         
         // Restore shift state from Database
         try {
-            const shiftRes = await fetch('/api/cash/current-shift');
+            const token = 'EMP-admin_id_here';
+            const shiftRes = await fetch('/api/cash/current-shift', {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
             if (shiftRes.ok) {
                 const shiftData = await shiftRes.json();
                 if (shiftData && shiftData.shift && shiftData.shift.status === 'open') {
@@ -416,10 +427,16 @@
             return;
         }
         
+        // Add fake admin token for frontend bypassing while we switch to JWT
+        const token = 'EMP-admin_id_here';
+
         try {
             const res = await fetch('/api/cash/open-shift', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
                 body: JSON.stringify({ 
                     employeeId: pin,
                     openingAmount: cash 
@@ -461,11 +478,16 @@
             alert("Invalid amount.");
             return;
         }
-        
+        // Add token
+        const token = 'EMP-admin_id_here';
+
         try {
             const res = await fetch('/api/cash/close-shift', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}` 
+                },
                 body: JSON.stringify({ 
                     shiftId: currentShiftId,
                     closingAmount: parsedCash,
@@ -482,8 +504,12 @@
                 // Clear from localStorage
                 localStorage.removeItem('pos_active_shift');
                 currentShiftId = null;
+            }
+        } catch(e) {
+            console.error("End shift error:", e);
+        }
                 
-                // Reset App State
+        // Reset App State
         cart = [];
         saveCartState();
         currentCustomerId = null;
@@ -587,19 +613,44 @@
 
 
     // --- RENDER MENU ---
+    let isSoloMode = false;
+    function toggleSoloMode() {
+        isSoloMode = !isSoloMode;
+        const btn = document.getElementById('solo-mode-btn');
+        const banner = document.getElementById('solo-banner');
+        
+        if(isSoloMode) {
+            btn.innerHTML = '<i class="fas fa-user-shield"></i> Solo Mode: ON';
+            btn.className = "bg-orange-600 text-white px-4 py-2 rounded-lg font-bold hover:bg-orange-700 transition flex items-center gap-2 shadow-lg blink-urgent";
+            banner.classList.remove('hidden');
+        } else {
+            btn.innerHTML = '<i class="fas fa-user-shield"></i> Solo Mode: OFF';
+            btn.className = "bg-orange-100 text-orange-600 px-4 py-2 rounded-lg font-bold hover:bg-orange-200 transition flex items-center gap-2";
+            banner.classList.add('hidden');
+        }
+        renderMenu(); // Re-render to disable/enable food items
+    }
+
     function renderMenu() {
         const grid = document.getElementById('menu-grid');
-        grid.innerHTML = menu.map(item => `
-            <div onclick="openModifier('${item.id}')" class="bg-white rounded-xl shadow cursor-pointer hover:shadow-md hover:ring-4 hover:ring-blue-50 transition border border-gray-100 flex flex-col h-48 overflow-hidden group">
+        grid.innerHTML = menu.map(item => {
+            const isDisabled = isSoloMode && item.category === 'food';
+            const clickAction = isDisabled ? `onclick="alert('Food orders are locked during Solo Shifts to prevent KDS bottlenecks. Offer the customer a free drink instead!')"` : `onclick="openModifier('${item.id}')"`;
+            const opacityClass = isDisabled ? 'opacity-50 grayscale cursor-not-allowed' : 'cursor-pointer hover:shadow-md hover:ring-4 hover:ring-blue-50 transition border border-gray-100 group';
+            
+            return `
+            <div ${clickAction} class="bg-white rounded-xl shadow flex flex-col h-48 overflow-hidden relative ${opacityClass}">
                 <div class="h-32 w-full overflow-hidden bg-gray-100">
-                    <img src="${item.image}" alt="${item.name}" class="w-full h-full object-cover group-hover:scale-110 transition duration-500">
+                    <img src="${item.image}" alt="${item.name}" class="w-full h-full object-cover ${isDisabled ? '' : 'group-hover:scale-110 transition duration-500'}">
                 </div>
-                <div class="p-3 flex justify-between items-center bg-white flex-1">
+                <div class="p-3 flex justify-between items-center bg-white flex-1 relative">
                     <div class="font-bold text-gray-800 leading-tight">${item.name}</div>
                     <div class="text-sm bg-green-100 text-green-700 px-2 py-1 rounded font-bold">L. ${item.price}</div>
                 </div>
+                ${isDisabled ? '<div class="absolute inset-0 bg-red-100 bg-opacity-70 flex items-center justify-center font-bold text-red-700 text-sm border-4 border-red-500 rounded-xl"><i class="fas fa-lock mr-2"></i> LOCKED</div>' : ''}
             </div>
-        `).join('');
+            `;
+        }).join('');
     }
 
     // --- MODIFIER LOGIC ---

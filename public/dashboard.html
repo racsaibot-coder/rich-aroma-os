@@ -39,8 +39,15 @@
 
     <!-- TAB 1: KPI DASHBOARD -->
     <div id="tab-kpi" class="tab-content active p-4 space-y-4">
+        
         <!-- Summary Cards -->
+        <div class="flex justify-end mb-2">
+            <button onclick="exportOrdersCSV()" class="text-sm bg-gray-800 text-white px-3 py-1 rounded shadow hover:bg-gray-700 flex items-center gap-1">
+                <i class="fas fa-file-csv"></i> Export Today's Orders
+            </button>
+        </div>
         <div class="grid grid-cols-2 gap-4">
+
             <div class="bg-white p-4 rounded-2xl shadow-sm border border-gray-100">
                 <p class="text-gray-500 text-xs font-bold uppercase">Today's Revenue</p>
                 <p class="text-2xl font-bold text-gray-800 mt-1" id="kpi-rev">L. 0</p>
@@ -78,9 +85,15 @@
         </div>
     </div>
 
+    
     <!-- TAB 3: MODIFIERS MANAGER -->
     <div id="tab-mods" class="tab-content p-4">
+        <div class="flex gap-4 mb-4">
+            <button onclick="openNewModGroupModal()" class="w-1/2 bg-gray-800 text-white py-3 rounded-xl font-bold shadow hover:bg-gray-900">+ New Category</button>
+            <button onclick="openNewModOptionModal()" class="w-1/2 bg-blue-600 text-white py-3 rounded-xl font-bold shadow hover:bg-blue-700">+ New Option</button>
+        </div>
         <div class="space-y-6" id="mod-list">
+
             <p class="text-sm text-gray-500 text-center py-4">Loading modifiers...</p>
         </div>
     </div>
@@ -174,22 +187,77 @@
         </div>
     </div>
 
+    
     <!-- EDIT MODIFIER MODAL -->
-    <div id="edit-mod-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
-        <div class="bg-white w-full max-w-sm rounded-2xl p-6 shadow-2xl">
-            <h2 class="text-xl font-bold mb-4" id="edit-mod-name">Edit Modifier</h2>
+    <div id="edit-mod-modal" class="hidden fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50">
+        <div class="bg-white w-full max-w-sm rounded-2xl shadow-2xl p-6">
+            <h2 class="text-2xl font-bold mb-4" id="edit-mod-name">Edit Modifier</h2>
             <input type="hidden" id="edit-mod-id">
             
-            <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Price (+ L.)</label>
-            <input type="number" id="edit-mod-price" class="w-full p-3 border border-gray-200 rounded-xl mb-6 text-lg font-mono">
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Price Adjustment (Lps)</label>
+                    <input type="number" id="edit-mod-price" class="w-full border rounded-lg p-3 outline-none focus:border-blue-500" placeholder="0">
+                </div>
+            </div>
             
-            <div class="flex gap-3">
-                <button onclick="document.getElementById('edit-mod-modal').classList.add('hidden')" class="w-1/2 bg-gray-100 text-gray-700 py-3 rounded-xl font-bold">Cancel</button>
-                <button onclick="saveModEdit()" class="w-1/2 bg-blue-600 text-white py-3 rounded-xl font-bold shadow hover:bg-blue-700">Save</button>
+            <div class="flex gap-3 mt-6">
+                <button onclick="document.getElementById('edit-mod-modal').classList.add('hidden')" class="w-1/3 bg-gray-200 text-gray-800 py-3 rounded-lg font-bold hover:bg-gray-300">Cancel</button>
+                <button onclick="deleteMod()" id="btn-delete-mod" class="w-1/3 bg-red-100 text-red-600 py-3 rounded-lg font-bold hover:bg-red-200">Delete</button>
+                <button onclick="saveModEdit()" class="w-1/3 bg-blue-600 text-white py-3 rounded-lg font-bold shadow hover:bg-blue-700">Save</button>
             </div>
         </div>
     </div>
 
+    <!-- NEW MOD GROUP MODAL -->
+    <div id="new-mod-group-modal" class="hidden fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50">
+        <div class="bg-white w-full max-w-sm rounded-2xl shadow-2xl p-6">
+            <h2 class="text-2xl font-bold mb-4">New Category (e.g. Milk)</h2>
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Name</label>
+                    <input type="text" id="new-mod-group-name" class="w-full border rounded-lg p-3" placeholder="Category Name">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Max Selections</label>
+                    <input type="number" id="new-mod-group-max" value="1" class="w-full border rounded-lg p-3">
+                </div>
+                <div class="flex items-center gap-2">
+                    <input type="checkbox" id="new-mod-group-req" class="w-5 h-5">
+                    <label class="text-sm font-bold text-gray-700">Required Choice?</label>
+                </div>
+            </div>
+            <div class="flex gap-3 mt-6">
+                <button onclick="document.getElementById('new-mod-group-modal').classList.add('hidden')" class="w-1/2 bg-gray-200 py-3 rounded-lg font-bold">Cancel</button>
+                <button onclick="saveNewModGroup()" class="w-1/2 bg-gray-800 text-white py-3 rounded-lg font-bold">Create</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- NEW MOD OPTION MODAL -->
+    <div id="new-mod-option-modal" class="hidden fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50">
+        <div class="bg-white w-full max-w-sm rounded-2xl shadow-2xl p-6">
+            <h2 class="text-2xl font-bold mb-4">New Option (e.g. Oat Milk)</h2>
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Category</label>
+                    <select id="new-mod-opt-group" class="w-full border rounded-lg p-3"></select>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Name</label>
+                    <input type="text" id="new-mod-opt-name" class="w-full border rounded-lg p-3" placeholder="Option Name">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Price Add-on (Lps)</label>
+                    <input type="number" id="new-mod-opt-price" value="0" class="w-full border rounded-lg p-3">
+                </div>
+            </div>
+            <div class="flex gap-3 mt-6">
+                <button onclick="document.getElementById('new-mod-option-modal').classList.add('hidden')" class="w-1/2 bg-gray-200 py-3 rounded-lg font-bold">Cancel</button>
+                <button onclick="saveNewModOption()" class="w-1/2 bg-blue-600 text-white py-3 rounded-lg font-bold">Create</button>
+            </div>
+        </div>
+    </div>
 <script>
     // --- AUTH ---
     function login() {
@@ -257,7 +325,9 @@
     let menuData = [];
     async function loadMenu() {
         try {
-            const res = await fetch('/api/admin/menu');
+            const res = await fetch('/api/admin/menu', {
+                headers: { 'Authorization': 'Bearer EMP-admin_id_here' }
+            });
             const data = await res.json();
             menuData = data.items;
             if (modGroupsData.length === 0) await loadMods();
@@ -395,7 +465,7 @@
             modifier_groups
         };
         
-        let method = 'PATCH';
+        let method = 'PUT';
         let url = `/api/admin/menu/${id}`;
 
         if (id === 'NEW') {
@@ -412,7 +482,10 @@
         try {
             const res = await fetch(url, {
                 method: method,
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'Authorization': 'Bearer EMP-admin_id_here'
+                },
                 body: JSON.stringify(payload)
             });
             if(res.ok) {
@@ -431,7 +504,8 @@
         
         try {
             const res = await fetch(`/api/admin/menu/${id}`, {
-                method: 'DELETE'
+                method: 'DELETE',
+                headers: { 'Authorization': 'Bearer EMP-admin_id_here' }
             });
             if (res.ok) {
                 document.getElementById('edit-modal').classList.add('hidden');
@@ -488,7 +562,76 @@
         container.innerHTML = html;
     }
 
+    
+    function openNewModGroupModal() {
+        document.getElementById('new-mod-group-name').value = '';
+        document.getElementById('new-mod-group-max').value = '1';
+        document.getElementById('new-mod-group-req').checked = false;
+        document.getElementById('new-mod-group-modal').classList.remove('hidden');
+    }
+
+    function openNewModOptionModal() {
+        const select = document.getElementById('new-mod-opt-group');
+        select.innerHTML = modGroupsData.map(g => `<option value="${g.id}">${g.name}</option>`).join('');
+        document.getElementById('new-mod-opt-name').value = '';
+        document.getElementById('new-mod-opt-price').value = '0';
+        document.getElementById('new-mod-option-modal').classList.remove('hidden');
+    }
+
+    async function saveNewModGroup() {
+        const name = document.getElementById('new-mod-group-name').value;
+        const max = parseInt(document.getElementById('new-mod-group-max').value);
+        const req = document.getElementById('new-mod-group-req').checked;
+
+        try {
+            const res = await fetch('/api/admin/modifiers/groups', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer EMP-admin_id_here' },
+                body: JSON.stringify({ name, max_selections: max, required: req })
+            });
+            if(res.ok) {
+                document.getElementById('new-mod-group-modal').classList.add('hidden');
+                loadMods();
+            }
+        } catch(e) { console.error(e); }
+    }
+
+    async function saveNewModOption() {
+        const group_id = document.getElementById('new-mod-opt-group').value;
+        const name = document.getElementById('new-mod-opt-name').value;
+        const price = parseFloat(document.getElementById('new-mod-opt-price').value);
+
+        try {
+            const res = await fetch('/api/admin/modifiers/options', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer EMP-admin_id_here' },
+                body: JSON.stringify({ group_id, name, price_adjustment: price, is_default: false })
+            });
+            if(res.ok) {
+                document.getElementById('new-mod-option-modal').classList.add('hidden');
+                loadMods();
+            }
+        } catch(e) { console.error(e); }
+    }
+
+    async function deleteMod() {
+        if(!confirm("Are you sure you want to delete this option?")) return;
+        const id = document.getElementById('edit-mod-id').value;
+
+        try {
+            const res = await fetch(`/api/admin/modifiers/options/${id}`, {
+                method: 'DELETE',
+                headers: { 'Authorization': 'Bearer EMP-admin_id_here' }
+            });
+            if(res.ok) {
+                document.getElementById('edit-mod-modal').classList.add('hidden');
+                loadMods();
+            }
+        } catch(e) { console.error(e); }
+    }
+
     function openModEdit(id) {
+
         const opt = modOptionsData.find(o => o.id === id);
         if(!opt) return;
         
