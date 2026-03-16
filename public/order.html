@@ -81,6 +81,14 @@
             <p class="text-white/50 text-sm" id="track-status-desc">Orden #<span id="track-order-num">---</span> • <span id="track-time">00:00</span></p>
         </div>
 
+        <!-- Transfer Receipt Upload (Hidden by default) -->
+        <div id="transfer-upload-section" class="bg-charcoal rounded-3xl p-6 border border-white/10 mb-6 hidden">
+            <h3 class="font-bold text-white mb-2"><i class="fas fa-receipt text-gold mr-2"></i>Sube tu Comprobante de Pago</h3>
+            <p class="text-white/50 text-sm mb-4">Tu orden está pendiente de pago. Por favor sube la captura de la transferencia.</p>
+            <input type="file" id="receipt-upload" accept="image/*" class="w-full text-sm text-white/50 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-semibold file:bg-gold file:text-dark hover:file:bg-gold/80 cursor-pointer" onchange="uploadReceipt()">
+            <div id="receipt-upload-status" class="mt-2 text-sm text-gold hidden">Subiendo...</div>
+        </div>
+
         <div class="bg-charcoal rounded-3xl p-6 border border-white/10 mb-6">
             <div class="flex justify-between items-center mb-6">
                 <h3 class="font-bold text-white">Estado de la Orden</h3>
@@ -457,8 +465,8 @@
                                 <i class="fas fa-copy text-lg"></i>
                             </button>
                         </div>
-                        <div onclick="requestTopup(${total})" class="w-full bg-green-500 text-white py-4 rounded-2xl font-bold text-lg shadow-xl shadow-green-500/20 flex justify-center items-center gap-2 active:scale-95 transition-transform cursor-pointer">
-                            <span>Enviar Comprobante a WhatsApp</span> <i class="fab fa-whatsapp"></i>
+                        <div onclick="submitOrder('transfer')" class="w-full bg-green-500 text-white py-4 rounded-2xl font-bold text-lg shadow-xl shadow-green-500/20 flex justify-center items-center gap-2 active:scale-95 transition-transform cursor-pointer">
+                            <span>Confirmar Transferencia</span> <i class="fas fa-check"></i>
                         </div>
                         <div onclick="submitOrder('cash')" class="mt-3 w-full bg-white/5 border border-white/10 text-white py-4 rounded-2xl font-bold text-lg flex justify-center items-center gap-2 active:scale-95 transition-transform cursor-pointer">
                             <span>Pagar al Recoger</span>
@@ -478,7 +486,7 @@
             if (bank === 'banpais') account = '987654321'; // TODO: Update with real Banpais account
             
             navigator.clipboard.writeText(account).then(() => {
-                alert(`¡Cuenta de ${bank.toUpperCase()} (${account}) copiada! Pega el número en tu app del banco. Cuando termines, envíanos la captura por WhatsApp.`);
+                alert(`¡Cuenta de ${bank.toUpperCase()} (${account}) copiada! Haz la transferencia y sube la captura aquí en la app.`);
             }).catch(err => {
                 console.error('Failed to copy text: ', err);
                 alert(`El número de cuenta es: ${account}`);
