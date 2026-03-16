@@ -254,10 +254,10 @@
 
         <!-- Category Toggles -->
         <div class="px-4 pt-4 pb-2 flex gap-3 overflow-x-auto no-scrollbar">
-            <button onclick="filterCategory('all', this)" class="cat-btn bg-blue-600 text-white px-8 py-3 rounded-full font-extrabold shadow-lg hover:bg-blue-700 transition flex-shrink-0 text-lg tracking-wide border-2 border-blue-600">Todos</button>
-            <button onclick="filterCategory('coffee', this)" class="cat-btn bg-blue-50 text-blue-800 px-8 py-3 rounded-full font-extrabold shadow hover:bg-blue-100 border-2 border-blue-300 transition flex-shrink-0 text-lg tracking-wide">Café</button>
-            <button onclick="filterCategory('drinks', this)" class="cat-btn bg-blue-50 text-blue-800 px-8 py-3 rounded-full font-extrabold shadow hover:bg-blue-100 border-2 border-blue-300 transition flex-shrink-0 text-lg tracking-wide">Drinks</button>
-            <button onclick="filterCategory('food', this)" class="cat-btn bg-blue-50 text-blue-800 px-8 py-3 rounded-full font-extrabold shadow hover:bg-blue-100 border-2 border-blue-300 transition flex-shrink-0 text-lg tracking-wide">Food</button>
+            <button onclick="filterCategory('all', this)" class="cat-btn bg-gray-800 text-gold px-8 py-3 rounded-full font-bold shadow-lg hover:bg-gray-900 transition flex-shrink-0 text-lg tracking-wide border-2 border-gray-800">Todos</button>
+            <button onclick="filterCategory('coffee', this)" class="cat-btn bg-gray-100 text-gray-700 px-8 py-3 rounded-full font-bold shadow hover:bg-gray-200 border-2 border-gray-200 transition flex-shrink-0 text-lg tracking-wide">Café</button>
+            <button onclick="filterCategory('drinks', this)" class="cat-btn bg-gray-100 text-gray-700 px-8 py-3 rounded-full font-bold shadow hover:bg-gray-200 border-2 border-gray-200 transition flex-shrink-0 text-lg tracking-wide">Drinks</button>
+            <button onclick="filterCategory('food', this)" class="cat-btn bg-gray-100 text-gray-700 px-8 py-3 rounded-full font-bold shadow hover:bg-gray-200 border-2 border-gray-200 transition flex-shrink-0 text-lg tracking-wide">Food</button>
         </div>
 
         <!-- Menu Grid -->
@@ -700,10 +700,10 @@
         // Update active styles
         const buttons = document.querySelectorAll('.cat-btn');
         buttons.forEach(btn => {
-            btn.className = "cat-btn bg-blue-50 text-blue-800 px-8 py-3 rounded-full font-extrabold shadow hover:bg-blue-100 border-2 border-blue-300 transition flex-shrink-0 text-lg tracking-wide";
+            btn.className = "cat-btn bg-gray-100 text-gray-700 px-8 py-3 rounded-full font-bold shadow hover:bg-gray-200 border-2 border-gray-200 transition flex-shrink-0 text-lg tracking-wide";
         });
         if(btnEl) {
-            btnEl.className = "cat-btn bg-blue-600 text-white px-8 py-3 rounded-full font-extrabold shadow-lg hover:bg-blue-700 transition flex-shrink-0 text-lg tracking-wide border-2 border-blue-600";
+            btnEl.className = "cat-btn bg-gray-800 text-gold px-8 py-3 rounded-full font-bold shadow-lg hover:bg-gray-900 transition flex-shrink-0 text-lg tracking-wide border-2 border-gray-800";
         }
         
         let filtered = menu;
