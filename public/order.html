@@ -662,6 +662,12 @@
             document.getElementById('fulfillment-selector').classList.add('hidden');
             document.getElementById('tracking-view').classList.remove('hidden');
             
+            if (activeOrder && activeOrder.payment_method === 'transfer') {
+                document.getElementById('transfer-upload-section').classList.remove('hidden');
+            } else {
+                document.getElementById('transfer-upload-section').classList.add('hidden');
+            }
+            
             document.getElementById('track-order-num').innerText = activeOrder.order_number || activeOrder.id;
             const types = { pickup: 'Para Llevar', dinein: 'Restaurante', delivery: 'A Domicilio' };
             document.getElementById('track-type').innerText = types[activeOrder.fulfillment_type || fulfillmentType];
