@@ -28,6 +28,21 @@ const supabase = createClient(supabaseUrl, supabaseKey);
 app.use(cors());
 app.use(express.json({ limit: '10mb' })); // Increased for image uploads
 
+// Global Store Status
+let storeIsOpen = true;
+
+app.get('/api/store/status', (req, res) => {
+    res.json({ isOpen: storeIsOpen });
+});
+
+app.patch('/api/store/status', (req, res) => {
+    if (typeof req.body.isOpen !== 'undefined') {
+        storeIsOpen = req.body.isOpen === true || req.body.isOpen === 'true';
+    }
+    // Broadcast via socket could go here if needed
+    res.json({ success: true, isOpen: storeIsOpen });
+});
+
 // Global memory for Receipts (Deduplication)
 const RECEIPT_HASHES = new Set(); 
 const crypto = require('crypto');
@@ -1922,6 +1937,37 @@ app.delete('/api/admin/modifiers/options/:id', requireAdmin, async (req, res) =>
 });
 
 // ADMIN: Menu Management
+app.get('/api/admin/menu/:id/modifiers', requireAdmin, async (req, res) => {
+    const client = req.supabase || supabase;
+    const { data, error } = await client
+        .from('item_modifier_groups')
+        .select('modifier_group_id')
+        .eq('menu_item_id', req.params.id);
+        
+    if (error) return res.status(500).json({ error: error.message });
+    res.json({ itemModGroups: data || [] });
+});
+
+app.post('/api/admin/menu/:id/modifiers', requireAdmin, async (req, res) => {
+    const client = req.supabase || supabase;
+    const { group_ids } = req.body; 
+    const menu_item_id = req.params.id;
+
+    const { error: delError } = await client.from('item_modifier_groups').delete().eq('menu_item_id', menu_item_id);
+    if (delError) return res.status(500).json({ error: delError.message });
+
+    if (group_ids && group_ids.length > 0) {
+        const inserts = group_ids.map(gid => ({
+            menu_item_id,
+            modifier_group_id: gid
+        }));
+        const { error: insError } = await client.from('item_modifier_groups').insert(inserts);
+        if (insError) return res.status(500).json({ error: insError.message });
+    }
+
+    res.json({ success: true });
+});
+
 app.get('/api/admin/menu', requireAdmin, async (req, res) => {
     const client = req.supabase || supabase;
     const { data } = await client.from('menu_items').select('*').order('category').order('name');

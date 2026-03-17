@@ -18,6 +18,7 @@
         <div class="flex gap-4 mb-6 border-b border-gray-200 pb-2">
             <button onclick="switchTab('overview')" id="tab-overview" class="font-bold text-blue-600 border-b-2 border-blue-600 pb-2 px-2">Overview</button>
             <button onclick="switchTab('employees')" id="tab-employees" class="font-bold text-gray-500 hover:text-gray-800 pb-2 px-2">Employees</button>
+            <button onclick="switchTab('menu')" id="tab-menu" class="font-bold text-gray-500 hover:text-gray-800 pb-2 px-2">Menu & Modifiers</button>
         </div>
 
         <!-- TAB: OVERVIEW -->
@@ -103,6 +104,26 @@
             </div>
         </div>
 
+        <!-- TAB: MENU -->
+        <div id="section-menu" class="hidden">
+            <h2 class="text-xl font-bold mb-4">Menu & Modifiers</h2>
+            <div class="bg-white rounded-2xl shadow-lg overflow-hidden mb-8">
+                <table class="w-full text-left border-collapse">
+                    <thead class="bg-gray-50 text-gray-500 text-xs uppercase">
+                        <tr>
+                            <th class="p-4">Item Name</th>
+                            <th class="p-4">Category</th>
+                            <th class="p-4">Price</th>
+                            <th class="p-4 text-right">Modifiers</th>
+                        </tr>
+                    </thead>
+                    <tbody id="menuTable" class="divide-y divide-gray-100 text-sm">
+                        <!-- Injected via JS -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
     </div>
 
     <!-- ADD EMPLOYEE MODAL -->
@@ -133,6 +154,21 @@
         </div>
     </div>
 
+    <!-- EDIT MODIFIERS MODAL -->
+    <div id="edit-modifiers-modal" class="hidden fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50">
+        <div class="bg-white w-full max-w-sm rounded-2xl shadow-2xl p-6 max-h-[80vh] flex flex-col">
+            <h2 class="text-xl font-bold mb-4" id="edit-modifiers-title">Edit Modifiers</h2>
+            <input type="hidden" id="edit-modifiers-item-id">
+            <div id="modifiers-list" class="space-y-3 overflow-y-auto flex-1 mb-4">
+                <!-- Checkboxes injected via JS -->
+            </div>
+            <div class="flex gap-3 mt-auto">
+                <button onclick="document.getElementById('edit-modifiers-modal').classList.add('hidden')" class="w-1/2 bg-gray-200 text-gray-800 py-3 rounded-lg font-bold hover:bg-gray-300">Cancel</button>
+                <button onclick="saveModifiers()" id="save-modifiers-btn" class="w-1/2 bg-blue-600 text-white py-3 rounded-lg font-bold hover:bg-blue-700">Save</button>
+            </div>
+        </div>
+    </div>
+
     <script>
         const token = localStorage.getItem('ra_admin_token') || 'EMP-admin_id_here';
         const headers = { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' };
@@ -140,14 +176,119 @@
         function switchTab(tabId) {
             document.getElementById('section-overview').classList.add('hidden');
             document.getElementById('section-employees').classList.add('hidden');
+            document.getElementById('section-menu').classList.add('hidden');
             
             document.getElementById('tab-overview').className = "font-bold text-gray-500 hover:text-gray-800 pb-2 px-2";
             document.getElementById('tab-employees').className = "font-bold text-gray-500 hover:text-gray-800 pb-2 px-2";
+            document.getElementById('tab-menu').className = "font-bold text-gray-500 hover:text-gray-800 pb-2 px-2";
             
             document.getElementById(`section-${tabId}`).classList.remove('hidden');
             document.getElementById(`tab-${tabId}`).className = "font-bold text-blue-600 border-b-2 border-blue-600 pb-2 px-2";
             
             if(tabId === 'employees') loadEmployees();
+            if(tabId === 'menu') loadMenu();
+        }
+
+        let globalModGroups = [];
+
+        async function loadMenu() {
+            try {
+                // Load all items
+                const res = await fetch('/api/admin/menu', { headers });
+                const data = await res.json();
+                
+                // Load all modifiers globally to use in the modal
+                const modRes = await fetch('/api/admin/modifiers', { headers });
+                const modData = await modRes.json();
+                globalModGroups = modData.modGroups || [];
+
+                const tbody = document.getElementById('menuTable');
+                tbody.innerHTML = '';
+                
+                const items = data.items || [];
+                items.forEach(item => {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td class="p-4 font-bold text-gray-800">${escapeHtml(item.name)}</td>
+                        <td class="p-4 text-gray-600 capitalize">${escapeHtml(item.category)}</td>
+                        <td class="p-4 text-gray-600 font-mono">L ${parseFloat(item.price).toFixed(2)}</td>
+                        <td class="p-4 text-right">
+                            <button onclick="openModifiersModal('${item.id}', '${escapeHtml(item.name).replace(/'/g, "\\'")}')" class="text-blue-600 hover:text-blue-800 text-sm font-bold"><i class="fas fa-edit"></i> Edit Modifiers</button>
+                        </td>
+                    `;
+                    tbody.appendChild(row);
+                });
+            } catch(e) {
+                console.error(e);
+            }
+        }
+
+        async function openModifiersModal(itemId, itemName) {
+            document.getElementById('edit-modifiers-title').innerText = `Modifiers: ${itemName}`;
+            document.getElementById('edit-modifiers-item-id').value = itemId;
+            
+            const listDiv = document.getElementById('modifiers-list');
+            listDiv.innerHTML = '<div class="text-center text-gray-500">Loading...</div>';
+            document.getElementById('edit-modifiers-modal').classList.remove('hidden');
+
+            try {
+                // Fetch linked groups for this item
+                const res = await fetch(`/api/admin/menu/${itemId}/modifiers`, { headers });
+                const data = await res.json();
+                const linkedGroups = (data.itemModGroups || []).map(g => g.modifier_group_id);
+
+                listDiv.innerHTML = '';
+                globalModGroups.forEach(group => {
+                    const isChecked = linkedGroups.includes(group.id) ? 'checked' : '';
+                    listDiv.innerHTML += `
+                        <label class="flex items-center gap-3 p-3 border rounded-lg cursor-pointer hover:bg-gray-50">
+                            <input type="checkbox" value="${group.id}" class="mod-group-checkbox w-5 h-5 text-blue-600" ${isChecked}>
+                            <div>
+                                <div class="font-bold text-gray-800">${escapeHtml(group.name)}</div>
+                                <div class="text-xs text-gray-500">Max: ${group.max_selections} | Required: ${group.required ? 'Yes' : 'No'}</div>
+                            </div>
+                        </label>
+                    `;
+                });
+                
+                if (globalModGroups.length === 0) {
+                    listDiv.innerHTML = '<div class="text-center text-gray-500">No modifier groups found.</div>';
+                }
+
+            } catch (e) {
+                console.error(e);
+                listDiv.innerHTML = '<div class="text-center text-red-500">Error loading data</div>';
+            }
+        }
+
+        async function saveModifiers() {
+            const btn = document.getElementById('save-modifiers-btn');
+            btn.disabled = true;
+            btn.innerText = 'Saving...';
+            
+            const itemId = document.getElementById('edit-modifiers-item-id').value;
+            const checkboxes = document.querySelectorAll('.mod-group-checkbox');
+            const selectedGroups = Array.from(checkboxes).filter(c => c.checked).map(c => c.value);
+
+            try {
+                const res = await fetch(`/api/admin/menu/${itemId}/modifiers`, {
+                    method: 'POST',
+                    headers,
+                    body: JSON.stringify({ group_ids: selectedGroups })
+                });
+                
+                if(res.ok) {
+                    document.getElementById('edit-modifiers-modal').classList.add('hidden');
+                } else {
+                    alert("Error saving modifiers.");
+                }
+            } catch(e) {
+                console.error(e);
+                alert("Network error.");
+            } finally {
+                btn.disabled = false;
+                btn.innerText = 'Save';
+            }
         }
 
         async function loadData() {
