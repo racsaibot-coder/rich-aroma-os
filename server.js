@@ -1992,14 +1992,29 @@ app.post('/api/admin/menu', requireAdmin, async (req, res) => {
 
 app.put('/api/admin/menu/:id', requireAdmin, async (req, res) => {
     const client = req.supabase || supabase;
+    const { modifier_groups, ...itemData } = req.body;
+    
     const { data, error } = await client
         .from('menu_items')
-        .update(req.body)
+        .update(itemData)
         .eq('id', req.params.id)
         .select()
         .single();
     
     if (error) return res.status(404).json({ error: 'Item not found' });
+    
+    // Sync modifier groups
+    if (modifier_groups) {
+        await client.from('item_modifier_groups').delete().eq('item_id', req.params.id);
+        if (modifier_groups.length > 0) {
+            const inserts = modifier_groups.map(groupId => ({
+                item_id: req.params.id,
+                group_id: groupId,
+                display_order: 1
+            }));
+            await client.from('item_modifier_groups').insert(inserts);
+        }
+    }
     res.json(data);
 });
 

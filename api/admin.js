@@ -28,17 +28,31 @@ export default async function handler(req, res) {
         return res.json(data);
     }
 
-    if (action === 'menu_update' && req.method === 'PATCH') {
+    if (action === 'menu_update' && (req.method === 'PATCH' || req.method === 'PUT')) {
         const { id, price, available, image_url, name, category, modifier_groups } = req.body;
         const updateData = { price, available, image_url };
         if (name) updateData.name = name;
         if (category) updateData.category = category;
-        if (modifier_groups) updateData.modifier_groups = modifier_groups;
+        
+        const itemId = req.query.id || id;
         const { data, error } = await supabase.from('menu_items')
             .update(updateData)
-            .eq('id', req.query.id || id)
+            .eq('id', itemId)
             .select().single();
+            
         if (error) return res.status(500).json({ error: error.message });
+        
+        if (modifier_groups) {
+            await supabase.from('item_modifier_groups').delete().eq('item_id', itemId);
+            if (modifier_groups.length > 0) {
+                const inserts = modifier_groups.map(groupId => ({
+                    item_id: itemId,
+                    group_id: groupId,
+                    display_order: 1
+                }));
+                await supabase.from('item_modifier_groups').insert(inserts);
+            }
+        }
         return res.json(data);
     }
 
