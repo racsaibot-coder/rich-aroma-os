@@ -66,6 +66,29 @@ export default async function handler(req, res) {
     }
 
     // MODIFIER MANAGER
+    
+    if (action === 'menu_item_modifiers' && req.method === 'GET') {
+        const { id } = req.query;
+        const { data, error } = await supabase.from('item_modifier_groups').select('group_id').eq('item_id', id);
+        if (error) return res.status(500).json({ error: error.message });
+        return res.json({ itemModGroups: data || [] });
+    }
+
+    if (action === 'menu_item_modifiers' && req.method === 'POST') {
+        const { id } = req.query;
+        const { group_ids } = req.body;
+        
+        await supabase.from('item_modifier_groups').delete().eq('item_id', id);
+        
+        if (group_ids && group_ids.length > 0) {
+            const inserts = group_ids.map(gid => ({ item_id: id, group_id: gid }));
+            const { error } = await supabase.from('item_modifier_groups').insert(inserts);
+            if (error) return res.status(500).json({ error: error.message });
+        }
+        
+        return res.json({ success: true });
+    }
+
     if (action === 'modifiers' && req.method === 'GET') {
         const { data: modGroups } = await supabase.from('modifier_groups').select('*');
         const { data: modOptions } = await supabase.from('modifier_options').select('*');
