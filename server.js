@@ -1890,6 +1890,21 @@ app.patch('/api/orders/:id/delivery-status', async (req, res) => {
 
 
 // ADMIN: Modifier Management
+
+app.delete('/api/admin/modifiers/groups/:id', requireAdmin, async (req, res) => {
+    const client = req.supabase || supabase;
+    const { error } = await client.from('modifier_groups').delete().eq('id', req.params.id);
+    if (error) return res.status(500).json({ error: error.message });
+    res.json({ success: true });
+});
+
+app.delete('/api/admin/modifiers/options/:id', requireAdmin, async (req, res) => {
+    const client = req.supabase || supabase;
+    const { error } = await client.from('modifier_options').delete().eq('id', req.params.id);
+    if (error) return res.status(500).json({ error: error.message });
+    res.json({ success: true });
+});
+
 app.get('/api/admin/modifiers', requireAdmin, async (req, res) => {
     const client = req.supabase || supabase;
     const { data: modGroups } = await client.from('modifier_groups').select('*').order('created_at');

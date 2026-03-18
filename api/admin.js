@@ -120,6 +120,15 @@ export default async function handler(req, res) {
         return res.json(data);
     }
 
+    
+    if (action === 'modifier_group_delete' && req.method === 'DELETE') {
+        const { id } = req.query;
+        // This will cascade delete options because of ON DELETE CASCADE
+        const { error } = await supabase.from('modifier_groups').delete().eq('id', id);
+        if (error) return res.status(500).json({ error: error.message });
+        return res.json({ success: true });
+    }
+
     if (action === 'modifier_option_delete' && req.method === 'DELETE') {
         const { id } = req.query;
         const { error } = await supabase.from('modifier_options').delete().eq('id', id);
