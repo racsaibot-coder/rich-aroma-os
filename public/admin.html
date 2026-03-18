@@ -106,7 +106,14 @@
 
         <!-- TAB: MENU -->
         <div id="section-menu" class="hidden">
-            <h2 class="text-xl font-bold mb-4">Menu & Modifiers</h2>
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-xl font-bold">Menu & Modifiers</h2>
+                <div class="flex gap-2">
+                    <button onclick="document.getElementById('create-mod-group-modal').classList.remove('hidden')" class="bg-purple-600 text-white px-4 py-2 rounded-lg font-bold shadow hover:bg-purple-700">+ New Modifier Group</button>
+                    <button onclick="openCreateModOptionModal()" class="bg-blue-600 text-white px-4 py-2 rounded-lg font-bold shadow hover:bg-blue-700">+ New Option</button>
+                </div>
+            </div>
+            
             <div class="bg-white rounded-2xl shadow-lg overflow-hidden mb-8">
                 <table class="w-full text-left border-collapse">
                     <thead class="bg-gray-50 text-gray-500 text-xs uppercase">
@@ -165,6 +172,62 @@
             <div class="flex gap-3 mt-auto">
                 <button onclick="document.getElementById('edit-modifiers-modal').classList.add('hidden')" class="w-1/2 bg-gray-200 text-gray-800 py-3 rounded-lg font-bold hover:bg-gray-300">Cancel</button>
                 <button onclick="saveModifiers()" id="save-modifiers-btn" class="w-1/2 bg-blue-600 text-white py-3 rounded-lg font-bold hover:bg-blue-700">Save</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- CREATE MODIFIER GROUP MODAL -->
+    <div id="create-mod-group-modal" class="hidden fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50">
+        <div class="bg-white w-full max-w-sm rounded-2xl shadow-2xl p-6">
+            <h2 class="text-2xl font-bold mb-4">New Modifier Group</h2>
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Group Name</label>
+                    <input type="text" id="new-group-name" class="w-full border rounded-lg p-3 outline-none focus:border-purple-500" placeholder="e.g. Milk Type">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Max Selections</label>
+                    <input type="number" id="new-group-max" class="w-full border rounded-lg p-3 outline-none focus:border-purple-500" value="1">
+                </div>
+                <div class="flex items-center gap-2">
+                    <input type="checkbox" id="new-group-required" class="w-5 h-5 text-purple-600">
+                    <label class="font-bold text-gray-700">Required?</label>
+                </div>
+            </div>
+            <div class="flex gap-3 mt-6">
+                <button onclick="document.getElementById('create-mod-group-modal').classList.add('hidden')" class="w-1/2 bg-gray-200 text-gray-800 py-3 rounded-lg font-bold hover:bg-gray-300">Cancel</button>
+                <button onclick="saveModifierGroup()" id="save-group-btn" class="w-1/2 bg-purple-600 text-white py-3 rounded-lg font-bold hover:bg-purple-700">Create</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- CREATE MODIFIER OPTION MODAL -->
+    <div id="create-mod-option-modal" class="hidden fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50">
+        <div class="bg-white w-full max-w-sm rounded-2xl shadow-2xl p-6">
+            <h2 class="text-2xl font-bold mb-4">New Option</h2>
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Select Group</label>
+                    <select id="new-option-group" class="w-full border rounded-lg p-3 outline-none focus:border-blue-500">
+                        <!-- Options injected via JS -->
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Option Name</label>
+                    <input type="text" id="new-option-name" class="w-full border rounded-lg p-3 outline-none focus:border-blue-500" placeholder="e.g. Almond Milk">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Price Adjustment (Lempiras)</label>
+                    <input type="number" id="new-option-price" class="w-full border rounded-lg p-3 outline-none focus:border-blue-500" value="0">
+                </div>
+                <div class="flex items-center gap-2">
+                    <input type="checkbox" id="new-option-default" class="w-5 h-5 text-blue-600">
+                    <label class="font-bold text-gray-700">Is Default?</label>
+                </div>
+            </div>
+            <div class="flex gap-3 mt-6">
+                <button onclick="document.getElementById('create-mod-option-modal').classList.add('hidden')" class="w-1/2 bg-gray-200 text-gray-800 py-3 rounded-lg font-bold hover:bg-gray-300">Cancel</button>
+                <button onclick="saveModifierOption()" id="save-option-btn" class="w-1/2 bg-blue-600 text-white py-3 rounded-lg font-bold hover:bg-blue-700">Create</button>
             </div>
         </div>
     </div>
@@ -288,6 +351,77 @@
             } finally {
                 btn.disabled = false;
                 btn.innerText = 'Save';
+            }
+        }
+
+        function openCreateModOptionModal() {
+            if (globalModGroups.length === 0) {
+                alert("Please create a Modifier Group first!");
+                return;
+            }
+            const select = document.getElementById('new-option-group');
+            select.innerHTML = globalModGroups.map(g => `<option value="${g.id}">${escapeHtml(g.name)}</option>`).join('');
+            document.getElementById('new-option-name').value = '';
+            document.getElementById('new-option-price').value = '0';
+            document.getElementById('new-option-default').checked = false;
+            document.getElementById('create-mod-option-modal').classList.remove('hidden');
+        }
+
+        async function saveModifierGroup() {
+            const name = document.getElementById('new-group-name').value;
+            const maxSelections = parseInt(document.getElementById('new-group-max').value);
+            const required = document.getElementById('new-group-required').checked;
+            
+            if (!name) return alert("Name is required");
+
+            const btn = document.getElementById('save-group-btn');
+            btn.disabled = true; btn.innerText = 'Creating...';
+
+            try {
+                const res = await fetch('/api/admin/modifiers/groups', {
+                    method: 'POST',
+                    headers,
+                    body: JSON.stringify({ name, max_selections: maxSelections, required })
+                });
+                if (res.ok) {
+                    document.getElementById('create-mod-group-modal').classList.add('hidden');
+                    switchTab('menu'); // refresh data
+                } else {
+                    alert("Failed to create group");
+                }
+            } catch (e) {
+                console.error(e);
+            } finally {
+                btn.disabled = false; btn.innerText = 'Create';
+            }
+        }
+
+        async function saveModifierOption() {
+            const groupId = document.getElementById('new-option-group').value;
+            const name = document.getElementById('new-option-name').value;
+            const price = parseFloat(document.getElementById('new-option-price').value);
+            const isDefault = document.getElementById('new-option-default').checked;
+            
+            if (!name) return alert("Name is required");
+
+            const btn = document.getElementById('save-option-btn');
+            btn.disabled = true; btn.innerText = 'Creating...';
+
+            try {
+                const res = await fetch('/api/admin/modifiers/options', {
+                    method: 'POST',
+                    headers,
+                    body: JSON.stringify({ group_id: groupId, name, price_adjustment: price, is_default: isDefault })
+                });
+                if (res.ok) {
+                    document.getElementById('create-mod-option-modal').classList.add('hidden');
+                } else {
+                    alert("Failed to create option");
+                }
+            } catch (e) {
+                console.error(e);
+            } finally {
+                btn.disabled = false; btn.innerText = 'Create';
             }
         }
 
