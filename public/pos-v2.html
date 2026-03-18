@@ -793,6 +793,7 @@
 
     function toggleDynamicMod(groupId, optionId, maxSelections) {
         let selected = currentMods[groupId] || [];
+        const clickedOption = modOptions.find(o => o.id === optionId);
         
         if (selected.includes(optionId)) {
             // Deselect logic
@@ -812,18 +813,33 @@
         }
         currentMods[groupId] = selected;
         
-        // Update UI
-        const options = modOptions.filter(o => o.group_id === groupId);
-        options.forEach(opt => {
-            const btn = document.getElementById(`mod-btn-${opt.id}`);
-            if (btn) {
-                if (selected.includes(opt.id)) {
-                    btn.className = "mod-btn selected border-2 border-blue-500 bg-blue-50 p-4 rounded-xl font-bold hover:bg-gray-50 text-sm";
-                } else {
-                    btn.className = "mod-btn border border-gray-200 p-4 rounded-xl font-bold hover:bg-gray-50 text-sm";
+        // --- BASE RECIPE MAGIC ---
+        // If this option is a size (e.g. 8oz, 12oz) and the item has a base_recipe for it, apply it.
+        if (clickedOption && currentItem.base_recipe && currentItem.base_recipe[clickedOption.name]) {
+            const recipe = currentItem.base_recipe[clickedOption.name];
+            // recipe looks like: { "group_name_or_id": "option_name_or_id" }
+            // Let's iterate and apply
+            for (const [targetGroupId, targetOptionId] of Object.entries(recipe)) {
+                if (currentMods[targetGroupId]) {
+                    currentMods[targetGroupId] = [targetOptionId];
                 }
             }
-        });
+        }
+        
+        // Update UI for ALL groups (in case base recipe changed other groups)
+        for (const gId in currentMods) {
+            const options = modOptions.filter(o => o.group_id === gId);
+            options.forEach(opt => {
+                const btn = document.getElementById(`mod-btn-${opt.id}`);
+                if (btn) {
+                    if (currentMods[gId].includes(opt.id)) {
+                        btn.className = "mod-btn selected border-2 border-blue-500 bg-blue-50 p-4 rounded-xl font-bold hover:bg-gray-50 text-sm";
+                    } else {
+                        btn.className = "mod-btn border border-gray-200 p-4 rounded-xl font-bold hover:bg-gray-50 text-sm";
+                    }
+                }
+            });
+        }
         
         updateDynamicModPrice();
     }
