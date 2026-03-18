@@ -29,8 +29,9 @@ export default async function handler(req, res) {
     }
 
     if (action === 'menu_update' && (req.method === 'PATCH' || req.method === 'PUT')) {
-        const { id, price, available, image_url, name, category, modifier_groups } = req.body;
+        const { id, price, available, image_url, name, category, modifier_groups, base_recipe } = req.body;
         const updateData = { price, available, image_url };
+        if (base_recipe !== undefined) updateData.base_recipe = base_recipe;
         if (name) updateData.name = name;
         if (category) updateData.category = category;
         

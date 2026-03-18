@@ -832,7 +832,7 @@ app.post('/api/orders', async (req, res) => {
             const { data: ingredients } = await supabase
                 .from('menu_item_ingredients')
                 .select('*')
-                .eq('menu_item_id', item.id);
+                .eq('item_id', item.id);
             
             for (const ing of (ingredients || [])) {
                 const amountToDeduct = ing.quantity * (item.quantity || 1);
@@ -1941,8 +1941,8 @@ app.get('/api/admin/menu/:id/modifiers', requireAdmin, async (req, res) => {
     const client = req.supabase || supabase;
     const { data, error } = await client
         .from('item_modifier_groups')
-        .select('modifier_group_id')
-        .eq('menu_item_id', req.params.id);
+        .select('group_id')
+        .eq('item_id', req.params.id);
         
     if (error) return res.status(500).json({ error: error.message });
     res.json({ itemModGroups: data || [] });
@@ -1951,15 +1951,15 @@ app.get('/api/admin/menu/:id/modifiers', requireAdmin, async (req, res) => {
 app.post('/api/admin/menu/:id/modifiers', requireAdmin, async (req, res) => {
     const client = req.supabase || supabase;
     const { group_ids } = req.body; 
-    const menu_item_id = req.params.id;
+    const item_id = req.params.id;
 
-    const { error: delError } = await client.from('item_modifier_groups').delete().eq('menu_item_id', menu_item_id);
+    const { error: delError } = await client.from('item_modifier_groups').delete().eq('item_id', item_id);
     if (delError) return res.status(500).json({ error: delError.message });
 
     if (group_ids && group_ids.length > 0) {
         const inserts = group_ids.map(gid => ({
-            menu_item_id,
-            modifier_group_id: gid
+            item_id,
+            group_id: gid
         }));
         const { error: insError } = await client.from('item_modifier_groups').insert(inserts);
         if (insError) return res.status(500).json({ error: insError.message });
@@ -2040,15 +2040,15 @@ app.get('/api/admin/margins', requireAdmin, async (req, res) => {
     // 2. Fetch all ingredients with inventory costs
     const { data: allIngredients, error: ingError } = await client
         .from('menu_item_ingredients')
-        .select('menu_item_id, quantity, inventory(cost_per_unit)');
+        .select('item_id, quantity, inventory(cost_per_unit)');
 
     if (ingError) return res.status(500).json({ error: ingError.message });
 
     // 3. Map ingredients to items
     const ingredientsMap = {};
     allIngredients.forEach(ing => {
-        if (!ingredientsMap[ing.menu_item_id]) ingredientsMap[ing.menu_item_id] = [];
-        ingredientsMap[ing.menu_item_id].push(ing);
+        if (!ingredientsMap[ing.item_id]) ingredientsMap[ing.item_id] = [];
+        ingredientsMap[ing.item_id].push(ing);
     });
 
     // 4. Calculate Margins
@@ -2088,7 +2088,7 @@ app.get('/api/admin/menu/:id/ingredients', requireAdmin, async (req, res) => {
     const { data } = await client
         .from('menu_item_ingredients')
         .select('*, inventory(name, unit)')
-        .eq('menu_item_id', req.params.id);
+        .eq('item_id', req.params.id);
     res.json({ ingredients: data || [] });
 });
 
@@ -2099,7 +2099,7 @@ app.post('/api/admin/menu/:id/ingredients', requireAdmin, async (req, res) => {
     const { data, error } = await client
         .from('menu_item_ingredients')
         .insert({
-            menu_item_id: req.params.id,
+            item_id: req.params.id,
             inventory_item_id,
             quantity,
             unit
