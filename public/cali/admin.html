@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cali Distro Admin</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        serif: ['Playfair Display', 'serif'],
+                    },
+                    colors: {
+                        brand: {
+                            dark: '#1e1b18',
+                            brown: '#8b5a2b',
+                            cream: '#fdfbf7',
+                            gold: '#d4af37'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-gray-50 text-gray-800 antialiased">
+    <div class="max-w-6xl mx-auto p-6">
+        <header class="flex justify-between items-center mb-8">
+            <div>
+                <h1 class="text-3xl font-serif font-bold text-brand-dark">Cali Distro HQ</h1>
+                <p class="text-gray-500 text-sm">Manage products, drops, and orders for California.</p>
+            </div>
+            <div class="bg-white px-4 py-2 rounded-lg shadow-sm border border-gray-200">
+                <span class="text-xs font-bold text-gray-400 uppercase tracking-wider block">Status</span>
+                <div class="flex items-center gap-2">
+                    <div class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
+                    <span class="text-sm font-semibold">Live / Taking Orders</span>
+                </div>
+            </div>
+        </header>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <!-- Left Column: Products -->
+            <div class="lg:col-span-2 space-y-8">
+                <!-- Products Panel -->
+                <div class="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
+                    <div class="flex justify-between items-center mb-6">
+                        <h2 class="text-xl font-bold font-serif">Products & Packages</h2>
+                        <button class="text-brand-brown hover:text-brand-dark text-sm font-semibold"><i class="fas fa-plus"></i> Add Product</button>
+                    </div>
+
+                    <div class="space-y-4" id="products-list">
+                        <!-- Product Item -->
+                        <div class="flex items-center justify-between p-4 border border-gray-100 rounded-xl hover:shadow-md transition">
+                            <div class="flex items-center gap-4">
+                                <div class="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center text-xl">☕</div>
+                                <div>
+                                    <h3 class="font-bold">The Morning Brew 4-Pack (Vanilla)</h3>
+                                    <p class="text-sm text-gray-500">Inventory: <span class="text-green-600 font-bold">Unlimited</span></p>
+                                </div>
+                            </div>
+                            <div class="flex items-center gap-4">
+                                <span class="font-bold font-mono">$24.00</span>
+                                <button class="text-gray-400 hover:text-brand-brown"><i class="fas fa-edit"></i></button>
+                            </div>
+                        </div>
+
+                        <!-- Product Item -->
+                        <div class="flex items-center justify-between p-4 border border-gray-100 rounded-xl hover:shadow-md transition">
+                            <div class="flex items-center gap-4">
+                                <div class="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center text-xl">🥛</div>
+                                <div>
+                                    <h3 class="font-bold">Oat Caramel 4-Pack (Dairy-Free)</h3>
+                                    <p class="text-sm text-gray-500">Inventory: <span class="text-brand-brown font-bold">12 left</span></p>
+                                </div>
+                            </div>
+                            <div class="flex items-center gap-4">
+                                <span class="font-bold font-mono">$26.00</span>
+                                <button class="text-gray-400 hover:text-brand-brown"><i class="fas fa-edit"></i></button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Drop Locations Panel -->
+                <div class="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
+                    <div class="flex justify-between items-center mb-6">
+                        <h2 class="text-xl font-bold font-serif">Drop Locations (Distributors)</h2>
+                        <button class="text-brand-brown hover:text-brand-dark text-sm font-semibold"><i class="fas fa-plus"></i> Add Location</button>
+                    </div>
+
+                    <div class="grid sm:grid-cols-2 gap-4">
+                        <div class="p-4 border border-gray-100 rounded-xl">
+                            <div class="flex justify-between items-start mb-2">
+                                <h3 class="font-bold">Kaiser Permanente</h3>
+                                <span class="bg-green-100 text-green-700 text-xs px-2 py-1 rounded-full font-bold">Active</span>
+                            </div>
+                            <p class="text-sm text-gray-500 mb-2">Anaheim, CA</p>
+                            <p class="text-xs font-semibold text-brand-brown">Distributor: Sister 1</p>
+                        </div>
+                        <div class="p-4 border border-gray-100 rounded-xl">
+                            <div class="flex justify-between items-start mb-2">
+                                <h3 class="font-bold">US Bank</h3>
+                                <span class="bg-green-100 text-green-700 text-xs px-2 py-1 rounded-full font-bold">Active</span>
+                            </div>
+                            <p class="text-sm text-gray-500 mb-2">Irvine, CA</p>
+                            <p class="text-xs font-semibold text-brand-brown">Distributor: Sister 2</p>
+                        </div>
+                        <div class="p-4 border border-gray-100 rounded-xl">
+                            <div class="flex justify-between items-start mb-2">
+                                <h3 class="font-bold">Choc Hospital</h3>
+                                <span class="bg-yellow-100 text-yellow-700 text-xs px-2 py-1 rounded-full font-bold">Paused</span>
+                            </div>
+                            <p class="text-sm text-gray-500 mb-2">Orange, CA</p>
+                            <p class="text-xs font-semibold text-brand-brown">Distributor: Sister 3</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Column: Orders & Stats -->
+            <div class="space-y-8">
+                <!-- Stats -->
+                <div class="bg-brand-dark text-white rounded-2xl shadow-xl p-6 relative overflow-hidden">
+                    <div class="absolute top-0 right-0 -mt-8 -mr-8 w-32 h-32 bg-brand-gold rounded-full opacity-20 blur-2xl"></div>
+                    <h2 class="text-lg font-serif font-bold mb-4 opacity-90">Next Drop (Monday)</h2>
+                    <div class="text-4xl font-bold mb-1">$0.00</div>
+                    <p class="text-sm text-gray-400 mb-6">0 Pre-orders collected</p>
+                    
+                    <button class="w-full bg-white/10 hover:bg-white/20 border border-white/20 py-2 rounded-lg text-sm font-semibold transition">
+                        Pause Orders (Cutoff)
+                    </button>
+                </div>
+
+                <!-- Recent Orders -->
+                <div class="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
+                    <h2 class="text-xl font-bold font-serif mb-4">Recent Orders</h2>
+                    <div class="text-center py-8 text-gray-400">
+                        <i class="fas fa-receipt text-3xl mb-2 opacity-50"></i>
+                        <p class="text-sm">No orders yet for this cycle.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // Note: For now this is a UI mockup to show layout.
+        // It will be wired to a dedicated "Cali" table in Supabase.
+    </script>
+</body>
+</html>

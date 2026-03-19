@@ -192,6 +192,10 @@
       "dest": "/public/cali/index.html"
     },
     {
+      "src": "/cali/admin",
+      "dest": "/public/cali/admin.html"
+    },
+    {
       "src": "/(.*)",
       "dest": "/public/$1"
     }
