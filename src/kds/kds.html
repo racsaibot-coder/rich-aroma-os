@@ -337,7 +337,11 @@
                     </div>
                     ${order.notes ? `<div style="padding:0.5rem 1rem; color:#fbbf24; font-weight:600; font-size:0.9rem; border-top:1px dashed rgba(255,255,255,0.1)">📝 ${order.notes}</div>` : ''}
                     ${driverSection}
-                    <button class="bump-btn" onclick="bumpOrder('${order.id}')">✓ BUMP</button>
+                    
+                    ${order.status === 'preparing' 
+                        ? `<button class="bump-btn" onclick="bumpOrder('${order.id}')">✓ BUMP (DONE)</button>`
+                        : `<button class="bump-btn" style="background: #3b82f6;" onclick="markPreparing('${order.id}')">▶ START</button>`
+                    }
                 </div>`;
             }).join('');
         }
