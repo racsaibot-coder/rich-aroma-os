@@ -259,7 +259,7 @@
                 
                 const newOrders = (data.orders || []).filter(o => 
                     o.status === 'pending' || 
-                    o.status === 'paid' || 
+                    o.status === 'paid' || o.status === 'preparing' || 
                     o.status === 'partial_paid'
                 );
 
@@ -342,6 +342,24 @@
             }).join('');
         }
 
+        
+        async function markPreparing(orderId) {
+            // Optimistic update
+            const o = activeOrders.find(x => x.id === orderId);
+            if (o) o.status = 'preparing';
+            render();
+            
+            try {
+                await fetch(`/api/orders/${orderId}`, {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ status: 'preparing' })
+                });
+            } catch(e) {
+                console.error(e);
+            }
+        }
+        
         async function bumpOrder(orderId) {
             await fetch(`/api/orders/${orderId}`, {
                 method: 'PATCH',
