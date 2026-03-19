@@ -224,9 +224,15 @@
                         ${order.notes ? `<div class="mt-2 text-xs bg-red-500/20 text-red-200 p-2 rounded border border-red-500/30 font-bold"><i class="fas fa-exclamation-circle"></i> NOTA: ${order.notes}</div>` : ''}
                     </div>
 
-                    <button onclick="completeOrder('${order.id}')" class="w-full py-3 bg-white/10 hover:bg-green-600 hover:text-white text-white/60 font-bold rounded-lg transition-all mt-2 active:scale-95">
+                    ${(order.status === 'pending' || order.status === 'paid') ? `
+                    <button onclick="startOrder('${order.id}')" class="w-full py-3 bg-blue-500/20 hover:bg-blue-600 border border-blue-500/50 hover:text-white text-blue-200 font-bold rounded-lg transition-all mt-2 active:scale-95">
+                        PREPARAR ▶
+                    </button>
+                    ` : `
+                    <button onclick="completeOrder('${order.id}')" class="w-full py-3 bg-green-500/20 hover:bg-green-600 border border-green-500/50 hover:text-white text-green-200 font-bold rounded-lg transition-all mt-2 active:scale-95">
                         LISTO ✓
                     </button>
+                    `}
                 `;
                 grid.appendChild(card);
             });
@@ -244,7 +250,7 @@
             // Completed (Recently) = Ready
             
             orders.forEach(order => {
-                if(order.status === 'pending' || order.status === 'paid') {
+                if(order.status === 'pending' || order.status === 'paid' || order.status === 'preparing') {
                     // Preparing
                     colPrep.innerHTML += `
                         <div class="text-4xl text-white/50 font-bold font-mono py-2 border-b border-white/5">
@@ -264,6 +270,22 @@
                         `;
                     }
                 }
+            });
+        }
+
+        async function startOrder(id) {
+            const order = orders.find(o => o.id === id);
+            if (!order) return;
+
+            // Optimistic UI
+            order.status = 'preparing';
+            render();
+            
+            // API Call
+            await fetch(`/api/orders/${id}`, {
+                method: 'PATCH',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ status: 'preparing' })
             });
         }
 
