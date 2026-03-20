@@ -167,6 +167,38 @@
 
     </div>
 
+    <!-- CUSTOM ITEM MODAL -->
+    <div id="custom-item-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div class="bg-white w-1/3 rounded-2xl shadow-2xl flex flex-col overflow-hidden">
+            <div class="p-6 border-b border-gray-200 flex justify-between items-center bg-gray-50">
+                <h2 class="text-xl font-bold">Add Custom Item</h2>
+                <button onclick="closeCustomItemModal()" class="text-gray-400 hover:text-red-500 text-3xl">&times;</button>
+            </div>
+            <div class="p-6 space-y-4">
+                <div>
+                    <label class="block text-sm font-bold text-gray-700 mb-1">Item Name</label>
+                    <input type="text" id="custom-item-name" placeholder="e.g. Special Pastry" class="w-full p-3 border border-gray-300 rounded-lg text-lg">
+                </div>
+                <div>
+                    <label class="block text-sm font-bold text-gray-700 mb-1">Price (Lempiras)</label>
+                    <input type="number" id="custom-item-price" placeholder="0.00" class="w-full p-3 border border-gray-300 rounded-lg text-lg">
+                </div>
+                <div>
+                    <label class="block text-sm font-bold text-gray-700 mb-1">Kitchen Category</label>
+                    <select id="custom-item-category" class="w-full p-3 border border-gray-300 rounded-lg text-lg">
+                        <option value="food">Comida (Kitchen)</option>
+                        <option value="coffee">Bebida (Barista)</option>
+                    </select>
+                </div>
+            </div>
+            <div class="p-6 border-t border-gray-200 bg-gray-50">
+                <button onclick="addCustomItemToCart()" class="w-full bg-purple-600 text-white py-3 rounded-xl font-bold text-lg shadow hover:bg-purple-700">
+                    Add to Order
+                </button>
+            </div>
+        </div>
+    </div>
+
     <!-- MODIFIER MODAL (Hidden by default) -->
     <div id="modifier-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
         <div class="bg-white w-2/3 h-3/4 rounded-2xl shadow-2xl flex flex-col overflow-hidden">
@@ -266,11 +298,12 @@
         <!-- Smart Upsell Banner Removed -->
 
         <!-- Category Toggles -->
-        <div class="px-4 pt-4 pb-2 grid grid-cols-4 gap-3 w-full">
+        <div class="px-4 pt-4 pb-2 grid grid-cols-5 gap-3 w-full">
             <button onclick="filterCategory('all', this)" class="cat-btn bg-gray-800 text-gold px-2 py-3 rounded-xl font-bold shadow-lg hover:bg-gray-900 transition text-md tracking-wide border-2 border-gray-800 w-full text-center">Todos</button>
             <button onclick="filterCategory('coffee', this)" class="cat-btn bg-gray-100 text-gray-700 px-2 py-3 rounded-xl font-bold shadow hover:bg-gray-200 border-2 border-gray-200 transition text-md tracking-wide w-full text-center">Café</button>
             <button onclick="filterCategory('drinks', this)" class="cat-btn bg-gray-100 text-gray-700 px-2 py-3 rounded-xl font-bold shadow hover:bg-gray-200 border-2 border-gray-200 transition text-md tracking-wide w-full text-center">Bebidas</button>
             <button onclick="filterCategory('food', this)" class="cat-btn bg-gray-100 text-gray-700 px-2 py-3 rounded-xl font-bold shadow hover:bg-gray-200 border-2 border-gray-200 transition text-md tracking-wide w-full text-center">Comida</button>
+            <button onclick="openCustomItemModal()" class="bg-purple-100 text-purple-700 px-2 py-3 rounded-xl font-bold shadow hover:bg-purple-200 border-2 border-purple-200 transition text-md tracking-wide w-full text-center"><i class="fas fa-plus"></i> Custom</button>
         </div>
 
         <!-- Menu Grid -->
@@ -897,6 +930,41 @@
         };
         addToCart(finalItem);
         closeModal();
+    }
+
+    // --- CUSTOM ITEM LOGIC ---
+    function openCustomItemModal() {
+        document.getElementById('custom-item-name').value = '';
+        document.getElementById('custom-item-price').value = '';
+        document.getElementById('custom-item-modal').classList.remove('hidden');
+        setTimeout(() => document.getElementById('custom-item-name').focus(), 100);
+    }
+
+    function closeCustomItemModal() {
+        document.getElementById('custom-item-modal').classList.add('hidden');
+    }
+
+    function addCustomItemToCart() {
+        const name = document.getElementById('custom-item-name').value.trim();
+        const price = parseFloat(document.getElementById('custom-item-price').value);
+        const cat = document.getElementById('custom-item-category').value;
+
+        if (!name || isNaN(price)) {
+            alert('Please enter a valid name and price.');
+            return;
+        }
+
+        const customItem = {
+            id: 'custom_' + Date.now(),
+            name: name + ' (Custom)',
+            price: price,
+            finalPrice: price,
+            category: cat,
+            mods: []
+        };
+
+        addToCart(customItem);
+        closeCustomItemModal();
     }
 
     // --- CART LOGIC ---
