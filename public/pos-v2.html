@@ -742,7 +742,32 @@
         // Reset mods
         currentMods = {};
         
-        // Build dynamic HTML
+        // 1. Initial defaults
+        relevantGroups.forEach(groupId => {
+            const options = modOptions.filter(o => o.group_id === groupId);
+            const defaultOpt = options.find(o => o.is_default);
+            currentMods[groupId] = defaultOpt ? [defaultOpt.id] : [];
+        });
+
+        // 2. Apply base recipe
+        if (currentItem.base_recipe) {
+            for (const groupId in currentMods) {
+                if (currentMods[groupId].length > 0) {
+                    const selectedOptId = currentMods[groupId][0];
+                    const selectedOpt = modOptions.find(o => o.id === selectedOptId);
+                    if (selectedOpt && currentItem.base_recipe[selectedOpt.name]) {
+                        const recipe = currentItem.base_recipe[selectedOpt.name];
+                        for (const [targetGroupId, targetOptionId] of Object.entries(recipe)) {
+                            if (currentMods[targetGroupId]) {
+                                currentMods[targetGroupId] = [targetOptionId];
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        // 3. Build dynamic HTML
         const container = document.getElementById('mod-dynamic-container');
         let html = '';
 
@@ -751,14 +776,6 @@
             if (!group) return;
             const options = modOptions.filter(o => o.group_id === groupId);
             
-            // Set defaults
-            const defaultOpt = options.find(o => o.is_default);
-            if (defaultOpt) {
-                currentMods[groupId] = [defaultOpt.id];
-            } else {
-                currentMods[groupId] = [];
-            }
-
             html += `
                 <div>
                     <h3 class="font-bold text-gray-500 uppercase text-sm mb-3">${group.name}</h3>

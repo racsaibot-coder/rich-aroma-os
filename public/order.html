@@ -50,8 +50,13 @@
             <h1 class="font-display text-xl text-gold font-bold tracking-wide">RICH AROMA</h1>
             <p class="text-xs text-white/50 tracking-widest uppercase">Quimistán, HN</p>
         </div>
-        <div class="w-10 h-10 rounded-full bg-gold/10 flex items-center justify-center cursor-pointer" onclick="showTrackingIfActive()">
-            <i class="fas fa-receipt text-gold" id="header-icon"></i>
+        <div class="flex items-center gap-3">
+            <a href="dashboard.html" id="dashboard-link" class="hidden w-10 h-10 rounded-full bg-gold/10 flex items-center justify-center cursor-pointer">
+                <i class="fas fa-user text-gold"></i>
+            </a>
+            <div class="w-10 h-10 rounded-full bg-gold/10 flex items-center justify-center cursor-pointer" onclick="showTrackingIfActive()">
+                <i class="fas fa-receipt text-gold" id="header-icon"></i>
+            </div>
         </div>
     </header>
 
@@ -371,6 +376,33 @@
             }
 
             currentMods = {};
+            
+            // 1. Initial defaults
+            relevantGroups.forEach(groupId => {
+                const options = modOptions.filter(o => o.group_id === groupId);
+                const defaultOpt = options.find(o => o.is_default);
+                currentMods[groupId] = defaultOpt ? [defaultOpt.id] : [];
+            });
+
+            // 2. Apply base recipe
+            if (currentItem.base_recipe) {
+                for (const groupId in currentMods) {
+                    if (currentMods[groupId].length > 0) {
+                        const selectedOptId = currentMods[groupId][0];
+                        const selectedOpt = modOptions.find(o => o.id === selectedOptId);
+                        if (selectedOpt && currentItem.base_recipe[selectedOpt.name]) {
+                            const recipe = currentItem.base_recipe[selectedOpt.name];
+                            for (const [targetGroupId, targetOptionId] of Object.entries(recipe)) {
+                                if (currentMods[targetGroupId]) {
+                                    currentMods[targetGroupId] = [targetOptionId];
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            // 3. Build dynamic HTML
             const container = document.getElementById('mod-dynamic-container');
             let html = '';
 
@@ -378,8 +410,6 @@
                 const group = modGroups.find(g => g.id === groupId);
                 if (!group) return;
                 const options = modOptions.filter(o => o.group_id === groupId);
-                const defaultOpt = options.find(o => o.is_default);
-                currentMods[groupId] = defaultOpt ? [defaultOpt.id] : [];
 
                 html += `<div class="mb-6"><h3 class="text-white/60 uppercase text-xs tracking-widest font-bold mb-3">${group.name}</h3><div class="grid grid-cols-2 gap-3">`;
                 options.forEach(opt => {
