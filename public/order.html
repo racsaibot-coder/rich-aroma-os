@@ -209,10 +209,17 @@
                     <a href="join.html" class="inline-block bg-gold text-dark font-bold py-2 px-6 rounded-xl text-sm shadow hover:brightness-110 transition">Crear Cuenta</a>
                 </div>
 
-                <!-- Guest Name (if no user) -->
-                <div id="guest-name-section" class="mb-6 hidden">
-                    <label class="text-white/60 uppercase text-xs tracking-widest font-bold mb-2 block">Tu Nombre (Para la Orden)</label>
-                    <input type="text" id="guest-name" placeholder="Ej. Juan Pérez" class="w-full p-4 bg-white/5 border border-white/10 text-white rounded-2xl text-sm focus:outline-none focus:border-gold placeholder:text-white/30 transition-colors">
+                <!-- Guest Info (if no user) -->
+                <div id="guest-name-section" class="mb-6 hidden space-y-4">
+                    <p class="text-xs text-gold/80 italic mb-2">Para órdenes mayores a L. 250 requerimos tu nombre y teléfono (esto creará tu cuenta automáticamente).</p>
+                    <div>
+                        <label class="text-white/60 uppercase text-xs tracking-widest font-bold mb-2 block">Tu Nombre</label>
+                        <input type="text" id="guest-name" placeholder="Ej. Juan Pérez" class="w-full p-4 bg-white/5 border border-white/10 text-white rounded-2xl text-sm focus:outline-none focus:border-gold placeholder:text-white/30 transition-colors">
+                    </div>
+                    <div>
+                        <label class="text-white/60 uppercase text-xs tracking-widest font-bold mb-2 block">Teléfono / WhatsApp</label>
+                        <input type="tel" id="guest-phone" placeholder="Ej. 9999-9999" class="w-full p-4 bg-white/5 border border-white/10 text-white rounded-2xl text-sm focus:outline-none focus:border-gold placeholder:text-white/30 transition-colors">
+                    </div>
                 </div>
 
                 <!-- Special Instructions -->
@@ -668,16 +675,43 @@
             const totalTest = subtotalTest * 1.15;
             
             if (!currentCustomer) {
-                if (totalTest > 250) {
-                    alert("Para ordenes mayores a L. 250, por favor crea una cuenta o contacta al restaurante directamente.");
-                    return;
-                }
                 const guestName = document.getElementById('guest-name').value.trim();
-                if (!guestName) {
-                    alert("Por favor, ingresa tu nombre en el campo de arriba para procesar la orden.");
-                    return;
+                const guestPhone = document.getElementById('guest-phone').value.trim();
+                
+                if (totalTest > 250) {
+                    if (!guestName || !guestPhone) {
+                        alert("Para órdenes mayores a L. 250, requerimos tu nombre y número de teléfono.");
+                        return;
+                    }
+                    
+                    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Creando cuenta...';
+                    btn.disabled = true;
+                    
+                    try {
+                        const cres = await fetch('/api/customers', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ name: guestName, phone: guestPhone, email: '' })
+                        });
+                        if (cres.ok) {
+                            currentCustomer = await cres.json();
+                            // Save to local storage so they remain logged in
+                            localStorage.setItem('ricocash_token', JSON.stringify({
+                                customer_id: currentCustomer.id,
+                                token: 'dummy_token_for_now'
+                            }));
+                        }
+                    } catch (e) {
+                        console.error('Error creating customer on the fly', e);
+                    }
+                } else {
+                    if (!guestName) {
+                        alert("Por favor, ingresa tu nombre en el campo de arriba para procesar la orden.");
+                        return;
+                    }
                 }
-                orderNotes = `[GUEST: ${guestName}] ${orderNotes}`;
+                
+                orderNotes = `[GUEST: ${guestName} | PHONE: ${guestPhone || 'N/A'}] ${orderNotes}`;
             }
 
             btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Procesando...';

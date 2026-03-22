@@ -165,7 +165,44 @@
         </div>
     </div>
     
-    <!-- CREATE MENU ITEM MODAL -->
+    <!-- EDIT MENU ITEM MODAL -->
+    <div id="edit-menu-item-modal" class="hidden fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50">
+        <div class="bg-white w-full max-w-sm rounded-2xl shadow-2xl p-6">
+            <h2 class="text-2xl font-bold mb-4">Edit Menu Item</h2>
+            <input type="hidden" id="edit-item-id">
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Name</label>
+                    <input type="text" id="edit-item-name" class="w-full border rounded-lg p-3 outline-none focus:border-green-500">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Category</label>
+                    <select id="edit-item-category" class="w-full border rounded-lg p-3 outline-none focus:border-green-500">
+                        <option value="coffee">Coffee</option>
+                        <option value="drinks">Drinks</option>
+                        <option value="food">Food</option>
+                        <option value="merch">Merch</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Price (Lps)</label>
+                    <input type="number" id="edit-item-price" class="w-full border rounded-lg p-3 outline-none focus:border-green-500">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Description</label>
+                    <input type="text" id="edit-item-desc" class="w-full border rounded-lg p-3 outline-none focus:border-green-500">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Image URL</label>
+                    <input type="text" id="edit-item-image" class="w-full border rounded-lg p-3 outline-none focus:border-green-500">
+                </div>
+            </div>
+            <div class="flex gap-3 mt-6">
+                <button onclick="document.getElementById('edit-menu-item-modal').classList.add('hidden')" class="w-1/2 bg-gray-200 text-gray-800 py-3 rounded-lg font-bold hover:bg-gray-300">Cancel</button>
+                <button onclick="updateMenuItem()" id="update-menu-item-btn" class="w-1/2 bg-blue-600 text-white py-3 rounded-lg font-bold hover:bg-blue-700">Save</button>
+            </div>
+        </div>
+    </div>
     <div id="create-menu-item-modal" class="hidden fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50">
         <div class="bg-white w-full max-w-sm rounded-2xl shadow-2xl p-6">
             <h2 class="text-2xl font-bold mb-4">New Menu Item</h2>
@@ -598,6 +635,9 @@
                         <td class="p-4 text-gray-600 capitalize">${escapeHtml(item.category)}</td>
                         <td class="p-4 text-gray-600 font-mono">L ${parseFloat(item.price).toFixed(2)}</td>
                         <td class="p-4 text-center">
+                            <button onclick="openEditItemModal('${item.id}', '${escapeHtml(item.name).replace(/'/g, "\\'")}', '${escapeHtml(item.category)}', ${item.price}, '${escapeHtml(item.description || '').replace(/'/g, "\\'")}', '${escapeHtml(item.image_url || '').replace(/'/g, "\\'")}')" class="text-blue-600 hover:text-blue-800 text-sm font-bold"><i class="fas fa-edit"></i> Edit</button>
+                        </td>
+                        <td class="p-4 text-center">
             <button onclick="openBaseRecipeModal('${item.id}', '${escapeHtml(item.name).replace(/'/g, "\\'")}')" class="text-green-600 hover:text-green-800 text-sm font-bold"><i class="fas fa-blender"></i> Base</button>
         </td>
         <td class="p-4 text-right">
@@ -608,6 +648,47 @@
                 });
             } catch(e) {
                 console.error(e);
+            }
+        }
+
+        function openEditItemModal(id, name, category, price, desc, img) {
+            document.getElementById('edit-item-id').value = id;
+            document.getElementById('edit-item-name').value = name;
+            document.getElementById('edit-item-category').value = category;
+            document.getElementById('edit-item-price').value = price;
+            document.getElementById('edit-item-desc').value = desc;
+            document.getElementById('edit-item-image').value = img;
+            document.getElementById('edit-menu-item-modal').classList.remove('hidden');
+        }
+
+        async function updateMenuItem() {
+            const id = document.getElementById('edit-item-id').value;
+            const btn = document.getElementById('update-menu-item-btn');
+            const data = {
+                name: document.getElementById('edit-item-name').value,
+                category: document.getElementById('edit-item-category').value,
+                price: parseFloat(document.getElementById('edit-item-price').value),
+                description: document.getElementById('edit-item-desc').value,
+                image_url: document.getElementById('edit-item-image').value
+            };
+
+            btn.disabled = true; btn.innerText = 'Saving...';
+            try {
+                const res = await fetch(`/api/admin/menu/${id}`, {
+                    method: 'PUT',
+                    headers,
+                    body: JSON.stringify(data)
+                });
+                if(res.ok) {
+                    document.getElementById('edit-menu-item-modal').classList.add('hidden');
+                    loadMenu();
+                } else {
+                    alert("Error updating item");
+                }
+            } catch(e) {
+                console.error(e);
+            } finally {
+                btn.disabled = false; btn.innerText = 'Save';
             }
         }
 
