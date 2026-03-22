@@ -194,7 +194,13 @@
                 </div>
                 <div>
                     <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Image URL</label>
-                    <input type="text" id="edit-item-image" class="w-full border rounded-lg p-3 outline-none focus:border-green-500">
+                    <div class="flex gap-2">
+                        <input type="text" id="edit-item-image" class="flex-1 border rounded-lg p-3 outline-none focus:border-green-500" placeholder="URL or leave blank">
+                        <input type="file" id="edit-item-image-file" accept="image/*" class="hidden" onchange="uploadImage(this)">
+                        <button type="button" onclick="document.getElementById('edit-item-image-file').click()" class="bg-blue-100 text-blue-700 px-4 rounded-lg font-bold hover:bg-blue-200 transition" id="upload-img-btn">
+                            <i class="fas fa-upload"></i>
+                        </button>
+                    </div>
                 </div>
             </div>
             <div class="flex gap-3 mt-6">
@@ -659,6 +665,40 @@
             document.getElementById('edit-item-desc').value = desc;
             document.getElementById('edit-item-image').value = img;
             document.getElementById('edit-menu-item-modal').classList.remove('hidden');
+        }
+
+        async function uploadImage(inputEl) {
+            const file = inputEl.files[0];
+            if (!file) return;
+
+            const btn = document.getElementById('upload-img-btn');
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+            btn.disabled = true;
+
+            const formData = new FormData();
+            formData.append('image', file);
+
+            try {
+                const res = await fetch('/api/admin/upload-image', {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` },
+                    body: formData
+                });
+                
+                if (res.ok) {
+                    const data = await res.json();
+                    document.getElementById('edit-item-image').value = data.url;
+                } else {
+                    alert('Error uploading image');
+                }
+            } catch(e) {
+                console.error(e);
+                alert('Upload failed');
+            } finally {
+                btn.innerHTML = '<i class="fas fa-upload"></i>';
+                btn.disabled = false;
+                inputEl.value = ''; // reset file input
+            }
         }
 
         async function updateMenuItem() {

@@ -2005,6 +2005,39 @@ app.post('/api/admin/menu', requireAdmin, async (req, res) => {
     res.json(data);
 });
 
+app.post('/api/admin/upload-image', requireAdmin, upload.single('image'), async (req, res) => {
+    if (!req.file) return res.status(400).json({ error: 'No image uploaded' });
+    
+    try {
+        const fileContent = fs.readFileSync(req.file.path);
+        const fileName = `${Date.now()}_${req.file.originalname.replace(/[^a-zA-Z0-9.]/g, '')}`;
+        
+        const { data, error } = await supabase.storage
+            .from('menu-images')
+            .upload(fileName, fileContent, {
+                contentType: req.file.mimetype,
+                upsert: true
+            });
+            
+        // Clean up temp file
+        fs.unlinkSync(req.file.path);
+        
+        if (error) throw error;
+        
+        const { data: { publicUrl } } = supabase.storage
+            .from('menu-images')
+            .getPublicUrl(fileName);
+            
+        res.json({ url: publicUrl });
+    } catch (e) {
+        console.error('Image upload failed:', e);
+        if (req.file && fs.existsSync(req.file.path)) {
+            fs.unlinkSync(req.file.path);
+        }
+        res.status(500).json({ error: 'Upload failed' });
+    }
+});
+
 app.put('/api/admin/menu/:id', requireAdmin, async (req, res) => {
     const client = req.supabase || supabase;
     const { modifier_groups, ...itemData } = req.body;
