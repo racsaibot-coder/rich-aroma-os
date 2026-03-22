@@ -224,7 +224,7 @@
             const title = document.getElementById('product-modal-title');
             const delBtn = document.getElementById('prod-del-btn');
             
-            if (id) {
+            if (id && typeof id === 'string') {
                 title.innerText = 'Edit Package';
                 delBtn.classList.remove('hidden');
                 
