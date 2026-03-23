@@ -856,7 +856,7 @@
                     if (selectedOpt && currentItem.base_recipe[selectedOpt.name]) {
                         const recipe = currentItem.base_recipe[selectedOpt.name];
                         for (const [targetGroupId, targetOptionId] of Object.entries(recipe)) {
-                            if (currentMods[targetGroupId]) {
+                            if (currentMods[targetGroupId] !== undefined || relevantGroups.includes(targetGroupId)) {
                                 currentMods[targetGroupId] = [targetOptionId];
                             }
                         }
@@ -935,7 +935,7 @@
             // recipe looks like: { "group_name_or_id": "option_name_or_id" }
             // Let's iterate and apply
             for (const [targetGroupId, targetOptionId] of Object.entries(recipe)) {
-                if (currentMods[targetGroupId]) {
+                if (currentMods[targetGroupId] !== undefined || relevantGroups.includes(targetGroupId)) {
                     currentMods[targetGroupId] = [targetOptionId];
                 }
             }
