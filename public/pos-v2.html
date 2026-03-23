@@ -1791,6 +1791,96 @@
         }
     });
 
+
+let pendingVerifications = [];
+async function fetchPendingVerifications() {
+    try {
+        const res = await fetch('/api/orders');
+        const data = await res.json();
+        pendingVerifications = data.orders.filter(o => o.status === 'pending_verification' && o.transfer_receipt_url);
+        
+        const alertBtn = document.getElementById('verifyPaymentAlert');
+        const countSpan = document.getElementById('verifyCount');
+        
+        if (pendingVerifications.length > 0) {
+            alertBtn.classList.remove('hidden');
+            countSpan.innerText = pendingVerifications.length;
+            // Also update modal if it's open
+            if (!document.getElementById('verifyModal').classList.contains('hidden')) {
+                renderVerifyModal();
+            }
+        } else {
+            alertBtn.classList.add('hidden');
+            if (!document.getElementById('verifyModal').classList.contains('hidden')) {
+                closeVerifyModal();
+            }
+        }
+    } catch(e) { console.error('Error fetching verifications', e); }
+}
+
+function openVerifyModal() {
+    document.getElementById('verifyModal').classList.remove('hidden');
+    renderVerifyModal();
+}
+
+function closeVerifyModal() {
+    document.getElementById('verifyModal').classList.add('hidden');
+}
+
+function renderVerifyModal() {
+    const container = document.getElementById('verifyContent');
+    if(pendingVerifications.length === 0) {
+        container.innerHTML = '<p>No hay transferencias pendientes de verificación.</p>';
+        return;
+    }
+    
+    // Show the first one in the queue
+    const order = pendingVerifications[0];
+    container.innerHTML = `
+        <div class="mb-4">
+            <h4 class="font-bold text-xl">Orden: ${order.id}</h4>
+            <p class="text-gray-500">Total a verificar: <span class="font-bold text-black">L ${order.total}</span></p>
+        </div>
+        <div class="border rounded-lg overflow-hidden mb-4 bg-gray-100 flex justify-center items-center" style="min-height: 300px;">
+            <img src="${order.transfer_receipt_url}" class="max-w-full max-h-[50vh] object-contain" alt="Recibo">
+        </div>
+        <div class="flex gap-4">
+            <button onclick="approveTransfer('${order.id}')" class="flex-1 bg-green-500 text-white font-bold py-4 rounded-xl hover:bg-green-600 text-lg">Aprobar (Pagado)</button>
+            <button onclick="rejectTransfer('${order.id}')" class="flex-1 bg-red-500 text-white font-bold py-4 rounded-xl hover:bg-red-600 text-lg">Rechazar (Falso)</button>
+        </div>
+        <p class="text-sm text-gray-400 mt-4">${pendingVerifications.length - 1} más en cola...</p>
+    `;
+}
+
+async function approveTransfer(orderId) {
+    try {
+        await fetch(`/api/orders/${orderId}`, {
+            method: 'PATCH',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ status: 'paid' })
+        });
+        alert('Pago aprobado.');
+        fetchPendingVerifications();
+    } catch(e) { console.error(e); }
+}
+
+async function rejectTransfer(orderId) {
+    if(!confirm('¿Estás seguro de que esta transferencia es inválida? Esto devolverá la orden a estado pendiente.')) return;
+    try {
+        await fetch(`/api/orders/${orderId}`, {
+            method: 'PATCH',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ status: 'pending', transfer_receipt_url: null })
+        });
+        alert('Pago rechazado. El cliente debe intentar de nuevo o pagar en caja.');
+        fetchPendingVerifications();
+    } catch(e) { console.error(e); }
+}
+
+// Poll every 10 seconds for new transfers
+setInterval(fetchPendingVerifications, 10000);
+fetchPendingVerifications();
+
 </script>
 
 <!-- Payment Verification Alert & Modal -->
