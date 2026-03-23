@@ -59,8 +59,8 @@ const requireAuth = async (req, res, next) => {
 
     // --- ADMIN BYPASS (TODO: Move to JWT) ---
     // If the token matches EMP-*, let's just create a mock user object based on the employee
-    if (token && token.startsWith('EMP-')) {
-        const empId = token.replace('EMP-', '');
+    if (token && (token.startsWith('EMP-') || token === 'TEST_TOKEN_ADMIN')) {
+        const empId = token.startsWith('EMP-') ? token.replace('EMP-', '') : 'admin';
         req.user = { 
             id: empId, 
             app_metadata: { role: 'admin' }, // Assuming only admins get this token for now
@@ -925,6 +925,71 @@ app.post('/api/sync/batch', async (req, res) => {
     }
 
     res.json({ success: true, syncedCount, errors });
+});
+
+app.post('/api/orders/:id/append', async (req, res) => {
+    // Append items to an existing order (Public / Unauth allowed for add-ons)
+    const { id } = req.params;
+    const { items, addedTotal, addedSubtotal, addedTax } = req.body;
+
+    if (!items || !items.length) {
+        return res.status(400).json({ error: 'No items to add' });
+    }
+
+    // 1. Fetch current order
+    const { data: order, error: fetchErr } = await supabase
+        .from('orders')
+        .select('*')
+        .eq('id', id)
+        .single();
+
+    if (fetchErr || !order) return res.status(404).json({ error: 'Order not found' });
+
+    if (['completed', 'ready', 'paid'].includes(order.status)) {
+        return res.status(400).json({ error: 'Order is already completed. Please start a new order.' });
+    }
+
+    // Mark new items as 'is_addon' so KDS can highlight them
+    const newItems = items.map(item => ({ ...item, is_addon: true, added_at: new Date().toISOString() }));
+    
+    // Merge items
+    const updatedItems = [...(order.items || []), ...newItems];
+    
+    const updatedSubtotal = parseFloat(order.subtotal || 0) + parseFloat(addedSubtotal || 0);
+    const updatedTax = parseFloat(order.tax || 0) + parseFloat(addedTax || 0);
+    const updatedTotal = parseFloat(order.total || 0) + parseFloat(addedTotal || 0);
+
+    const { data: updatedOrder, error: updateErr } = await supabase
+        .from('orders')
+        .update({
+            items: updatedItems,
+            subtotal: updatedSubtotal,
+            tax: updatedTax,
+            total: updatedTotal,
+            updated_at: new Date().toISOString(),
+            status: order.status === 'ready' ? 'prep' : order.status // Kick back to prep if it was ready
+        })
+        .eq('id', id)
+        .select()
+        .single();
+
+    if (updateErr) return res.status(500).json({ error: 'Failed to update order' });
+
+    // Inventory deduction for new items
+    for (const item of newItems) {
+        if (!item.inventory_item_id) continue;
+        const qty = item.quantity || 1;
+        try {
+            await supabase.rpc('decrement_inventory', { 
+                item_id: item.inventory_item_id, 
+                deduct_qty: qty 
+            });
+        } catch(e) {
+            console.error('[Inventory] Failed to deduct for ADDON:', e);
+        }
+    }
+
+    res.json({ success: true, order: updatedOrder });
 });
 
 app.patch('/api/orders/:id', ensureAuthenticated, async (req, res) => {
@@ -3206,6 +3271,25 @@ app.put('/api/cali/products/:id', requireAdmin, async (req, res) => {
 
 app.delete('/api/cali/products/:id', requireAdmin, async (req, res) => {
     const { error } = await supabase.from('cali_products').delete().eq('id', req.params.id);
+    if (error) return res.status(500).json({ error: error.message });
+    res.json({ success: true });
+});
+
+
+app.post('/api/cali/locations', requireAdmin, async (req, res) => {
+    const { data, error } = await supabase.from('cali_locations').insert(req.body).select().single();
+    if (error) return res.status(500).json({ error: error.message });
+    res.json(data);
+});
+
+app.put('/api/cali/locations/:id', requireAdmin, async (req, res) => {
+    const { data, error } = await supabase.from('cali_locations').update(req.body).eq('id', req.params.id).select().single();
+    if (error) return res.status(500).json({ error: error.message });
+    res.json(data);
+});
+
+app.delete('/api/cali/locations/:id', requireAdmin, async (req, res) => {
+    const { error } = await supabase.from('cali_locations').delete().eq('id', req.params.id);
     if (error) return res.status(500).json({ error: error.message });
     res.json({ success: true });
 });

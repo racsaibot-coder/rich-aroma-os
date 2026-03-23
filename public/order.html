@@ -844,9 +844,14 @@
                         const currentOrder = data.orders.find(o => o.id === activeOrder.id);
                         if(currentOrder) {
                             if(currentOrder.status === 'preparing') setStep('prep');
-                            if(currentOrder.status === 'completed' || currentOrder.status === 'ready') {
+                            if(currentOrder.status === 'completed' || currentOrder.status === 'ready' || currentOrder.status === 'paid') {
                                 setStep('ready');
                                 clearInterval(statusPollingTimer); // Stop polling when done
+                                
+                                // Disable Add-ons and force new order when completed
+                                clearInterval(addonTimer);
+                                document.getElementById('addon-box').classList.add('hidden');
+                                document.getElementById('new-order-btn').classList.remove('hidden');
                             }
                         }
                     }
@@ -881,34 +886,34 @@
             isAddonMode = true;
             document.getElementById('tracking-view').classList.add('hidden');
             document.getElementById('main-view').classList.remove('hidden');
-            alert("Selecciona el artículo que deseas agregar a tu orden actual.");
         }
 
         async function submitAddon(cartItem) {
             try {
-                // Here we would ideally hit a PATCH endpoint to add to the existing order
-                // For MVP without backend changes, we create a new order and flag it in notes
+                if (!activeOrder || !activeOrder.id) {
+                    alert("No hay orden activa a la que agregar.");
+                    return;
+                }
                 const payload = {
                     items: [cartItem], 
-                    subtotal: cartItem.finalPrice, 
-                    tax: cartItem.finalPrice * 0.15, 
-                    discount: 0, 
-                    total: cartItem.finalPrice * 1.15,
-                    paymentMethod: 'cash',
-                    fulfillment: fulfillmentType,
-                    notes: `ADD-ON to Order #${activeOrder.order_number}`
+                    addedSubtotal: cartItem.finalPrice, 
+                    addedTax: cartItem.finalPrice * 0.15, 
+                    addedTotal: cartItem.finalPrice * 1.15
                 };
 
-                const res = await fetch('/api/orders', {
+                const res = await fetch(`/api/orders/${activeOrder.id}/append`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(payload)
                 });
                 
                 if (res.ok) {
-                    alert('¡Artículo agregado a tu orden exitosamente!');
+                    const data = await res.json();
+                    activeOrder = data.order; // update local active order
                     isAddonMode = false;
                     showTracking(); // go back
+                } else {
+                    alert("Error al agregar el artículo.");
                 }
             } catch(e) { console.error(e); }
         }
