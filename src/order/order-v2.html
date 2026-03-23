@@ -839,6 +839,34 @@
                 steps: [...(currentItem.modifiers || DEFAULT_MODIFIERS), UPSELL_ITEM]
             };
 
+            // Pre-fill defaults
+            wizardState.steps.forEach(step => {
+                if (step.type !== 'upsell' && step.options) {
+                    const defaultOpt = step.options.find(o => o.is_default);
+                    if (defaultOpt) {
+                        wizardState.selections[step.id] = defaultOpt.id;
+                    }
+                }
+            });
+
+            // Apply base recipe if a default option triggered it
+            if (currentItem.base_recipe) {
+                wizardState.steps.forEach(step => {
+                    if (step.type !== 'upsell' && wizardState.selections[step.id]) {
+                        const optId = wizardState.selections[step.id];
+                        const opt = step.options.find(o => o.id === optId);
+                        if (opt && currentItem.base_recipe[opt.name]) {
+                            const recipe = currentItem.base_recipe[opt.name];
+                            for (const [targetGroupId, targetOptionId] of Object.entries(recipe)) {
+                                if (wizardState.steps.some(s => s.id === targetGroupId)) {
+                                    wizardState.selections[targetGroupId] = targetOptionId;
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+
             // Setup UI
             document.getElementById('wizardProductName').textContent = currentItem.name;
             updateWizardUI();
@@ -931,8 +959,20 @@
 
         function selectOption(stepId, option) {
             wizardState.selections[stepId] = option.id;
-            
-            // Auto-advance if single selection
+
+        // Check if there is a base recipe logic applied for sizing
+        if (currentItem.base_recipe) {
+            if (currentItem.base_recipe[option.name]) {
+                const recipe = currentItem.base_recipe[option.name];
+                for (const [targetGroupId, targetOptionId] of Object.entries(recipe)) {
+                    if (wizardState.selections[targetGroupId] !== undefined || wizardState.steps.some(s => s.id === targetGroupId)) {
+                        wizardState.selections[targetGroupId] = targetOptionId;
+                    }
+                }
+            }
+        }
+
+        // Auto-advance if single selection
             const step = wizardState.steps[wizardState.step];
             if (step.type === 'single') {
                 // Small delay for visual feedback

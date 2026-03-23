@@ -155,6 +155,7 @@
             <!-- Quick Actions -->
             <div class="w-1/4 space-y-4">
                 <button onclick="showAdminTab('menu')" class="w-full bg-white p-6 rounded-xl shadow border-l-4 border-blue-500 text-left font-bold text-lg hover:bg-gray-50">Menu Manager</button>
+                <button onclick="showAdminTab('sales')" class="w-full bg-white p-6 rounded-xl shadow border-l-4 border-green-500 text-left font-bold text-lg hover:bg-gray-50">Sales Report</button>
                 <button onclick="showAdminTab('orders')" class="w-full bg-white p-6 rounded-xl shadow border-l-4 border-purple-500 text-left font-bold text-lg hover:bg-gray-50">Today's Orders</button>
             </div>
             <!-- Content Area -->
@@ -663,6 +664,70 @@
                     <i class="fas fa-info-circle"></i> Use the Supabase dashboard to edit items for now. GUI coming soon.
                 </div>
             `;
+        } else if (tab === 'sales') {
+            content.innerHTML = '<div class="text-center mt-10"><i class="fas fa-spinner fa-spin text-3xl text-gray-400"></i><p class="mt-4">Loading sales data...</p></div>';
+            try {
+                const res = await fetch('/api/orders');
+                const data = await res.json();
+                const orders = data.orders || [];
+                
+                const today = new Date().toDateString();
+                const todaysOrders = orders.filter(o => new Date(o.created_at).toDateString() === today && o.status !== 'cancelled');
+                
+                let totalSales = 0;
+                let cashSales = 0;
+                let cardSales = 0;
+                let itemCount = 0;
+                
+                todaysOrders.forEach(o => {
+                    const t = parseFloat(o.total) || 0;
+                    totalSales += t;
+                    if (o.payment_method === 'cash') cashSales += t;
+                    if (o.payment_method === 'card') cardSales += t;
+                    if (o.items) {
+                        o.items.forEach(i => itemCount += (i.quantity || i.qty || 1));
+                    }
+                });
+
+                content.innerHTML = `
+                    <h2 class="text-3xl font-bold mb-6 text-gray-800"><i class="fas fa-chart-line text-green-500 mr-3"></i> Today's Sales Dashboard</h2>
+                    
+                    <div class="grid grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                        <div class="bg-green-50 p-6 rounded-2xl border border-green-100">
+                            <p class="text-green-600 font-bold text-sm uppercase tracking-wider mb-1">Total Revenue</p>
+                            <p class="text-4xl font-black text-gray-900">L. ${totalSales.toFixed(2)}</p>
+                        </div>
+                        <div class="bg-blue-50 p-6 rounded-2xl border border-blue-100">
+                            <p class="text-blue-600 font-bold text-sm uppercase tracking-wider mb-1">Orders</p>
+                            <p class="text-4xl font-black text-gray-900">${todaysOrders.length}</p>
+                        </div>
+                        <div class="bg-orange-50 p-6 rounded-2xl border border-orange-100">
+                            <p class="text-orange-600 font-bold text-sm uppercase tracking-wider mb-1">Items Sold</p>
+                            <p class="text-4xl font-black text-gray-900">${itemCount}</p>
+                        </div>
+                        <div class="bg-purple-50 p-6 rounded-2xl border border-purple-100">
+                            <p class="text-purple-600 font-bold text-sm uppercase tracking-wider mb-1">Avg Order Val</p>
+                            <p class="text-4xl font-black text-gray-900">L. ${todaysOrders.length > 0 ? (totalSales / todaysOrders.length).toFixed(2) : '0.00'}</p>
+                        </div>
+                    </div>
+                    
+                    <div class="grid md:grid-cols-2 gap-8">
+                        <div class="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
+                            <h3 class="text-lg font-bold text-gray-800 mb-4 border-b pb-2">Tender Breakdown</h3>
+                            <div class="flex justify-between items-center mb-3">
+                                <span class="font-semibold text-gray-600"><i class="fas fa-money-bill-wave text-green-500 w-6"></i> Cash</span>
+                                <span class="font-bold text-lg">L. ${cashSales.toFixed(2)}</span>
+                            </div>
+                            <div class="flex justify-between items-center">
+                                <span class="font-semibold text-gray-600"><i class="fas fa-credit-card text-blue-500 w-6"></i> Card</span>
+                                <span class="font-bold text-lg">L. ${cardSales.toFixed(2)}</span>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            } catch(e) {
+                content.innerHTML = '<p class="text-red-500">Failed to load sales data.</p>';
+            }
         } else if (tab === 'orders') {
             content.innerHTML = '<div class="text-center mt-10"><i class="fas fa-spinner fa-spin text-3xl text-gray-400"></i></div>';
             try {
@@ -1009,8 +1074,8 @@
                 if (item.mods.milk && item.mods.milk.name !== 'Whole') modString += `• ${item.mods.milk.name} `;
                 if (item.mods.syrup && item.mods.syrup.name !== 'None') modString += `• ${item.mods.syrup.name} `;
                 if (item.mods.shots > 1) modString += `• ${item.mods.shots} shots `;
-                if (item.note) modString += `• 📝 "${item.note}"`;
             }
+            if (item.note) modString += `• 📝 "${item.note}"`;
 
             return `
             <div class="flex justify-between items-start mb-3 bg-gray-50 p-3 rounded">
@@ -1022,6 +1087,7 @@
                     ${modString ? `<div class="text-xs text-gray-500 mt-1 ml-6">${modString}</div>` : ''}
                 </div>
                 <div class="flex items-center gap-3">
+                    <button onclick="addCartItemNote(${index})" class="text-blue-500 hover:text-blue-700" title="Add Note"><i class="fas fa-edit"></i></button>
                     <span class="font-mono">L. ${item.finalPrice.toFixed(2)}</span>
                     <button onclick="removeFromCart(${index})" class="text-red-500 hover:text-red-700">✕</button>
                 </div>
@@ -1030,6 +1096,16 @@
 
         const total = cart.reduce((sum, item) => sum + item.finalPrice, 0);
         document.getElementById('cart-total').innerText = `L. ${total.toFixed(2)}`;
+    }
+
+    function addCartItemNote(index) {
+        const item = cart[index];
+        const note = prompt(`Añadir nota especial para ${item.name}:`, item.note || '');
+        if (note !== null) {
+            cart[index].note = note.trim();
+            saveCartState();
+            renderCart();
+        }
     }
 
     function removeFromCart(index) {
