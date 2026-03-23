@@ -99,6 +99,10 @@
         // State
         let currentMode = 'drinks'; // drinks | food | status
         let orders = [];
+        let previousPendingCount = 0; // Track for audio alerts
+
+        // Audio Alerts
+        const newOrderSound = new Audio('/assets/chime.mp3'); // We'll assume this exists or fails silently
         
         // Mock Data (Replace with API)
         const mockOrders = [
@@ -169,6 +173,20 @@
         // Store previously rendered order IDs to avoid full DOM redraws
         let renderedOrderIds = new Set();
 
+        
+        function isDrinkItem(name) {
+            name = (name || '').toLowerCase();
+            return name.includes('latte') || name.includes('brew') || name.includes('capp') || 
+                   name.includes('tea') || name.includes('icee') || name.includes('espresso') || 
+                   name.includes('mocha') || name.includes('matcha') || name.includes('frappe') || 
+                   name.includes('macchiato') || name.includes('jugo') || name.includes('licuado') || 
+                   name.includes('granita') || name.includes('smoothie');
+        }
+        
+        function isComboItem(name) {
+            return (name || '').toLowerCase().includes('combo');
+        }
+
         function renderKDS() {
             const grid = document.getElementById('kds-grid');
             grid.innerHTML = '';
@@ -184,11 +202,12 @@
             activeOrders.forEach(order => {
                 // Filter Items based on Mode
                 const relevantItems = (order.items || []).filter(item => {
-                    const name = (item.name || '').toLowerCase();
-                    const isDrink = name.includes('latte') || name.includes('brew') || name.includes('capp') || name.includes('tea') || name.includes('icee') || name.includes('espresso') || name.includes('mocha') || name.includes('matcha') || name.includes('frappe') || name.includes('macchiato');
+                    const name = item.name || '';
+                    const isDrink = isDrinkItem(name);
+                    const isCombo = isComboItem(name);
                     
-                    if(currentMode === 'drinks') return isDrink;
-                    if(currentMode === 'food') return !isDrink; // Everything else is food
+                    if(currentMode === 'drinks') return isDrink || isCombo;
+                    if(currentMode === 'food') return !isDrink || isCombo; // Combos show on both
                     return true;
                 });
 
@@ -215,9 +234,9 @@
                     
                     <div class="space-y-2 flex-1">
                         ${relevantItems.map(i => `
-                            <div class="flex justify-between items-center text-lg">
+                            <div class="flex justify-between items-center text-lg ${i.is_addon ? 'text-yellow-400 font-bold bg-yellow-500/10 p-1 rounded' : ''}">
                                 <span class="font-bold text-gold">${i.quantity || i.qty || 1}x</span>
-                                <span class="text-white/90 flex-1 ml-3">${i.name}</span>
+                                <span class="${i.is_addon ? 'text-yellow-400' : 'text-white/90'} flex-1 ml-3">${i.name} ${i.is_addon ? '<span class="text-xs bg-yellow-500 text-dark px-1 rounded ml-2">NUEVO ADD-ON</span>' : ''}</span>
                             </div>
                             ${i.mods && i.mods.length > 0 ? `<p class="text-xs text-white/40 ml-8">+ ${i.mods.map(m=>m.name).join(', ')}</p>` : ''}
                         `).join('')}
@@ -297,10 +316,9 @@
             let hasFood = false;
 
             (order.items || []).forEach(item => {
-                const name = (item.name || '').toLowerCase();
-                const isDrink = name.includes('latte') || name.includes('brew') || name.includes('capp') || name.includes('tea') || name.includes('icee') || name.includes('espresso') || name.includes('mocha') || name.includes('matcha') || name.includes('frappe') || name.includes('macchiato');
-                if (isDrink) hasDrinks = true;
-                else hasFood = true;
+                const name = item.name || '';
+                if (isDrinkItem(name) || isComboItem(name)) hasDrinks = true;
+                if (!isDrinkItem(name) || isComboItem(name)) hasFood = true;
             });
 
             let newStatus = 'completed';
