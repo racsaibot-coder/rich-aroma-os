@@ -152,7 +152,7 @@
         </div>
 
         <!-- Add on feature -->
-        <div class="bg-gold/10 border border-gold/30 rounded-3xl p-6 text-center" id="addon-box">
+        <div class="bg-gold/10 border border-gold/30 rounded-3xl p-6 text-center hidden" id="addon-box" style="display:none !important;">
             <h3 class="text-gold font-bold mb-2"><i class="fas fa-plus-circle"></i> ¿Olvidaste algo?</h3>
             <p class="text-white/60 text-sm mb-4">Aún puedes agregar a esta orden sin hacer otra transacción. Tienes <span id="addon-timer" class="font-mono font-bold text-gold">05:00</span> min.</p>
             <button onclick="showMenuForAddon()" class="w-full bg-gold text-dark py-3 rounded-xl font-bold shadow hover:brightness-110 transition">Agregar a esta Orden</button>
@@ -813,24 +813,9 @@
             const types = { pickup: 'Para Llevar', dinein: 'Restaurante', delivery: 'A Domicilio' };
             document.getElementById('track-type').innerText = types[activeOrder.fulfillment_type || fulfillmentType];
             
-            // Start Addon Timer (5 mins)
-            let timeLeft = 5 * 60;
-            clearInterval(addonTimer);
-            document.getElementById('addon-box').classList.remove('hidden');
-            document.getElementById('new-order-btn').classList.add('hidden');
-            
-            addonTimer = setInterval(() => {
-                timeLeft--;
-                if(timeLeft <= 0) {
-                    clearInterval(addonTimer);
-                    document.getElementById('addon-box').classList.add('hidden');
-                    document.getElementById('new-order-btn').classList.remove('hidden');
-                } else {
-                    const m = Math.floor(timeLeft / 60).toString().padStart(2,'0');
-                    const s = (timeLeft % 60).toString().padStart(2,'0');
-                    document.getElementById('addon-timer').innerText = `${m}:${s}`;
-                }
-            }, 1000);
+            // Addon logic removed per request - show new order button immediately
+            document.getElementById('addon-box').classList.add('hidden');
+            document.getElementById('new-order-btn').classList.remove('hidden');
             
             // Start live polling for status
             clearInterval(statusPollingTimer);
