@@ -3067,6 +3067,55 @@ app.post('/api/reserve', async (req, res) => {
 // === RECEIPT UPLOAD & VERIFY ===
 const USED_REFS = new Set(); // Store used reference numbers
 
+
+app.post('/api/upload-receipt/:id', upload.single('receipt'), async (req, res) => {
+    const { id } = req.params;
+    
+    if (!req.file) return res.status(400).json({ error: 'No image uploaded' });
+
+    try {
+        const fileContent = fs.readFileSync(req.file.path);
+        const fileName = `receipts/${id}_${Date.now()}_${req.file.originalname.replace(/[^a-zA-Z0-9.]/g, '')}`;
+        
+        const { data, error } = await supabase.storage
+            .from('menu-images') // Reusing existing bucket
+            .upload(fileName, fileContent, {
+                contentType: req.file.mimetype,
+                upsert: true
+            });
+            
+        // Clean up temp file
+        fs.unlinkSync(req.file.path);
+        
+        if (error) throw error;
+        
+        const { data: { publicUrl } } = supabase.storage
+            .from('menu-images')
+            .getPublicUrl(fileName);
+            
+        // Update Order
+        const { error: updateErr } = await supabase
+            .from('orders')
+            .update({ 
+                transfer_receipt_url: publicUrl,
+                status: 'paid' // Or keep pending? Let's mark paid for now or add a 'verify' status
+            })
+            .eq('id', id);
+
+        if (updateErr) throw updateErr;
+
+        res.json({ success: true, url: publicUrl });
+
+    } catch (e) {
+        console.error('Receipt upload failed:', e);
+        if (req.file && fs.existsSync(req.file.path)) {
+            fs.unlinkSync(req.file.path);
+        }
+        res.status(500).json({ error: 'Upload failed' });
+    }
+});
+
+
 app.post('/api/upload-receipt', async (req, res) => {
     const { imageBase64, ticketCode, refNumber } = req.body;
     
