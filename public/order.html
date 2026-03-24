@@ -509,7 +509,7 @@
             for (const groupId in currentMods) {
                 currentMods[groupId].forEach(optId => {
                     const opt = modOptions.find(o => o.id === optId);
-                    if (opt && (!opt.is_default || opt.price_adjustment > 0)) mods.push({ name: opt.name });
+                    if (opt) mods.push({ name: opt.name });
                 });
             }
             const note = document.getElementById('mod-note').value;
@@ -793,27 +793,37 @@
             statusDiv.classList.remove('hidden');
             statusDiv.innerText = "Subiendo imagen... por favor espera.";
             
-            const formData = new FormData();
-            formData.append('receipt', input.files[0]);
+            const file = input.files[0];
+            const reader = new FileReader();
             
-            try {
-                const res = await fetch(`/api/upload-receipt/${activeOrder.id}`, {
-                    method: 'POST',
-                    body: formData
-                });
-                
-                if (res.ok) {
-                    statusDiv.innerText = "¡Comprobante enviado! El cajero lo está revisando...";
-                    statusDiv.className = "mt-2 text-sm text-green-400 font-bold";
-                    input.classList.add('hidden'); // Hide input after success
-                } else {
-                    throw new Error('Upload failed');
+            reader.onloadend = async () => {
+                const base64String = reader.result;
+                try {
+                    const res = await fetch(`/api/receipt`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ 
+                            orderId: activeOrder.id, 
+                            imageBase64: base64String,
+                            fileName: file.name
+                        })
+                    });
+                    
+                    if (res.ok) {
+                        statusDiv.innerText = "¡Comprobante enviado! El cajero lo está revisando...";
+                        statusDiv.className = "mt-2 text-sm text-green-400 font-bold";
+                        input.classList.add('hidden'); // Hide input after success
+                    } else {
+                        const errData = await res.json();
+                        throw new Error(errData.error || 'Upload failed');
+                    }
+                } catch (e) {
+                    console.error(e);
+                    statusDiv.innerText = "Error al subir. Intenta de nuevo.";
+                    statusDiv.className = "mt-2 text-sm text-red-400 font-bold";
                 }
-            } catch (e) {
-                console.error(e);
-                statusDiv.innerText = "Error al subir. Intenta de nuevo.";
-                statusDiv.className = "mt-2 text-sm text-red-400 font-bold";
-            }
+            };
+            reader.readAsDataURL(file);
         }
 
         // --- TRACKING & ADDON LOGIC ---

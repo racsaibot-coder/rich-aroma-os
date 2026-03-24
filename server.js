@@ -3120,6 +3120,50 @@ app.post('/api/upload-receipt/:id', upload.single('receipt'), async (req, res) =
 });
 
 
+app.post('/api/receipt', async (req, res) => {
+    try {
+        const { imageBase64, orderId, fileName } = req.body;
+        
+        if (!orderId || !imageBase64) {
+            return res.status(400).json({ error: 'Missing orderId or image' });
+        }
+
+        const base64Data = imageBase64.replace(/^data:image\/\w+;base64,/, "");
+        const buffer = Buffer.from(base64Data, 'base64');
+        const mimeType = imageBase64.match(/^data:(image\/\w+);base64,/)?.[1] || 'image/png';
+        const ext = mimeType.split('/')[1] || 'png';
+        
+        const cleanName = (fileName || 'receipt').replace(/[^a-zA-Z0-9.]/g, '');
+        const storagePath = `receipts/${orderId}_${Date.now()}_${cleanName}.${ext}`;
+
+        const { data, error } = await supabase.storage
+            .from('menu-images')
+            .upload(storagePath, buffer, {
+                contentType: mimeType,
+                upsert: true
+            });
+
+        if (error) throw error;
+
+        const { data: { publicUrl } } = supabase.storage
+            .from('menu-images')
+            .getPublicUrl(storagePath);
+
+        const { error: dbError } = await supabase
+            .from('orders')
+            .update({ receipt_url: publicUrl, status: 'paid' })
+            .eq('id', orderId);
+
+        if (dbError) throw dbError;
+
+        return res.status(200).json({ success: true, url: publicUrl });
+
+    } catch (error) {
+        console.error('Upload Error:', error);
+        return res.status(500).json({ error: error.message });
+    }
+});
+
 app.post('/api/upload-receipt', async (req, res) => {
     const { imageBase64, ticketCode, refNumber } = req.body;
     
