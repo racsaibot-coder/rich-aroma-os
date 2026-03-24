@@ -57,7 +57,7 @@
             <a href="dashboard.html" id="dashboard-link" class="hidden w-10 h-10 rounded-full bg-gold/10 flex items-center justify-center cursor-pointer">
                 <i class="fas fa-user text-gold"></i>
             </a>
-            <div class="w-10 h-10 rounded-full bg-gold/10 flex items-center justify-center cursor-pointer" onclick="showTrackingIfActive()">
+            <div id="tracking-icon-container" class="hidden w-10 h-10 rounded-full bg-gold/10 flex items-center justify-center cursor-pointer" onclick="showTrackingIfActive()">
                 <i class="fas fa-receipt text-gold" id="header-icon"></i>
             </div>
         </div>
@@ -836,6 +836,7 @@
             document.getElementById('main-view').classList.add('hidden');
             document.getElementById('fulfillment-selector').classList.add('hidden');
             document.getElementById('tracking-view').classList.remove('hidden');
+            document.getElementById('tracking-icon-container').classList.remove('hidden');
             
             if (activeOrder && activeOrder.payment_method === 'transfer') {
                 document.getElementById('transfer-upload-section').classList.remove('hidden');
