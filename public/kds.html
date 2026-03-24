@@ -250,13 +250,44 @@
                     </div>
                     
                     <div class="space-y-2 flex-1">
-                        ${relevantItems.map(i => `
+                        ${relevantItems.map(i => {
+
+                            // Modifier Filtering Logic
+                            let filteredMods = i.mods || [];
+                            if (isComboItem(i.name)) {
+                                if (currentMode === 'drinks') {
+                                    // Barista only sees drink-related mods (e.g. Bebida de Combo, Milk Type, Frappe Add-ons)
+                                    filteredMods = filteredMods.filter(m => 
+                                        m.name.toLowerCase().includes('bebida') || 
+                                        m.name.toLowerCase().includes('milk') || 
+                                        m.name.toLowerCase().includes('leche') || 
+                                        m.name.toLowerCase().includes('frappe') || 
+                                        m.name.toLowerCase().includes('jugo') || 
+                                        m.name.toLowerCase().includes('granita') || 
+                                        m.name.toLowerCase().includes('iced')
+                                    );
+                                } else if (currentMode === 'food') {
+                                    // Kitchen sees everything EXCEPT the drink mods
+                                    filteredMods = filteredMods.filter(m => 
+                                        !m.name.toLowerCase().includes('bebida') && 
+                                        !m.name.toLowerCase().includes('milk') && 
+                                        !m.name.toLowerCase().includes('leche') && 
+                                        !m.name.toLowerCase().includes('frappe') && 
+                                        !m.name.toLowerCase().includes('jugo') && 
+                                        !m.name.toLowerCase().includes('granita') && 
+                                        !m.name.toLowerCase().includes('iced')
+                                    );
+                                }
+                            }
+
+                            return `
                             <div class="flex justify-between items-center text-lg ${i.is_addon ? 'text-yellow-400 font-bold bg-yellow-500/10 p-1 rounded' : ''}">
                                 <span class="font-bold text-gold">${i.quantity || i.qty || 1}x</span>
                                 <span class="${i.is_addon ? 'text-yellow-400' : 'text-white/90'} flex-1 ml-3">${i.name} ${i.is_addon ? '<span class="text-xs bg-yellow-500 text-dark px-1 rounded ml-2">NUEVO ADD-ON</span>' : ''}</span>
                             </div>
-                            ${i.mods && i.mods.length > 0 ? `<p class="text-xs text-white/40 ml-8">+ ${i.mods.map(m=>m.name).join(', ')}</p>` : ''}
-                        `).join('')}
+                            ${filteredMods.length > 0 ? `<p class="text-xs text-white/40 ml-8">+ ${filteredMods.map(m=>m.name).join(', ')}</p>` : ''}
+                            `;
+                        }).join('')}
                         ${order.notes ? `<div class="mt-2 text-xs bg-red-500/20 text-red-200 p-2 rounded border border-red-500/30 font-bold"><i class="fas fa-exclamation-circle"></i> NOTA: ${order.notes}</div>` : ''}
                     </div>
 
