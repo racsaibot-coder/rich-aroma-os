@@ -829,10 +829,10 @@
         currentItem = menu.find(i => i.id === id);
         
         // Find relevant dynamic groups
-        const relevantGroups = itemModGroups.filter(img => img.item_id === id).sort((a,b)=>a.display_order - b.display_order).map(img => img.group_id);
+        window.currentRelevantGroups = itemModGroups.filter(img => img.item_id === id).sort((a,b)=>a.display_order - b.display_order).map(img => img.group_id);
         
         // Skip modal for items with no modifiers
-        if(relevantGroups.length === 0) {
+        if(window.currentRelevantGroups.length === 0) {
             addToCart(currentItem);
             return;
         }
@@ -841,7 +841,7 @@
         currentMods = {};
         
         // 1. Initial defaults
-        relevantGroups.forEach(groupId => {
+        window.currentRelevantGroups.forEach(groupId => {
             const options = modOptions.filter(o => o.group_id === groupId);
             const defaultOpt = options.find(o => o.is_default);
             currentMods[groupId] = defaultOpt ? [defaultOpt.id] : [];
@@ -856,7 +856,7 @@
                     if (selectedOpt && currentItem.base_recipe[selectedOpt.name]) {
                         const recipe = currentItem.base_recipe[selectedOpt.name];
                         for (const [targetGroupId, targetOptionId] of Object.entries(recipe)) {
-                            if (currentMods[targetGroupId] !== undefined || relevantGroups.includes(targetGroupId)) {
+                            if (currentMods[targetGroupId] !== undefined || window.currentRelevantGroups.includes(targetGroupId)) {
                                 currentMods[targetGroupId] = [targetOptionId];
                             }
                         }
@@ -869,7 +869,7 @@
         const container = document.getElementById('mod-dynamic-container');
         let html = '';
 
-        relevantGroups.forEach(groupId => {
+        window.currentRelevantGroups.forEach(groupId => {
             const group = modGroups.find(g => g.id === groupId);
             if (!group) return;
             const options = modOptions.filter(o => o.group_id === groupId);
@@ -935,7 +935,7 @@
             // recipe looks like: { "group_name_or_id": "option_name_or_id" }
             // Let's iterate and apply
             for (const [targetGroupId, targetOptionId] of Object.entries(recipe)) {
-                if (currentMods[targetGroupId] !== undefined || relevantGroups.includes(targetGroupId)) {
+                if (currentMods[targetGroupId] !== undefined || window.currentRelevantGroups.includes(targetGroupId)) {
                     currentMods[targetGroupId] = [targetOptionId];
                 }
             }
