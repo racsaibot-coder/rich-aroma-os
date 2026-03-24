@@ -351,7 +351,7 @@
                 categories[cat].push(item);
             });
 
-            const categoryOrder = ['Combos', 'Café', 'Bebidas', 'Comida', 'Postres', 'Otros'];
+            const categoryOrder = ['Café', 'Bebidas', 'Combos', 'Comida', 'Postres', 'Otros'];
             const sortedCategories = Object.keys(categories).sort((a, b) => {
                 let indexA = categoryOrder.indexOf(a);
                 let indexB = categoryOrder.indexOf(b);
@@ -365,7 +365,11 @@
                 html = '<p class="text-center text-white/50 py-10">No se encontraron productos en esta categoría.</p>';
             } else {
                 sortedCategories.forEach(category => {
-                    const items = categories[category];
+                    let items = categories[category];
+                    
+                    // Sort items: especially useful for Combos to be Combo 1, Combo 2, etc.
+                    items.sort((a, b) => a.name.localeCompare(b.name, undefined, {numeric: true, sensitivity: 'base'}));
+
                     html += `<div class="mb-8"><h2 class="text-gold text-sm font-bold uppercase tracking-widest mb-4 border-l-2 border-gold pl-3">${category}</h2><div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">`;
                     items.forEach(item => {
                         const imgUrl = item.image_url || 'https://images.unsplash.com/photo-1510591509098-f4fdc6d0ff04?w=400&q=80';
