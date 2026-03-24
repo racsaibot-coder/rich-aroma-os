@@ -3068,7 +3068,11 @@ app.post('/api/reserve', async (req, res) => {
 const USED_REFS = new Set(); // Store used reference numbers
 
 
+
 app.post('/api/upload-receipt/:id', upload.single('receipt'), async (req, res) => {
+    console.log("RECEIPT UPLOAD HIT FOR ID:", req.params.id);
+    console.log("FILE OBJECT:", req.file);
+
     const { id } = req.params;
     
     if (!req.file) return res.status(400).json({ error: 'No image uploaded' });
