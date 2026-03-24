@@ -930,14 +930,23 @@
         currentMods[groupId] = selected;
         
         // --- BASE RECIPE MAGIC ---
-        // If this option is a size (e.g. 8oz, 12oz) and the item has a base_recipe for it, apply it.
         if (clickedOption && currentItem.base_recipe && currentItem.base_recipe[clickedOption.name]) {
             const recipe = currentItem.base_recipe[clickedOption.name];
-            // recipe looks like: { "group_name_or_id": "option_name_or_id" }
-            // Let's iterate and apply
             for (const [targetGroupId, targetOptionId] of Object.entries(recipe)) {
                 if (currentMods[targetGroupId] !== undefined || window.currentRelevantGroups.includes(targetGroupId)) {
-                    currentMods[targetGroupId] = [targetOptionId];
+                    // Get the name of the target option from the global modOptions
+                    const targetOptObj = modOptions.find(o => o.id === targetOptionId);
+                    if (targetOptObj) {
+                        // Find the equivalent option in THIS specific group by name
+                        const equivalentOpt = modOptions.find(o => o.group_id === targetGroupId && o.name === targetOptObj.name);
+                        if (equivalentOpt) {
+                            currentMods[targetGroupId] = [equivalentOpt.id];
+                        } else {
+                            currentMods[targetGroupId] = [targetOptionId]; // fallback
+                        }
+                    } else {
+                        currentMods[targetGroupId] = [targetOptionId];
+                    }
                 }
             }
         }

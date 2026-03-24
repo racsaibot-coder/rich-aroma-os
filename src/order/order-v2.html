@@ -859,8 +859,27 @@
                             const recipe = currentItem.base_recipe[opt.name];
                             for (const [targetGroupId, targetOptionId] of Object.entries(recipe)) {
                                 if (wizardState.steps.some(s => s.id === targetGroupId)) {
-                                    wizardState.selections[targetGroupId] = targetOptionId;
+                                    const targetStep = wizardState.steps.find(s => s.id === targetGroupId);
+                                    if (targetStep && targetStep.options) {
+                                        const exactOpt = targetStep.options.find(o => o.id === targetOptionId);
+                                        if (exactOpt) {
+                                            wizardState.selections[targetGroupId] = targetOptionId;
+                                        } else {
+                                            const globalOpt = modOptions.find(o => o.id === targetOptionId);
+                                            if (globalOpt) {
+                                                const localOpt = targetStep.options.find(o => o.name === globalOpt.name);
+                                                if (localOpt) {
+                                                    wizardState.selections[targetGroupId] = localOpt.id;
+                                                }
+                                            }
+                                        }
+                                    }
                                 }
+                            }
+                        }
+                    }
+                });
+            }
                             }
                         }
                     }
@@ -966,7 +985,23 @@
                 const recipe = currentItem.base_recipe[option.name];
                 for (const [targetGroupId, targetOptionId] of Object.entries(recipe)) {
                     if (wizardState.selections[targetGroupId] !== undefined || wizardState.steps.some(s => s.id === targetGroupId)) {
-                        wizardState.selections[targetGroupId] = targetOptionId;
+                        // Resolve option by name to ensure compatibility across different group clones
+                        const targetStep = wizardState.steps.find(s => s.id === targetGroupId);
+                        if (targetStep && targetStep.options) {
+                            const exactOpt = targetStep.options.find(o => o.id === targetOptionId);
+                            if (exactOpt) {
+                                wizardState.selections[targetGroupId] = targetOptionId;
+                            } else {
+                                // Find by name globally then match locally
+                                const globalOpt = modOptions.find(o => o.id === targetOptionId);
+                                if (globalOpt) {
+                                    const localOpt = targetStep.options.find(o => o.name === globalOpt.name);
+                                    if (localOpt) {
+                                        wizardState.selections[targetGroupId] = localOpt.id;
+                                    }
+                                }
+                            }
+                        }
                     }
                 }
             }
