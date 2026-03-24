@@ -254,6 +254,7 @@
 
                             // Modifier Filtering Logic
                             let filteredMods = i.mods || [];
+                            let displayName = i.name;
                             if (isComboItem(i.name)) {
                                 if (currentMode === 'drinks') {
                                     // Barista only sees drink-related mods (e.g. Bebida de Combo, Milk Type, Frappe Add-ons)
@@ -266,6 +267,10 @@
                                         m.name.toLowerCase().includes('granita') || 
                                         m.name.toLowerCase().includes('iced')
                                     );
+                                    
+                                    // Override item name to just show it's a combo drink, avoiding the long food name
+                                    displayName = "Bebida (Combo)";
+                                    
                                 } else if (currentMode === 'food') {
                                     // Kitchen sees everything EXCEPT the drink mods
                                     filteredMods = filteredMods.filter(m => 
@@ -283,7 +288,7 @@
                             return `
                             <div class="flex justify-between items-center text-lg ${i.is_addon ? 'text-yellow-400 font-bold bg-yellow-500/10 p-1 rounded' : ''}">
                                 <span class="font-bold text-gold">${i.quantity || i.qty || 1}x</span>
-                                <span class="${i.is_addon ? 'text-yellow-400' : 'text-white/90'} flex-1 ml-3">${i.name} ${i.is_addon ? '<span class="text-xs bg-yellow-500 text-dark px-1 rounded ml-2">NUEVO ADD-ON</span>' : ''}</span>
+                                <span class="${i.is_addon ? 'text-yellow-400' : 'text-white/90'} flex-1 ml-3">${displayName} ${i.is_addon ? '<span class="text-xs bg-yellow-500 text-dark px-1 rounded ml-2">NUEVO ADD-ON</span>' : ''}</span>
                             </div>
                             ${filteredMods.length > 0 ? `<p class="text-xs text-white/40 ml-8">+ ${filteredMods.map(m=>m.name).join(', ')}</p>` : ''}
                             `;
