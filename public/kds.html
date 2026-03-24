@@ -4,7 +4,32 @@
     <link rel="icon" type="image/png" href="/favicon.png">    <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Rich Aroma | KDS & Status</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.tailwindcss.com">        // --- BUMP BAR SUPPORT ---
+        window.addEventListener('keydown', (e) => {
+            // Spacebar, Enter, or Numpad Enter acts as "Bump"
+            if (e.code === 'Space' || e.code === 'Enter' || e.code === 'NumpadEnter') {
+                e.preventDefault();
+                // Find the oldest active order currently visible on screen
+                const activeOrders = orders.filter(o => {
+                    if (o.status === 'completed') return false;
+                    if (currentMode === 'drinks' && o.status === 'drinks_ready') return false;
+                    if (currentMode === 'food' && o.status === 'food_ready') return false;
+                    return true;
+                });
+                
+                if (activeOrders.length > 0) {
+                    // Sort by oldest first
+                    activeOrders.sort((a,b) => new Date(a.created_at) - new Date(b.created_at));
+                    const oldest = activeOrders[0];
+                    if (oldest.status === 'pending' || oldest.status === 'paid') {
+                        startOrder(oldest.id);
+                    } else {
+                        completeOrder(oldest.id);
+                    }
+                }
+            }
+        });
+    </script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <script>
         tailwind.config = {
