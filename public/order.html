@@ -329,21 +329,23 @@
             if (activeCategory !== 'all') {
                 filteredItems = menuItems.filter(item => {
                     const itemCat = (item.category || 'Otros').toLowerCase();
+                    const itemName = (item.name || '').toLowerCase();
                     const searchCat = activeCategory.toLowerCase();
                     if (searchCat === 'café') return itemCat === 'coffee' || itemCat.includes('caf');
                     if (searchCat === 'bebidas') return itemCat === 'drinks' || itemCat.includes('bebida');
                     if (searchCat === 'comida') return itemCat === 'food' || itemCat.includes('comida');
-                    if (searchCat === 'combos') return itemCat === 'combo' || itemCat.includes('combo') || itemCat.includes('paquete');
+                    if (searchCat === 'combos') return itemCat === 'combo' || itemCat.includes('combo') || itemCat.includes('paquete') || itemName.includes('combo') || itemName.includes('paquete');
                     return itemCat === searchCat;
                 });
             }
 
             filteredItems.forEach(item => {
                 let cat = item.category || 'Otros';
+                const itemName = (item.name || '').toLowerCase();
                 if (cat.toLowerCase() === 'coffee') cat = 'Café';
                 if (cat.toLowerCase() === 'drinks') cat = 'Bebidas';
                 if (cat.toLowerCase() === 'food') cat = 'Comida';
-                if (cat.toLowerCase() === 'combo' || cat.toLowerCase().includes('paquete') || cat.toLowerCase().includes('combo')) cat = 'Combos';
+                if (cat.toLowerCase() === 'combo' || cat.toLowerCase().includes('paquete') || cat.toLowerCase().includes('combo') || itemName.includes('combo') || itemName.includes('paquete')) cat = 'Combos';
                 
                 if(!categories[cat]) categories[cat] = [];
                 categories[cat].push(item);
