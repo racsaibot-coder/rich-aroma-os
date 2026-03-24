@@ -3,7 +3,7 @@ const path = require('path');
 const fs = require('fs');
 const cors = require('cors');
 const multer = require('multer');
-const upload = multer({ dest: 'public/uploads/' });
+const upload = multer({ dest: '/tmp/' });
 const { createClient } = require('@supabase/supabase-js');
 
 const app = express();
@@ -3098,7 +3098,7 @@ app.post('/api/upload-receipt/:id', upload.single('receipt'), async (req, res) =
             .from('orders')
             .update({ 
                 transfer_receipt_url: publicUrl,
-                status: 'paid' // Or keep pending? Let's mark paid for now or add a 'verify' status
+                status: 'pending_verification' // Wait for cashier to approve
             })
             .eq('id', id);
 
