@@ -230,7 +230,7 @@
                 </div>
                 
                 <!-- Summary -->
-                <div class="bg-charcoal rounded-2xl p-4 border border-white/5 space-y-2">
+                <div class="bg-charcoal rounded-2xl p-4 border border-white/5 space-y-2 mb-6">
                     <div class="flex justify-between text-sm text-white/60">
                         <span>Subtotal</span>
                         <span id="review-subtotal" class="font-mono">L 0.00</span>
@@ -244,8 +244,12 @@
                         <span id="review-total" class="text-gold font-bold font-mono text-xl">L 0.00</span>
                     </div>
                 </div>
+
+                <!-- Payment Selection (Now scrollable) -->
+                <div id="payment-selection-container"></div>
             </div>
 
+            <!-- Sticky Checkout Button Footer -->
             <div class="p-6 bg-dark/95 backdrop-blur-md border-t border-white/5 pb-8" id="checkout-options">
             </div>
         </div>
@@ -593,7 +597,8 @@
         }
 
         function renderPaymentOptions() {
-            const container = document.getElementById('checkout-options');
+            const container = document.getElementById('payment-selection-container');
+            const buttonContainer = document.getElementById('checkout-options');
             const total = window.currentOrderTotal || 0;
             const hasRicoCash = currentCustomer && (currentCustomer.cash_balance + (currentCustomer.membership_credit || 0)) >= total;
             
@@ -618,6 +623,8 @@
                 html += `<div onclick="selectPaymentMethod('rico_balance')" class="w-full mt-2 ${btnClass} ${currentSelectedPayment === 'rico_balance' ? selClass : unselClass}">💰 Rico Cash</div>`;
             }
 
+            let buttonHtml = '';
+
             if (currentSelectedPayment === 'transfer') {
                 html += `
                     <div class="mt-4 p-4 bg-white/5 rounded-2xl border border-white/10 space-y-4">
@@ -632,14 +639,16 @@
                                 <i class="fas fa-copy"></i>
                             </button>
                         </div>
-                        <button id="final-checkout-btn" onclick="submitOrder('transfer')" class="w-full bg-green-500 text-white py-4 rounded-2xl font-bold text-lg shadow-xl shadow-green-500/20 flex justify-center items-center gap-2 active:scale-95 transition-transform mt-2">
-                            <span>Confirmar Transferencia</span> <i class="fas fa-check"></i>
-                        </button>
                     </div>
                 `;
+                buttonHtml = `
+                    <button id="final-checkout-btn" onclick="submitOrder('transfer')" class="w-full bg-green-500 text-white py-4 rounded-2xl font-bold text-lg shadow-xl shadow-green-500/20 flex justify-center items-center gap-2 active:scale-95 transition-transform mt-2">
+                        <span>Confirmar Transferencia</span> <i class="fas fa-check"></i>
+                    </button>
+                `;
             } else {
-                html += `
-                    <button id="final-checkout-btn" onclick="submitOrder('${currentSelectedPayment}')" class="w-full mt-4 gold-btn py-4 rounded-2xl font-bold text-lg shadow-xl shadow-gold/20 flex justify-center items-center gap-2 active:scale-95 transition-transform">
+                buttonHtml = `
+                    <button id="final-checkout-btn" onclick="submitOrder('${currentSelectedPayment}')" class="w-full mt-2 gold-btn py-4 rounded-2xl font-bold text-lg shadow-xl shadow-gold/20 flex justify-center items-center gap-2 active:scale-95 transition-transform">
                         <span>Confirmar Orden</span> <i class="fas fa-arrow-right"></i>
                     </button>
                 `;
@@ -647,6 +656,7 @@
 
             html += '</div>';
             container.innerHTML = html;
+            buttonContainer.innerHTML = buttonHtml;
         }
 
         function copyBankInfo(bank) {
