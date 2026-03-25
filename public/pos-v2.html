@@ -1882,7 +1882,12 @@ async function approveTransfer(orderId) {
             body: JSON.stringify({ status: 'paid' })
         });
         alert('Pago aprobado.');
-        fetchPendingVerifications();
+        await fetchPendingVerifications(); // Wait for the new list to fetch
+        if (pendingVerifications.length > 0) {
+            renderVerifyModal(); // Re-render the next one in queue
+        } else {
+            closeVerifyModal(); // Close if queue is empty
+        }
     } catch(e) { console.error(e); }
 }
 
@@ -1895,7 +1900,12 @@ async function rejectTransfer(orderId) {
             body: JSON.stringify({ status: 'pending' })
         });
         alert('Pago rechazado. El cliente debe intentar de nuevo o pagar en caja.');
-        fetchPendingVerifications();
+        await fetchPendingVerifications();
+        if (pendingVerifications.length > 0) {
+            renderVerifyModal();
+        } else {
+            closeVerifyModal();
+        }
     } catch(e) { console.error(e); }
 }
 
