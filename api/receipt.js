@@ -45,7 +45,7 @@ export default async function handler(req, res) {
 
         const { error: dbError } = await supabase
             .from('orders')
-            .update({ transfer_receipt_url: publicUrl, status: 'pending_verification' }) // Set to pending verification for POS
+            .update({ receipt_url: publicUrl, status: 'pending_verification' }) // Set to pending verification for POS
             .eq('id', targetId);
 
         if (dbError) throw dbError;
