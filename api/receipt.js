@@ -43,9 +43,13 @@ export default async function handler(req, res) {
             .from('menu-images')
             .getPublicUrl(storagePath);
 
+        const { data: orderData } = await supabase.from('orders').select('notes').eq('id', targetId).single();
+        const existingNotes = orderData ? (orderData.notes || '') : '';
+        const newNotes = existingNotes + '\n[RECEIPT_URL:' + publicUrl + ']';
+
         const { error: dbError } = await supabase
             .from('orders')
-            .update({ receipt_url: publicUrl, status: 'pending_verification' }) // Set to pending verification for POS
+            .update({ notes: newNotes, status: 'pending_verification' }) // Set to pending verification for POS
             .eq('id', targetId);
 
         if (dbError) throw dbError;

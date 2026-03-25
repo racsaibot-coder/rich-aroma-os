@@ -1814,7 +1814,7 @@ async function fetchPendingVerifications() {
     try {
         const res = await fetch('/api/orders');
         const data = await res.json();
-        pendingVerifications = data.orders.filter(o => o.status === 'pending_verification' && o.receipt_url);
+        pendingVerifications = data.orders.filter(o => o.status === 'pending_verification' && o.notes && o.notes.includes('[RECEIPT_URL:'));
         
         const alertBtn = document.getElementById('verifyPaymentAlert');
         const countSpan = document.getElementById('verifyCount');
@@ -1853,13 +1853,18 @@ function renderVerifyModal() {
     
     // Show the first one in the queue
     const order = pendingVerifications[0];
+    let receiptUrl = '';
+    if (order.notes && order.notes.includes('[RECEIPT_URL:')) {
+        receiptUrl = order.notes.split('[RECEIPT_URL:')[1].split(']')[0];
+    }
+
     container.innerHTML = `
         <div class="mb-4">
             <h4 class="font-bold text-xl">Orden: ${order.id}</h4>
             <p class="text-gray-500">Total a verificar: <span class="font-bold text-black">L ${order.total}</span></p>
         </div>
         <div class="border rounded-lg overflow-hidden mb-4 bg-gray-100 flex justify-center items-center" style="min-height: 300px;">
-            <img src="${order.receipt_url}" class="max-w-full max-h-[50vh] object-contain" alt="Recibo">
+            <img src="${receiptUrl}" class="max-w-full max-h-[50vh] object-contain" alt="Recibo">
         </div>
         <div class="flex gap-4">
             <button onclick="approveTransfer('${order.id}')" class="flex-1 bg-green-500 text-white font-bold py-4 rounded-xl hover:bg-green-600 text-lg">Aprobar (Pagado)</button>
@@ -1887,7 +1892,7 @@ async function rejectTransfer(orderId) {
         await fetch(`/api/orders/${orderId}`, {
             method: 'PATCH',
             headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({ status: 'pending', receipt_url: null })
+            body: JSON.stringify({ status: 'pending' })
         });
         alert('Pago rechazado. El cliente debe intentar de nuevo o pagar en caja.');
         fetchPendingVerifications();
