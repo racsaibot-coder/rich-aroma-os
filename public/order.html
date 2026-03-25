@@ -863,8 +863,14 @@
                         const data = await res.json();
                         const currentOrder = data.orders.find(o => o.id === activeOrder.id);
                         if(currentOrder) {
+                            // Update UI if paid
+                            if(currentOrder.status === 'paid') {
+                                document.getElementById('transfer-upload-section').classList.add('hidden');
+                                document.getElementById('track-status-desc').innerText = `Orden #${currentOrder.order_number || currentOrder.id} • Pago Confirmado ✅`;
+                            }
+                            
                             if(currentOrder.status === 'preparing') setStep('prep');
-                            if(currentOrder.status === 'completed' || currentOrder.status === 'ready' || currentOrder.status === 'paid') {
+                            if(currentOrder.status === 'completed' || currentOrder.status === 'ready') {
                                 setStep('ready');
                                 clearInterval(statusPollingTimer); // Stop polling when done
                                 
