@@ -624,7 +624,7 @@
             const container = document.getElementById('payment-selection-container');
             const buttonContainer = document.getElementById('checkout-options');
             const total = window.currentOrderTotal || 0;
-            const hasRicoCash = currentCustomer && (currentCustomer.cash_balance + (currentCustomer.membership_credit || 0)) >= total;
+            const hasRicoCash = currentCustomer && ((parseFloat(currentCustomer.cash_balance) || 0) + (parseFloat(currentCustomer.membership_credit) || 0)) >= total;
             
             if (currentSelectedPayment === 'rico_balance' && !hasRicoCash) {
                 currentSelectedPayment = 'cash';
@@ -1036,11 +1036,18 @@
             setFulfillment('pickup');
             
             // Auto login logic for testing
-            const phone = localStorage.getItem('ra_phone');
+            const phone = localStorage.getItem('ra_customer_phone') || localStorage.getItem('ra_phone');
             if (phone) {
                 fetch(`/api/customer/profile?phone=${phone}`)
                 .then(r => r.json())
-                .then(u => currentCustomer = u)
+                .then(u => {
+                    if (u && !u.error) {
+                        currentCustomer = u;
+                    } else {
+                        currentCustomer = null;
+                        localStorage.removeItem('ra_customer_phone');
+                    }
+                })
                 .catch(e => console.error(e));
             }
         });
