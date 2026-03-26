@@ -42,7 +42,7 @@
             <img src="/rico-logo.png" alt="Rich Aroma" class="w-10 h-10 rounded-full border border-gold/20 object-cover">
             <span class="font-display font-bold text-gold tracking-widest uppercase text-sm">Rich Aroma</span>
         </div>
-        <a href="/login.html" class="text-white/60 hover:text-white text-sm font-medium"><i class="fas fa-user-circle mr-1"></i> Entrar</a>
+        <a href="/profile/index.html" class="bg-white/10 border border-white/20 px-4 py-2 rounded-full text-white text-sm font-bold shadow-lg hover:bg-white/20 transition-colors"><i class="fas fa-user-circle mr-1 text-gold"></i> Mi Perfil</a>
     </header>
 
     <!-- Hero Section (Above the Fold) -->
@@ -227,7 +227,10 @@
                     const data = await res.json();
                     // server.js returns the customer object directly on 200 OK
                     if (data && data.id) {
-                        alert("Este número ya está registrado. Por favor inicia sesión en tu perfil.");
+                        const goToLogin = confirm("Este número ya está registrado. ¿Quieres ir a tu perfil para iniciar sesión?");
+                        if (goToLogin) {
+                            window.location.href = '/profile/index.html';
+                        }
                         btn.innerHTML = 'Reclamar L. 30';
                         btn.disabled = false;
                         return;
