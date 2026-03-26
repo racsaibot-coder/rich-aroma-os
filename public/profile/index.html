@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mi Perfil - Rich Aroma</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        :root {
+            --caramel: #D4A574;
+            --dark-bg: #0f0d0b;
+        }
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--dark-bg);
+            color: #F5EDE4;
+        }
+        .btn-primary {
+            background-color: var(--caramel);
+            color: black;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body class="min-h-screen p-4 flex flex-col items-center justify-center">
+
+    <div id="login-view" class="w-full max-w-md bg-[#1a1714] p-6 rounded-2xl shadow-xl">
+        <div class="text-center mb-6">
+            <h1 class="text-2xl font-bold text-[#D4A574]">Bienvenido al Rico Club</h1>
+            <p class="text-sm text-gray-400 mt-2">Ingresa con tu número y PIN</p>
+        </div>
+        
+        <div class="space-y-4">
+            <div>
+                <label class="block text-sm mb-1 text-gray-300">Número de Teléfono</label>
+                <input type="tel" id="login-phone" class="w-full p-3 rounded-lg bg-black border border-gray-700 text-white focus:outline-none focus:border-[#D4A574]" placeholder="Ej. 9999-1234">
+            </div>
+            <div>
+                <label class="block text-sm mb-1 text-gray-300">PIN (4 dígitos)</label>
+                <input type="password" id="login-pin" maxlength="4" class="w-full p-3 rounded-lg bg-black border border-gray-700 text-white text-center tracking-[0.5em] focus:outline-none focus:border-[#D4A574]" placeholder="••••">
+            </div>
+            <button onclick="handleLogin()" class="w-full btn-primary py-3 rounded-lg mt-4">Entrar / Crear PIN</button>
+        </div>
+    </div>
+
+    <div id="dashboard-view" class="w-full max-w-md hidden space-y-6">
+        <div class="flex justify-between items-center bg-[#1a1714] p-4 rounded-2xl">
+            <div>
+                <h2 class="text-xl font-bold" id="user-name">Cargando...</h2>
+                <p class="text-sm text-gray-400" id="user-phone"></p>
+            </div>
+            <button onclick="logout()" class="text-xs border border-gray-600 px-3 py-1 rounded-full">Salir</button>
+        </div>
+
+        <div class="grid grid-cols-2 gap-4">
+            <div class="bg-gradient-to-br from-[#C9A66B] to-[#8B7355] p-4 rounded-2xl text-center text-black shadow-lg">
+                <p class="text-sm font-semibold opacity-80">Rico Points ⭐</p>
+                <p class="text-3xl font-bold mt-1" id="points-balance">0</p>
+            </div>
+            <div class="bg-[#1a1714] border border-green-900 p-4 rounded-2xl text-center shadow-lg">
+                <p class="text-sm font-semibold text-green-400">Rico Cash 💵</p>
+                <p class="text-3xl font-bold mt-1 text-white">L. <span id="cash-balance">0</span></p>
+            </div>
+        </div>
+        
+        <!-- Beneficio VIP si aplica -->
+        <div id="vip-banner" class="hidden bg-yellow-900 border border-yellow-600 p-4 rounded-2xl text-center shadow-lg">
+            <p class="text-yellow-400 font-bold">👑 Miembro VIP Activo</p>
+            <p class="text-sm text-yellow-200 mt-1">1 Café Base Gratis Disponible Hoy</p>
+            <button class="mt-3 bg-yellow-500 text-black px-4 py-2 rounded-lg font-bold text-sm" onclick="alert('Muestra este código al cajero para reclamar: VIP-1234')">Reclamar Café de Hoy</button>
+        </div>
+
+        <div class="bg-[#1a1714] p-4 rounded-2xl">
+            <h3 class="font-bold text-[#D4A574] mb-4">Historial Reciente</h3>
+            <div id="order-history" class="space-y-3 text-sm">
+                <p class="text-gray-500 text-center py-4">No hay órdenes recientes.</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function handleLogin() {
+            const phone = document.getElementById('login-phone').value;
+            const pin = document.getElementById('login-pin').value;
+            
+            if(!phone || pin.length < 4) {
+                alert("Por favor ingresa un número válido y un PIN de 4 dígitos.");
+                return;
+            }
+            
+            // Simulación de login exitoso
+            document.getElementById('login-view').classList.add('hidden');
+            document.getElementById('dashboard-view').classList.remove('hidden');
+            
+            document.getElementById('user-name').innerText = "Usuario: " + phone;
+            document.getElementById('user-phone').innerText = phone;
+            
+            // Simular datos
+            document.getElementById('points-balance').innerText = "120";
+            document.getElementById('cash-balance').innerText = "0.00";
+            
+            // Mostrar VIP banner aleatoriamente para demo
+            if (phone.includes('1234')) {
+                document.getElementById('vip-banner').classList.remove('hidden');
+            }
+        }
+        
+        function logout() {
+            document.getElementById('dashboard-view').classList.add('hidden');
+            document.getElementById('login-view').classList.remove('hidden');
+            document.getElementById('login-phone').value = '';
+            document.getElementById('login-pin').value = '';
+        }
+    </script>
+</body>
+</html>
