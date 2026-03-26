@@ -3164,6 +3164,84 @@ app.post('/api/receipt', async (req, res) => {
     }
 });
 
+
+app.post('/api/topup', async (req, res) => {
+    try {
+        const { imageBase64, phone, amount, bonus, fileName } = req.body;
+        
+        if (!phone || !imageBase64 || !amount) {
+            return res.status(400).json({ error: 'Missing data' });
+        }
+
+        const { data: customer, error: custErr } = await supabase
+            .from('customers')
+            .select('id, name')
+            .eq('phone', phone)
+            .single();
+
+        if (custErr || !customer) {
+            return res.status(404).json({ error: 'Customer not found' });
+        }
+
+        const base64Data = imageBase64.replace(/^data:image\/\w+;base64,/, "");
+        const buffer = Buffer.from(base64Data, 'base64');
+        const mimeType = imageBase64.match(/^data:(image\/\w+);base64,/)?.[1] || 'image/png';
+        const ext = mimeType.split('/')[1] || 'png';
+        
+        const cleanName = (fileName || 'topup').replace(/[^a-zA-Z0-9.]/g, '');
+        const storagePath = `receipts/TOPUP_${customer.id}_${Date.now()}_${cleanName}.${ext}`;
+
+        const { data, error } = await supabase.storage
+            .from('menu-images')
+            .upload(storagePath, buffer, {
+                contentType: mimeType,
+                upsert: true
+            });
+
+        if (error) throw error;
+
+        const { data: { publicUrl } } = supabase.storage
+            .from('menu-images')
+            .getPublicUrl(storagePath);
+
+        // Instead of updating a balance immediately, we create an order that the POS has to approve
+        // This acts as the "ticket" for the cashier to review
+        const orderNum = Math.floor(Date.now() / 1000) - 1769000000;
+        
+        const topupOrder = {
+            id: `TOPUP-${Date.now()}`,
+            order_number: orderNum,
+            customer_id: customer.id,
+            items: [{
+                id: 'rico_cash_reload',
+                name: `Recarga Rico Cash (Bono: L.${bonus})`,
+                price: amount,
+                finalPrice: amount,
+                qty: 1,
+                mods: []
+            }],
+            subtotal: amount,
+            tax: 0,
+            total: amount,
+            discount: 0,
+            status: 'pending_transfer', // Special status that POS will look for
+            payment_method: 'transfer',
+            fulfillment_type: 'pickup',
+            notes: `[RECARGA] +L.${bonus} Bono. Total a acreditar: L.${amount + bonus}`,
+            receipt_url: publicUrl
+        };
+
+        const { error: dbError } = await supabase.from('orders').insert(topupOrder);
+        if (dbError) throw dbError;
+
+        return res.status(200).json({ success: true });
+
+    } catch (error) {
+        console.error('Topup Error:', error);
+        return res.status(500).json({ error: error.message });
+    }
+});
+
 app.post('/api/upload-receipt', async (req, res) => {
     const { imageBase64, ticketCode, refNumber } = req.body;
     

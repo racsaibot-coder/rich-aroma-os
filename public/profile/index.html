@@ -70,10 +70,21 @@
             reader.onloadend = async () => {
                 const base64String = reader.result;
                 try {
-                    // Simulate API call for now since backend endpoint isn't fully set up
-                    await new Promise(r => setTimeout(r, 1500));
+                    const res = await fetch('/api/topup', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            phone: phone,
+                            amount: selectedTopupAmount,
+                            bonus: selectedTopupBonus,
+                            imageBase64: base64String,
+                            fileName: file.name
+                        })
+                    });
                     
-                    statusDiv.innerText = "¡Recarga enviada! El cajero la aprobará en breve. Recibirás una notificación cuando tu saldo esté activo.";
+                    if (!res.ok) throw new Error("API Error");
+                    
+                    statusDiv.innerText = "¡Recarga enviada! El cajero la aprobará en breve. Tu saldo se actualizará automáticamente.";
                     statusDiv.className = "mt-4 text-sm text-center text-green-400 font-bold";
                     input.classList.add('hidden'); 
                     
