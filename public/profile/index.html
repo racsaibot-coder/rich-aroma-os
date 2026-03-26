@@ -130,7 +130,13 @@
         <div class="space-y-4">
             <div>
                 <label class="block text-sm mb-1 text-gray-300">Número de Teléfono</label>
-                <input type="tel" id="login-phone" class="w-full p-3 rounded-lg bg-black border border-gray-700 text-white focus:outline-none focus:border-[#D4A574]" placeholder="Ej. 9999-1234">
+                <div class="flex">
+                    <select id="login-country" class="bg-black border border-gray-700 border-r-0 rounded-l-lg py-3 pl-3 pr-2 text-white/80 focus:outline-none focus:border-[#D4A574] transition-colors appearance-none">
+                        <option value="+504">🇭🇳 +504</option>
+                        <option value="+1">🇺🇸 +1</option>
+                    </select>
+                    <input type="tel" id="login-phone" class="w-full p-3 rounded-r-lg bg-black border border-gray-700 text-white focus:outline-none focus:border-[#D4A574]" placeholder="Ej. 9999-1234">
+                </div>
             </div>
             <div>
                 <label class="block text-sm mb-1 text-gray-300">PIN (4 dígitos)</label>
@@ -180,10 +186,12 @@
 
     <script>
         function handleLogin() {
-            const phone = document.getElementById('login-phone').value;
+            const country = document.getElementById('login-country').value;
+            const rawPhone = document.getElementById('login-phone').value.replace(/\D/g, '');
+            const phone = country + rawPhone;
             const pin = document.getElementById('login-pin').value;
             
-            if(!phone || pin.length < 4) {
+            if(!rawPhone || pin.length < 4) {
                 alert("Por favor ingresa un número válido y un PIN de 4 dígitos.");
                 return;
             }

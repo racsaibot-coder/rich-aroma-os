@@ -506,7 +506,7 @@ app.get('/api/customer/profile', async (req, res) => {
 // Test Cash (Public for Soft Opening Testing)
 app.post('/api/customer/test-cash', async (req, res) => {
     const { phone } = req.body;
-    const cleanPhone = phone.replace(/\D/g, '');
+    const cleanPhone = phone.replace(/[^\d+]/g, '');
     
     const { data: customer } = await supabase
         .from('customers')
@@ -1399,7 +1399,8 @@ app.get('/api/customers/phone/:phone', async (req, res) => {
     // Allow public lookup for POS by phone? Or require POS auth?
     // Let's assume POS is authenticated or this is allowed.
     // For now, allowing public lookup for convenience, but ideally restricted.
-    const phone = req.params.phone.replace(/\D/g, '');
+    // allow + but remove spaces/dashes
+    const phone = req.params.phone.replace(/[^\d+]/g, '');
     const { data, error } = await supabase
         .from('customers')
         .select('*')
@@ -1446,7 +1447,7 @@ app.post('/api/customers', async (req, res) => {
     const newCustomer = {
         id: `C${String(nextNum).padStart(3, '0')}`,
         name: req.body.name,
-        phone: req.body.phone.replace(/\D/g, ''),
+        phone: req.body.phone.replace(/[^\d+]/g, ''),
         email: req.body.email,
         points: 0,
         total_spent: 0,

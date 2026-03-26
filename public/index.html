@@ -81,9 +81,12 @@
 
             <form id="welcome-form" onsubmit="claimWelcomeOffer(event)" class="flex flex-col gap-3">
                 <input type="text" id="name-input" placeholder="Tu Nombre" required class="w-full bg-dark border border-white/10 rounded-xl py-4 px-4 text-white focus:border-gold focus:outline-none focus:ring-1 focus:ring-gold transition-colors">
-                <div class="relative">
-                    <span class="absolute left-4 top-1/2 -translate-y-1/2 text-white/40 font-mono">+504</span>
-                    <input type="tel" id="phone-input" placeholder="Tu número" required class="w-full bg-dark border border-white/10 rounded-xl py-4 pl-16 pr-4 text-white font-mono focus:border-gold focus:outline-none focus:ring-1 focus:ring-gold transition-colors">
+                <div class="relative flex">
+                    <select id="country-code" class="bg-dark border border-white/10 border-r-0 rounded-l-xl py-4 pl-4 pr-2 text-white/60 font-mono focus:outline-none focus:border-gold transition-colors appearance-none">
+                        <option value="+504">🇭🇳 +504</option>
+                        <option value="+1">🇺🇸 +1</option>
+                    </select>
+                    <input type="tel" id="phone-input" placeholder="Tu número" required class="w-full bg-dark border border-white/10 rounded-r-xl py-4 px-4 text-white font-mono focus:border-gold focus:outline-none focus:ring-1 focus:ring-gold transition-colors">
                 </div>
                 <input type="password" id="pin-input" placeholder="Crea un PIN (4 dígitos)" maxlength="4" required class="w-full bg-dark border border-white/10 rounded-xl py-4 px-4 text-white text-center tracking-[0.5em] focus:border-gold focus:outline-none focus:ring-1 focus:ring-gold transition-colors">
                 <button type="submit" id="claim-btn" class="w-full bg-white text-dark font-bold py-4 rounded-xl hover:bg-gray-200 transition-colors">
@@ -209,10 +212,12 @@
             e.preventDefault();
             const btn = document.getElementById('claim-btn');
             const name = document.getElementById('name-input').value;
-            const phone = document.getElementById('phone-input').value.replace(/\D/g, '');
+            const country = document.getElementById('country-code').value;
+            const rawPhone = document.getElementById('phone-input').value.replace(/\D/g, '');
+            const phone = country + rawPhone;
             const pin = document.getElementById('pin-input').value;
             
-            if(phone.length < 8 || pin.length < 4 || !name) {
+            if(rawPhone.length < 8 || pin.length < 4 || !name) {
                 alert("Por favor completa todos los campos correctamente.");
                 return;
             }
@@ -222,7 +227,7 @@
 
             try {
                 // Check if phone already exists via API
-                const res = await fetch('/api/customers/phone/' + phone);
+                const res = await fetch('/api/customers/phone/' + encodeURIComponent(phone));
                 if (res.ok) {
                     const data = await res.json();
                     // server.js returns the customer object directly on 200 OK
