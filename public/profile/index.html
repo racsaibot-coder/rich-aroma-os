@@ -5,7 +5,91 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Mi Perfil - Rich Aroma</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
-    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.tailwindcss.com">
+        let selectedTopupAmount = 0;
+        let selectedTopupBonus = 0;
+
+        function openTopupModal() {
+            document.getElementById('topup-modal').classList.remove('hidden');
+            document.getElementById('topup-step-1').classList.remove('hidden');
+            document.getElementById('topup-step-2').classList.add('hidden');
+            document.getElementById('topup-status').classList.add('hidden');
+            document.getElementById('topup-receipt-upload').value = '';
+        }
+
+        function closeTopupModal() {
+            document.getElementById('topup-modal').classList.add('hidden');
+        }
+
+        function selectTopup(amount, bonus) {
+            selectedTopupAmount = amount;
+            selectedTopupBonus = bonus;
+            
+            document.getElementById('topup-transfer-amount').innerText = amount;
+            document.getElementById('topup-receive-amount').innerText = amount + bonus;
+            
+            document.getElementById('topup-step-1').classList.add('hidden');
+            document.getElementById('topup-step-2').classList.remove('hidden');
+        }
+
+        function backToTopupStep1() {
+            document.getElementById('topup-step-1').classList.remove('hidden');
+            document.getElementById('topup-step-2').classList.add('hidden');
+        }
+
+        function copyBankInfo(bank) {
+            let account = '';
+            if (bank === 'bac') account = '123456789'; // TODO: Update with real BAC account
+            if (bank === 'banpais') account = '987654321'; // TODO: Update with real Banpais account
+            
+            navigator.clipboard.writeText(account).then(() => {
+                alert(`¡Cuenta de ${bank.toUpperCase()} (${account}) copiada! Haz la transferencia y sube la captura aquí.`);
+            }).catch(err => {
+                alert(`El número de cuenta es: ${account}`);
+            });
+        }
+
+        async function submitTopup() {
+            const input = document.getElementById('topup-receipt-upload');
+            const statusDiv = document.getElementById('topup-status');
+            const phone = document.getElementById('user-phone').innerText; // Using this as the identifier for now
+            
+            if (!input.files || input.files.length === 0) return;
+            if (!phone || phone === '') {
+                alert("Por favor inicia sesión primero.");
+                return;
+            }
+            
+            statusDiv.classList.remove('hidden');
+            statusDiv.innerText = "Enviando... por favor espera.";
+            statusDiv.className = "mt-4 text-sm text-center text-gold font-bold";
+            
+            const file = input.files[0];
+            const reader = new FileReader();
+            
+            reader.onloadend = async () => {
+                const base64String = reader.result;
+                try {
+                    // Simulate API call for now since backend endpoint isn't fully set up
+                    await new Promise(r => setTimeout(r, 1500));
+                    
+                    statusDiv.innerText = "¡Recarga enviada! El cajero la aprobará en breve. Recibirás una notificación cuando tu saldo esté activo.";
+                    statusDiv.className = "mt-4 text-sm text-center text-green-400 font-bold";
+                    input.classList.add('hidden'); 
+                    
+                    setTimeout(() => {
+                        closeTopupModal();
+                    }, 4000);
+                } catch (e) {
+                    console.error(e);
+                    statusDiv.innerText = "Error al enviar. Intenta de nuevo.";
+                    statusDiv.className = "mt-4 text-sm text-center text-red-400 font-bold";
+                }
+            };
+            reader.readAsDataURL(file);
+        }
+
+</script>
     <style>
         :root {
             --caramel: #D4A574;
@@ -22,6 +106,7 @@
             font-weight: bold;
         }
     </style>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
 </head>
 <body class="min-h-screen p-4 flex flex-col items-center justify-center">
 
@@ -61,6 +146,9 @@
             <div class="bg-[#1a1714] border border-green-900 p-4 rounded-2xl text-center shadow-lg">
                 <p class="text-sm font-semibold text-green-400">Rico Cash 💵</p>
                 <p class="text-3xl font-bold mt-1 text-white">L. <span id="cash-balance">0</span></p>
+                <button onclick="openTopupModal()" class="mt-3 w-full bg-green-500/20 text-green-400 border border-green-500/50 py-1.5 rounded-lg text-xs font-bold hover:bg-green-500/30 transition-colors">
+                    <i class="fas fa-plus mr-1"></i> Recargar
+                </button>
             </div>
         </div>
         
@@ -113,5 +201,87 @@
             document.getElementById('login-pin').value = '';
         }
     </script>
+
+    <!-- TOPUP MODAL -->
+    <div id="topup-modal" class="hidden fixed inset-0 bg-black/80 backdrop-blur-sm z-[100] flex flex-col justify-end">
+        <div class="bg-dark w-full max-h-[90vh] rounded-t-3xl shadow-2xl flex flex-col overflow-hidden border-t border-gold/20 relative animate-[slideUp_0.3s_ease-out]">
+            <div class="absolute top-3 left-1/2 -translate-x-1/2 w-12 h-1.5 bg-white/20 rounded-full"></div>
+            
+            <div class="p-6 pt-8 pb-4 border-b border-white/5 flex justify-between items-center">
+                <h2 class="text-2xl font-bold text-white font-display">Recargar Rico Cash</h2>
+                <button onclick="closeTopupModal()" class="w-10 h-10 rounded-full bg-white/10 text-white hover:bg-white/20 flex items-center justify-center transition-colors">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+
+            <div class="flex-1 overflow-y-auto p-6">
+                <!-- Step 1: Select Amount -->
+                <div id="topup-step-1">
+                    <p class="text-white/60 text-sm mb-4">Selecciona el monto a recargar. ¡Recibe bonos extra en montos mayores!</p>
+                    <div class="space-y-3">
+                        <button onclick="selectTopup(150, 0)" class="w-full flex justify-between items-center p-4 bg-white/5 border border-white/10 rounded-2xl hover:border-gold/50 transition-colors">
+                            <span class="font-bold text-white text-lg">L. 150</span>
+                            <span class="text-sm text-white/40">Recibes L. 150</span>
+                        </button>
+                        <button onclick="selectTopup(250, 0)" class="w-full flex justify-between items-center p-4 bg-white/5 border border-white/10 rounded-2xl hover:border-gold/50 transition-colors">
+                            <span class="font-bold text-white text-lg">L. 250</span>
+                            <span class="text-sm text-white/40">Recibes L. 250</span>
+                        </button>
+                        <button onclick="selectTopup(500, 25)" class="w-full flex justify-between items-center p-4 bg-gold/10 border border-gold/30 rounded-2xl hover:border-gold transition-colors relative overflow-hidden">
+                            <div class="absolute top-0 right-0 bg-gold text-dark text-[10px] font-bold px-2 py-0.5 rounded-bl-lg">5% BONO</div>
+                            <span class="font-bold text-white text-lg">L. 500</span>
+                            <span class="text-sm text-gold font-bold">Recibes L. 525</span>
+                        </button>
+                        <button onclick="selectTopup(1000, 100)" class="w-full flex justify-between items-center p-4 bg-gold/10 border border-gold/30 rounded-2xl hover:border-gold transition-colors relative overflow-hidden">
+                            <div class="absolute top-0 right-0 bg-gold text-dark text-[10px] font-bold px-2 py-0.5 rounded-bl-lg">10% BONO</div>
+                            <span class="font-bold text-white text-lg">L. 1000</span>
+                            <span class="text-sm text-gold font-bold">Recibes L. 1100</span>
+                        </button>
+                        <button onclick="selectTopup(2500, 375)" class="w-full flex justify-between items-center p-4 bg-gold/10 border border-gold/30 rounded-2xl hover:border-gold transition-colors relative overflow-hidden">
+                            <div class="absolute top-0 right-0 bg-gold text-dark text-[10px] font-bold px-2 py-0.5 rounded-bl-lg">15% BONO</div>
+                            <span class="font-bold text-white text-lg">L. 2500</span>
+                            <span class="text-sm text-gold font-bold">Recibes L. 2875</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Step 2: Upload Transfer -->
+                <div id="topup-step-2" class="hidden">
+                    <button onclick="backToTopupStep1()" class="text-white/50 text-sm mb-4 hover:text-white"><i class="fas fa-arrow-left mr-1"></i> Cambiar monto</button>
+                    
+                    <div class="bg-charcoal rounded-2xl p-6 border border-white/5 text-center mb-6">
+                        <p class="text-white/60 text-sm mb-1">Monto a transferir:</p>
+                        <p class="text-4xl font-bold text-gold font-mono mb-1">L. <span id="topup-transfer-amount">0</span></p>
+                        <p class="text-green-400 text-sm font-bold">Recibirás L. <span id="topup-receive-amount">0</span> en tu cuenta</p>
+                    </div>
+
+                    <div class="space-y-4 mb-6">
+                        <p class="text-xs text-white/60 text-center">Copia el número de cuenta y realiza la transferencia antes de subir la captura.</p>
+                        <div class="flex gap-3">
+                            <button onclick="copyBankInfo('bac')" class="flex-1 bg-red-600/10 border border-red-600/30 text-red-500 py-3 rounded-xl font-bold flex flex-col items-center justify-center gap-1 hover:bg-red-600/20 transition-colors">
+                                <span class="text-xs">BAC</span>
+                                <i class="fas fa-copy"></i>
+                            </button>
+                            <button onclick="copyBankInfo('banpais')" class="flex-1 bg-blue-600/10 border border-blue-600/30 text-blue-500 py-3 rounded-xl font-bold flex flex-col items-center justify-center gap-1 hover:bg-blue-600/20 transition-colors">
+                                <span class="text-xs">Banpaís</span>
+                                <i class="fas fa-copy"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="bg-white/5 rounded-2xl p-6 border border-white/10">
+                        <h3 class="font-bold text-white mb-2"><i class="fas fa-receipt text-gold mr-2"></i>Sube tu Comprobante</h3>
+                        <input type="file" id="topup-receipt-upload" accept="image/*" class="w-full text-sm text-white/50 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-semibold file:bg-gold file:text-dark hover:file:bg-gold/80 cursor-pointer" onchange="submitTopup()">
+                        <div id="topup-status" class="mt-4 text-sm text-center hidden"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <style>
+        @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+        .gold-btn { background: linear-gradient(135deg, #C9A66B 0%, #B08D55 100%); color: #1E1610; }
+    </style>
+
 </body>
 </html>
