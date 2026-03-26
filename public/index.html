@@ -225,7 +225,8 @@
                 const res = await fetch('/api/customers/phone/' + phone);
                 if (res.ok) {
                     const data = await res.json();
-                    if (data.customer) {
+                    // server.js returns the customer object directly on 200 OK
+                    if (data && data.id) {
                         alert("Este número ya está registrado. Por favor inicia sesión en tu perfil.");
                         btn.innerHTML = 'Reclamar L. 30';
                         btn.disabled = false;
