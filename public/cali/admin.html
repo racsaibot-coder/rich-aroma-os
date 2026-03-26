@@ -179,11 +179,89 @@
 
     <script>
         // Use local token or setup admin mechanism
-        const headers = { 'Authorization': \`Bearer \${localStorage.getItem('token') || 'TEST_TOKEN_ADMIN'}\`, 'Content-Type': 'application/json' };
+        const headers = { 'Authorization': `Bearer ${localStorage.getItem('token') || 'TEST_TOKEN_ADMIN'}`, 'Content-Type': 'application/json' };
 
         async function init() {
             await loadProducts();
-            // We will load locations and orders next, let's start with products
+            await loadLocations();
+        }
+
+
+        async function loadLocations() {
+            try {
+                const res = await fetch('/api/cali/locations', { headers });
+                const locations = await res.json();
+                const container = document.getElementById('locations-list');
+                
+                if (!locations || locations.length === 0) {
+                    container.innerHTML = '<div class="text-gray-500 italic p-4 text-center col-span-2">No locations found. Add one above.</div>';
+                    return;
+                }
+
+                container.innerHTML = locations.map(l => `
+                    <div class="bg-white p-4 rounded-xl border border-gray-100 flex justify-between items-start ${l.active ? '' : 'opacity-50'}">
+                        <div>
+                            <h4 class="font-bold">${l.name}</h4>
+                            <p class="text-xs text-gray-500"><i class="fas fa-map-marker-alt"></i> ${l.city}</p>
+                            <p class="text-xs text-brand-brown font-semibold mt-1"><i class="fas fa-user-circle"></i> ${l.distributor_name}</p>
+                        </div>
+                        <button onclick="openLocationModal('${l.id}')" class="text-gray-400 hover:text-brand-brown"><i class="fas fa-edit"></i></button>
+                    </div>
+                `).join('');
+            } catch (e) { console.error('Failed to load locations', e); }
+        }
+
+        async function openLocationModal(id = null) {
+            document.getElementById('location-modal').classList.remove('hidden');
+            const title = document.getElementById('loc-modal-title');
+            
+            if (id && typeof id === 'string') {
+                title.innerText = 'Edit Location';
+                try {
+                    const res = await fetch('/api/cali/locations', { headers });
+                    const locations = await res.json();
+                    const l = locations.find(x => x.id === id);
+                    if (l) {
+                        document.getElementById('loc-id').value = l.id;
+                        document.getElementById('loc-name').value = l.name;
+                        document.getElementById('loc-city').value = l.city;
+                        document.getElementById('loc-distro').value = l.distributor_name;
+                        document.getElementById('loc-active').checked = l.active;
+                    }
+                } catch(e) { console.error(e); }
+            } else {
+                title.innerText = 'Add Location';
+                document.getElementById('loc-id').value = '';
+                document.getElementById('loc-name').value = '';
+                document.getElementById('loc-city').value = '';
+                document.getElementById('loc-distro').value = '';
+                document.getElementById('loc-active').checked = true;
+            }
+        }
+
+        async function saveLocation() {
+            const id = document.getElementById('loc-id').value;
+            const payload = {
+                name: document.getElementById('loc-name').value,
+                city: document.getElementById('loc-city').value,
+                distributor_name: document.getElementById('loc-distro').value,
+                active: document.getElementById('loc-active').checked
+            };
+
+            const btn = document.getElementById('loc-save-btn');
+            btn.disabled = true; btn.innerText = 'Saving...';
+
+            try {
+                const url = id ? `/api/cali/locations/${id}` : '/api/cali/locations';
+                const method = id ? 'PUT' : 'POST';
+                const res = await fetch(url, { method, headers, body: JSON.stringify(payload) });
+                if (res.ok) {
+                    document.getElementById('location-modal').classList.add('hidden');
+                    loadLocations();
+                } else alert('Error saving location');
+            } catch(e) { console.error(e); } finally {
+                btn.disabled = false; btn.innerText = 'Save';
+            }
         }
 
         async function loadProducts() {
@@ -197,23 +275,23 @@
                     return;
                 }
 
-                container.innerHTML = products.map(p => \`
-                    <div class="flex items-center justify-between p-4 border border-gray-100 rounded-xl hover:shadow-md transition \${p.active ? '' : 'opacity-50'}">
+                container.innerHTML = products.map(p => `
+                    <div class="flex items-center justify-between p-4 border border-gray-100 rounded-xl hover:shadow-md transition ${p.active ? '' : 'opacity-50'}">
                         <div class="flex items-center gap-4">
                             <div class="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center text-xl overflow-hidden">
-                                \${p.image_url ? \`<img src="\${p.image_url}" class="w-full h-full object-cover">\` : '☕'}
+                                ${p.image_url ? `<img src="${p.image_url}" class="w-full h-full object-cover">` : '☕'}
                             </div>
                             <div>
-                                <h3 class="font-bold">\${p.name} \${!p.active ? '<span class="text-xs text-red-500 ml-2">(Inactive)</span>' : ''}</h3>
-                                <p class="text-sm text-gray-500">Inventory: \${p.inventory_limit === null ? '<span class="text-green-600 font-bold">Unlimited</span>' : \`<span class="text-brand-brown font-bold">\${p.inventory_limit} left</span>\`}</p>
+                                <h3 class="font-bold">${p.name} ${!p.active ? '<span class="text-xs text-red-500 ml-2">(Inactive)</span>' : ''}</h3>
+                                <p class="text-sm text-gray-500">Inventory: ${p.inventory_limit === null ? '<span class="text-green-600 font-bold">Unlimited</span>' : `<span class="text-brand-brown font-bold">${p.inventory_limit} left</span>`}</p>
                             </div>
                         </div>
                         <div class="flex items-center gap-4">
-                            <span class="font-bold font-mono">$\${parseFloat(p.price).toFixed(2)}</span>
-                            <button onclick="openProductModal('\${p.id}')" class="text-gray-400 hover:text-brand-brown"><i class="fas fa-edit"></i></button>
+                            <span class="font-bold font-mono">$${parseFloat(p.price).toFixed(2)}</span>
+                            <button onclick="openProductModal('${p.id}')" class="text-gray-400 hover:text-brand-brown"><i class="fas fa-edit"></i></button>
                         </div>
                     </div>
-                \`).join('');
+                `).join('');
             } catch (e) {
                 console.error('Failed to load products', e);
             }
@@ -273,7 +351,7 @@
             btn.disabled = true; btn.innerText = 'Saving...';
 
             try {
-                const url = id ? \`/api/cali/products/\${id}\` : '/api/cali/products';
+                const url = id ? `/api/cali/products/${id}` : '/api/cali/products';
                 const method = id ? 'PUT' : 'POST';
                 
                 const res = await fetch(url, {
@@ -300,7 +378,7 @@
             if(!confirm("Are you sure you want to delete this product?")) return;
             
             try {
-                const res = await fetch(\`/api/cali/products/\${id}\`, { method: 'DELETE', headers });
+                const res = await fetch(`/api/cali/products/${id}`, { method: 'DELETE', headers });
                 if(res.ok) {
                     document.getElementById('product-modal').classList.add('hidden');
                     loadProducts();
@@ -322,7 +400,7 @@
             try {
                 const res = await fetch('/api/admin/upload-image', {
                     method: 'POST',
-                    headers: { 'Authorization': \`Bearer \${localStorage.getItem('token') || 'TEST_TOKEN_ADMIN'}\` },
+                    headers: { 'Authorization': `Bearer ${localStorage.getItem('token') || 'TEST_TOKEN_ADMIN'}` },
                     body: formData
                 });
                 

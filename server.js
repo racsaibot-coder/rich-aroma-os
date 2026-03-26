@@ -3102,7 +3102,7 @@ app.post('/api/upload-receipt/:id', upload.single('receipt'), async (req, res) =
             .from('orders')
             .update({ 
                 transfer_receipt_url: publicUrl,
-                status: 'pending_verification' // Wait for cashier to approve
+                status: "pending_verification" // Wait for cashier to approve
             })
             .eq('id', id);
 

@@ -300,10 +300,10 @@
 
         <!-- Category Toggles -->
         <div class="px-4 pt-4 pb-2 grid grid-cols-5 gap-3 w-full">
-            <button onclick="filterCategory('all', this)" class="cat-btn bg-gray-800 text-gold px-2 py-3 rounded-xl font-bold shadow-lg hover:bg-gray-900 transition text-md tracking-wide border-2 border-gray-800 w-full text-center">Todos</button>
-            <button onclick="filterCategory('coffee', this)" class="cat-btn bg-gray-100 text-gray-700 px-2 py-3 rounded-xl font-bold shadow hover:bg-gray-200 border-2 border-gray-200 transition text-md tracking-wide w-full text-center">Café</button>
-            <button onclick="filterCategory('drinks', this)" class="cat-btn bg-gray-100 text-gray-700 px-2 py-3 rounded-xl font-bold shadow hover:bg-gray-200 border-2 border-gray-200 transition text-md tracking-wide w-full text-center">Bebidas</button>
-            <button onclick="filterCategory('food', this)" class="cat-btn bg-gray-100 text-gray-700 px-2 py-3 rounded-xl font-bold shadow hover:bg-gray-200 border-2 border-gray-200 transition text-md tracking-wide w-full text-center">Comida</button>
+            <button onclick="filterCategory('Calientes', this)" class="cat-btn bg-gray-800 text-gold px-2 py-3 rounded-xl font-bold shadow-lg hover:bg-gray-900 transition text-md tracking-wide border-2 border-gray-800 w-full text-center">☕ Calientes</button>
+            <button onclick="filterCategory('Heladas', this)" class="cat-btn bg-gray-100 text-gray-700 px-2 py-3 rounded-xl font-bold shadow hover:bg-gray-200 border-2 border-gray-200 transition text-md tracking-wide w-full text-center">🥤 Heladas</button>
+            <button onclick="filterCategory('Comida', this)" class="cat-btn bg-gray-100 text-gray-700 px-2 py-3 rounded-xl font-bold shadow hover:bg-gray-200 border-2 border-gray-200 transition text-md tracking-wide w-full text-center">🥐 Comida</button>
+            <button onclick="filterCategory('Combos', this)" class="cat-btn bg-gray-100 text-gray-700 px-2 py-3 rounded-xl font-bold shadow hover:bg-gray-200 border-2 border-gray-200 transition text-md tracking-wide w-full text-center">🔥 Combos</button>
             <button onclick="openCustomItemModal()" class="bg-purple-100 text-purple-700 px-2 py-3 rounded-xl font-bold shadow hover:bg-purple-200 border-2 border-purple-200 transition text-md tracking-wide w-full text-center"><i class="fas fa-plus"></i> Custom</button>
         </div>
 
@@ -345,21 +345,7 @@
             </button>
         </div>
 
-        <!-- WhatsApp Bot Simulator Tab -->
-        <div class="bg-gray-800 text-white p-2 text-center cursor-pointer hover:bg-gray-700" onclick="toggleBotPanel()">
-            <i class="fab fa-whatsapp"></i> Incoming WhatsApp Orders (2)
-        </div>
-        
-        <!-- Bot Panel (Overlay) -->
-        <div id="bot-panel" class="hidden absolute bottom-0 right-0 w-full h-1/2 bg-white border-t-4 border-green-500 shadow-2xl flex flex-col">
-            <div class="bg-green-600 text-white p-3 flex justify-between">
-                <span class="font-bold">🤖 Captain Rico Bot</span>
-                <button onclick="toggleBotPanel()">✕</button>
-            </div>
-            <div class="flex-1 overflow-y-auto p-4 bg-gray-100 space-y-3" id="whatsapp-feed">
-                <!-- Messages go here -->
-            </div>
-        </div>
+        <!-- WhatsApp Bot Simulator Tab Removed for now -->
 
     </div>
 
@@ -490,7 +476,7 @@
         }
         
         renderMenu();
-        simulateWhatsAppTraffic();
+        // simulateWhatsAppTraffic();
     };
 
     let cart = [];
@@ -820,7 +806,16 @@
         
         let filtered = menu;
         if(cat !== 'all') {
-            filtered = menu.filter(item => item.category === cat);
+            filtered = menu.filter(item => {
+                const itemCat = (item.category || 'Otros').toLowerCase();
+                const itemName = (item.name || '').toLowerCase();
+                const searchCat = cat.toLowerCase();
+                if (searchCat === 'calientes') return itemCat === 'hot_drinks' || itemCat === 'coffee' || itemCat.includes('caf') || itemCat.includes('t') || itemName.includes('té') || itemName.includes('chai') || itemName.includes('matcha') || itemName.includes('hot');
+                if (searchCat === 'heladas') return itemCat === 'cold_drinks' || itemCat === 'drinks' || itemCat.includes('bebida') || itemName.includes('iced') || itemName.includes('frappe') || itemName.includes('granita') || itemName.includes('licuado');
+                if (searchCat === 'comida') return itemCat === 'food' || itemCat.includes('comida');
+                if (searchCat === 'combos') return itemCat === 'combo' || itemCat.includes('combo') || itemCat.includes('paquete') || itemName.includes('combo') || itemName.includes('paquete');
+                return itemCat === searchCat;
+            });
         }
         renderMenuGrid(filtered);
     }
@@ -1583,9 +1578,9 @@
         const orderPayload = {
             items: formattedItems,
             subtotal: total,
-            tax: total * 0.15,
+            tax: 0,
             discount: 0,
-            total: total * 1.15, // rough tax estimate or exact match
+            total: total, // no tax for now
             paymentMethod: currentTenderMethod,
             customerId: currentCustomerId
         };

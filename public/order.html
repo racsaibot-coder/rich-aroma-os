@@ -83,11 +83,10 @@
         <!-- Category Filter -->
         <div class="px-4 py-3 overflow-x-auto hide-scrollbar border-b border-white/5 bg-dark sticky top-[73px] z-40">
             <div class="flex gap-2 min-w-max" id="category-filters">
-                <button class="cat-btn px-6 py-2 rounded-full border border-gold bg-gold text-dark text-sm font-bold shadow-lg" onclick="filterCategory('Combos', this)">🔥 Combos</button>
-                <button class="cat-btn px-6 py-2 rounded-full border border-white/10 bg-white/5 text-white/70 text-sm font-bold hover:bg-white/10 transition-colors" onclick="filterCategory('all', this)">Todos</button>
-                <button class="cat-btn px-6 py-2 rounded-full border border-white/10 bg-white/5 text-white/70 text-sm font-bold hover:bg-white/10 transition-colors" onclick="filterCategory('Café', this)">Café</button>
-                <button class="cat-btn px-6 py-2 rounded-full border border-white/10 bg-white/5 text-white/70 text-sm font-bold hover:bg-white/10 transition-colors" onclick="filterCategory('Bebidas', this)">Bebidas</button>
-                <button class="cat-btn px-6 py-2 rounded-full border border-white/10 bg-white/5 text-white/70 text-sm font-bold hover:bg-white/10 transition-colors" onclick="filterCategory('Comida', this)">Comida</button>
+                <button class="cat-btn px-6 py-2 rounded-full border border-gold bg-gold text-dark text-sm font-bold shadow-lg" onclick="filterCategory('Calientes', this)">☕ Calientes</button>
+                <button class="cat-btn px-6 py-2 rounded-full border border-white/10 bg-white/5 text-white/70 text-sm font-bold hover:bg-white/10 transition-colors" onclick="filterCategory('Heladas', this)">🥤 Heladas</button>
+                <button class="cat-btn px-6 py-2 rounded-full border border-white/10 bg-white/5 text-white/70 text-sm font-bold hover:bg-white/10 transition-colors" onclick="filterCategory('Comida', this)">🥐 Comida</button>
+                <button class="cat-btn px-6 py-2 rounded-full border border-white/10 bg-white/5 text-white/70 text-sm font-bold hover:bg-white/10 transition-colors" onclick="filterCategory('Combos', this)">🔥 Combos</button>
             </div>
         </div>
         <main class="px-4 py-6 space-y-8" id="menu-container">
@@ -338,8 +337,8 @@
                     const itemCat = (item.category || 'Otros').toLowerCase();
                     const itemName = (item.name || '').toLowerCase();
                     const searchCat = activeCategory.toLowerCase();
-                    if (searchCat === 'café') return itemCat === 'coffee' || itemCat.includes('caf');
-                    if (searchCat === 'bebidas') return itemCat === 'drinks' || itemCat.includes('bebida');
+                    if (searchCat === 'calientes') return itemCat === 'hot_drinks' || itemCat === 'coffee' || itemCat.includes('caf') || itemCat.includes('t') || itemName.includes('té') || itemName.includes('chai') || itemName.includes('matcha') || itemName.includes('hot');
+                    if (searchCat === 'heladas') return itemCat === 'cold_drinks' || itemCat === 'drinks' || itemCat.includes('bebida') || itemName.includes('iced') || itemName.includes('frappe') || itemName.includes('granita') || itemName.includes('licuado');
                     if (searchCat === 'comida') return itemCat === 'food' || itemCat.includes('comida');
                     if (searchCat === 'combos') return itemCat === 'combo' || itemCat.includes('combo') || itemCat.includes('paquete') || itemName.includes('combo') || itemName.includes('paquete');
                     return itemCat === searchCat;
@@ -349,10 +348,12 @@
             filteredItems.forEach(item => {
                 let cat = item.category || 'Otros';
                 const itemName = (item.name || '').toLowerCase();
-                if (cat.toLowerCase() === 'coffee') cat = 'Café';
-                if (cat.toLowerCase() === 'drinks') cat = 'Bebidas';
-                if (cat.toLowerCase() === 'food') cat = 'Comida';
-                if (cat.toLowerCase() === 'combo' || cat.toLowerCase().includes('paquete') || cat.toLowerCase().includes('combo') || itemName.includes('combo') || itemName.includes('paquete')) cat = 'Combos';
+                const catLower = cat.toLowerCase();
+                
+                if (catLower === 'hot_drinks' || catLower === 'coffee') cat = 'Calientes';
+                else if (catLower === 'cold_drinks' || catLower === 'drinks') cat = 'Heladas';
+                else if (catLower === 'food') cat = 'Comida';
+                else if (catLower === 'combos' || catLower === 'combo' || catLower.includes('paquete') || itemName.includes('combo') || itemName.includes('paquete')) cat = 'Combos';
                 
                 if(!categories[cat]) categories[cat] = [];
                 categories[cat].push(item);
@@ -579,7 +580,7 @@
             }
 
             const subtotal = cart.reduce((sum, item) => sum + item.finalPrice, 0);
-            const tax = subtotal * 0.15;
+            const tax = subtotal * 0.00;
             document.getElementById('review-subtotal').innerText = `L ${subtotal.toFixed(2)}`;
             document.getElementById('review-tax').innerText = `L ${tax.toFixed(2)}`;
             document.getElementById('review-total').innerText = `L ${(subtotal + tax).toFixed(2)}`;
@@ -761,7 +762,7 @@
 
             const items = Object.values(itemsMap);
             let subtotal = cart.reduce((sum, item) => sum + item.finalPrice, 0);
-            const tax = subtotal * 0.15;
+            const tax = subtotal * 0.00;
 
             try {
                 const payload = {

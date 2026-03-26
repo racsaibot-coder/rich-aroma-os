@@ -1,728 +1,243 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="es">
 <head>
-    <link rel="icon" type="image/png" href="/favicon.png">    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Rich Aroma OS | Dashboard</title>
+    <link rel="icon" type="image/png" href="/favicon.png">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mi Cuenta | Rich Aroma</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="theme-color" content="#1e1610">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        dark: '#0F0F0F',
+                        charcoal: '#1A1A1A',
+                        gold: '#C9A66B',
+                        goldlight: '#F4E2C0'
+                    },
+                    fontFamily: {
+                        sans: ['system-ui', 'sans-serif'],
+                        display: ['Georgia', 'serif']
+                    }
+                }
+            }
+        }
+    </script>
     <style>
-        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background-color: #f3f4f6; }
-        .tab-content { display: none; }
-        .tab-content.active { display: block; }
-        .bottom-nav { background: #1e1610; }
-        .nav-item { color: #8a8a8a; }
-        .nav-item.active { color: #C9A66B; }
+        body { background-color: #0F0F0F; color: white; }
+        .gold-gradient { background: linear-gradient(135deg, #C9A66B 0%, #F4E2C0 50%, #C9A66B 100%); }
+        .glass-card { background: rgba(26, 26, 26, 0.8); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.1); }
     </style>
 </head>
 <body class="pb-20">
 
-    <!-- SECURE PIN LOGIN -->
-    <div id="login-screen" class="fixed inset-0 bg-[#1e1610] z-50 flex flex-col items-center justify-center text-white px-6">
-        <h1 class="text-4xl font-bold mb-2 text-[#C9A66B]">RICH AROMA</h1>
-        <p class="text-gray-400 mb-8 tracking-widest text-sm">OPERATING SYSTEM</p>
+    <!-- Header -->
+    <header class="sticky top-0 z-50 bg-dark/95 backdrop-blur-md border-b border-white/5 px-6 py-4 flex justify-between items-center">
+        <div>
+            <h1 class="font-display text-xl text-gold font-bold tracking-wide">RICH AROMA</h1>
+        </div>
+        <div class="flex items-center gap-3">
+            <a href="order.html" class="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center cursor-pointer text-white hover:bg-white/20 transition">
+                <i class="fas fa-arrow-left"></i>
+            </a>
+        </div>
+    </header>
+
+    <main class="p-6 max-w-md mx-auto space-y-6">
         
-        <div class="w-full max-w-sm">
-            <input type="password" id="admin-pin" class="w-full bg-gray-800 text-center text-3xl tracking-[1em] py-4 rounded-xl mb-4 border border-gray-700 outline-none focus:border-[#C9A66B] transition" placeholder="PIN" maxlength="4">
-            <button onclick="login()" class="w-full bg-[#C9A66B] text-[#1e1610] py-4 rounded-xl font-bold text-xl hover:bg-[#b08e56]">ENTER</button>
-        </div>
-        <p id="login-error" class="text-red-400 mt-4 hidden">Incorrect PIN.</p>
-    </div>
-
-    <!-- HEADER -->
-    <div class="bg-white p-4 shadow-sm flex justify-between items-center sticky top-0 z-40">
-        <h1 class="font-bold text-xl text-gray-800" id="header-title">KPI Dashboard</h1>
-        <span class="bg-green-100 text-green-800 text-xs px-2 py-1 rounded font-bold">LIVE 🟢</span>
-    </div>
-
-    <!-- TAB 1: KPI DASHBOARD -->
-    <div id="tab-kpi" class="tab-content active p-4 space-y-4">
-        
-        <!-- Summary Cards -->
-        <div class="flex justify-end mb-2">
-            <button onclick="exportOrdersCSV()" class="text-sm bg-gray-800 text-white px-3 py-1 rounded shadow hover:bg-gray-700 flex items-center gap-1">
-                <i class="fas fa-file-csv"></i> Export Today's Orders
-            </button>
-        </div>
-        <div class="grid grid-cols-2 gap-4">
-
-            <div class="bg-white p-4 rounded-2xl shadow-sm border border-gray-100">
-                <p class="text-gray-500 text-xs font-bold uppercase">Today's Revenue</p>
-                <p class="text-2xl font-bold text-gray-800 mt-1" id="kpi-rev">L. 0</p>
+        <!-- Welcome Section -->
+        <div class="text-center">
+            <div class="w-20 h-20 rounded-full bg-charcoal border-2 border-gold mx-auto mb-4 flex items-center justify-center text-3xl font-display text-gold" id="user-initial">
+                -
             </div>
-            <div class="bg-white p-4 rounded-2xl shadow-sm border border-gray-100">
-                <p class="text-gray-500 text-xs font-bold uppercase">Orders</p>
-                <p class="text-2xl font-bold text-gray-800 mt-1" id="kpi-orders">0</p>
+            <h2 class="text-2xl font-bold font-display" id="user-name">Cargando...</h2>
+            <p class="text-white/50 text-sm font-mono mt-1" id="user-phone">---</p>
+        </div>
+
+        <!-- Balance Card -->
+        <div class="glass-card rounded-3xl p-6 relative overflow-hidden">
+            <div class="absolute top-0 right-0 p-4 opacity-10 text-6xl"><i class="fas fa-wallet"></i></div>
+            <p class="text-white/60 text-xs font-bold uppercase tracking-widest mb-1">Rico Cash Disponible</p>
+            <h3 class="text-4xl font-bold font-mono text-gold mb-2" id="user-balance">L 0.00</h3>
+            <div id="vip-badge" class="hidden inline-block bg-gold/20 border border-gold/50 text-gold px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider mt-2">
+                🌟 Miembro VIP
             </div>
-            <div class="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 col-span-2 flex justify-between items-center">
-                <div>
-                    <p class="text-gray-500 text-xs font-bold uppercase">Items Sold</p>
-                    <p class="text-2xl font-bold text-gray-800 mt-1" id="kpi-items">0</p>
+        </div>
+
+        <!-- VIP Upgrade Offer -->
+        <div id="vip-offer" class="gold-gradient rounded-3xl p-6 text-dark shadow-2xl relative overflow-hidden transform hover:scale-[1.02] transition-transform cursor-pointer" onclick="openReloadModal(1500, true)">
+            <div class="absolute -right-4 -top-4 text-7xl opacity-20"><i class="fas fa-crown"></i></div>
+            <h3 class="font-bold text-xl mb-2 font-display">Membresía VIP</h3>
+            <p class="text-sm font-semibold opacity-90 mb-4">L. 1,500 / mes</p>
+            <ul class="text-sm space-y-2 font-medium mb-4">
+                <li><i class="fas fa-check-circle mr-2"></i> 1 Café americano o negro GRATIS al día.</li>
+                <li><i class="fas fa-check-circle mr-2"></i> L. 500 en Rico Cash al instante.</li>
+            </ul>
+            <button class="w-full bg-dark text-gold font-bold py-3 rounded-xl shadow-lg">Convertirme en VIP</button>
+        </div>
+
+        <!-- Reload Wallet -->
+        <div class="glass-card rounded-3xl p-6">
+            <h3 class="font-bold text-lg mb-4">Recargar Billetera</h3>
+            <div class="grid grid-cols-3 gap-3 mb-4">
+                <button onclick="openReloadModal(100)" class="bg-white/5 border border-white/10 rounded-xl py-3 font-bold hover:bg-white/10 transition">L 100</button>
+                <button onclick="openReloadModal(200)" class="bg-white/5 border border-white/10 rounded-xl py-3 font-bold hover:bg-white/10 transition">L 200</button>
+                <button onclick="openReloadModal(500)" class="bg-gold/10 border border-gold/30 text-gold rounded-xl py-3 font-bold hover:bg-gold/20 transition">L 500</button>
+            </div>
+            <button onclick="openCustomReload()" class="w-full bg-white/5 border border-white/10 rounded-xl py-3 font-bold text-sm text-white/70 hover:bg-white/10 transition">Otro Monto</button>
+        </div>
+
+    </main>
+
+    <!-- Reload Modal -->
+    <div id="reload-modal" class="hidden fixed inset-0 bg-black/90 backdrop-blur-sm z-[100] flex flex-col justify-end">
+        <div class="bg-charcoal w-full max-h-[90vh] rounded-t-3xl shadow-2xl flex flex-col overflow-hidden border-t border-gold/20 relative animate-[slideUp_0.3s_ease-out]">
+            <div class="p-6 pt-8 pb-4 border-b border-white/5 flex justify-between items-center">
+                <h2 class="text-2xl font-bold text-white font-display" id="modal-title">Recargar Billetera</h2>
+                <button onclick="closeReloadModal()" class="w-10 h-10 rounded-full bg-white/10 text-white hover:bg-white/20 flex items-center justify-center transition-colors">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+
+            <div class="flex-1 overflow-y-auto p-6 space-y-6">
+                <div class="text-center">
+                    <p class="text-white/50 text-sm mb-1">Monto a transferir</p>
+                    <h3 class="text-4xl font-bold text-gold font-mono" id="modal-amount">L 0.00</h3>
+                    <p id="modal-vip-note" class="text-xs text-gold mt-2 hidden">Incluye L. 500 de Cash y beneficios VIP</p>
                 </div>
-                <div class="bg-blue-50 p-3 rounded-full text-blue-500">
-                    <i class="fas fa-chart-line text-xl"></i>
+
+                <div class="flex gap-4">
+                    <button onclick="copyBank('bac')" class="flex-1 bg-red-600/10 border border-red-600/30 text-red-500 py-3 rounded-xl font-bold flex flex-col items-center gap-1">
+                        <span class="text-sm">BAC</span>
+                        <i class="fas fa-copy text-lg"></i>
+                    </button>
+                    <button onclick="copyBank('banpais')" class="flex-1 bg-blue-600/10 border border-blue-600/30 text-blue-500 py-3 rounded-xl font-bold flex flex-col items-center gap-1">
+                        <span class="text-sm">Banpaís</span>
+                        <i class="fas fa-copy text-lg"></i>
+                    </button>
                 </div>
-            </div>
-        </div>
 
-        <!-- Recent Feed -->
-        <h2 class="font-bold text-gray-700 mt-6 mb-2 text-sm uppercase">Live Order Feed</h2>
-        <div class="space-y-3" id="kpi-feed">
-            <p class="text-sm text-gray-500 text-center py-4">Loading data...</p>
-        </div>
-    </div>
-
-    <!-- TAB 2: MENU MANAGER -->
-    <div id="tab-menu" class="tab-content p-4">
-        <div class="mb-4 flex gap-2">
-            <input type="text" id="menu-search" placeholder="Search items..." class="flex-1 p-3 rounded-xl border border-gray-200 shadow-sm focus:outline-none focus:ring-2 focus:ring-[#C9A66B]">
-            <button onclick="openNewMenu()" class="bg-[#C9A66B] text-white px-5 rounded-xl font-bold shadow-sm hover:bg-[#b08e56]"><i class="fas fa-plus"></i></button>
-        </div>
-        <div class="space-y-3" id="menu-list">
-            <p class="text-sm text-gray-500 text-center py-4">Loading menu...</p>
-        </div>
-    </div>
-
-    
-    <!-- TAB 3: MODIFIERS MANAGER -->
-    <div id="tab-mods" class="tab-content p-4">
-        <div class="flex gap-4 mb-4">
-            <button onclick="openNewModGroupModal()" class="w-1/2 bg-gray-800 text-white py-3 rounded-xl font-bold shadow hover:bg-gray-900">+ New Category</button>
-            <button onclick="openNewModOptionModal()" class="w-1/2 bg-blue-600 text-white py-3 rounded-xl font-bold shadow hover:bg-blue-700">+ New Option</button>
-        </div>
-        <div class="space-y-6" id="mod-list">
-
-            <p class="text-sm text-gray-500 text-center py-4">Loading modifiers...</p>
-        </div>
-    </div>
-
-    <!-- TAB 4: TIMECLOCK -->
-    <div id="tab-time" class="tab-content p-4">
-        <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 mb-6 text-center">
-            <div class="text-4xl font-mono font-bold text-gray-800 mb-2" id="live-clock">00:00:00</div>
-            <p class="text-gray-500 text-sm mb-6" id="live-date">Monday, March 2</p>
-
-            <input type="password" id="emp-pin" class="w-full bg-gray-50 text-center text-2xl tracking-[0.5em] py-3 rounded-xl border border-gray-200 mb-4 focus:outline-none" placeholder="EMP PIN" maxlength="4">
-            
-            <div class="grid grid-cols-2 gap-3">
-                <button onclick="punchClock('in')" class="bg-green-500 text-white font-bold py-3 rounded-xl shadow hover:bg-green-600"><i class="fas fa-sign-in-alt mr-2"></i> CLOCK IN</button>
-                <button onclick="punchClock('out')" class="bg-red-500 text-white font-bold py-3 rounded-xl shadow hover:bg-red-600"><i class="fas fa-sign-out-alt mr-2"></i> CLOCK OUT</button>
-            </div>
-        </div>
-
-        <h2 class="font-bold text-gray-700 mt-6 mb-2 text-sm uppercase">Currently Clocked In</h2>
-        <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden" id="active-employees">
-            <!-- Renders dynamically -->
-        </div>
-    </div>
-
-    <!-- BOTTOM NAVIGATION -->
-    <div class="bottom-nav fixed bottom-0 w-full flex justify-around p-3 pb-6 border-t border-gray-800 z-40">
-        <button onclick="switchTab('kpi')" class="nav-item active flex flex-col items-center gap-1 w-1/4" id="nav-kpi">
-            <i class="fas fa-chart-bar text-xl"></i>
-            <span class="text-[10px] font-bold tracking-wider">KPIs</span>
-        </button>
-        <button onclick="switchTab('menu')" class="nav-item flex flex-col items-center gap-1 w-1/4" id="nav-menu">
-            <i class="fas fa-hamburger text-xl"></i>
-            <span class="text-[10px] font-bold tracking-wider">MENU</span>
-        </button>
-        <button onclick="switchTab('mods')" class="nav-item flex flex-col items-center gap-1 w-1/4" id="nav-mods">
-            <i class="fas fa-sliders-h text-xl"></i>
-            <span class="text-[10px] font-bold tracking-wider">MODS</span>
-        </button>
-        <button onclick="switchTab('time')" class="nav-item flex flex-col items-center gap-1 w-1/4" id="nav-time">
-            <i class="fas fa-user-clock text-xl"></i>
-            <span class="text-[10px] font-bold tracking-wider">TIME</span>
-        </button>
-    </div>
-
-    <!-- EDIT MENU MODAL -->
-    <div id="edit-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
-        <div class="bg-white w-full max-w-sm rounded-2xl p-6 shadow-2xl">
-            <h2 class="text-xl font-bold mb-4" id="edit-name-header">Edit Item</h2>
-            <input type="hidden" id="edit-id">
-            
-            <div id="edit-new-fields" class="hidden">
-                <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Name</label>
-                <input type="text" id="edit-name-input" class="w-full p-3 border border-gray-200 rounded-xl mb-4 text-base font-bold">
-                
-                <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Category</label>
-                <select id="edit-category" class="w-full p-3 border border-gray-200 rounded-xl mb-4 text-sm bg-white">
-                    <option value="coffee">Coffee (Hot)</option>
-                    <option value="drinks">Drinks (Cold)</option>
-                    <option value="food">Food</option>
-                </select>
-            </div>
-            
-            <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Price (L.)</label>
-            <input type="number" id="edit-price" class="w-full p-3 border border-gray-200 rounded-xl mb-4 text-lg font-mono">
-            
-            <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Image URL or Upload</label>
-            <div class="flex gap-2 mb-4">
-                <input type="text" id="edit-img" class="flex-1 p-3 border border-gray-200 rounded-xl text-sm" placeholder="https://...">
-                <button onclick="document.getElementById('img-upload').click()" class="bg-gray-100 text-gray-600 px-4 rounded-xl hover:bg-gray-200 shadow-sm border border-gray-200"><i class="fas fa-upload"></i></button>
-                <input type="file" id="img-upload" class="hidden" accept="image/*" onchange="handleImageUpload(event)">
-            </div>
-
-            <div class="flex items-center justify-between p-4 bg-gray-50 rounded-xl mb-4">
-                <span class="font-bold text-gray-700">Available (86 Item)</span>
-                <label class="relative inline-flex items-center cursor-pointer">
-                    <input type="checkbox" id="edit-avail" class="sr-only peer">
-                    <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#C9A66B]"></div>
-                </label>
-            </div>
-
-            <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Modifier Groups</label>
-            <div id="edit-mod-groups-container" class="space-y-2 mb-6 max-h-32 overflow-y-auto p-3 border border-gray-200 rounded-xl bg-gray-50">
-                <!-- Injected via JS -->
-            </div>
-
-            <div class="flex gap-3">
-                <button onclick="document.getElementById('edit-modal').classList.add('hidden')" class="w-1/3 bg-gray-100 text-gray-700 py-3 rounded-xl font-bold">Cancel</button>
-                <button id="btn-delete-item" onclick="deleteMenuItem()" class="w-1/3 bg-red-100 text-red-600 py-3 rounded-xl font-bold hidden hover:bg-red-200">Delete</button>
-                <button onclick="saveMenuEdit()" class="flex-1 bg-blue-600 text-white py-3 rounded-xl font-bold shadow hover:bg-blue-700">Save</button>
-            </div>
-        </div>
-    </div>
-
-    
-    <!-- EDIT MODIFIER MODAL -->
-    <div id="edit-mod-modal" class="hidden fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50">
-        <div class="bg-white w-full max-w-sm rounded-2xl shadow-2xl p-6">
-            <h2 class="text-2xl font-bold mb-4" id="edit-mod-name">Edit Modifier</h2>
-            <input type="hidden" id="edit-mod-id">
-            
-            <div class="space-y-4">
-                <div>
-                    <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Price Adjustment (Lps)</label>
-                    <input type="number" id="edit-mod-price" class="w-full border rounded-lg p-3 outline-none focus:border-blue-500" placeholder="0">
+                <div class="bg-white/5 border border-white/10 rounded-2xl p-4 text-center">
+                    <p class="text-sm text-white/70 mb-3">Una vez hecha la transferencia, sube la captura aquí:</p>
+                    <input type="file" id="reload-receipt" accept="image/*" class="w-full text-sm text-white/50 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-bold file:bg-gold file:text-dark hover:file:bg-gold/80 cursor-pointer" onchange="submitReload()">
+                    <div id="reload-status" class="mt-3 text-sm font-bold hidden">Subiendo...</div>
                 </div>
             </div>
-            
-            <div class="flex gap-3 mt-6">
-                <button onclick="document.getElementById('edit-mod-modal').classList.add('hidden')" class="w-1/3 bg-gray-200 text-gray-800 py-3 rounded-lg font-bold hover:bg-gray-300">Cancel</button>
-                <button onclick="deleteMod()" id="btn-delete-mod" class="w-1/3 bg-red-100 text-red-600 py-3 rounded-lg font-bold hover:bg-red-200">Delete</button>
-                <button onclick="saveModEdit()" class="w-1/3 bg-blue-600 text-white py-3 rounded-lg font-bold shadow hover:bg-blue-700">Save</button>
-            </div>
         </div>
     </div>
 
-    <!-- NEW MOD GROUP MODAL -->
-    <div id="new-mod-group-modal" class="hidden fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50">
-        <div class="bg-white w-full max-w-sm rounded-2xl shadow-2xl p-6">
-            <h2 class="text-2xl font-bold mb-4">New Category (e.g. Milk)</h2>
-            <div class="space-y-4">
-                <div>
-                    <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Name</label>
-                    <input type="text" id="new-mod-group-name" class="w-full border rounded-lg p-3" placeholder="Category Name">
-                </div>
-                <div>
-                    <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Max Selections</label>
-                    <input type="number" id="new-mod-group-max" value="1" class="w-full border rounded-lg p-3">
-                </div>
-                <div class="flex items-center gap-2">
-                    <input type="checkbox" id="new-mod-group-req" class="w-5 h-5">
-                    <label class="text-sm font-bold text-gray-700">Required Choice?</label>
-                </div>
-            </div>
-            <div class="flex gap-3 mt-6">
-                <button onclick="document.getElementById('new-mod-group-modal').classList.add('hidden')" class="w-1/2 bg-gray-200 py-3 rounded-lg font-bold">Cancel</button>
-                <button onclick="saveNewModGroup()" class="w-1/2 bg-gray-800 text-white py-3 rounded-lg font-bold">Create</button>
-            </div>
-        </div>
-    </div>
+    <script>
+        let currentCustomer = null;
+        let reloadAmount = 0;
+        let isVipPurchase = false;
 
-    <!-- NEW MOD OPTION MODAL -->
-    <div id="new-mod-option-modal" class="hidden fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50">
-        <div class="bg-white w-full max-w-sm rounded-2xl shadow-2xl p-6">
-            <h2 class="text-2xl font-bold mb-4">New Option (e.g. Oat Milk)</h2>
-            <div class="space-y-4">
-                <div>
-                    <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Category</label>
-                    <select id="new-mod-opt-group" class="w-full border rounded-lg p-3"></select>
-                </div>
-                <div>
-                    <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Name</label>
-                    <input type="text" id="new-mod-opt-name" class="w-full border rounded-lg p-3" placeholder="Option Name">
-                </div>
-                <div>
-                    <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Price Add-on (Lps)</label>
-                    <input type="number" id="new-mod-opt-price" value="0" class="w-full border rounded-lg p-3">
-                </div>
-            </div>
-            <div class="flex gap-3 mt-6">
-                <button onclick="document.getElementById('new-mod-option-modal').classList.add('hidden')" class="w-1/2 bg-gray-200 py-3 rounded-lg font-bold">Cancel</button>
-                <button onclick="saveNewModOption()" class="w-1/2 bg-blue-600 text-white py-3 rounded-lg font-bold">Create</button>
-            </div>
-        </div>
-    </div>
-<script>
-    // --- AUTH ---
-    function login() {
-        const pin = document.getElementById('admin-pin').value;
-        if(pin === '1234') { // Secure server-side later, ok for now as requested
-            document.getElementById('login-screen').classList.add('hidden');
-            loadKPIs();
-        } else {
-            document.getElementById('login-error').classList.remove('hidden');
-        }
-    }
-
-    // --- NAVIGATION ---
-    const titles = { 'kpi': 'Live KPIs', 'menu': 'Menu Manager', 'mods': 'Modifiers', 'time': 'Timeclock & Staff' };
-    function switchTab(tabId) {
-        document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
-        document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
-        
-        document.getElementById(`tab-${tabId}`).classList.add('active');
-        document.getElementById(`nav-${tabId}`).classList.add('active');
-        document.getElementById('header-title').innerText = titles[tabId];
-
-        if(tabId === 'kpi') loadKPIs();
-        if(tabId === 'menu') loadMenu();
-        if(tabId === 'mods') loadMods();
-        if(tabId === 'time') loadTimeclock();
-    }
-
-    // --- KPI LOGIC ---
-    async function loadKPIs() {
-        try {
-            const res = await fetch('/api/admin/kpi');
-            const data = await res.json();
-            
-            document.getElementById('kpi-rev').innerText = `L. ${data.todayRevenue.toFixed(2)}`;
-            document.getElementById('kpi-orders').innerText = data.todayOrders;
-            document.getElementById('kpi-items').innerText = data.todayItemsSold;
-
-            const feed = document.getElementById('kpi-feed');
-            if(!data.orders || data.orders.length === 0) {
-                feed.innerHTML = '<p class="text-sm text-gray-500 text-center">No orders today yet.</p>';
+        async function loadProfile() {
+            const phone = localStorage.getItem('ra_phone');
+            if (!phone) {
+                window.location.href = 'join.html';
                 return;
             }
 
-            feed.innerHTML = data.orders.map(o => {
-                const time = new Date(o.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
-                const summary = o.items ? o.items.map(i => `${i.qty}x ${i.name}`).join(', ') : 'Custom Order';
-                return `
-                <div class="bg-white p-3 rounded-xl shadow-sm border border-gray-100 flex justify-between items-center">
-                    <div class="flex-1 truncate pr-4">
-                        <div class="flex items-center gap-2">
-                            <span class="text-xs font-bold text-gray-400">${time}</span>
-                            <span class="text-xs bg-green-100 text-green-700 px-2 rounded-full">PAID</span>
-                        </div>
-                        <p class="text-sm font-medium text-gray-800 truncate mt-1">${summary}</p>
-                    </div>
-                    <div class="font-mono font-bold text-gray-800">L.${o.total.toFixed(2)}</div>
-                </div>
-                `;
-            }).join('');
-        } catch(e) { console.error(e); }
-    }
-
-    // --- MENU MANAGER LOGIC ---
-    let menuData = [];
-    async function loadMenu() {
-        try {
-            const res = await fetch('/api/admin/menu', {
-                headers: { 'Authorization': 'Bearer EMP-admin_id_here' }
-            });
-            const data = await res.json();
-            menuData = data.items;
-            if (modGroupsData.length === 0) await loadMods();
-            renderMenuManager();
-        } catch(e) { console.error(e); }
-    }
-
-    function renderMenuManager() {
-        const list = document.getElementById('menu-list');
-        const query = document.getElementById('menu-search').value.toLowerCase();
-        
-        const filtered = menuData.filter(i => i.name.toLowerCase().includes(query));
-        
-        list.innerHTML = filtered.map(item => `
-            <div class="bg-white p-3 rounded-xl shadow-sm border border-gray-100 flex justify-between items-center ${!item.available ? 'opacity-50' : ''}" onclick="openEditMenu('${item.id}')">
-                <div class="flex items-center gap-3">
-                    <img src="${item.image_url || 'https://images.unsplash.com/photo-1510591509098-f4fdc6d0ff04?w=100&q=80'}" class="w-12 h-12 rounded-lg object-cover">
-                    <div>
-                        <p class="font-bold text-gray-800 leading-tight">${item.name}</p>
-                        <p class="text-xs text-gray-500 font-mono">L. ${item.price}</p>
-                    </div>
-                </div>
-                <div>
-                    ${item.available ? '<span class="text-green-500"><i class="fas fa-check-circle"></i></span>' : '<span class="text-red-500 font-bold text-xs bg-red-100 px-2 py-1 rounded">86\'d</span>'}
-                </div>
-            </div>
-        `).join('');
-    }
-
-    document.getElementById('menu-search').addEventListener('input', renderMenuManager);
-
-    function renderModifierGroupsCheckboxes(selectedIds = []) {
-        const container = document.getElementById('edit-mod-groups-container');
-        if (!modGroupsData || modGroupsData.length === 0) {
-            container.innerHTML = '<p class="text-xs text-gray-400">No modifier groups available.</p>';
-            return;
-        }
-        container.innerHTML = modGroupsData.map(g => `
-            <label class="flex items-center gap-2 text-sm text-gray-700 cursor-pointer">
-                <input type="checkbox" value="${g.id}" class="mod-group-cb rounded text-[#C9A66B] focus:ring-[#C9A66B]" ${selectedIds.includes(g.id) ? 'checked' : ''}>
-                ${g.name}
-            </label>
-        `).join('');
-    }
-
-    function openNewMenu() {
-        document.getElementById('edit-id').value = 'NEW';
-        document.getElementById('edit-name-header').innerText = 'Add New Item';
-        
-        document.getElementById('edit-new-fields').classList.remove('hidden');
-        document.getElementById('edit-name-input').value = '';
-        document.getElementById('edit-category').value = 'coffee';
-        
-        document.getElementById('edit-price').value = '';
-        document.getElementById('edit-img').value = '';
-        document.getElementById('edit-avail').checked = true;
-        
-        renderModifierGroupsCheckboxes([]);
-
-        document.getElementById('btn-delete-item').classList.add('hidden');
-        document.getElementById('edit-modal').classList.remove('hidden');
-    }
-
-    function openEditMenu(id) {
-        const item = menuData.find(i => i.id === id);
-        if(!item) return;
-        
-        document.getElementById('edit-id').value = item.id;
-        document.getElementById('edit-name-header').innerText = `Edit: ${item.name}`;
-        
-        document.getElementById('edit-new-fields').classList.remove('hidden');
-        document.getElementById('edit-name-input').value = item.name;
-        document.getElementById('edit-category').value = item.category || 'coffee';
-        
-        document.getElementById('edit-price').value = item.price;
-        document.getElementById('edit-img').value = item.image_url || '';
-        document.getElementById('edit-avail').checked = item.available;
-        
-        renderModifierGroupsCheckboxes(item.modifier_groups || []);
-
-        document.getElementById('btn-delete-item').classList.remove('hidden');
-        document.getElementById('edit-modal').classList.remove('hidden');
-    }
-
-    function handleImageUpload(event) {
-        const file = event.target.files[0];
-        if (!file) return;
-
-        const reader = new FileReader();
-        reader.onload = (e) => {
-            const img = new Image();
-            img.onload = () => {
-                const canvas = document.createElement('canvas');
-                const MAX_SIZE = 400;
-                let width = img.width;
-                let height = img.height;
-
-                if (width > height) {
-                    if (width > MAX_SIZE) {
-                        height *= MAX_SIZE / width;
-                        width = MAX_SIZE;
-                    }
+            try {
+                const res = await fetch(`/api/customer/profile?phone=${phone}`);
+                if (res.ok) {
+                    currentCustomer = await res.json();
+                    renderProfile();
                 } else {
-                    if (height > MAX_SIZE) {
-                        width *= MAX_SIZE / height;
-                        height = MAX_SIZE;
-                    }
+                    window.location.href = 'join.html';
                 }
-
-                canvas.width = width;
-                canvas.height = height;
-                const ctx = canvas.getContext('2d');
-                ctx.drawImage(img, 0, 0, width, height);
-
-                const dataUrl = canvas.toDataURL('image/webp', 0.8);
-                document.getElementById('edit-img').value = dataUrl;
-            };
-            img.src = e.target.result;
-        };
-        reader.readAsDataURL(file);
-    }
-
-    async function saveMenuEdit() {
-        const id = document.getElementById('edit-id').value;
-        
-        // Grab checked modifier groups
-        const modifier_groups = Array.from(document.querySelectorAll('.mod-group-cb:checked')).map(cb => cb.value);
-
-        const payload = {
-            price: parseFloat(document.getElementById('edit-price').value),
-            image_url: document.getElementById('edit-img').value,
-            available: document.getElementById('edit-avail').checked,
-            name: document.getElementById('edit-name-input').value,
-            category: document.getElementById('edit-category').value,
-            modifier_groups
-        };
-        
-        let method = 'PUT';
-        let url = `/api/admin/menu/${id}`;
-
-        if (id === 'NEW') {
-            method = 'POST';
-            url = '/api/admin/menu';
-            if (!payload.name || isNaN(payload.price)) {
-                alert("Please fill out name and price.");
-                return;
+            } catch (e) {
+                console.error(e);
             }
-        } else {
-            payload.id = id;
         }
 
-        try {
-            const res = await fetch(url, {
-                method: method,
-                headers: { 
-                    'Content-Type': 'application/json',
-                    'Authorization': 'Bearer EMP-admin_id_here'
-                },
-                body: JSON.stringify(payload)
-            });
-            if(res.ok) {
-                document.getElementById('edit-modal').classList.add('hidden');
-                loadMenu(); // refresh
-            } else {
-                alert("Failed to save.");
-            }
-        } catch(e) { console.error(e); }
-    }
-
-    async function deleteMenuItem() {
-        const id = document.getElementById('edit-id').value;
-        if (id === 'NEW') return;
-        if (!confirm("Are you sure you want to delete this item?")) return;
-        
-        try {
-            const res = await fetch(`/api/admin/menu/${id}`, {
-                method: 'DELETE',
-                headers: { 'Authorization': 'Bearer EMP-admin_id_here' }
-            });
-            if (res.ok) {
-                document.getElementById('edit-modal').classList.add('hidden');
-                loadMenu();
-            } else {
-                alert("Failed to delete.");
-            }
-        } catch(e) { console.error(e); }
-    }
-
-    // --- MODIFIERS LOGIC ---
-    let modGroupsData = [];
-    let modOptionsData = [];
-
-    async function loadMods() {
-        try {
-            const res = await fetch('/api/admin/modifiers');
-            const data = await res.json();
-            modGroupsData = data.modGroups || [];
-            modOptionsData = data.modOptions || [];
-            renderMods();
-        } catch(e) { console.error(e); }
-    }
-
-    function renderMods() {
-        const container = document.getElementById('mod-list');
-        let html = '';
-
-        modGroupsData.forEach(group => {
-            html += `
-                <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-100">
-                    <h3 class="font-bold text-gray-800 uppercase tracking-widest text-sm mb-3 border-b pb-2">${group.name}</h3>
-                    <div class="space-y-2">
-            `;
+        function renderProfile() {
+            document.getElementById('user-name').innerText = currentCustomer.name;
+            document.getElementById('user-initial').innerText = currentCustomer.name.charAt(0).toUpperCase();
+            document.getElementById('user-phone').innerText = currentCustomer.phone;
             
-            const options = modOptionsData.filter(o => o.group_id === group.id);
-            options.forEach(opt => {
-                html += `
-                    <div class="flex justify-between items-center p-2 hover:bg-gray-50 rounded-lg cursor-pointer transition-colors" onclick="openModEdit('${opt.id}')">
-                        <div>
-                            <p class="font-medium text-gray-700">${opt.name}</p>
-                            ${opt.is_default ? '<span class="text-[10px] bg-green-100 text-green-700 px-2 py-0.5 rounded-full font-bold">DEFAULT</span>' : ''}
-                        </div>
-                        <div class="font-mono text-sm font-bold text-gold">
-                            ${opt.price_adjustment > 0 ? '+L. ' + opt.price_adjustment : 'L. 0'} <i class="fas fa-chevron-right text-gray-300 ml-2"></i>
-                        </div>
-                    </div>
-                `;
-            });
+            const totalCash = (parseFloat(currentCustomer.cash_balance) || 0) + (parseFloat(currentCustomer.membership_credit) || 0);
+            document.getElementById('user-balance').innerText = `L ${totalCash.toFixed(2)}`;
 
-            html += `</div></div>`;
-        });
-
-        container.innerHTML = html;
-    }
-
-    
-    function openNewModGroupModal() {
-        document.getElementById('new-mod-group-name').value = '';
-        document.getElementById('new-mod-group-max').value = '1';
-        document.getElementById('new-mod-group-req').checked = false;
-        document.getElementById('new-mod-group-modal').classList.remove('hidden');
-    }
-
-    function openNewModOptionModal() {
-        const select = document.getElementById('new-mod-opt-group');
-        select.innerHTML = modGroupsData.map(g => `<option value="${g.id}">${g.name}</option>`).join('');
-        document.getElementById('new-mod-opt-name').value = '';
-        document.getElementById('new-mod-opt-price').value = '0';
-        document.getElementById('new-mod-option-modal').classList.remove('hidden');
-    }
-
-    async function saveNewModGroup() {
-        const name = document.getElementById('new-mod-group-name').value;
-        const max = parseInt(document.getElementById('new-mod-group-max').value);
-        const req = document.getElementById('new-mod-group-req').checked;
-
-        try {
-            const res = await fetch('/api/admin/modifiers/groups', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer EMP-admin_id_here' },
-                body: JSON.stringify({ name, max_selections: max, required: req })
-            });
-            if(res.ok) {
-                document.getElementById('new-mod-group-modal').classList.add('hidden');
-                loadMods();
+            if (currentCustomer.is_vip) {
+                document.getElementById('vip-badge').classList.remove('hidden');
+                document.getElementById('vip-offer').classList.add('hidden');
             }
-        } catch(e) { console.error(e); }
-    }
+        }
 
-    async function saveNewModOption() {
-        const group_id = document.getElementById('new-mod-opt-group').value;
-        const name = document.getElementById('new-mod-opt-name').value;
-        const price = parseFloat(document.getElementById('new-mod-opt-price').value);
-
-        try {
-            const res = await fetch('/api/admin/modifiers/options', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer EMP-admin_id_here' },
-                body: JSON.stringify({ group_id, name, price_adjustment: price, is_default: false })
-            });
-            if(res.ok) {
-                document.getElementById('new-mod-option-modal').classList.add('hidden');
-                loadMods();
-            }
-        } catch(e) { console.error(e); }
-    }
-
-    async function deleteMod() {
-        if(!confirm("Are you sure you want to delete this option?")) return;
-        const id = document.getElementById('edit-mod-id').value;
-
-        try {
-            const res = await fetch(`/api/admin/modifiers/options/${id}`, {
-                method: 'DELETE',
-                headers: { 'Authorization': 'Bearer EMP-admin_id_here' }
-            });
-            if(res.ok) {
-                document.getElementById('edit-mod-modal').classList.add('hidden');
-                loadMods();
-            }
-        } catch(e) { console.error(e); }
-    }
-
-    function openModEdit(id) {
-
-        const opt = modOptionsData.find(o => o.id === id);
-        if(!opt) return;
-        
-        document.getElementById('edit-mod-id').value = opt.id;
-        document.getElementById('edit-mod-name').innerText = `Edit: ${opt.name}`;
-        document.getElementById('edit-mod-price').value = opt.price_adjustment;
-        
-        document.getElementById('edit-mod-modal').classList.remove('hidden');
-    }
-
-    async function saveModEdit() {
-        const id = document.getElementById('edit-mod-id').value;
-        const price_adjustment = parseFloat(document.getElementById('edit-mod-price').value);
-
-        try {
-            const res = await fetch(`/api/admin/modifiers/${id}`, {
-                method: 'PATCH',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ id, price_adjustment })
-            });
-            if(res.ok) {
-                document.getElementById('edit-mod-modal').classList.add('hidden');
-                loadMods();
-            } else {
-                alert("Failed to save modifier.");
-            }
-        } catch(e) { console.error(e); }
-    }
-
-    // --- TIMECLOCK LOGIC ---
-    setInterval(() => {
-        const now = new Date();
-        document.getElementById('live-clock').innerText = now.toLocaleTimeString();
-        document.getElementById('live-date').innerText = now.toLocaleDateString([], {weekday:'long', month:'long', day:'numeric'});
-    }, 1000);
-
-    async function loadTimeclock() {
-        try {
-            const res = await fetch('/api/admin/timeclock_status');
-            const data = await res.json();
-            const container = document.getElementById('active-employees');
+        function openReloadModal(amount, isVip = false) {
+            reloadAmount = amount;
+            isVipPurchase = isVip;
             
-            const activeList = data.active.filter(e => e.status === 'Clocked In');
+            document.getElementById('modal-amount').innerText = `L ${amount.toFixed(2)}`;
+            document.getElementById('modal-title').innerText = isVip ? 'Membresía VIP' : 'Recargar Billetera';
             
-            if (activeList.length === 0) {
-                container.innerHTML = '<div class="p-4 text-center text-gray-500 text-sm">No one is currently clocked in.</div>';
-                return;
+            if (isVip) document.getElementById('modal-vip-note').classList.remove('hidden');
+            else document.getElementById('modal-vip-note').classList.add('hidden');
+
+            document.getElementById('reload-status').classList.add('hidden');
+            document.getElementById('reload-receipt').classList.remove('hidden');
+            document.getElementById('reload-receipt').value = '';
+
+            document.getElementById('reload-modal').classList.remove('hidden');
+        }
+
+        function openCustomReload() {
+            const amt = prompt("Ingresa el monto a recargar:");
+            if (amt && !isNaN(amt) && parseFloat(amt) > 0) {
+                openReloadModal(parseFloat(amt));
             }
+        }
 
-            container.innerHTML = activeList.map(e => {
-                const timeStr = new Date(e.time).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
-                return `
-                <div class="p-4 border-b border-gray-50 flex justify-between items-center">
-                    <div class="flex items-center gap-3">
-                        <div class="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold">
-                            ${e.name.charAt(0)}
-                        </div>
-                        <div>
-                            <p class="font-bold text-gray-800">${e.name}</p>
-                            <p class="text-xs text-green-600 font-bold flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-green-500 block"></span> In since ${timeStr}</p>
-                        </div>
-                    </div>
-                </div>
-                `;
-            }).join('');
-            
-        } catch (e) { console.error(e); }
-    }
+        function closeReloadModal() {
+            document.getElementById('reload-modal').classList.add('hidden');
+        }
 
-    async function punchClock(type) {
-        const pin = document.getElementById('emp-pin').value;
-        if(pin.length !== 4) return alert('Enter 4 digit PIN');
-        
-        try {
-            const res = await fetch('/api/admin/timeclock', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ pin, type })
+        function copyBank(bank) {
+            let account = bank === 'bac' ? '123456789' : '987654321';
+            navigator.clipboard.writeText(account).then(() => {
+                alert(`¡Cuenta copiada! Haz la transferencia y sube la captura aquí.`);
             });
-            const data = await res.json();
-            
-            if(res.ok) {
-                alert(`✅ ${data.employee} successfully clocked ${data.type}!`);
-                document.getElementById('emp-pin').value = '';
-                loadTimeclock();
-            } else {
-                alert(`Error: ${data.error}`);
-            }
-        } catch(e) { console.error(e); }
-    }
+        }
 
-</script>
+        async function submitReload() {
+            const input = document.getElementById('reload-receipt');
+            const statusDiv = document.getElementById('reload-status');
+            if (!input.files || input.files.length === 0) return;
+
+            statusDiv.classList.remove('hidden');
+            statusDiv.innerText = "Enviando... por favor espera.";
+            statusDiv.className = "mt-3 text-sm font-bold text-gold";
+
+            const formData = new FormData();
+            formData.append('receipt', input.files[0]);
+            formData.append('amount', reloadAmount);
+            formData.append('customerId', currentCustomer.id);
+            formData.append('isVip', isVipPurchase);
+
+            try {
+                const res = await fetch('/api/upload-topup', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                if (res.ok) {
+                    statusDiv.innerText = "¡Enviado! El cajero lo aprobará en breve.";
+                    statusDiv.className = "mt-3 text-sm font-bold text-green-400";
+                    input.classList.add('hidden');
+                } else {
+                    throw new Error('Upload failed');
+                }
+            } catch (e) {
+                console.error(e);
+                statusDiv.innerText = "Error. Intenta de nuevo.";
+                statusDiv.className = "mt-3 text-sm font-bold text-red-400";
+            }
+        }
+
+        loadProfile();
+    </script>
 </body>
 </html>

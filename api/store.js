@@ -103,7 +103,7 @@ export default async function handler(req, res) {
         const { data: modGroups } = await supabase.from('modifier_groups').select('*');
         const { data: modOptions } = await supabase.from('modifier_options').select('*');
         
-        return res.json({ items, itemModGroups, modGroups, modOptions, taxRate: 0.15 });
+        return res.json({ items, itemModGroups, modGroups, modOptions, taxRate: 0.00 });
     }
 
     // ORDERS

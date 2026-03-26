@@ -1,0 +1,75 @@
+const fs = require('fs');
+
+const posPath = './public/pos-v2.html';
+let pos = fs.readFileSync(posPath, 'utf8');
+
+const oldPosText = `        // Reset mods
+        currentMods = {};
+        
+        // Build dynamic HTML
+        const container = document.getElementById('mod-dynamic-container');
+        let html = '';
+
+        relevantGroups.forEach(groupId => {
+            const group = modGroups.find(g => g.id === groupId);
+            if (!group) return;
+            const options = modOptions.filter(o => o.group_id === groupId);
+            
+            // Set defaults
+            const defaultOpt = options.find(o => o.is_default);
+            if (defaultOpt) {
+                currentMods[groupId] = [defaultOpt.id];
+            } else {
+                currentMods[groupId] = [];
+            }
+
+            html += \`
+                <div>`;
+
+const newPosText = `        // Reset mods
+        currentMods = {};
+        
+        // 1. Initial defaults
+        relevantGroups.forEach(groupId => {
+            const options = modOptions.filter(o => o.group_id === groupId);
+            const defaultOpt = options.find(o => o.is_default);
+            currentMods[groupId] = defaultOpt ? [defaultOpt.id] : [];
+        });
+
+        // 2. Apply base recipe
+        if (currentItem.base_recipe) {
+            for (const groupId in currentMods) {
+                if (currentMods[groupId].length > 0) {
+                    const selectedOptId = currentMods[groupId][0];
+                    const selectedOpt = modOptions.find(o => o.id === selectedOptId);
+                    if (selectedOpt && currentItem.base_recipe[selectedOpt.name]) {
+                        const recipe = currentItem.base_recipe[selectedOpt.name];
+                        for (const [targetGroupId, targetOptionId] of Object.entries(recipe)) {
+                            if (currentMods[targetGroupId]) {
+                                currentMods[targetGroupId] = [targetOptionId];
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        // 3. Build dynamic HTML
+        const container = document.getElementById('mod-dynamic-container');
+        let html = '';
+
+        relevantGroups.forEach(groupId => {
+            const group = modGroups.find(g => g.id === groupId);
+            if (!group) return;
+            const options = modOptions.filter(o => o.group_id === groupId);
+            
+            html += \`
+                <div>`;
+
+if (pos.includes(oldPosText)) {
+    pos = pos.replace(oldPosText, newPosText);
+    fs.writeFileSync(posPath, pos, 'utf8');
+    console.log("Patched pos-v2.html");
+} else {
+    console.log("Could not find exact text in pos-v2.html");
+}

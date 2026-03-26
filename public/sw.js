@@ -1,4 +1,4 @@
-const CACHE_NAME = 'rich-aroma-v1';
+const CACHE_NAME = 'rich-aroma-v2';
 const ASSETS = [
     '/',
     '/index.html',

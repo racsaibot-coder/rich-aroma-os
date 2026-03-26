@@ -137,5 +137,5 @@
   "rewards": [
     {"id": "free_coffee", "name": "Free Coffee", "points": 50, "icon": "☕"}
   ],
-  "taxRate": 0.15
+  "taxRate": 0.00
 }

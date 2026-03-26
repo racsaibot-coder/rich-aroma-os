@@ -120,8 +120,8 @@
 
             <p class="text-xs text-gray-400 mb-8">Usa tu número de celular en caja para pagar.</p>
 
-            <a href="rico-run.html" class="w-full bg-yellow-400 text-yellow-900 py-4 rounded-xl font-bold text-lg shadow-lg mb-3">
-                🎮 Jugar "El Salto de Rico"
+            <a href="/order.html" class="w-full bg-yellow-400 text-yellow-900 py-4 rounded-xl font-bold text-lg shadow-lg mb-3 block text-center">
+                Volver a mi orden
             </a>
         </div>
 
@@ -153,12 +153,33 @@
         }
     }
 
-    function finish() {
-        // Here we would POST /api/customers
-        nextStep(4);
-        
-        // Confetti effect (simulated)
-        // In prod: confetti();
+    async function finish() {
+        const name = document.getElementById('input-name').value;
+        const phone = document.getElementById('input-phone').value;
+        const ig = document.getElementById('input-ig').value;
+
+        if (!name || !phone) {
+            alert('Por favor, ingresa tu nombre y celular.');
+            return;
+        }
+
+        try {
+            const res = await fetch('/api/auth/register', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name, phone, instagram: ig })
+            });
+
+            if (res.ok) {
+                localStorage.setItem('ra_phone', phone);
+                nextStep(4);
+            } else {
+                alert('Hubo un error al registrarte. Intenta de nuevo.');
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            alert('Error de conexión.');
+        }
     }
 </script>
 </body>

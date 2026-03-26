@@ -83,7 +83,11 @@
                 </div>
                 <div class="flex gap-2" id="category-filters">
                     <!-- Filters injected here -->
-                    <button onclick="filterMenu('all')" class="px-4 py-2 rounded-lg bg-gold text-dark font-bold text-sm hover:opacity-90 transition-colors">Todo</button>
+                    <button onclick="filterMenu('all')" class="hidden px-4 py-2 rounded-lg bg-gold text-dark font-bold text-sm hover:opacity-90 transition-colors">Todo</button>
+                    <button onclick="filterMenu('Calientes')" class="px-4 py-2 rounded-lg border border-white/10 bg-white/5 text-white/70 font-bold text-sm hover:bg-white/10 transition-colors">☕ Calientes</button>
+                    <button onclick="filterMenu('Heladas')" class="px-4 py-2 rounded-lg border border-white/10 bg-white/5 text-white/70 font-bold text-sm hover:bg-white/10 transition-colors">🥤 Heladas</button>
+                    <button onclick="filterMenu('Comida')" class="px-4 py-2 rounded-lg border border-white/10 bg-white/5 text-white/70 font-bold text-sm hover:bg-white/10 transition-colors">🥐 Comida</button>
+                    <button onclick="filterMenu('Combos')" class="px-4 py-2 rounded-lg border border-white/10 bg-white/5 text-white/70 font-bold text-sm hover:bg-white/10 transition-colors">🔥 Combos</button>
                 </div>
             </div>
 
@@ -236,7 +240,7 @@
         let allItems = [];
         let cart = [];
         let activeDiscount = null; // { type: 'senior', percent: 0.25, items: [] }
-        let taxRate = 0.15;
+        let taxRate = 0.00;
         let isProcessing = false;
 
         // ... (LoadMenu, RenderFilters, etc) ...
