@@ -1809,7 +1809,13 @@ async function fetchPendingVerifications() {
     try {
         const res = await fetch('/api/orders');
         const data = await res.json();
-        pendingVerifications = data.orders.filter(o => o.status === 'pending_verification' && o.notes && o.notes.includes('[RECEIPT_URL:'));
+        // Look for topups and transfer orders
+        pendingVerifications = data.orders.filter(o => {
+            if (o.status === 'pending_transfer' || o.status === 'pending_verification') {
+                return (o.receipt_url) || (o.notes && o.notes.includes('[RECEIPT_URL:'));
+            }
+            return false;
+        });
         
         const alertBtn = document.getElementById('verifyPaymentAlert');
         const countSpan = document.getElementById('verifyCount');

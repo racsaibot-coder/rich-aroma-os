@@ -992,6 +992,67 @@ app.post('/api/orders/:id/append', async (req, res) => {
     res.json({ success: true, order: updatedOrder });
 });
 
+
+app.post('/api/orders/:id/approve-topup', ensureAuthenticated, async (req, res) => {
+    try {
+        const orderId = req.params.id;
+        
+        // Get the order
+        const { data: order, error: orderErr } = await supabase
+            .from('orders')
+            .select('*')
+            .eq('id', orderId)
+            .single();
+            
+        if (orderErr || !order) return res.status(404).json({ error: 'Order not found' });
+        
+        if (order.status === 'completed') {
+            return res.status(400).json({ error: 'Already approved' });
+        }
+        
+        // Parse amount from notes: "[RECARGA] +L.25 Bono. Total a acreditar: L.525"
+        let totalToAdd = order.total; // Default to order total
+        if (order.notes && order.notes.includes('Total a acreditar: L.')) {
+            const parts = order.notes.split('Total a acreditar: L.');
+            if (parts.length > 1) {
+                totalToAdd = parseFloat(parts[1].trim());
+            }
+        }
+        
+        // Update customer balance
+        const { data: customer } = await supabase
+            .from('customers')
+            .select('cash_balance')
+            .eq('id', order.customer_id)
+            .single();
+            
+        const currentBalance = customer ? (parseFloat(customer.cash_balance) || 0) : 0;
+        
+        await supabase.from('customers')
+            .update({ cash_balance: currentBalance + totalToAdd })
+            .eq('id', order.customer_id);
+            
+        // Log transaction
+        await supabase.from('balance_history').insert({
+            customer_id: order.customer_id,
+            type: 'reload',
+            amount: totalToAdd,
+            order_id: orderId,
+            notes: order.notes
+        });
+        
+        // Mark order completed
+        await supabase.from('orders')
+            .update({ status: 'completed' })
+            .eq('id', orderId);
+            
+        res.json({ success: true, balance: currentBalance + totalToAdd });
+    } catch (e) {
+        console.error(e);
+        res.status(500).json({ error: e.message });
+    }
+});
+
 app.patch('/api/orders/:id', ensureAuthenticated, async (req, res) => {
     // Only auth'd staff can update orders
     const client = req.supabase || supabase;
