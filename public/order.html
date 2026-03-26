@@ -579,14 +579,22 @@
                 `).join('');
             }
 
-            const subtotal = cart.reduce((sum, item) => sum + item.finalPrice, 0);
+            let subtotal = cart.reduce((sum, item) => sum + item.finalPrice, 0);
+            let discount = 0;
+            if (localStorage.getItem('ra_welcome_offer') === 'true' && subtotal > 0) {
+                discount = 50;
+                if (discount > subtotal) discount = subtotal; // don't go negative
+            }
             const tax = subtotal * 0.00;
-            document.getElementById('review-subtotal').innerText = `L ${subtotal.toFixed(2)}`;
+            const total = subtotal - discount + tax;
+
+            document.getElementById('review-subtotal').innerHTML = `L ${subtotal.toFixed(2)} ${discount > 0 ? `<br><span class="text-gold text-xs">- L ${discount.toFixed(2)} (Bienvenida)</span>` : ''}`;
             document.getElementById('review-tax').innerText = `L ${tax.toFixed(2)}`;
-            document.getElementById('review-total').innerText = `L ${(subtotal + tax).toFixed(2)}`;
+            document.getElementById('review-total').innerText = `L ${total.toFixed(2)}`;
             
             // Re-evaluate payment options based on customer profile & total
-            window.currentOrderTotal = subtotal + tax;
+            window.currentOrderTotal = total;
+            window.currentOrderDiscount = discount;
             renderPaymentOptions();
             
             document.getElementById('cart-modal').classList.remove('hidden');
@@ -762,11 +770,13 @@
 
             const items = Object.values(itemsMap);
             let subtotal = cart.reduce((sum, item) => sum + item.finalPrice, 0);
+            let discount = window.currentOrderDiscount || 0;
             const tax = subtotal * 0.00;
+            const total = subtotal - discount + tax;
 
             try {
                 const payload = {
-                    items, subtotal, tax, discount: 0, total: subtotal+tax,
+                    items, subtotal, tax, discount: discount, total: total,
                     paymentMethod: paymentMethod,
                     fulfillment: fulfillmentType,
                     notes: `Mobile Order (${fulfillmentType}) ${orderNotes ? '- ' + orderNotes : ''}`
@@ -782,6 +792,8 @@
                 if (!res.ok) throw new Error('Error saving');
                 const savedOrder = await res.json();
                 
+                if (discount > 0) localStorage.removeItem('ra_welcome_offer');
+
                 cart = [];
                 updateCartUI();
                 closeCartModal();
