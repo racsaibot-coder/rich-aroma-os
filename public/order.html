@@ -579,29 +579,44 @@
                 `).join('');
             }
 
-            let subtotal = cart.reduce((sum, item) => sum + item.finalPrice, 0);
-            let discount = 0;
-            if (localStorage.getItem('ra_welcome_offer_30') === 'true' && subtotal > 0) {
-                discount = 30;
-                if (discount > subtotal) discount = subtotal; // don't go negative
-            }
-            const tax = subtotal * 0.00;
-            const total = subtotal - discount + tax;
-
-            document.getElementById('review-subtotal').innerHTML = `L ${subtotal.toFixed(2)} ${discount > 0 ? `<br><span class="text-gold text-xs">- L ${discount.toFixed(2)} (Bienvenida L.30)</span>` : ''}`;
-            document.getElementById('review-tax').innerText = `L ${tax.toFixed(2)}`;
-            document.getElementById('review-total').innerText = `L ${total.toFixed(2)}`;
-            
-            // Re-evaluate payment options based on customer profile & total
-            window.currentOrderTotal = total;
-            window.currentOrderDiscount = discount;
+            updateCartSummary();
             renderPaymentOptions();
             
             document.getElementById('cart-modal').classList.remove('hidden');
         }
 
+        function updateCartSummary() {
+            let subtotal = cart.reduce((sum, item) => sum + item.finalPrice, 0);
+            let discount = 0;
+            let discountText = "";
+            
+            if (localStorage.getItem('ra_welcome_offer_30') === 'true' && subtotal > 0) {
+                discount += 30;
+                discountText += `<br><span class="text-gold text-xs">- L 30.00 (Bienvenida L.30)</span>`;
+            }
+            
+            if (currentSelectedPayment === 'rico_balance' && subtotal > 0) {
+                const ricoDiscount = subtotal * 0.10;
+                discount += ricoDiscount;
+                discountText += `<br><span class="text-gold text-xs">- L ${ricoDiscount.toFixed(2)} (10% Rico Cash)</span>`;
+            }
+
+            if (discount > subtotal) discount = subtotal; // don't go negative
+            
+            const tax = subtotal * 0.00;
+            const total = subtotal - discount + tax;
+
+            document.getElementById('review-subtotal').innerHTML = `L ${subtotal.toFixed(2)} ${discountText}`;
+            document.getElementById('review-tax').innerText = `L ${tax.toFixed(2)}`;
+            document.getElementById('review-total').innerText = `L ${total.toFixed(2)}`;
+            
+            window.currentOrderTotal = total;
+            window.currentOrderDiscount = discount;
+        }
+
         function selectPaymentMethod(method) {
             currentSelectedPayment = method;
+            updateCartSummary();
             renderPaymentOptions();
         }
 
@@ -629,7 +644,7 @@
             html += '</div>';
 
             if (hasRicoCash) {
-                html += `<div onclick="selectPaymentMethod('rico_balance')" class="w-full mt-2 ${btnClass} ${currentSelectedPayment === 'rico_balance' ? selClass : unselClass}">💰 Rico Cash</div>`;
+                html += `<div onclick="selectPaymentMethod('rico_balance')" class="w-full mt-2 ${btnClass} ${currentSelectedPayment === 'rico_balance' ? selClass : unselClass}">💰 Rico Cash <span class="text-[10px] ml-2 bg-green-500/20 text-green-400 px-2 py-0.5 rounded-full">-10% Ahorro</span></div>`;
             }
 
             let buttonHtml = '';
@@ -769,8 +784,13 @@
             });
 
             const items = Object.values(itemsMap);
+            // Force recalculation to ensure accuracy
             let subtotal = cart.reduce((sum, item) => sum + item.finalPrice, 0);
-            let discount = window.currentOrderDiscount || 0;
+            let discount = 0;
+            if (localStorage.getItem('ra_welcome_offer_30') === 'true' && subtotal > 0) discount += 30;
+            if (paymentMethod === 'rico_balance' && subtotal > 0) discount += (subtotal * 0.10);
+            if (discount > subtotal) discount = subtotal;
+            
             const tax = subtotal * 0.00;
             const total = subtotal - discount + tax;
 
