@@ -205,7 +205,7 @@
 
                 <!-- Instant Bribe Banner -->
                 <div id="guest-bribe-banner" class="hidden bg-gold/10 border border-gold/30 rounded-2xl p-4 mb-6 text-center">
-                    <p class="text-gold font-bold text-sm mb-2">🎁 Crea una cuenta hoy y recibe L. 30 en Rico Cash al instante para esta orden.</p>
+                    <p class="text-gold font-bold text-sm mb-2">🎁 Crea una cuenta hoy y recibe L. 30 de descuento al instante en tu primera orden.</p>
                     <a href="join.html" class="inline-block bg-gold text-dark font-bold py-2 px-6 rounded-xl text-sm shadow hover:brightness-110 transition">Crear Cuenta</a>
                 </div>
 
@@ -581,14 +581,14 @@
 
             let subtotal = cart.reduce((sum, item) => sum + item.finalPrice, 0);
             let discount = 0;
-            if (localStorage.getItem('ra_welcome_offer') === 'true' && subtotal > 0) {
-                discount = 50;
+            if (localStorage.getItem('ra_welcome_offer_30') === 'true' && subtotal > 0) {
+                discount = 30;
                 if (discount > subtotal) discount = subtotal; // don't go negative
             }
             const tax = subtotal * 0.00;
             const total = subtotal - discount + tax;
 
-            document.getElementById('review-subtotal').innerHTML = `L ${subtotal.toFixed(2)} ${discount > 0 ? `<br><span class="text-gold text-xs">- L ${discount.toFixed(2)} (Bienvenida)</span>` : ''}`;
+            document.getElementById('review-subtotal').innerHTML = `L ${subtotal.toFixed(2)} ${discount > 0 ? `<br><span class="text-gold text-xs">- L ${discount.toFixed(2)} (Bienvenida L.30)</span>` : ''}`;
             document.getElementById('review-tax').innerText = `L ${tax.toFixed(2)}`;
             document.getElementById('review-total').innerText = `L ${total.toFixed(2)}`;
             
@@ -792,7 +792,7 @@
                 if (!res.ok) throw new Error('Error saving');
                 const savedOrder = await res.json();
                 
-                if (discount > 0) localStorage.removeItem('ra_welcome_offer');
+                if (discount > 0) localStorage.removeItem('ra_welcome_offer_30');
 
                 cart = [];
                 updateCartUI();

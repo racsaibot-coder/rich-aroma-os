@@ -76,7 +76,7 @@
             <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gold/10 text-gold text-2xl mb-4">
                 <i class="fas fa-gift"></i>
             </div>
-            <h2 class="text-2xl font-bold text-white mb-2">L. 50 Gratis en tu Primera Orden</h2>
+            <h2 class="text-2xl font-bold text-white mb-2">L. 30 Gratis en tu Primera Orden</h2>
             <p class="text-white/50 text-sm mb-6">Ingresa tu número de WhatsApp para reclamar tu saldo de bienvenida.</p>
 
             <form id="welcome-form" onsubmit="claimWelcomeOffer(event)" class="flex flex-col gap-3">
@@ -87,12 +87,12 @@
                 </div>
                 <input type="password" id="pin-input" placeholder="Crea un PIN (4 dígitos)" maxlength="4" required class="w-full bg-dark border border-white/10 rounded-xl py-4 px-4 text-white text-center tracking-[0.5em] focus:border-gold focus:outline-none focus:ring-1 focus:ring-gold transition-colors">
                 <button type="submit" id="claim-btn" class="w-full bg-white text-dark font-bold py-4 rounded-xl hover:bg-gray-200 transition-colors">
-                    Reclamar L. 50
+                    Reclamar L. 30
                 </button>
             </form>
 
             <div id="welcome-success" class="hidden bg-green-500/10 border border-green-500/30 text-green-400 p-4 rounded-xl mt-4">
-                <i class="fas fa-check-circle mr-2"></i> ¡Cuenta creada! Tus L.50 se aplicarán automáticamente al realizar tu primera orden. <a href="/order" class="underline font-bold ml-1">Pide ahora.</a>
+                <i class="fas fa-check-circle mr-2"></i> ¡Cuenta creada! Tus L.30 se aplicarán automáticamente al realizar tu primera orden. <a href="/order" class="underline font-bold ml-1">Pide ahora.</a>
             </div>
         </div>
     </section>
@@ -226,14 +226,14 @@
                 localStorage.setItem('ra_customer_name', name);
                 localStorage.setItem('ra_customer_phone', phone);
                 localStorage.setItem('ra_customer_pin', pin);
-                localStorage.setItem('ra_welcome_offer_pending', 'true'); // Will be claimed after first order
+                localStorage.setItem('ra_welcome_offer_30', 'true'); // Will be claimed after first order
 
                 document.getElementById('welcome-form').classList.add('hidden');
                 document.getElementById('welcome-success').classList.remove('hidden');
 
             } catch(err) {
                 alert("Ocurrió un error. Intenta de nuevo.");
-                btn.innerHTML = 'Reclamar L. 50';
+                btn.innerHTML = 'Reclamar L. 30';
                 btn.disabled = false;
             }
         }
