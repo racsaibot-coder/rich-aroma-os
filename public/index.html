@@ -221,7 +221,28 @@
             btn.disabled = true;
 
             try {
-                await new Promise(r => setTimeout(r, 800)); // Fake network delay
+                // Check if phone already exists via API
+                const res = await fetch('/api/customers/phone/' + phone);
+                if (res.ok) {
+                    const data = await res.json();
+                    if (data.customer) {
+                        alert("Este número ya está registrado. Por favor inicia sesión en tu perfil.");
+                        btn.innerHTML = 'Reclamar L. 30';
+                        btn.disabled = false;
+                        return;
+                    }
+                }
+                
+                // If we got here, phone is new. Create the profile via API immediately
+                const createRes = await fetch('/api/customers', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name: name, phone: phone, pin: pin })
+                });
+                
+                if (!createRes.ok) {
+                    throw new Error("No se pudo crear la cuenta");
+                }
                 
                 localStorage.setItem('ra_customer_name', name);
                 localStorage.setItem('ra_customer_phone', phone);
