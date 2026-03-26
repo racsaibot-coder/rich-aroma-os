@@ -39,8 +39,8 @@
 
         function copyBankInfo(bank) {
             let account = '';
-            if (bank === 'bac') account = '123456789'; // TODO: Update with real BAC account
-            if (bank === 'banpais') account = '987654321'; // TODO: Update with real Banpais account
+            if (bank === 'bac') account = '756132311'; // TODO: Update with real BAC account
+            if (bank === 'banpais') account = '210850188679'; // TODO: Update with real Banpais account
             
             navigator.clipboard.writeText(account).then(() => {
                 alert(`¡Cuenta de ${bank.toUpperCase()} (${account}) copiada! Haz la transferencia y sube la captura aquí.`);
