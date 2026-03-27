@@ -595,7 +595,13 @@
                 discountText += `<br><span class="text-gold text-xs">- L 30.00 (Bienvenida L.30)</span>`;
             }
             
-            if (currentSelectedPayment === 'rico_balance' && subtotal > 0) {
+            // Check if they have enough balance to cover the ENTIRE order (before the 10% discount is applied)
+            // If they don't, they don't get the 10% discount. This forces them to top up.
+            const totalBeforeRicoDiscount = subtotal - discount;
+            const ricoBalance = currentCustomer ? ((parseFloat(currentCustomer.cash_balance) || 0) + (parseFloat(currentCustomer.membership_credit) || 0)) : 0;
+            const coversFull = ricoBalance >= totalBeforeRicoDiscount;
+            
+            if (currentSelectedPayment === 'rico_balance' && coversFull && subtotal > 0) {
                 const ricoDiscount = subtotal * 0.10;
                 discount += ricoDiscount;
                 discountText += `<br><span class="text-gold text-xs">- L ${ricoDiscount.toFixed(2)} (10% Rico Cash)</span>`;
@@ -624,9 +630,12 @@
             const container = document.getElementById('payment-selection-container');
             const buttonContainer = document.getElementById('checkout-options');
             const total = window.currentOrderTotal || 0;
-            const hasRicoCash = currentCustomer && ((parseFloat(currentCustomer.cash_balance) || 0) + (parseFloat(currentCustomer.membership_credit) || 0)) >= total;
             
-            if (currentSelectedPayment === 'rico_balance' && !hasRicoCash) {
+            const ricoBalance = currentCustomer ? ((parseFloat(currentCustomer.cash_balance) || 0) + (parseFloat(currentCustomer.membership_credit) || 0)) : 0;
+            const hasAnyRicoCash = ricoBalance > 0;
+            const coversFull = ricoBalance >= total;
+            
+            if (currentSelectedPayment === 'rico_balance' && !hasAnyRicoCash) {
                 currentSelectedPayment = 'cash';
             }
 
@@ -643,8 +652,26 @@
             
             html += '</div>';
 
-            if (hasRicoCash) {
-                html += `<div onclick="selectPaymentMethod('rico_balance')" class="w-full mt-2 ${btnClass} ${currentSelectedPayment === 'rico_balance' ? selClass : unselClass}">💰 Rico Cash <span class="text-[10px] ml-2 bg-green-500/20 text-green-400 px-2 py-0.5 rounded-full">-10% Ahorro</span></div>`;
+            if (hasAnyRicoCash) {
+                html += `<div onclick="selectPaymentMethod('rico_balance')" class="w-full mt-2 ${btnClass} ${currentSelectedPayment === 'rico_balance' ? selClass : unselClass}">
+                    💰 Rico Cash (L. ${ricoBalance.toFixed(2)}) 
+                    ${coversFull ? '<span class="text-[10px] ml-2 bg-green-500/20 text-green-400 px-2 py-0.5 rounded-full">-10% Ahorro</span>' : ''}
+                </div>`;
+            }
+            
+            let isSplitPayment = false;
+            let remainingBalanceToPay = 0;
+            
+            if (currentSelectedPayment === 'rico_balance' && !coversFull) {
+                isSplitPayment = true;
+                remainingBalanceToPay = total - ricoBalance;
+                html += `
+                    <div class="mt-4 p-4 bg-orange-500/10 border border-orange-500/30 rounded-2xl text-center">
+                        <p class="text-orange-400 text-sm font-bold mb-1">Pago Dividido Requerido</p>
+                        <p class="text-white/70 text-xs">Tu Rico Cash cubre L. ${ricoBalance.toFixed(2)}. Falta pagar <span class="font-bold text-white">L. ${remainingBalanceToPay.toFixed(2)}</span> en caja al recoger.</p>
+                        <p class="text-white/50 text-[10px] mt-2 italic">*El descuento del 10% solo aplica si el Rico Cash cubre el total de la orden.</p>
+                    </div>
+                `;
             }
 
             let buttonHtml = '';
@@ -671,9 +698,10 @@
                     </button>
                 `;
             } else {
+                const btnText = isSplitPayment ? 'Confirmar Orden (Pago Dividido)' : 'Confirmar Orden';
                 buttonHtml = `
                     <button id="final-checkout-btn" onclick="submitOrder('${currentSelectedPayment}')" class="w-full mt-2 gold-btn py-4 rounded-2xl font-bold text-lg shadow-xl shadow-gold/20 flex justify-center items-center gap-2 active:scale-95 transition-transform">
-                        <span>Confirmar Orden</span> <i class="fas fa-arrow-right"></i>
+                        <span>${btnText}</span> ${isSplitPayment ? '<i class="fas fa-adjust"></i>' : '<i class="fas fa-arrow-right"></i>'}
                     </button>
                 `;
             }
@@ -788,7 +816,15 @@
             let subtotal = cart.reduce((sum, item) => sum + item.finalPrice, 0);
             let discount = 0;
             if (localStorage.getItem('ra_welcome_offer_30') === 'true' && subtotal > 0) discount += 30;
-            if (paymentMethod === 'rico_balance' && subtotal > 0) discount += (subtotal * 0.10);
+            
+            const totalBeforeRicoDiscount = subtotal - discount;
+            const ricoBalance = currentCustomer ? ((parseFloat(currentCustomer.cash_balance) || 0) + (parseFloat(currentCustomer.membership_credit) || 0)) : 0;
+            const coversFull = ricoBalance >= totalBeforeRicoDiscount;
+            
+            if (paymentMethod === 'rico_balance' && coversFull && subtotal > 0) {
+                discount += (subtotal * 0.10);
+            }
+            
             if (discount > subtotal) discount = subtotal;
             
             const tax = subtotal * 0.00;
