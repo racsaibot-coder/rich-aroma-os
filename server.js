@@ -486,6 +486,35 @@ app.get('/api/admin/leads', requireAdmin, async (req, res) => {
 });
 
 // Profile / Data Fetch
+
+// Customer PIN Login
+app.post('/api/customer/login', async (req, res) => {
+    const { phone, pin } = req.body;
+    if (!phone || !pin) return res.status(400).json({ error: "Teléfono y PIN requeridos" });
+    
+    const cleanPhone = phone.replace(/[^\d+]/g, '');
+    
+    const { data: customer, error } = await supabase
+        .from('customers')
+        .select('*')
+        .eq('phone', cleanPhone)
+        .single();
+        
+    if (error || !customer) return res.status(404).json({ error: "Usuario no encontrado" });
+    
+    if (customer.pin) {
+        if (customer.pin !== pin) {
+            return res.status(401).json({ error: "PIN incorrecto" });
+        }
+        res.json({ message: "Login successful", customer });
+    } else {
+        // First time setting PIN
+        await supabase.from('customers').update({ pin }).eq('id', customer.id);
+        customer.pin = pin;
+        res.json({ message: "PIN creado exitosamente", customer });
+    }
+});
+
 app.get('/api/customer/profile', async (req, res) => {
     const phone = req.query.phone;
     if(!phone) return res.status(400).json({error: "Phone required"});
@@ -1060,7 +1089,7 @@ app.patch('/api/orders/:id', ensureAuthenticated, async (req, res) => {
     // 1. Fetch current order status to prevent double-awarding
     const { data: currentOrder, error: fetchError } = await client
         .from('orders')
-        .select('status, customer_id, total, payment_method')
+        .select('status, customer_id, total, payment_method, items')
         .eq('id', req.params.id)
         .single();
 
@@ -1080,7 +1109,32 @@ app.patch('/api/orders/:id', ensureAuthenticated, async (req, res) => {
     
     if (error) return res.status(404).json({ error: 'Order not found' });
 
-    // 2. Loyalty Logic: Award points if completing an order
+    // 1.5 Handle Top-Up Approval (Rico Cash Reload)
+    if (req.body.status === 'paid' && currentOrder.status !== 'paid' && currentOrder.items) {
+        // Check if any item is a reload
+        const reloadItem = currentOrder.items.find(i => i.id === 'rico_cash_reload');
+        if (reloadItem && currentOrder.customer_id) {
+            const amountToCredit = parseFloat(reloadItem.finalPrice) || 0;
+            // Get customer
+            const { data: customer } = await client
+                .from('customers')
+                .select('*')
+                .eq('id', currentOrder.customer_id)
+                .single();
+            if (customer) {
+                const currentCash = parseFloat(customer.cash_balance) || 0;
+                await client.from('customers').update({ cash_balance: currentCash + amountToCredit }).eq('id', customer.id);
+                // Also log it
+                await client.from('balance_history').insert({
+                    customer_id: customer.id,
+                    amount: amountToCredit,
+                    type: 'credit',
+                    description: 'Recarga Rico Cash (Transferencia Aprobada)',
+                    balance_after: currentCash + amountToCredit
+                });
+            }
+        }
+    }\n\n    // 2. Loyalty Logic: Award points if completing an order
     if (req.body.status === 'completed' && currentOrder.status !== 'completed' && updatedOrder.customer_id) {
         try {
             const { data: customer } = await client

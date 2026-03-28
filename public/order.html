@@ -205,21 +205,8 @@
 
                 <!-- Instant Bribe Banner -->
                 <div id="guest-bribe-banner" class="hidden bg-gold/10 border border-gold/30 rounded-2xl p-4 mb-6 text-center">
-                    <p class="text-gold font-bold text-sm mb-2">🎁 Crea una cuenta hoy y recibe L. 30 de descuento al instante en tu primera orden.</p>
-                    <a href="join.html" class="inline-block bg-gold text-dark font-bold py-2 px-6 rounded-xl text-sm shadow hover:brightness-110 transition">Crear Cuenta</a>
-                </div>
-
-                <!-- Guest Info (if no user) -->
-                <div id="guest-name-section" class="mb-6 hidden space-y-4">
-                    <p class="text-xs text-gold/80 italic mb-2">Para órdenes mayores a L. 250 requerimos tu nombre y teléfono (esto creará tu cuenta automáticamente).</p>
-                    <div>
-                        <label class="text-white/60 uppercase text-xs tracking-widest font-bold mb-2 block">Tu Nombre</label>
-                        <input type="text" id="guest-name" placeholder="Ej. Juan Pérez" class="w-full p-4 bg-white/5 border border-white/10 text-white rounded-2xl text-sm focus:outline-none focus:border-gold placeholder:text-white/30 transition-colors">
-                    </div>
-                    <div>
-                        <label class="text-white/60 uppercase text-xs tracking-widest font-bold mb-2 block">Teléfono / WhatsApp</label>
-                        <input type="tel" id="guest-phone" placeholder="Ej. 9999-9999" class="w-full p-4 bg-white/5 border border-white/10 text-white rounded-2xl text-sm focus:outline-none focus:border-gold placeholder:text-white/30 transition-colors">
-                    </div>
+                    <p class="text-gold font-bold text-sm mb-2">🎁 Crea una cuenta o inicia sesión para ganar puntos y descuentos.</p>
+                    <a href="/profile/index.html" class="inline-block bg-gold text-dark font-bold py-2 px-6 rounded-xl text-sm shadow hover:brightness-110 transition">Acceder / Crear PIN</a>
                 </div>
 
                 <!-- Special Instructions -->
@@ -285,6 +272,7 @@
         let addonTimer = null;
         let isAddonMode = false;
         let currentSelectedPayment = 'cash';
+        let currentSecondaryPayment = 'cash';
 
         async function loadMenu() {
             try {
@@ -635,6 +623,7 @@
             const hasAnyRicoCash = ricoBalance > 0;
             const coversFull = ricoBalance >= total;
             
+            // Do not hide Rico Cash completely if 0, keep it visible but disabled/promotional
             if (currentSelectedPayment === 'rico_balance' && !hasAnyRicoCash) {
                 currentSelectedPayment = 'cash';
             }
@@ -643,22 +632,32 @@
             html += '<label class="text-white/60 uppercase text-xs tracking-widest font-bold block mb-2">Método de Pago</label>';
             html += '<div class="grid grid-cols-3 gap-2">';
             
-            const btnClass = "py-3 rounded-xl text-sm font-bold border transition-colors flex justify-center items-center cursor-pointer";
+            const btnClass = "py-3 rounded-xl text-sm font-bold border transition-colors flex justify-center items-center cursor-pointer text-center";
             const unselClass = "bg-white/5 border-white/10 text-white/70 hover:bg-white/10";
             const selClass = "bg-gold/10 border-gold text-gold shadow-sm";
 
             html += `<div onclick="selectPaymentMethod('cash')" class="${btnClass} ${currentSelectedPayment === 'cash' ? selClass : unselClass}">Efectivo</div>`;
-            html += `<div onclick="selectPaymentMethod('transfer')" class="${btnClass} ${currentSelectedPayment === 'transfer' ? selClass : unselClass}">Transferencia</div>`;
+            html += `<div onclick="selectPaymentMethod('transfer')" class="${btnClass} ${currentSelectedPayment === 'transfer' ? selClass : unselClass}">Transfer.</div>`;
+            
+            if (hasAnyRicoCash) {
+                html += `<div onclick="selectPaymentMethod('rico_balance')" class="${btnClass} ${currentSelectedPayment === 'rico_balance' ? selClass : unselClass}">
+                    💰 Rico Cash
+                </div>`;
+            } else {
+                html += `<div onclick="alert('Tu balance es 0. Agrega fondos abajo para usar Rico Cash.')" class="${btnClass} opacity-50 bg-white/5 border-white/10 text-white/50 cursor-not-allowed text-xs">💰 Rico Cash</div>`;
+            }
             
             html += '</div>';
 
-            if (hasAnyRicoCash) {
-                html += `<div onclick="selectPaymentMethod('rico_balance')" class="w-full mt-2 ${btnClass} ${currentSelectedPayment === 'rico_balance' ? selClass : unselClass}">
-                    💰 Rico Cash (L. ${ricoBalance.toFixed(2)}) 
-                    ${coversFull ? '<span class="text-[10px] ml-2 bg-green-500/20 text-green-400 px-2 py-0.5 rounded-full">-10% Ahorro</span>' : ''}
-                </div>`;
+            if (currentSelectedPayment === 'rico_balance' && hasAnyRicoCash) {
+                html += `
+                    <div class="mt-2 text-center text-sm text-gold font-bold">
+                        Balance Actual: L. ${ricoBalance.toFixed(2)}
+                        ${coversFull ? '<br><span class="text-[10px] bg-green-500/20 text-green-400 px-2 py-0.5 rounded-full mt-1 inline-block">-10% Aplicado al Total</span>' : ''}
+                    </div>
+                `;
             }
-            
+
             let isSplitPayment = false;
             let remainingBalanceToPay = 0;
             
@@ -666,20 +665,42 @@
                 isSplitPayment = true;
                 remainingBalanceToPay = total - ricoBalance;
                 html += `
-                    <div class="mt-4 p-4 bg-orange-500/10 border border-orange-500/30 rounded-2xl text-center">
-                        <p class="text-orange-400 text-sm font-bold mb-1">Pago Dividido Requerido</p>
-                        <p class="text-white/70 text-xs">Tu Rico Cash cubre L. ${ricoBalance.toFixed(2)}. Falta pagar <span class="font-bold text-white">L. ${remainingBalanceToPay.toFixed(2)}</span> en caja al recoger.</p>
-                        <p class="text-white/50 text-[10px] mt-2 italic">*El descuento del 10% solo aplica si el Rico Cash cubre el total de la orden.</p>
+                    <div class="mt-4 p-4 bg-orange-500/10 border border-orange-500/30 rounded-2xl">
+                        <p class="text-orange-400 text-sm font-bold mb-2 text-center">Saldo Insuficiente (Faltan L. ${remainingBalanceToPay.toFixed(2)})</p>
+                        <p class="text-white/60 text-[10px] text-center mb-3">El descuento del 10% solo aplica si cubres el total con Rico Cash.</p>
+                        
+                        <label class="text-white/60 uppercase text-[10px] tracking-widest font-bold block mb-2 text-center">¿Cómo deseas pagar el resto?</label>
+                        <div class="grid grid-cols-2 gap-2">
+                            <div onclick="selectSecondaryPayment('cash')" class="${btnClass} ${currentSecondaryPayment === 'cash' ? selClass : unselClass}">Efectivo</div>
+                            <div onclick="selectSecondaryPayment('transfer')" class="${btnClass} ${currentSecondaryPayment === 'transfer' ? selClass : unselClass}">Transferencia</div>
+                        </div>
+                    </div>
+                `;
+            }
+
+            // Top-up Prompt if they don't cover full
+            if (!coversFull && currentCustomer) {
+                const suggestedTopup = Math.ceil(remainingBalanceToPay > 0 ? remainingBalanceToPay : total);
+                html += `
+                    <div class="mt-4 p-4 bg-gradient-to-r from-gold/10 to-gold/5 border border-gold/30 rounded-2xl flex items-center justify-between">
+                        <div>
+                            <p class="text-gold text-xs font-bold mb-1"><i class="fas fa-bolt mr-1"></i>Ahorra 10% Recargando</p>
+                            <p class="text-white/60 text-[10px]">Agrega L. ${suggestedTopup} ahora por transferencia para cubrir esta orden y obtener el descuento.</p>
+                        </div>
+                        <button onclick="promptTopUp(${suggestedTopup})" class="bg-gold text-dark text-[10px] font-bold px-3 py-2 rounded-xl whitespace-nowrap ml-2 shadow hover:scale-105 transition-transform">Recargar</button>
                     </div>
                 `;
             }
 
             let buttonHtml = '';
 
-            if (currentSelectedPayment === 'transfer') {
+            const showTransferInfo = currentSelectedPayment === 'transfer' || (isSplitPayment && currentSecondaryPayment === 'transfer');
+
+            if (showTransferInfo) {
+                const amountToTransfer = isSplitPayment ? remainingBalanceToPay : total;
                 html += `
                     <div class="mt-4 p-4 bg-white/5 rounded-2xl border border-white/10 space-y-4">
-                        <p class="text-xs text-white/60 text-center">Copia el número de cuenta y realiza la transferencia antes de confirmar.</p>
+                        <p class="text-xs text-white/60 text-center">Transfiere <strong class="text-white">L. ${amountToTransfer.toFixed(2)}</strong> a una de nuestras cuentas y confirma la orden.</p>
                         <div class="flex gap-3">
                             <button onclick="copyBankInfo('bac')" class="flex-1 bg-red-600/10 border border-red-600/30 text-red-500 py-3 rounded-xl font-bold flex flex-col items-center justify-center gap-1 hover:bg-red-600/20 transition-colors">
                                 <span class="text-xs">BAC</span>
@@ -692,16 +713,30 @@
                         </div>
                     </div>
                 `;
+            }
+
+            if (isSplitPayment && currentSecondaryPayment === 'transfer') {
+                buttonHtml = `
+                    <button id="final-checkout-btn" onclick="submitOrder('split_transfer')" class="w-full bg-orange-500 text-white py-4 rounded-2xl font-bold text-lg shadow-xl shadow-orange-500/20 flex justify-center items-center gap-2 active:scale-95 transition-transform mt-2">
+                        <span>Confirmar División + Transf.</span> <i class="fas fa-check"></i>
+                    </button>
+                `;
+            } else if (isSplitPayment && currentSecondaryPayment === 'cash') {
+                buttonHtml = `
+                    <button id="final-checkout-btn" onclick="submitOrder('split_cash')" class="w-full bg-orange-500 text-white py-4 rounded-2xl font-bold text-lg shadow-xl shadow-orange-500/20 flex justify-center items-center gap-2 active:scale-95 transition-transform mt-2">
+                        <span>Confirmar División (Efectivo)</span> <i class="fas fa-cash-register"></i>
+                    </button>
+                `;
+            } else if (currentSelectedPayment === 'transfer') {
                 buttonHtml = `
                     <button id="final-checkout-btn" onclick="submitOrder('transfer')" class="w-full bg-green-500 text-white py-4 rounded-2xl font-bold text-lg shadow-xl shadow-green-500/20 flex justify-center items-center gap-2 active:scale-95 transition-transform mt-2">
                         <span>Confirmar Transferencia</span> <i class="fas fa-check"></i>
                     </button>
                 `;
             } else {
-                const btnText = isSplitPayment ? 'Confirmar Orden (Pago Dividido)' : 'Confirmar Orden';
                 buttonHtml = `
                     <button id="final-checkout-btn" onclick="submitOrder('${currentSelectedPayment}')" class="w-full mt-2 gold-btn py-4 rounded-2xl font-bold text-lg shadow-xl shadow-gold/20 flex justify-center items-center gap-2 active:scale-95 transition-transform">
-                        <span>${btnText}</span> ${isSplitPayment ? '<i class="fas fa-adjust"></i>' : '<i class="fas fa-arrow-right"></i>'}
+                        <span>Confirmar Orden</span> <i class="fas fa-arrow-right"></i>
                     </button>
                 `;
             }
@@ -709,6 +744,24 @@
             html += '</div>';
             container.innerHTML = html;
             buttonContainer.innerHTML = buttonHtml;
+        }
+
+        
+        function selectSecondaryPayment(method) {
+            currentSecondaryPayment = method;
+            renderPaymentOptions();
+        }
+
+        function promptTopUp(suggestedAmount) {
+            const amount = prompt("¿Cuánto deseas recargar? (Lempiras)", suggestedAmount);
+            if (!amount || isNaN(amount) || amount <= 0) return;
+            
+            const customerName = currentCustomer ? currentCustomer.name : 'Cliente';
+            const msg = `¡Hola! Quiero hacer una recarga de Rico Cash por L.${amount} a nombre de ${customerName} para mi orden actual.`;
+            const shopPhone = "50495200236";
+            
+            alert("A continuación te enviaremos a WhatsApp para que nos envíes el comprobante de la recarga. ¡Una vez aprobado por nosotros, podrás usar el saldo aquí mismo!");
+            window.open(`https://wa.me/${shopPhone}?text=${encodeURIComponent(msg)}`, '_blank');
         }
 
         function copyBankInfo(bank) {
@@ -837,7 +890,10 @@
                     fulfillment: fulfillmentType,
                     notes: `Mobile Order (${fulfillmentType}) ${orderNotes ? '- ' + orderNotes : ''}`
                 };
-                if (currentCustomer) payload.customerId = currentCustomer.id;
+                if (currentCustomer) {
+                    payload.customerId = currentCustomer.id;
+                    payload.pin = localStorage.getItem('ra_customer_pin');
+                }
 
                 const res = await fetch('/api/orders', {
                     method: 'POST',

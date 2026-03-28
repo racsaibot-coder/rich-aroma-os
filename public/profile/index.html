@@ -152,7 +152,10 @@
                 <h2 class="text-xl font-bold" id="user-name">Cargando...</h2>
                 <p class="text-sm text-gray-400" id="user-phone"></p>
             </div>
-            <button onclick="logout()" class="text-xs border border-gray-600 px-3 py-1 rounded-full">Salir</button>
+            <div class="flex gap-2">
+                <a href="/order.html" class="text-xs bg-[#D4A574] text-black px-4 py-2 rounded-full font-bold shadow hover:brightness-110 transition"><i class="fas fa-coffee mr-1"></i> Ordenar</a>
+                <button onclick="logout()" class="text-xs border border-gray-600 px-3 py-2 rounded-full hover:bg-gray-800 text-white"><i class="fas fa-sign-out-alt"></i></button>
+            </div>
         </div>
 
         <div class="grid grid-cols-2 gap-4">
@@ -185,7 +188,7 @@
     </div>
 
     <script>
-        function handleLogin() {
+        async function handleLogin() {
             const country = document.getElementById('login-country').value;
             const rawPhone = document.getElementById('login-phone').value.replace(/\D/g, '');
             const phone = country + rawPhone;
@@ -196,24 +199,80 @@
                 return;
             }
             
-            // Simulación de login exitoso
+            try {
+                const btn = event.target;
+                const ogText = btn.innerText;
+                btn.innerText = "Verificando...";
+                btn.disabled = true;
+
+                const res = await fetch('/api/customer/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ phone, pin })
+                });
+
+                const data = await res.json();
+                btn.innerText = ogText;
+                btn.disabled = false;
+
+                if (!res.ok) {
+                    alert(data.error || "Error al iniciar sesión");
+                    return;
+                }
+
+                // Save auth locally
+                localStorage.setItem('ra_customer_phone', phone);
+                localStorage.setItem('ra_customer_pin', pin); // Store PIN securely for fast checkout later
+                localStorage.setItem('ra_customer_data', JSON.stringify(data.customer));
+
+                showDashboard(data.customer);
+
+            } catch (e) {
+                alert("Error de conexión");
+                console.error(e);
+            }
+        }
+
+        function showDashboard(customer) {
             document.getElementById('login-view').classList.add('hidden');
             document.getElementById('dashboard-view').classList.remove('hidden');
             
-            document.getElementById('user-name').innerText = "Usuario: " + phone;
-            document.getElementById('user-phone').innerText = phone;
+            document.getElementById('user-name').innerText = customer.name || "Usuario";
+            document.getElementById('user-phone').innerText = customer.phone;
             
-            // Simular datos
-            document.getElementById('points-balance').innerText = "120";
-            document.getElementById('cash-balance').innerText = "0.00";
+            const points = customer.points || 0;
+            const cash = (parseFloat(customer.cash_balance) || 0) + (parseFloat(customer.membership_credit) || 0);
             
-            // Mostrar VIP banner aleatoriamente para demo
-            if (phone.includes('1234')) {
+            document.getElementById('points-balance').innerText = points;
+            document.getElementById('cash-balance').innerText = cash.toFixed(2);
+            
+            if (customer.is_vip) {
                 document.getElementById('vip-banner').classList.remove('hidden');
+            }
+        }
+
+        window.onload = () => {
+            const savedPhone = localStorage.getItem('ra_customer_phone');
+            const savedData = localStorage.getItem('ra_customer_data');
+            if (savedPhone && savedData) {
+                showDashboard(JSON.parse(savedData));
+                
+                // Refresh data silently
+                fetch(`/api/customer/profile?phone=${encodeURIComponent(savedPhone)}`)
+                    .then(r => r.json())
+                    .then(data => {
+                        if (data && !data.error) {
+                            localStorage.setItem('ra_customer_data', JSON.stringify(data));
+                            showDashboard(data);
+                        }
+                    }).catch(e => console.log("Silent refresh failed", e));
             }
         }
         
         function logout() {
+            localStorage.removeItem('ra_customer_phone');
+            localStorage.removeItem('ra_customer_pin');
+            localStorage.removeItem('ra_customer_data');
             document.getElementById('dashboard-view').classList.add('hidden');
             document.getElementById('login-view').classList.remove('hidden');
             document.getElementById('login-phone').value = '';
