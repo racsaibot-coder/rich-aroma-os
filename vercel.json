@@ -100,6 +100,10 @@
       "dest": "/api/cash.js?action=close-shift"
     },
     {
+      "src": "/api/customer/login",
+      "dest": "/api/store.js?action=customer_login"
+    },
+    {
       "src": "/api/customer/profile",
       "dest": "/api/store.js?action=customer_profile"
     },

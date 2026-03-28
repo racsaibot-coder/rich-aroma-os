@@ -11,6 +11,40 @@ export default async function handler(req, res) {
 
     const { action } = req.query; 
 
+    // CUSTOMER LOGIN
+    if (action === 'customer_login' && req.method === 'POST') {
+        const { phone, pin } = req.body;
+        if (!phone || !pin) return res.status(400).json({ error: "Teléfono y PIN requeridos" });
+        
+        const cleanPhone = phone.replace(/[^\d+]/g, '');
+        
+        const { data: customer, error } = await supabase
+            .from('customers')
+            .select('*')
+            .eq('phone', cleanPhone)
+            .single();
+            
+        if (error || !customer) return res.status(404).json({ error: "Usuario no encontrado" });
+        
+        if (customer.pin) {
+            if (customer.pin !== pin) {
+                return res.status(401).json({ error: "PIN incorrecto" });
+            }
+            return res.json({ message: "Login successful", customer });
+        } else {
+            // First time setting PIN
+            const { error: updateError } = await supabase
+                .from('customers')
+                .update({ pin: pin })
+                .eq('id', customer.id);
+                
+            if (updateError) return res.status(500).json({ error: "Error al guardar PIN" });
+            
+            customer.pin = pin;
+            return res.json({ message: "PIN creado exitosamente", customer });
+        }
+    }
+
     // CUSTOMER LOOKUP
     if (action === 'customer_by_phone' && req.method === 'GET') {
         const query = req.query.query;
