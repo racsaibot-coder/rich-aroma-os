@@ -544,11 +544,6 @@
                     bribeBanner.classList.add('hidden');
                 }
             }
-            if (!currentCustomer) {
-                document.getElementById('guest-name-section').classList.remove('hidden');
-            } else {
-                document.getElementById('guest-name-section').classList.add('hidden');
-            }
             
             if(cart.length === 0) {
                 container.innerHTML = `<div class="text-white/50 text-center py-6">Tu carrito está vacío</div>`;
