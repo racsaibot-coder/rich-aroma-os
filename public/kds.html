@@ -144,6 +144,24 @@
 
         // Poll Loop
         setInterval(fetchOrders, 3000); // 3s poll
+        
+        setInterval(() => {
+            document.querySelectorAll('.timer-display').forEach(el => {
+                const time = el.getAttribute('data-time');
+                if(time) {
+                    const orderTime = new Date(time);
+                    const now = new Date();
+                    let diffMs = now - orderTime;
+                    if(diffMs < 0) diffMs = 0;
+                    const elapsed = diffMs / 1000 / 60;
+                    el.innerText = Math.floor(elapsed) + 'm';
+                    if(elapsed > 10) el.className = "font-mono text-sm font-bold text-red-400 timer-display";
+                    else if(elapsed > 5) el.className = "font-mono text-sm font-bold text-yellow-400 timer-display";
+                    else el.className = "font-mono text-sm font-bold text-green-400 timer-display";
+                }
+            });
+        }, 15000); // 15s timer update
+
         fetchOrders();
 
 // Audio Chime Logic
@@ -222,7 +240,8 @@
                    name.includes('tea') || name.includes('icee') || name.includes('espresso') || 
                    name.includes('mocha') || name.includes('matcha') || name.includes('frappe') || 
                    name.includes('macchiato') || name.includes('jugo') || name.includes('licuado') || 
-                   name.includes('granita') || name.includes('smoothie');
+                   name.includes('granita') || name.includes('smoothie') || name.includes('caliente') || 
+                   name.includes('helada');
         }
         
         function isComboItem(name) {
@@ -256,7 +275,11 @@
                 if(relevantItems.length === 0) return; // Skip ticket if nothing for this station
                 
                 // Time Color
-                const elapsed = (new Date() - new Date(order.created_at)) / 1000 / 60; // Mins
+                const orderTime = new Date(order.created_at);
+                const now = new Date();
+                let diffMs = now - orderTime;
+                if (diffMs < 0) diffMs = 0;
+                const elapsed = diffMs / 1000 / 60; // Mins
                 let timeColor = 'bg-white/5';
                 if(elapsed > 5) timeColor = 'bg-yellow-500/10 border-yellow-500/50';
                 if(elapsed > 10) timeColor = 'bg-red-500/10 border-red-500/50';
