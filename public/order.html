@@ -1132,6 +1132,19 @@
                                 document.getElementById('track-status-desc').innerText = `Orden #${currentOrder.order_number || currentOrder.id} • Pago Confirmado ✅`;
                             }
                             
+                            // HANDLE REJECTED TRANSFER
+                            if(currentOrder.status === 'pending' && activeOrder.payment_method === 'transfer') {
+                                // If staff marks it back to pending (rejected), show alert
+                                if (currentOrder.notes && currentOrder.notes.includes('RECHAZADA')) {
+                                    document.getElementById('track-status-title').innerText = "Transferencia Rechazada";
+                                    document.getElementById('track-status-desc').innerText = "Hubo un problema con tu comprobante. Tu orden está en espera.";
+                                    document.getElementById('transfer-upload-section').classList.remove('hidden');
+                                    document.getElementById('receipt-upload-status').classList.remove('hidden');
+                                    document.getElementById('receipt-upload-status').innerText = "⚠️ Por favor, sube una captura válida.";
+                                    document.getElementById('receipt-upload-status').className = "mt-2 text-sm text-red-400 font-bold";
+                                }
+                            }
+
                             if(currentOrder.status === 'preparing') setStep('prep');
                             if(currentOrder.status === 'completed' || currentOrder.status === 'ready') {
                                 setStep('ready');
