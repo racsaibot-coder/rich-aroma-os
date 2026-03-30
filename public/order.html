@@ -49,19 +49,41 @@
         <div class="flex items-center gap-3">
             <img src="/rico-logo.png" alt="Rich Aroma" class="w-10 h-10 rounded-full border border-gold/20 object-cover">
             <div>
-                <h1 class="font-display text-xl text-gold font-bold tracking-wide">RICH AROMA</h1>
-                <p class="text-xs text-white/50 tracking-widest uppercase">Quimistán, HN</p>
+                <h1 class="font-display text-xl text-gold font-bold tracking-wide leading-none">RICH AROMA</h1>
+                <div id="user-header-status" class="mt-1">
+                    <p class="text-[10px] text-white/30 tracking-widest uppercase">Quimistán, HN</p>
+                </div>
             </div>
         </div>
         <div class="flex items-center gap-3">
+            <div id="loyalty-badge" class="hidden animate-in fade-in zoom-in duration-500">
+                <div class="flex flex-col items-end">
+                    <span id="badge-name" class="text-[10px] font-bold text-gold uppercase tracking-tighter">OSCAR</span>
+                    <div class="flex items-center gap-1">
+                        <span class="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse"></span>
+                        <span id="badge-tier" class="text-[9px] text-white/50 font-black uppercase">GOLD TIER</span>
+                    </div>
+                </div>
+            </div>
             <a href="dashboard.html" id="dashboard-link" class="hidden w-10 h-10 rounded-full bg-gold/10 flex items-center justify-center cursor-pointer">
-                <i class="fas fa-user text-gold"></i>
+                <i class="fas fa-user text-gold text-sm"></i>
             </a>
             <div id="tracking-icon-container" class="hidden w-10 h-10 rounded-full bg-gold/10 flex items-center justify-center cursor-pointer" onclick="showTrackingIfActive()">
-                <i class="fas fa-receipt text-gold" id="header-icon"></i>
+                <i class="fas fa-receipt text-gold text-sm" id="header-icon"></i>
             </div>
         </div>
     </header>
+
+    <!-- CELEBRATION OVERLAY -->
+    <div id="celebration-overlay" class="hidden fixed inset-0 z-[300] pointer-events-none flex items-center justify-center overflow-hidden">
+        <div class="absolute inset-0 bg-gold/5 backdrop-blur-[2px]"></div>
+        <div class="relative bg-dark border-2 border-gold/30 p-8 rounded-3xl shadow-2xl text-center animate-in zoom-in-95 duration-500 max-w-xs">
+            <div class="text-6xl mb-4">🥳</div>
+            <h2 class="text-2xl font-display font-bold text-white mb-2">¡Bienvenido al Club!</h2>
+            <p class="text-gold font-bold text-sm mb-4">L. 30 de Bienvenida Aplicados</p>
+            <p class="text-white/50 text-xs">Ahora eres parte de la familia Rich Aroma. Acumula puntos y gana Rico Cash en cada visita.</p>
+        </div>
+    </div>
 
     <!-- Testing Banner -->
     <div class="bg-red-500/20 border-b border-red-500/50 p-3 text-center">
@@ -854,6 +876,8 @@
                                 customer_id: currentCustomer.id,
                                 token: 'dummy_token_for_now'
                             }));
+                            triggerCelebration();
+                            updateLoyaltyUI();
                         }
                     } catch (e) {
                         console.error('Error creating customer on the fly', e);
@@ -889,8 +913,9 @@
             const ricoBalance = currentCustomer ? ((parseFloat(currentCustomer.cash_balance) || 0) + (parseFloat(currentCustomer.membership_credit) || 0)) : 0;
             const coversFull = ricoBalance >= totalBeforeRicoDiscount;
             
-            if (paymentMethod === 'rico_balance' && coversFull && subtotal > 0) {
-                discount += (subtotal * 0.10);
+            if (currentSelectedPayment === 'rico_balance' && coversFull && subtotal > 0) {
+                const ricoDiscount = subtotal * 0.10;
+                discount += ricoDiscount;
             }
             
             if (discount > subtotal) discount = subtotal;
@@ -935,6 +960,39 @@
                 btn.innerHTML = ogText;
                 btn.disabled = false;
             }
+        }
+
+        function triggerCelebration() {
+            const overlay = document.getElementById('celebration-overlay');
+            overlay.classList.remove('hidden');
+            setTimeout(() => {
+                overlay.classList.add('fade-out');
+                setTimeout(() => {
+                    overlay.classList.add('hidden');
+                    overlay.classList.remove('fade-out');
+                }, 1000);
+            }, 4000);
+        }
+
+        function updateLoyaltyUI() {
+            if (!currentCustomer) {
+                document.getElementById('loyalty-badge').classList.add('hidden');
+                document.getElementById('user-header-status').innerHTML = '<p class="text-[10px] text-white/30 tracking-widest uppercase">Quimistán, HN</p>';
+                return;
+            }
+
+            document.getElementById('badge-name').innerText = currentCustomer.name.split(' ')[0];
+            document.getElementById('badge-tier').innerText = `${currentCustomer.tier || 'BRONZE'} TIER`;
+            document.getElementById('loyalty-badge').classList.remove('hidden');
+            
+            const balance = (parseFloat(currentCustomer.cash_balance) || 0) + (parseFloat(currentCustomer.membership_credit) || 0);
+            document.getElementById('user-header-status').innerHTML = `
+                <div class="flex items-center gap-2">
+                    <p class="text-[10px] text-gold font-bold tracking-tight">Saldo: L ${balance.toFixed(2)}</p>
+                    <span class="text-white/20 text-[10px]">|</span>
+                    <p class="text-[10px] text-white/50 tracking-tight">${currentCustomer.points || 0} Pts</p>
+                </div>
+            `;
         }
 
         
@@ -1150,6 +1208,7 @@
                 .then(u => {
                     if (u && !u.error) {
                         currentCustomer = u;
+                        updateLoyaltyUI();
                     } else {
                         currentCustomer = null;
                         localStorage.removeItem('ra_customer_phone');
