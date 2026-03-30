@@ -173,6 +173,21 @@
             </div>
         </div>
 
+        <!-- ORDER ITEMS SUMMARY -->
+        <div class="bg-charcoal rounded-3xl p-6 border border-white/10 mb-6">
+            <h3 class="font-bold text-white mb-4 flex justify-between items-center">
+                <span>Resumen de tu Orden</span>
+                <i class="fas fa-receipt text-gold/50"></i>
+            </h3>
+            <div id="tracked-items-list" class="space-y-4">
+                <!-- Items will be injected here -->
+            </div>
+            <div class="mt-6 pt-4 border-t border-white/5 flex justify-between items-center">
+                <span class="text-white/50 text-sm">Total Pagado</span>
+                <span id="track-total" class="font-mono text-gold font-bold text-lg">L. 0.00</span>
+            </div>
+        </div>
+
         <!-- Add on feature -->
         <div class="bg-gold/10 border border-gold/30 rounded-3xl p-6 text-center hidden" id="addon-box" style="display:none !important;">
             <h3 class="text-gold font-bold mb-2"><i class="fas fa-plus-circle"></i> ¿Olvidaste algo?</h3>
@@ -1056,6 +1071,8 @@
             const types = { pickup: 'Para Llevar', dinein: 'Restaurante', delivery: 'A Domicilio' };
             document.getElementById('track-type').innerText = types[activeOrder.fulfillment_type || fulfillmentType];
             
+            renderTrackedItems();
+
             // Addon logic removed per request - show new order button immediately
             document.getElementById('addon-box').classList.add('hidden');
             document.getElementById('new-order-btn').classList.remove('hidden');
@@ -1093,11 +1110,30 @@
             }, 3000);
         }
 
+        function renderTrackedItems() {
+            if (!activeOrder || !activeOrder.items) return;
+            const list = document.getElementById('tracked-items-list');
+            list.innerHTML = activeOrder.items.map(item => `
+                <div class="flex justify-between items-start border-b border-white/5 pb-3">
+                    <div>
+                        <div class="text-white font-bold flex items-center gap-2">
+                            <span class="text-gold text-xs">${item.qty || 1}x</span>
+                            <span>${item.name}</span>
+                        </div>
+                        ${item.mods && item.mods.length > 0 ? `<div class="text-[10px] text-white/40 mt-1 pl-6">${item.mods.map(m=>m.name).join(', ')}</div>` : ''}
+                    </div>
+                    <span class="text-white/60 font-mono text-sm">L. ${(parseFloat(item.finalPrice || 0) * (item.qty || 1)).toFixed(2)}</span>
+                </div>
+            `).join('');
+            document.getElementById('track-total').innerText = `L. ${parseFloat(activeOrder.total || 0).toFixed(2)}`;
+        }
+
         function showTrackingIfActive() {
             if(activeOrder) {
                 document.getElementById('main-view').classList.add('hidden');
                 document.getElementById('fulfillment-selector').classList.add('hidden');
                 document.getElementById('tracking-view').classList.remove('hidden');
+                renderTrackedItems();
             }
         }
 
