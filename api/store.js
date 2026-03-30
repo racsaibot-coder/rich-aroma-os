@@ -153,8 +153,26 @@ export default async function handler(req, res) {
         const orderNum = (maxOrder?.[0]?.order_number || 0) + 1;
         const id = `ORD-${String(orderNum).padStart(4, '0')}`;
         
+        let orderStatus = 'pending';
+
+        // RICO BALANCE DEDUCTION
+        if (paymentMethod === 'rico_balance' && customerId) {
+            const { data: customer } = await supabase.from('customers').select('rico_balance').eq('id', customerId).single();
+            if (customer) {
+                const balance = parseFloat(customer.rico_balance) || 0;
+                const orderTotal = parseFloat(total) || 0;
+                
+                if (balance >= orderTotal) {
+                    await supabase.from('customers').update({ rico_balance: balance - orderTotal }).eq('id', customerId);
+                    orderStatus = 'paid';
+                } else {
+                    return res.status(400).json({ error: "Insufficient Rico Balance" });
+                }
+            }
+        }
+
         const { data, error } = await supabase.from('orders').insert({
-            id, order_number: orderNum, items, subtotal: subtotal || 0, tax: tax || 0, discount: discount || 0, total, customer_id: customerId, payment_method: paymentMethod, status: 'pending', notes
+            id, order_number: orderNum, items, subtotal: subtotal || 0, tax: tax || 0, discount: discount || 0, total, customer_id: customerId, payment_method: paymentMethod, status: orderStatus, notes
         }).select().single();
         
         if (error) {
