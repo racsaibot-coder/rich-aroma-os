@@ -215,15 +215,24 @@
 
             <div class="flex-1 overflow-y-auto p-6 space-y-8" id="mod-dynamic-container"></div>
 
-            <div class="p-6 bg-dark/95 backdrop-blur-md border-t border-white/5 pb-8">
-                <button onclick="confirmItem()" class="w-full gold-btn py-4 rounded-2xl font-bold text-lg shadow-xl shadow-gold/20 flex justify-between items-center px-8 active:scale-95 transition-transform">
-                    <div class="flex items-center gap-4 bg-white/10 rounded-xl p-1" onclick="event.stopPropagation()">
-                        <button onclick="changeQuantity(-1); event.stopPropagation()" class="w-10 h-10 flex items-center justify-center text-white hover:text-gold">-</button>
-                        <span id="mod-quantity" class="font-bold text-xl text-white">1</span>
-                        <button onclick="changeQuantity(1); event.stopPropagation()" class="w-10 h-10 flex items-center justify-center text-white hover:text-gold">+</button>
+            <div class="p-6 bg-dark/95 backdrop-blur-md border-t border-white/5 pb-8 space-y-6">
+                <!-- Quantity Selector -->
+                <div class="flex items-center justify-between bg-white/5 p-4 rounded-2xl border border-white/10">
+                    <span class="text-white/60 font-bold uppercase text-xs tracking-widest">Cantidad</span>
+                    <div class="flex items-center gap-6">
+                        <button onclick="changeQuantity(-1)" class="w-12 h-12 flex items-center justify-center rounded-full bg-white/10 text-gold border border-gold/20 active:scale-90 transition-transform text-2xl font-light">
+                            <i class="fas fa-minus"></i>
+                        </button>
+                        <span id="mod-quantity" class="font-display font-bold text-3xl text-white min-w-[1.5rem] text-center">1</span>
+                        <button onclick="changeQuantity(1)" class="w-12 h-12 flex items-center justify-center rounded-full bg-gold text-dark active:scale-90 transition-transform text-2xl font-light">
+                            <i class="fas fa-plus"></i>
+                        </button>
                     </div>
-                    <span id="mod-confirm-text">Agregar</span>
-                    <span id="mod-final-price" class="font-mono bg-dark/20 px-3 py-1 rounded-lg">L. 55.00</span>
+                </div>
+
+                <button onclick="confirmItem()" class="w-full gold-btn py-5 rounded-2xl font-bold text-xl shadow-xl shadow-gold/20 flex justify-between items-center px-8 active:scale-95 transition-transform">
+                    <span id="mod-confirm-text">Confirmar</span>
+                    <span id="mod-final-price" class="font-mono bg-dark/20 px-4 py-1 rounded-xl">L. 55.00</span>
                 </button>
             </div>
         </div>

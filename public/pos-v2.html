@@ -224,15 +224,24 @@
             </div>
 
             <!-- Footer Action -->
-            <div class="p-6 border-t border-gray-200 bg-gray-50">
-                <button onclick="confirmItem()" class="w-full bg-blue-600 text-white py-4 rounded-xl font-bold text-xl shadow-lg hover:bg-blue-700 flex justify-between px-8">
-                    <div class="flex items-center gap-4 bg-black/10 rounded-xl p-1" onclick="event.stopPropagation()">
-                        <button onclick="changeQuantity(-1); event.stopPropagation()" class="w-10 h-10 flex items-center justify-center text-white hover:bg-black/20 rounded-lg">-</button>
-                        <span id="mod-quantity" class="font-bold text-xl text-white">1</span>
-                        <button onclick="changeQuantity(1); event.stopPropagation()" class="w-10 h-10 flex items-center justify-center text-white hover:bg-black/20 rounded-lg">+</button>
+            <div class="p-6 border-t border-gray-200 bg-gray-50 space-y-4">
+                <!-- Quantity Selector -->
+                <div class="flex items-center justify-between bg-white p-3 rounded-xl border-2 border-gray-100 shadow-inner">
+                    <span class="text-gray-400 font-black uppercase text-xs tracking-widest ml-2">QTY / CANTIDAD</span>
+                    <div class="flex items-center gap-4">
+                        <button onclick="changeQuantity(-1)" class="w-14 h-14 flex items-center justify-center rounded-xl bg-gray-100 text-gray-600 hover:bg-gray-200 active:scale-95 transition-all text-3xl font-bold">
+                            <i class="fas fa-minus"></i>
+                        </button>
+                        <span id="mod-quantity" class="font-mono font-black text-4xl text-blue-600 min-w-[3rem] text-center tracking-tighter">1</span>
+                        <button onclick="changeQuantity(1)" class="w-14 h-14 flex items-center justify-center rounded-xl bg-blue-600 text-white hover:bg-blue-700 shadow-lg shadow-blue-600/20 active:scale-95 transition-all text-3xl font-bold">
+                            <i class="fas fa-plus"></i>
+                        </button>
                     </div>
+                </div>
+
+                <button onclick="confirmItem()" class="w-full bg-blue-600 text-white py-5 rounded-2xl font-black text-2xl shadow-xl hover:bg-blue-700 active:scale-95 transition-all flex justify-between px-10">
                     <span>Add to Order</span>
-                    <span id="mod-final-price">L. 55.00</span>
+                    <span id="mod-final-price" class="bg-black/20 px-4 py-1 rounded-xl">L. 55.00</span>
                 </button>
             </div>
         </div>
