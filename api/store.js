@@ -201,6 +201,19 @@ export default async function handler(req, res) {
         const { data: currentOrder } = await supabase.from('orders').select('*').eq('id', id).single();
         if (!currentOrder) return res.status(404).json({ error: 'Order not found' });
 
+        // Handle Top-Up Approval
+        if (status === 'paid' && currentOrder.status !== 'paid' && currentOrder.items) {
+            const reloadItem = currentOrder.items.find(i => i.id === 'rico_cash_reload');
+            if (reloadItem && currentOrder.customer_id) {
+                const amountToCredit = parseFloat(reloadItem.finalPrice) || 0;
+                const { data: customer } = await supabase.from('customers').select('rico_balance').eq('id', currentOrder.customer_id).single();
+                if (customer) {
+                    const newBalance = (parseFloat(customer.rico_balance) || 0) + amountToCredit;
+                    await supabase.from('customers').update({ rico_balance: newBalance }).eq('id', currentOrder.customer_id);
+                }
+            }
+        }
+
         // If order is being completed, award points to customer based on total
         if (status === 'completed' && currentOrder.status !== 'completed' && currentOrder.customer_id) {
             const { data: customer } = await supabase.from('customers').select('*').eq('id', currentOrder.customer_id).single();

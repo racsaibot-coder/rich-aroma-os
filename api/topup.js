@@ -70,8 +70,8 @@ export default async function handler(req, res) {
             subtotal: parseFloat(amount),
             total: parseFloat(amount),
             payment_method: 'transfer',
-            status: 'pending',
-            notes: `[RECARGA] Link: ${publicUrl}`
+            status: 'pending_verification',
+            notes: `[RECARGA] [RECEIPT_URL:${publicUrl}]`
         }).select().single();
 
         if (orderErr) throw orderErr;
