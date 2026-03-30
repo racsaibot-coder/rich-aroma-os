@@ -334,13 +334,16 @@
 
                 <!-- Guest Info (Required if not logged in) -->
                 <div id="guest-info-section" class="mb-6 space-y-4">
+                    <div class="bg-gold/5 border border-gold/20 rounded-2xl p-4 mb-2">
+                        <p class="text-gold text-[10px] font-bold uppercase tracking-widest text-center">Identificación Requerida</p>
+                    </div>
                     <div class="space-y-2">
                         <label class="text-white/60 uppercase text-[10px] tracking-widest font-bold block">Tu Nombre</label>
                         <input type="text" id="guest-name" placeholder="¿A nombre de quién?" class="w-full p-4 bg-white/5 border border-white/10 text-white rounded-2xl text-sm focus:outline-none focus:border-gold placeholder:text-white/20 transition-colors">
                     </div>
                     <div class="space-y-2">
-                        <label class="text-white/60 uppercase text-[10px] tracking-widest font-bold block">Tu Teléfono (Opcional)</label>
-                        <input type="tel" id="guest-phone" placeholder="Para contactarte si hay dudas" class="w-full p-4 bg-white/5 border border-white/10 text-white rounded-2xl text-sm focus:outline-none focus:border-gold placeholder:text-white/20 transition-colors">
+                        <label class="text-white/60 uppercase text-[10px] tracking-widest font-bold block">Tu Teléfono</label>
+                        <input type="tel" id="guest-phone" placeholder="Para tu historial y puntos" class="w-full p-4 bg-white/5 border border-white/10 text-white rounded-2xl text-sm focus:outline-none focus:border-gold placeholder:text-white/20 transition-colors">
                     </div>
                 </div>
 
@@ -781,6 +784,12 @@
             } else {
                 if(bribeBanner) bribeBanner.classList.remove('hidden');
                 if(guestInfo) guestInfo.classList.remove('hidden');
+                
+                // Pre-fill from local storage if they've ordered before as guest
+                const savedName = localStorage.getItem('ra_guest_name');
+                const savedPhone = localStorage.getItem('ra_guest_phone');
+                if (savedName && document.getElementById('guest-name')) document.getElementById('guest-name').value = savedName;
+                if (savedPhone && document.getElementById('guest-phone')) document.getElementById('guest-phone').value = savedPhone;
             }
             
             if(cart.length === 0) {
@@ -1021,12 +1030,18 @@
                 const guestName = nameInput ? nameInput.value.trim() : "";
                 const guestPhone = phoneInput ? phoneInput.value.trim() : "";
                 
+                if (!guestName || !guestPhone) {
+                    alert("Por favor, ingresa tu nombre y número de teléfono para procesar la orden.");
+                    if (!guestName && nameInput) nameInput.focus();
+                    else if (phoneInput) phoneInput.focus();
+                    return;
+                }
+
+                // Remember them for next time
+                localStorage.setItem('ra_guest_name', guestName);
+                localStorage.setItem('ra_guest_phone', guestPhone);
+                
                 if (totalTest > 250) {
-                    if (!guestName || !guestPhone) {
-                        alert("Para órdenes mayores a L. 250, requerimos tu nombre y número de teléfono.");
-                        return;
-                    }
-                    
                     btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Creando cuenta...';
                     btn.disabled = true;
                     
@@ -1043,21 +1058,16 @@
                                 customer_id: currentCustomer.id,
                                 token: 'dummy_token_for_now'
                             }));
+                            localStorage.setItem('ra_customer_phone', currentCustomer.phone);
                             triggerCelebration();
                             updateLoyaltyUI();
                         }
                     } catch (e) {
                         console.error('Error creating customer on the fly', e);
                     }
-                } else {
-                    if (!guestName) {
-                        alert("Por favor, ingresa tu nombre para procesar la orden.");
-                        if (nameInput) nameInput.focus();
-                        return;
-                    }
                 }
                 
-                orderNotes = `[GUEST: ${guestName} | PHONE: ${guestPhone || 'N/A'}] ${orderNotes}`;
+                orderNotes = `[CLIENTE: ${guestName} | TEL: ${guestPhone}] ${orderNotes}`;
             }
 
             btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Procesando...';
