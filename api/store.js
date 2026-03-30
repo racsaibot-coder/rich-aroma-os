@@ -168,17 +168,41 @@ export default async function handler(req, res) {
         const id = req.query.id;
         const { status } = req.body;
         
+        const { data: currentOrder } = await supabase.from('orders').select('*').eq('id', id).single();
+        if (!currentOrder) return res.status(404).json({ error: 'Order not found' });
+
         // If order is being completed, award points to customer based on total
-        if (status === 'completed') {
-            const { data: orderData } = await supabase.from('orders').select('customer_id, total').eq('id', id).single();
-            if (orderData && orderData.customer_id) {
-                const pointsEarned = Math.floor(orderData.total); // 1 point per L.1 spent
-                const { data: customerData } = await supabase.from('customers').select('points').eq('id', orderData.customer_id).single();
-                if (customerData) {
-                    await supabase.from('customers').update({ 
-                        points: (customerData.points || 0) + pointsEarned 
-                    }).eq('id', orderData.customer_id);
-                }
+        if (status === 'completed' && currentOrder.status !== 'completed' && currentOrder.customer_id) {
+            const { data: customer } = await supabase.from('customers').select('*').eq('id', currentOrder.customer_id).single();
+            if (customer) {
+                // Calculate Points
+                let pointsBase = Math.floor(parseFloat(currentOrder.total) || 0);
+                let multiplier = 1;
+
+                // Bonus: Rico Balance (2x)
+                if (currentOrder.payment_method === 'rico_balance') multiplier *= 2;
+                // Bonus: VIP (2x)
+                if (customer.is_vip) multiplier *= 2;
+
+                const pointsEarned = pointsBase * multiplier;
+                
+                // Update Customer Stats
+                const newPoints = (customer.points || 0) + pointsEarned;
+                const newTotalSpent = (parseFloat(customer.total_spent) || 0) + parseFloat(currentOrder.total);
+                const newVisits = (customer.visits || 0) + 1;
+
+                // Check Tier Upgrade
+                let newTier = customer.tier || 'bronze';
+                if (newPoints >= 1500) newTier = 'gold';
+                else if (newPoints >= 500) newTier = 'silver';
+                else newTier = 'bronze'; 
+
+                await supabase.from('customers').update({ 
+                    points: newPoints,
+                    total_spent: newTotalSpent,
+                    visits: newVisits,
+                    tier: newTier
+                }).eq('id', customer.id);
             }
         }
         

@@ -226,6 +226,11 @@
             <!-- Footer Action -->
             <div class="p-6 border-t border-gray-200 bg-gray-50">
                 <button onclick="confirmItem()" class="w-full bg-blue-600 text-white py-4 rounded-xl font-bold text-xl shadow-lg hover:bg-blue-700 flex justify-between px-8">
+                    <div class="flex items-center gap-4 bg-black/10 rounded-xl p-1" onclick="event.stopPropagation()">
+                        <button onclick="changeQuantity(-1); event.stopPropagation()" class="w-10 h-10 flex items-center justify-center text-white hover:bg-black/20 rounded-lg">-</button>
+                        <span id="mod-quantity" class="font-bold text-xl text-white">1</span>
+                        <button onclick="changeQuantity(1); event.stopPropagation()" class="w-10 h-10 flex items-center justify-center text-white hover:bg-black/20 rounded-lg">+</button>
+                    </div>
                     <span>Add to Order</span>
                     <span id="mod-final-price">L. 55.00</span>
                 </button>
@@ -601,6 +606,7 @@
     }
 
     let currentItem = null;
+    let currentQuantity = 1;
     let currentMods = {
         milk: { name: 'Whole', price: 0 },
         syrup: { name: 'None', price: 0 },
@@ -822,6 +828,9 @@
 
     // --- MODIFIER LOGIC ---
     function openModifier(id) {
+        currentQuantity = 1;
+        const qtyEl = document.getElementById("mod-quantity");
+        if(qtyEl) qtyEl.innerText = "1";
         currentItem = menu.find(i => i.id === id);
         
         // Find relevant dynamic groups
@@ -973,9 +982,17 @@
             });
         }
         document.getElementById('mod-item-price').innerText = `L. ${total.toFixed(2)}`;
-        document.getElementById('mod-final-price').innerText = `L. ${total.toFixed(2)}`;
+        document.getElementById('mod-final-price').innerText = `L. ${(total * currentQuantity).toFixed(2)}`;
     }
 
+    
+    function changeQuantity(delta) {
+        currentQuantity += delta;
+        if(currentQuantity < 1) currentQuantity = 1;
+        document.getElementById('mod-quantity').innerText = currentQuantity;
+        updateDynamicModPrice();
+    }
+    
     function confirmItem() {
         const mods = [];
         for (const groupId in currentMods) {
@@ -996,7 +1013,8 @@
             ...currentItem,
             mods: mods, // Standardized KDS array
             finalPrice: parseFloat(document.getElementById('mod-final-price').innerText.replace('L. ', '')),
-            note: note
+            note: note,
+            qty: currentQuantity
         };
         addToCart(finalItem);
         closeModal();
@@ -1087,7 +1105,7 @@
                 <div>
                     <div class="flex items-center gap-2">
                         <span>${item.icon}</span>
-                        <span class="font-bold">${item.name}</span>
+                        <span class="font-bold">${item.qty > 1 ? `<span class="bg-blue-100 text-blue-800 px-2 py-0.5 rounded mr-1">${item.qty}x</span>` : ''}${item.name}</span>
                     </div>
                     ${modString ? `<div class="text-xs text-gray-500 mt-1 ml-6">${modString}</div>` : ''}
                 </div>
@@ -1235,8 +1253,9 @@
     let currentCustomerId = null;
 
     async function lookupCustomer() {
-        const query = document.getElementById('cust-id').value;
+        let query = document.getElementById('cust-id').value;
         if (!query) return;
+        query = query.replace(/[^\d+]/g, '');
 
         try {
             const res = await fetch(`/api/customers/phone/${query}`);
@@ -1297,10 +1316,10 @@
                                     </div>
                                 `;
                             } else {
-                                alert("Failed to create customer.");
+                                alert(`Failed to create customer: ${newCust.error || 'Unknown error'}`);
                             }
                         } catch(e) {
-                            alert("Error creating customer.");
+                            alert("Error creating customer. Check connection.");
                         }
                     }
                 }

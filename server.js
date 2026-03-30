@@ -1134,7 +1134,9 @@ app.patch('/api/orders/:id', ensureAuthenticated, async (req, res) => {
                 });
             }
         }
-    }\n\n    // 2. Loyalty Logic: Award points if completing an order
+    }
+
+    // 2. Loyalty Logic: Award points if completing an order
     if (req.body.status === 'completed' && currentOrder.status !== 'completed' && updatedOrder.customer_id) {
         try {
             const { data: customer } = await client

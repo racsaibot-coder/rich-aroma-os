@@ -180,6 +180,11 @@
 
             <div class="p-6 bg-dark/95 backdrop-blur-md border-t border-white/5 pb-8">
                 <button onclick="confirmItem()" class="w-full gold-btn py-4 rounded-2xl font-bold text-lg shadow-xl shadow-gold/20 flex justify-between items-center px-8 active:scale-95 transition-transform">
+                    <div class="flex items-center gap-4 bg-white/10 rounded-xl p-1" onclick="event.stopPropagation()">
+                        <button onclick="changeQuantity(-1); event.stopPropagation()" class="w-10 h-10 flex items-center justify-center text-white hover:text-gold">-</button>
+                        <span id="mod-quantity" class="font-bold text-xl text-white">1</span>
+                        <button onclick="changeQuantity(1); event.stopPropagation()" class="w-10 h-10 flex items-center justify-center text-white hover:text-gold">+</button>
+                    </div>
                     <span id="mod-confirm-text">Agregar</span>
                     <span id="mod-final-price" class="font-mono bg-dark/20 px-3 py-1 rounded-lg">L. 55.00</span>
                 </button>
@@ -271,6 +276,7 @@
         let activeOrder = null;
         let addonTimer = null;
         let isAddonMode = false;
+        let currentQuantity = 1;
         let currentSelectedPayment = 'cash';
         let currentSecondaryPayment = 'cash';
 
@@ -391,6 +397,9 @@
         }
 
         function openModifier(id) {
+            currentQuantity = 1;
+            const qtyEl = document.getElementById("mod-quantity");
+            if(qtyEl) qtyEl.innerText = "1";
             currentItem = menuItems.find(i => i.id === id);
             const relevantGroups = itemModGroups.filter(img => img.item_id === id).sort((a,b)=>a.display_order - b.display_order).map(img => img.group_id);
             
@@ -454,6 +463,9 @@
         }
 
         function openNoteOnlyModal() {
+            currentQuantity = 1;
+            const qtyEl = document.getElementById("mod-quantity");
+            if(qtyEl) qtyEl.innerText = "1";
             currentMods = {};
             const container = document.getElementById('mod-dynamic-container');
             container.innerHTML = `<div class="mb-6"><h3 class="text-white/60 uppercase text-xs tracking-widest font-bold mb-3">Instrucciones para este plato</h3><input type="text" id="mod-note" placeholder="Ej. Bien caliente..." class="w-full p-4 bg-white/5 border border-white/10 text-white rounded-2xl text-base focus:outline-none focus:border-gold"></div>`;
@@ -497,9 +509,17 @@
                 });
             }
             document.getElementById('mod-item-price').innerText = `L. ${total.toFixed(2)}`;
-            document.getElementById('mod-final-price').innerText = `L. ${total.toFixed(2)}`;
+            document.getElementById('mod-final-price').innerText = `L. ${(total * currentQuantity).toFixed(2)}`;
         }
 
+        
+        function changeQuantity(delta) {
+            currentQuantity += delta;
+            if(currentQuantity < 1) currentQuantity = 1;
+            document.getElementById('mod-quantity').innerText = currentQuantity;
+            updateDynamicModPrice();
+        }
+    
         function confirmItem() {
             const mods = [];
             for (const groupId in currentMods) {
@@ -512,7 +532,7 @@
             if (note) mods.push({ name: `📝 ${note}` });
 
             const finalPrice = parseFloat(document.getElementById('mod-final-price').innerText.replace('L. ', ''));
-            const cartItem = { id: currentItem.id, name: currentItem.name, price: currentItem.price, finalPrice, mods, qty: 1 };
+            const cartItem = { id: currentItem.id, name: currentItem.name, price: currentItem.price, finalPrice, mods, qty: currentQuantity };
             
             if (isAddonMode) {
                 // Instantly submit add-on
@@ -551,7 +571,7 @@
                 container.innerHTML = cart.map((item, index) => `
                     <div class="flex justify-between items-start bg-white/5 border border-white/10 p-4 rounded-xl">
                         <div>
-                            <div class="font-bold text-white">${item.name}</div>
+                            <div class="font-bold text-white">${item.qty > 1 ? `<span class="text-gold mr-2">${item.qty}x</span>` : ''}${item.name}</div>
                             ${item.mods && item.mods.length > 0 ? `<div class="text-xs text-white/50 mt-1">${item.mods.map(m=>m.name).join(', ')}</div>` : ''}
                         </div>
                         <div class="flex items-center gap-3">
@@ -856,7 +876,7 @@
                 // Using stringified mods as key so different mods don't stack qty
                 const key = item.id + JSON.stringify(item.mods); 
                 if (!itemsMap[key]) itemsMap[key] = { ...item, qty: 0 };
-                itemsMap[key].qty += 1;
+                itemsMap[key].qty += (item.qty || 1);
             });
 
             const items = Object.values(itemsMap);
