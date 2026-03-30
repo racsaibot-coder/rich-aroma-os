@@ -196,9 +196,9 @@
         }
 
         function copyBank(bank) {
-            let account = bank === 'bac' ? '123456789' : '987654321';
+            let account = bank === 'bac' ? '756132311' : '210850188679';
             navigator.clipboard.writeText(account).then(() => {
-                alert(`¡Cuenta copiada! Haz la transferencia y sube la captura aquí.`);
+                alert(`¡Cuenta de ${bank.toUpperCase()} (${account}) copiada!`);
             });
         }
 
@@ -208,33 +208,52 @@
             if (!input.files || input.files.length === 0) return;
 
             statusDiv.classList.remove('hidden');
-            statusDiv.innerText = "Enviando... por favor espera.";
+            statusDiv.innerText = "Enviando comprobante...";
             statusDiv.className = "mt-3 text-sm font-bold text-gold";
 
-            const formData = new FormData();
-            formData.append('receipt', input.files[0]);
-            formData.append('amount', reloadAmount);
-            formData.append('customerId', currentCustomer.id);
-            formData.append('isVip', isVipPurchase);
+            const file = input.files[0];
+            const reader = new FileReader();
+            
+            reader.onloadend = async () => {
+                const base64String = reader.result;
+                // Calculate bonus based on amount
+                let bonus = 0;
+                if (reloadAmount >= 1000) bonus = reloadAmount * 0.10;
+                else if (reloadAmount >= 500) bonus = reloadAmount * 0.05;
 
-            try {
-                const res = await fetch('/api/upload-topup', {
-                    method: 'POST',
-                    body: formData
-                });
-                
-                if (res.ok) {
-                    statusDiv.innerText = "¡Enviado! El cajero lo aprobará en breve.";
-                    statusDiv.className = "mt-3 text-sm font-bold text-green-400";
-                    input.classList.add('hidden');
-                } else {
-                    throw new Error('Upload failed');
+                try {
+                    const res = await fetch('/api/topup', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            phone: currentCustomer.phone,
+                            amount: reloadAmount,
+                            bonus: bonus,
+                            imageBase64: base64String,
+                            fileName: file.name,
+                            isVip: isVipPurchase
+                        })
+                    });
+                    
+                    const data = await res.json();
+                    if (res.ok) {
+                        statusDiv.innerText = "¡Enviado! El cajero lo aprobará en breve.";
+                        statusDiv.className = "mt-3 text-sm font-bold text-green-400";
+                        input.classList.add('hidden');
+                        setTimeout(() => {
+                            closeReloadModal();
+                            location.reload();
+                        }, 3000);
+                    } else {
+                        throw new Error(data.error || 'Upload failed');
+                    }
+                } catch (e) {
+                    console.error(e);
+                    statusDiv.innerText = `Error: ${e.message}`;
+                    statusDiv.className = "mt-3 text-sm font-bold text-red-400";
                 }
-            } catch (e) {
-                console.error(e);
-                statusDiv.innerText = "Error. Intenta de nuevo.";
-                statusDiv.className = "mt-3 text-sm font-bold text-red-400";
-            }
+            };
+            reader.readAsDataURL(file);
         }
 
         loadProfile();
