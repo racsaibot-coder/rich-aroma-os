@@ -148,7 +148,7 @@ export default async function handler(req, res) {
     }
 
     if (action === 'orders' && req.method === 'POST') {
-        const { items, subtotal, tax, discount, total, customerId, paymentMethod, notes } = req.body;
+        const { items, subtotal, tax, discount, total, customerId, paymentMethod, notes, fulfillment } = req.body;
         const { data: maxOrder } = await supabase.from('orders').select('order_number').order('order_number', { ascending: false }).limit(1);
         const orderNum = (maxOrder?.[0]?.order_number || 0) + 1;
         const id = `ORD-${String(orderNum).padStart(4, '0')}`;
@@ -171,13 +171,26 @@ export default async function handler(req, res) {
             }
         }
 
-        const { data, error } = await supabase.from('orders').insert({
-            id, order_number: orderNum, items, subtotal: subtotal || 0, tax: tax || 0, discount: discount || 0, total, customer_id: customerId, payment_method: paymentMethod, status: orderStatus, notes
-        }).select().single();
+        const orderData = {
+            id, 
+            order_number: orderNum, 
+            items, 
+            subtotal: parseFloat(subtotal) || 0, 
+            tax: parseFloat(tax) || 0, 
+            discount: parseFloat(discount) || 0, 
+            total: parseFloat(total) || 0, 
+            customer_id: customerId || null, 
+            payment_method: paymentMethod, 
+            status: orderStatus, 
+            notes: notes || null,
+            fulfillment_type: fulfillment || 'pickup'
+        };
+
+        const { data, error } = await supabase.from('orders').insert(orderData).select().single();
         
         if (error) {
             console.error("Order Insert Error:", error);
-            return res.status(500).json({ error: error.message });
+            return res.status(500).json({ error: error.message, details: error.details });
         }
         return res.json(data);
     }

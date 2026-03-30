@@ -251,6 +251,18 @@
                     <a href="/profile/index.html" class="inline-block bg-gold text-dark font-bold py-2 px-6 rounded-xl text-sm shadow hover:brightness-110 transition">Acceder / Crear PIN</a>
                 </div>
 
+                <!-- Guest Info (Required if not logged in) -->
+                <div id="guest-info-section" class="mb-6 space-y-4">
+                    <div class="space-y-2">
+                        <label class="text-white/60 uppercase text-[10px] tracking-widest font-bold block">Tu Nombre</label>
+                        <input type="text" id="guest-name" placeholder="¿A nombre de quién?" class="w-full p-4 bg-white/5 border border-white/10 text-white rounded-2xl text-sm focus:outline-none focus:border-gold placeholder:text-white/20 transition-colors">
+                    </div>
+                    <div class="space-y-2">
+                        <label class="text-white/60 uppercase text-[10px] tracking-widest font-bold block">Tu Teléfono (Opcional)</label>
+                        <input type="tel" id="guest-phone" placeholder="Para contactarte si hay dudas" class="w-full p-4 bg-white/5 border border-white/10 text-white rounded-2xl text-sm focus:outline-none focus:border-gold placeholder:text-white/20 transition-colors">
+                    </div>
+                </div>
+
                 <!-- Special Instructions -->
                 <div class="mb-6">
                     <label class="text-white/60 uppercase text-xs tracking-widest font-bold mb-2 block">Instrucciones Especiales</label>
@@ -594,12 +606,14 @@
         function openCartModal() {
             const container = document.getElementById('cart-review-items');
             const bribeBanner = document.getElementById('guest-bribe-banner');
-            if (bribeBanner) {
-                if (!currentCustomer) {
-                    bribeBanner.classList.remove('hidden');
-                } else {
-                    bribeBanner.classList.add('hidden');
-                }
+            const guestInfo = document.getElementById('guest-info-section');
+
+            if (currentCustomer) {
+                if(bribeBanner) bribeBanner.classList.add('hidden');
+                if(guestInfo) guestInfo.classList.add('hidden');
+            } else {
+                if(bribeBanner) bribeBanner.classList.remove('hidden');
+                if(guestInfo) guestInfo.classList.remove('hidden');
             }
             
             if(cart.length === 0) {
@@ -856,18 +870,31 @@
         function closeCartModal() { document.getElementById('cart-modal').classList.add('hidden'); }
 
         async function submitOrder(paymentMethod = 'cash') {
-            if (cart.length === 0) return;
+            console.log('Submitting order with method:', paymentMethod);
+            if (cart.length === 0) {
+                console.warn('Empty cart, aborting.');
+                return;
+            }
+            
             const btn = document.getElementById('final-checkout-btn');
+            if (!btn) {
+                console.error('Final checkout button not found');
+                return;
+            }
+            
             const ogText = btn.innerHTML;
             
             // Add a name check for guest orders
-            let orderNotes = document.getElementById('order-notes').value;
+            let orderNotes = document.getElementById('order-notes')?.value || "";
             const subtotalTest = cart.reduce((sum, item) => sum + item.finalPrice, 0);
             const totalTest = subtotalTest * 1.15;
             
             if (!currentCustomer) {
-                const guestName = document.getElementById('guest-name').value.trim();
-                const guestPhone = document.getElementById('guest-phone').value.trim();
+                const nameInput = document.getElementById('guest-name');
+                const phoneInput = document.getElementById('guest-phone');
+                
+                const guestName = nameInput ? nameInput.value.trim() : "";
+                const guestPhone = phoneInput ? phoneInput.value.trim() : "";
                 
                 if (totalTest > 250) {
                     if (!guestName || !guestPhone) {
@@ -899,7 +926,8 @@
                     }
                 } else {
                     if (!guestName) {
-                        alert("Por favor, ingresa tu nombre en el campo de arriba para procesar la orden.");
+                        alert("Por favor, ingresa tu nombre para procesar la orden.");
+                        if (nameInput) nameInput.focus();
                         return;
                     }
                 }
@@ -912,14 +940,12 @@
 
             const itemsMap = {};
             cart.forEach(item => {
-                // Using stringified mods as key so different mods don't stack qty
                 const key = item.id + JSON.stringify(item.mods); 
                 if (!itemsMap[key]) itemsMap[key] = { ...item, qty: 0 };
                 itemsMap[key].qty += (item.qty || 1);
             });
 
             const items = Object.values(itemsMap);
-            // Force recalculation to ensure accuracy
             let subtotal = cart.reduce((sum, item) => sum + item.finalPrice, 0);
             let discount = 0;
             if (localStorage.getItem('ra_welcome_offer_30') === 'true' && subtotal > 0) discount += 30;
@@ -928,13 +954,13 @@
             const ricoBalance = currentCustomer ? ((parseFloat(currentCustomer.cash_balance) || 0) + (parseFloat(currentCustomer.membership_credit) || 0)) : 0;
             const coversFull = ricoBalance >= totalBeforeRicoDiscount;
             
-            if (currentSelectedPayment === 'rico_balance' && coversFull && subtotal > 0) {
+            // Use the paymentMethod argument for discount logic
+            if (paymentMethod === 'rico_balance' && coversFull && subtotal > 0) {
                 const ricoDiscount = subtotal * 0.10;
                 discount += ricoDiscount;
             }
             
             if (discount > subtotal) discount = subtotal;
-            
             const tax = subtotal * 0.00;
             const total = subtotal - discount + tax;
 
@@ -950,13 +976,17 @@
                     payload.pin = localStorage.getItem('ra_customer_pin');
                 }
 
+                console.log('Sending payload:', payload);
                 const res = await fetch('/api/orders', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(payload)
                 });
                 
-                if (!res.ok) throw new Error('Error saving');
+                if (!res.ok) {
+                    const errorData = await res.json();
+                    throw new Error(errorData.error || 'Error saving');
+                }
                 const savedOrder = await res.json();
                 
                 if (discount > 0) localStorage.removeItem('ra_welcome_offer_30');
@@ -965,12 +995,11 @@
                 updateCartUI();
                 closeCartModal();
                 
-                // Switch to tracking view
                 activeOrder = savedOrder;
                 showTracking();
 
             } catch (err) {
-                alert('Hubo un error, por favor intenta de nuevo.');
+                alert(`Hubo un error: ${err.message}`);
                 console.error(err);
                 btn.innerHTML = ogText;
                 btn.disabled = false;
