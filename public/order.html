@@ -238,6 +238,78 @@
         </div>
     </div>
 
+    <!-- TOPUP MODAL -->
+    <div id="topup-modal" class="hidden fixed inset-0 bg-black/80 backdrop-blur-sm z-[200] flex flex-col justify-end">
+        <div class="bg-dark w-full max-h-[90vh] rounded-t-3xl shadow-2xl flex flex-col overflow-hidden border-t border-gold/20 relative animate-[slideUp_0.3s_ease-out]">
+            <div class="absolute top-3 left-1/2 -translate-x-1/2 w-12 h-1.5 bg-white/20 rounded-full"></div>
+            
+            <div class="p-6 pt-8 pb-4 border-b border-white/5 flex justify-between items-center">
+                <h2 class="text-2xl font-bold text-white font-display">Recargar Rico Cash</h2>
+                <button onclick="closeTopupModal()" class="w-10 h-10 rounded-full bg-white/10 text-white hover:bg-white/20 flex items-center justify-center transition-colors">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+
+            <div class="flex-1 overflow-y-auto p-6">
+                <!-- Step 1: Select Amount -->
+                <div id="topup-step-1">
+                    <p class="text-white/60 text-sm mb-4">Selecciona el monto a recargar. ¡Recibe bonos extra en montos mayores!</p>
+                    <div class="space-y-3">
+                        <button onclick="selectTopup(150, 0)" class="w-full flex justify-between items-center p-4 bg-white/5 border border-white/10 rounded-2xl hover:border-gold/50 transition-colors">
+                            <span class="font-bold text-white text-lg">L. 150</span>
+                            <span class="text-sm text-white/40">Recibes L. 150</span>
+                        </button>
+                        <button onclick="selectTopup(250, 0)" class="w-full flex justify-between items-center p-4 bg-white/5 border border-white/10 rounded-2xl hover:border-gold/50 transition-colors">
+                            <span class="font-bold text-white text-lg">L. 250</span>
+                            <span class="text-sm text-white/40">Recibes L. 250</span>
+                        </button>
+                        <button onclick="selectTopup(500, 25)" class="w-full flex justify-between items-center p-4 bg-gold/10 border border-gold/30 rounded-2xl hover:border-gold transition-colors relative overflow-hidden">
+                            <div class="absolute top-0 right-0 bg-gold text-dark text-[10px] font-bold px-2 py-0.5 rounded-bl-lg">5% BONO</div>
+                            <span class="font-bold text-white text-lg">L. 500</span>
+                            <span class="text-sm text-gold font-bold">Recibes L. 525</span>
+                        </button>
+                        <button onclick="selectTopup(1000, 100)" class="w-full flex justify-between items-center p-4 bg-gold/10 border border-gold/30 rounded-2xl hover:border-gold transition-colors relative overflow-hidden">
+                            <div class="absolute top-0 right-0 bg-gold text-dark text-[10px] font-bold px-2 py-0.5 rounded-bl-lg">10% BONO</div>
+                            <span class="font-bold text-white text-lg">L. 1000</span>
+                            <span class="text-sm text-gold font-bold">Recibes L. 1100</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Step 2: Upload Transfer -->
+                <div id="topup-step-2" class="hidden">
+                    <button onclick="backToTopupStep1()" class="text-white/50 text-sm mb-4 hover:text-white"><i class="fas fa-arrow-left mr-1"></i> Cambiar monto</button>
+                    
+                    <div class="bg-charcoal rounded-2xl p-6 border border-white/5 text-center mb-6">
+                        <p class="text-white/60 text-sm mb-1">Monto a transferir:</p>
+                        <p class="text-4xl font-bold text-gold font-mono mb-1">L. <span id="topup-transfer-amount">0</span></p>
+                        <p class="text-green-400 text-sm font-bold">Recibirás L. <span id="topup-receive-amount">0</span> en tu cuenta</p>
+                    </div>
+
+                    <div class="space-y-4 mb-6">
+                        <p class="text-xs text-white/60 text-center">Copia el número de cuenta y realiza la transferencia antes de subir la captura.</p>
+                        <div class="flex gap-3">
+                            <button onclick="copyBankInfo('bac')" class="flex-1 bg-red-600/10 border border-red-600/30 text-red-500 py-3 rounded-xl font-bold flex flex-col items-center justify-center gap-1 hover:bg-red-600/20 transition-colors">
+                                <span class="text-xs">BAC</span>
+                                <i class="fas fa-copy"></i>
+                            </button>
+                            <button onclick="copyBankInfo('banpais')" class="flex-1 bg-blue-600/10 border border-blue-600/30 text-blue-500 py-3 rounded-xl font-bold flex flex-col items-center justify-center gap-1 hover:bg-blue-600/20 transition-colors">
+                                <span class="text-xs">Banpaís</span>
+                                <i class="fas fa-copy"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="bg-white/5 rounded-2xl p-6 border border-white/10">
+                        <h3 class="font-bold text-white mb-2"><i class="fas fa-receipt text-gold mr-2"></i>Sube tu Comprobante</h3>
+                        <input type="file" id="topup-receipt-upload" accept="image/*" class="w-full text-sm text-white/50 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-semibold file:bg-gold file:text-dark hover:file:bg-gold/80 cursor-pointer" onchange="submitTopup()">
+                        <div id="topup-status" class="mt-4 text-sm text-center hidden"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- CART REVIEW MODAL -->
     <div id="cart-modal" class="hidden fixed inset-0 bg-black/80 backdrop-blur-sm z-[100] flex flex-col justify-end">
         <div class="bg-dark w-full max-h-[90vh] rounded-t-3xl shadow-2xl flex flex-col overflow-hidden border-t border-gold/20 relative animate-[slideUp_0.3s_ease-out]">
@@ -337,6 +409,92 @@
         let currentQuantity = 1;
         let currentSelectedPayment = 'cash';
         let currentSecondaryPayment = 'cash';
+
+        let selectedTopupAmount = 0;
+        let selectedTopupBonus = 0;
+
+        function openTopupModal(suggested = 0) {
+            document.getElementById('topup-modal').classList.remove('hidden');
+            document.getElementById('topup-step-1').classList.remove('hidden');
+            document.getElementById('topup-step-2').classList.add('hidden');
+            const statusDiv = document.getElementById('topup-status');
+            statusDiv.classList.add('hidden');
+            statusDiv.innerText = "";
+            document.getElementById('topup-receipt-upload').classList.remove('hidden');
+            document.getElementById('topup-receipt-upload').value = '';
+        }
+
+        function closeTopupModal() {
+            document.getElementById('topup-modal').classList.add('hidden');
+        }
+
+        function selectTopup(amount, bonus) {
+            selectedTopupAmount = amount;
+            selectedTopupBonus = bonus;
+            
+            document.getElementById('topup-transfer-amount').innerText = amount;
+            document.getElementById('topup-receive-amount').innerText = amount + bonus;
+            
+            document.getElementById('topup-step-1').classList.add('hidden');
+            document.getElementById('topup-step-2').classList.remove('hidden');
+        }
+
+        function backToTopupStep1() {
+            document.getElementById('topup-step-1').classList.remove('hidden');
+            document.getElementById('topup-step-2').classList.add('hidden');
+        }
+
+        async function submitTopup() {
+            const input = document.getElementById('topup-receipt-upload');
+            const statusDiv = document.getElementById('topup-status');
+            const phone = currentCustomer ? currentCustomer.phone : null;
+            
+            if (!input.files || input.files.length === 0) return;
+            if (!phone) {
+                alert("Por favor inicia sesión o ingresa tus datos primero.");
+                return;
+            }
+            
+            statusDiv.classList.remove('hidden');
+            statusDiv.innerText = "Enviando comprobante...";
+            statusDiv.className = "mt-4 text-sm text-center text-gold font-bold";
+            
+            const file = input.files[0];
+            const reader = new FileReader();
+            
+            reader.onloadend = async () => {
+                const base64String = reader.result;
+                try {
+                    const res = await fetch('/api/topup', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            phone: phone,
+                            amount: selectedTopupAmount,
+                            bonus: selectedTopupBonus,
+                            imageBase64: base64String,
+                            fileName: file.name
+                        })
+                    });
+                    
+                    const data = await res.json();
+                    if (!res.ok) throw new Error(data.error || "API Error");
+                    
+                    statusDiv.innerText = "¡Recarga enviada! El cajero la aprobará en breve.";
+                    statusDiv.className = "mt-4 text-sm text-center text-green-400 font-bold";
+                    input.classList.add('hidden'); 
+                    
+                    setTimeout(() => {
+                        closeTopupModal();
+                    }, 4000);
+                } catch (e) {
+                    console.error(e);
+                    statusDiv.innerText = `Error: ${e.message}`;
+                    statusDiv.className = "mt-4 text-sm text-center text-red-400 font-bold";
+                }
+            };
+            reader.readAsDataURL(file);
+        }
 
         async function loadMenu() {
             try {
@@ -762,7 +920,7 @@
                             <p class="text-gold text-xs font-bold mb-1"><i class="fas fa-bolt mr-1"></i>Ahorra 10% Recargando</p>
                             <p class="text-white/60 text-[10px]">Agrega L. ${suggestedTopup} ahora por transferencia para cubrir esta orden y obtener el descuento.</p>
                         </div>
-                        <button onclick="promptTopUp(${suggestedTopup})" class="bg-gold text-dark text-[10px] font-bold px-3 py-2 rounded-xl whitespace-nowrap ml-2 shadow hover:scale-105 transition-transform">Recargar</button>
+                        <button onclick="openTopupModal(${suggestedTopup})" class="bg-gold text-dark text-[10px] font-bold px-3 py-2 rounded-xl whitespace-nowrap ml-2 shadow hover:scale-105 transition-transform">Recargar</button>
                     </div>
                 `;
             }
@@ -825,48 +983,6 @@
         function selectSecondaryPayment(method) {
             currentSecondaryPayment = method;
             renderPaymentOptions();
-        }
-
-        function promptTopUp(suggestedAmount) {
-            const amount = prompt("¿Cuánto deseas recargar? (Lempiras)", suggestedAmount);
-            if (!amount || isNaN(amount) || amount <= 0) return;
-            
-            const customerName = currentCustomer ? currentCustomer.name : 'Cliente';
-            const msg = `¡Hola! Quiero hacer una recarga de Rico Cash por L.${amount} a nombre de ${customerName} para mi orden actual.`;
-            const shopPhone = "50495200236";
-            
-            alert("A continuación te enviaremos a WhatsApp para que nos envíes el comprobante de la recarga. ¡Una vez aprobado por nosotros, podrás usar el saldo aquí mismo!");
-            window.open(`https://wa.me/${shopPhone}?text=${encodeURIComponent(msg)}`, '_blank');
-        }
-
-        function copyBankInfo(bank) {
-            let account = '';
-            if (bank === 'bac') account = '756132311'; // TODO: Update with real BAC account
-            if (bank === 'banpais') account = '210850188679'; // TODO: Update with real Banpais account
-            
-            navigator.clipboard.writeText(account).then(() => {
-                alert(`¡Cuenta de ${bank.toUpperCase()} (${account}) copiada! Haz la transferencia y sube la captura aquí en la app.`);
-            }).catch(err => {
-                console.error('Failed to copy text: ', err);
-                alert(`El número de cuenta es: ${account}`);
-            });
-        }
-
-        function requestTopup(totalAmount) {
-            let customerName = "";
-            if (currentCustomer) customerName = currentCustomer.name;
-            else {
-                customerName = prompt("Por favor, ingresa tu nombre para que sepamos de quién es la transferencia:");
-                if (!customerName) return; // cancelled
-            }
-            const phone = currentCustomer ? currentCustomer.phone : '';
-            const msg = `¡Hola! Aquí está mi comprobante de pago por L.${totalAmount.toFixed(2)} para mi orden a nombre de ${customerName}. ${phone ? 'Mi número es ' + phone : ''}`;
-            const shopPhone = "50495200236"; // Update this with your actual shop WhatsApp number
-            
-            // Also submit the order to the kitchen as pending/unpaid
-            submitOrder('transfer');
-            
-            window.open(`https://wa.me/${shopPhone}?text=${encodeURIComponent(msg)}`, '_blank');
         }
 
         function removeCartItem(index) {
