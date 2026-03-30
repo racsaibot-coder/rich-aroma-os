@@ -5,7 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Mi Perfil - Rich Aroma</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
-    <script src="https://cdn.tailwindcss.com">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
         let selectedTopupAmount = 0;
         let selectedTopupBonus = 0;
 
@@ -13,7 +14,10 @@
             document.getElementById('topup-modal').classList.remove('hidden');
             document.getElementById('topup-step-1').classList.remove('hidden');
             document.getElementById('topup-step-2').classList.add('hidden');
-            document.getElementById('topup-status').classList.add('hidden');
+            const statusDiv = document.getElementById('topup-status');
+            statusDiv.classList.add('hidden');
+            statusDiv.innerText = "";
+            document.getElementById('topup-receipt-upload').classList.remove('hidden');
             document.getElementById('topup-receipt-upload').value = '';
         }
 
@@ -39,11 +43,11 @@
 
         function copyBankInfo(bank) {
             let account = '';
-            if (bank === 'bac') account = '756132311'; // TODO: Update with real BAC account
-            if (bank === 'banpais') account = '210850188679'; // TODO: Update with real Banpais account
+            if (bank === 'bac') account = '756132311'; 
+            if (bank === 'banpais') account = '210850188679';
             
             navigator.clipboard.writeText(account).then(() => {
-                alert(`¡Cuenta de ${bank.toUpperCase()} (${account}) copiada! Haz la transferencia y sube la captura aquí.`);
+                alert(`¡Cuenta de ${bank.toUpperCase()} (${account}) copiada!`);
             }).catch(err => {
                 alert(`El número de cuenta es: ${account}`);
             });
@@ -52,16 +56,16 @@
         async function submitTopup() {
             const input = document.getElementById('topup-receipt-upload');
             const statusDiv = document.getElementById('topup-status');
-            const phone = document.getElementById('user-phone').innerText; // Using this as the identifier for now
+            const phone = localStorage.getItem('ra_customer_phone');
             
             if (!input.files || input.files.length === 0) return;
-            if (!phone || phone === '') {
+            if (!phone) {
                 alert("Por favor inicia sesión primero.");
                 return;
             }
             
             statusDiv.classList.remove('hidden');
-            statusDiv.innerText = "Enviando... por favor espera.";
+            statusDiv.innerText = "Enviando comprobante... por favor espera.";
             statusDiv.className = "mt-4 text-sm text-center text-gold font-bold";
             
             const file = input.files[0];
@@ -82,7 +86,8 @@
                         })
                     });
                     
-                    if (!res.ok) throw new Error("API Error");
+                    const data = await res.json();
+                    if (!res.ok) throw new Error(data.error || "API Error");
                     
                     statusDiv.innerText = "¡Recarga enviada! El cajero la aprobará en breve. Tu saldo se actualizará automáticamente.";
                     statusDiv.className = "mt-4 text-sm text-center text-green-400 font-bold";
@@ -90,17 +95,17 @@
                     
                     setTimeout(() => {
                         closeTopupModal();
+                        location.reload(); // Refresh to show pending or updated balance
                     }, 4000);
                 } catch (e) {
                     console.error(e);
-                    statusDiv.innerText = "Error al enviar. Intenta de nuevo.";
+                    statusDiv.innerText = `Error: ${e.message}`;
                     statusDiv.className = "mt-4 text-sm text-center text-red-400 font-bold";
                 }
             };
             reader.readAsDataURL(file);
         }
-
-</script>
+    </script>
     <style>
         :root {
             --caramel: #D4A574;
