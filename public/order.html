@@ -1208,6 +1208,20 @@
 
         // --- TRACKING & ADDON LOGIC ---
         let statusPollingTimer = null;
+        let trackTimerInterval = null;
+
+        function startTrackClock() {
+            clearInterval(trackTimerInterval);
+            const startTime = new Date();
+            trackTimerInterval = setInterval(() => {
+                const now = new Date();
+                const diff = Math.floor((now - startTime) / 1000);
+                const mins = String(Math.floor(diff / 60)).padStart(2, '0');
+                const secs = String(diff % 60).padStart(2, '0');
+                const timeEl = document.getElementById('track-time');
+                if (timeEl) timeEl.innerText = `${mins}:${secs}`;
+            }, 1000);
+        }
 
         function showTracking() {
             document.getElementById('main-view').classList.add('hidden');
@@ -1226,6 +1240,7 @@
             document.getElementById('track-type').innerText = types[activeOrder.fulfillment_type || fulfillmentType];
             
             renderTrackedItems();
+            startTrackClock();
 
             // Addon logic removed per request - show new order button immediately
             document.getElementById('addon-box').classList.add('hidden');
@@ -1245,7 +1260,9 @@
                             // Update UI if paid
                             if(currentOrder.status === 'paid') {
                                 document.getElementById('transfer-upload-section').classList.add('hidden');
-                                document.getElementById('track-status-desc').innerText = `Orden #${currentOrder.order_number || currentOrder.id} • Pago Confirmado ✅`;
+                                // Keep the clock visible but update the desc
+                                const timeVal = document.getElementById('track-time').innerText;
+                                document.getElementById('track-status-desc').innerHTML = `Orden #${currentOrder.order_number || currentOrder.id} • <span id="track-time">${timeVal}</span> • Pago Confirmado ✅`;
                             }
                             
                             // HANDLE REJECTED TRANSFER
@@ -1265,6 +1282,7 @@
                             if(currentOrder.status === 'completed' || currentOrder.status === 'ready') {
                                 setStep('ready');
                                 clearInterval(statusPollingTimer); // Stop polling when done
+                                clearInterval(trackTimerInterval); // Stop clock when ready
                                 
                                 // Disable Add-ons and force new order when completed
                                 clearInterval(addonTimer);
