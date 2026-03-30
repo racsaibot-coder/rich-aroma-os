@@ -775,22 +775,7 @@
 
         function openCartModal() {
             const container = document.getElementById('cart-review-items');
-            const bribeBanner = document.getElementById('guest-bribe-banner');
-            const guestInfo = document.getElementById('guest-info-section');
-
-            if (currentCustomer) {
-                if(bribeBanner) bribeBanner.classList.add('hidden');
-                if(guestInfo) guestInfo.classList.add('hidden');
-            } else {
-                if(bribeBanner) bribeBanner.classList.remove('hidden');
-                if(guestInfo) guestInfo.classList.remove('hidden');
-                
-                // Pre-fill from local storage if they've ordered before as guest
-                const savedName = localStorage.getItem('ra_guest_name');
-                const savedPhone = localStorage.getItem('ra_guest_phone');
-                if (savedName && document.getElementById('guest-name')) document.getElementById('guest-name').value = savedName;
-                if (savedPhone && document.getElementById('guest-phone')) document.getElementById('guest-phone').value = savedPhone;
-            }
+            updateIdentityFields();
             
             if(cart.length === 0) {
                 container.innerHTML = `<div class="text-white/50 text-center py-6">Tu carrito está vacío</div>`;
@@ -989,6 +974,28 @@
         }
 
         
+        function updateIdentityFields() {
+            const guestInfo = document.getElementById('guest-info-section');
+            const bribeBanner = document.getElementById('guest-bribe-banner');
+            
+            if (currentCustomer) {
+                if (guestInfo) guestInfo.classList.add('hidden');
+                if (bribeBanner) bribeBanner.classList.add('hidden');
+            } else {
+                if (guestInfo) guestInfo.classList.remove('hidden');
+                if (bribeBanner) bribeBanner.classList.remove('hidden');
+                
+                // Pre-fill from memory
+                const savedName = localStorage.getItem('ra_guest_name');
+                const savedPhone = localStorage.getItem('ra_guest_phone');
+                const nameInput = document.getElementById('guest-name');
+                const phoneInput = document.getElementById('guest-phone');
+                
+                if (savedName && nameInput && !nameInput.value) nameInput.value = savedName;
+                if (savedPhone && phoneInput && !phoneInput.value) phoneInput.value = savedPhone;
+            }
+        }
+
         function selectSecondaryPayment(method) {
             currentSecondaryPayment = method;
             renderPaymentOptions();
