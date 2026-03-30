@@ -182,8 +182,7 @@ export default async function handler(req, res) {
             customer_id: customerId || null, 
             payment_method: paymentMethod, 
             status: orderStatus, 
-            notes: notes || null,
-            fulfillment_type: fulfillment || 'pickup'
+            notes: `[TIPO: ${fulfillment || 'pickup'}] ${notes || ''}`.trim()
         };
 
         const { data, error } = await supabase.from('orders').insert(orderData).select().single();
