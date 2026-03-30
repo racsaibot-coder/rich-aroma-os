@@ -130,6 +130,22 @@
         <div id="transfer-upload-section" class="bg-charcoal rounded-3xl p-6 border border-white/10 mb-6 hidden">
             <h3 class="font-bold text-white mb-2"><i class="fas fa-receipt text-gold mr-2"></i>Sube tu Comprobante de Pago</h3>
             <p class="text-white/50 text-sm mb-4">Tu orden está pendiente de pago. Por favor sube la captura de la transferencia.</p>
+            
+            <!-- Bank Info Buttons -->
+            <div id="track-bank-info" class="space-y-4 mb-6 animate-in fade-in slide-in-from-top-2">
+                <p class="text-[10px] text-white/40 uppercase tracking-widest text-center font-bold">Cuentas para Transferencia</p>
+                <div class="flex gap-3">
+                    <button onclick="copyBankInfo('bac')" class="flex-1 bg-red-600/10 border border-red-600/30 text-red-500 py-3 rounded-xl font-bold flex flex-col items-center justify-center gap-1 hover:bg-red-600/20 active:scale-95 transition-all">
+                        <span class="text-[10px]">BAC</span>
+                        <i class="fas fa-copy text-xs"></i>
+                    </button>
+                    <button onclick="copyBankInfo('banpais')" class="flex-1 bg-blue-600/10 border border-blue-600/30 text-blue-500 py-3 rounded-xl font-bold flex flex-col items-center justify-center gap-1 hover:bg-blue-600/20 active:scale-95 transition-all">
+                        <span class="text-[10px]">Banpaís</span>
+                        <i class="fas fa-copy text-xs"></i>
+                    </button>
+                </div>
+            </div>
+
             <input type="file" id="receipt-upload" accept="image/*" class="w-full text-sm text-white/50 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-semibold file:bg-gold file:text-dark hover:file:bg-gold/80 cursor-pointer" onchange="uploadReceipt()">
             <div id="receipt-upload-status" class="mt-2 text-sm text-gold hidden">Subiendo...</div>
         </div>
@@ -445,6 +461,18 @@
         function backToTopupStep1() {
             document.getElementById('topup-step-1').classList.remove('hidden');
             document.getElementById('topup-step-2').classList.add('hidden');
+        }
+
+        function copyBankInfo(bank) {
+            let account = '';
+            if (bank === 'bac') account = '756132311'; 
+            if (bank === 'banpais') account = '210850188679';
+            
+            navigator.clipboard.writeText(account).then(() => {
+                alert(`¡Cuenta de ${bank.toUpperCase()} (${account}) copiada!`);
+            }).catch(err => {
+                alert(`Número de cuenta: ${account}`);
+            });
         }
 
         async function submitTopup() {
@@ -1210,6 +1238,7 @@
                         statusDiv.innerText = "¡Comprobante enviado! El cajero lo está revisando...";
                         statusDiv.className = "mt-2 text-sm text-green-400 font-bold";
                         input.classList.add('hidden'); // Hide input after success
+                        document.getElementById('track-bank-info').classList.add('hidden'); // Hide bank info after success
                     } else {
                         const errData = await res.json();
                         throw new Error(errData.error || 'Upload failed');
@@ -1248,6 +1277,7 @@
             
             if (activeOrder && activeOrder.payment_method === 'transfer') {
                 document.getElementById('transfer-upload-section').classList.remove('hidden');
+                document.getElementById('track-bank-info').classList.remove('hidden');
             } else {
                 document.getElementById('transfer-upload-section').classList.add('hidden');
             }
@@ -1289,9 +1319,11 @@
                                     document.getElementById('track-status-title').innerText = "Transferencia Rechazada";
                                     document.getElementById('track-status-desc').innerText = "Hubo un problema con tu comprobante. Tu orden está en espera.";
                                     document.getElementById('transfer-upload-section').classList.remove('hidden');
+                                    document.getElementById('track-bank-info').classList.remove('hidden'); // Show bank info again
                                     document.getElementById('receipt-upload-status').classList.remove('hidden');
                                     document.getElementById('receipt-upload-status').innerText = "⚠️ Por favor, sube una captura válida.";
                                     document.getElementById('receipt-upload-status').className = "mt-2 text-sm text-red-400 font-bold";
+                                    document.getElementById('receipt-upload').classList.remove('hidden'); // Show input again
                                 }
                             }
 
