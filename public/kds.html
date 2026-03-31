@@ -191,7 +191,11 @@
                     isFirstLoad = false;
                 }
 
-                orders = newOrders;
+                // Filter out reloads (those don't need to be in KDS)
+                orders = newOrders.filter(o => {
+                    const hasOnlyReload = o.items && o.items.every(i => i.id === 'rico_cash_reload');
+                    return !hasOnlyReload;
+                });
                 render();
             } catch(e) {
                 console.log("Offline mode / API Error", e);
