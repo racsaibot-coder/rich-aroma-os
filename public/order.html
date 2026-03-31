@@ -101,7 +101,7 @@
     </div>
 
     <!-- Main View: Menu -->
-    <div id="main-view">
+    <div id="main-view" class="pb-32">
         <!-- Category Filter -->
         <div class="px-4 py-3 overflow-x-auto hide-scrollbar border-b border-white/5 bg-dark sticky top-[73px] z-40">
             <div class="flex gap-2 min-w-max" id="category-filters">
@@ -116,8 +116,30 @@
         </main>
     </div>
 
+    <!-- UNIVERSAL BOTTOM NAVIGATION -->
+    <nav class="fixed bottom-0 left-0 right-0 z-[150] bg-dark/80 backdrop-blur-xl border-t border-white/5 px-6 pb-8 pt-3 flex justify-between items-center safe-area-inset-bottom">
+        <a href="/order.html" class="flex flex-col items-center gap-1 text-gold">
+            <div class="w-10 h-10 rounded-2xl bg-gold/10 flex items-center justify-center">
+                <i class="fas fa-mug-hot"></i>
+            </div>
+            <span class="text-[10px] font-black uppercase tracking-widest">Menú</span>
+        </a>
+        <a href="/dashboard.html" class="flex flex-col items-center gap-1 text-white/40 hover:text-gold transition-colors">
+            <div class="w-10 h-10 rounded-2xl hover:bg-gold/10 flex items-center justify-center transition-colors">
+                <i class="fas fa-wallet"></i>
+            </div>
+            <span class="text-[10px] font-bold uppercase tracking-widest">Billetera</span>
+        </a>
+        <a href="/profile/index.html" class="flex flex-col items-center gap-1 text-white/40 hover:text-gold transition-colors">
+            <div class="w-10 h-10 rounded-2xl hover:bg-gold/10 flex items-center justify-center transition-colors">
+                <i class="fas fa-user-circle"></i>
+            </div>
+            <span class="text-[10px] font-bold uppercase tracking-widest">Perfil</span>
+        </a>
+    </nav>
+
     <!-- Active Order / Tracking View -->
-    <div id="tracking-view" class="hidden px-4 py-8 max-w-md mx-auto">
+    <div id="tracking-view" class="hidden px-4 py-8 max-w-md mx-auto pb-32">
         <div class="text-center mb-8">
             <div class="w-20 h-20 bg-gold/20 text-gold rounded-full flex items-center justify-center text-3xl mx-auto mb-4 animate-pulse">
                 <i class="fas fa-clock"></i>
@@ -1454,6 +1476,28 @@
         }
 
         // Init
+        async function refreshCustomerData() {
+            const phone = localStorage.getItem('ra_customer_phone');
+            if (phone) {
+                try {
+                    const r = await fetch(`/api/customer/profile?phone=${phone}`);
+                    const u = await r.json();
+                    if (u && !u.error) {
+                        currentCustomer = u;
+                        updateLoyaltyUI();
+                        updateIdentityFields();
+                    } else {
+                        currentCustomer = null;
+                        localStorage.removeItem('ra_customer_phone');
+                        updateLoyaltyUI();
+                        updateIdentityFields();
+                    }
+                } catch(e) { console.error(e); }
+            }
+        }
+
+        window.addEventListener('focus', refreshCustomerData);
+
         window.addEventListener('DOMContentLoaded', async () => {
             try {
                 const res = await fetch('/api/store/status');
@@ -1470,22 +1514,8 @@
             loadMenu();
             setFulfillment('pickup');
             
-            // Auto login logic for testing
-            const phone = localStorage.getItem('ra_customer_phone') || localStorage.getItem('ra_phone');
-            if (phone) {
-                fetch(`/api/customer/profile?phone=${phone}`)
-                .then(r => r.json())
-                .then(u => {
-                    if (u && !u.error) {
-                        currentCustomer = u;
-                        updateLoyaltyUI();
-                    } else {
-                        currentCustomer = null;
-                        localStorage.removeItem('ra_customer_phone');
-                    }
-                })
-                .catch(e => console.error(e));
-            }
+            // Auto login logic
+            refreshCustomerData();
         });
 
     </script>

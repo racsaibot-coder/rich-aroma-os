@@ -256,21 +256,28 @@
             }
         }
 
+        async function refreshDashboard() {
+            const savedPhone = localStorage.getItem('ra_customer_phone');
+            if (savedPhone) {
+                try {
+                    const r = await fetch(`/api/customer/profile?phone=${encodeURIComponent(savedPhone)}`);
+                    const data = await r.json();
+                    if (data && !data.error) {
+                        localStorage.setItem('ra_customer_data', JSON.stringify(data));
+                        showDashboard(data);
+                    }
+                } catch(e) { console.log("Refresh failed", e); }
+            }
+        }
+
+        window.addEventListener('focus', refreshDashboard);
+
         window.onload = () => {
             const savedPhone = localStorage.getItem('ra_customer_phone');
             const savedData = localStorage.getItem('ra_customer_data');
             if (savedPhone && savedData) {
                 showDashboard(JSON.parse(savedData));
-                
-                // Refresh data silently
-                fetch(`/api/customer/profile?phone=${encodeURIComponent(savedPhone)}`)
-                    .then(r => r.json())
-                    .then(data => {
-                        if (data && !data.error) {
-                            localStorage.setItem('ra_customer_data', JSON.stringify(data));
-                            showDashboard(data);
-                        }
-                    }).catch(e => console.log("Silent refresh failed", e));
+                refreshDashboard();
             }
         }
         
@@ -361,9 +368,33 @@
             </div>
         </div>
     </div>
+    <!-- UNIVERSAL BOTTOM NAVIGATION -->
+    <nav class="fixed bottom-0 left-0 right-0 z-[150] bg-dark/80 backdrop-blur-xl border-t border-white/5 px-6 pb-8 pt-3 flex justify-between items-center safe-area-inset-bottom">
+        <a href="/order.html" class="flex flex-col items-center gap-1 text-white/40 hover:text-gold transition-colors">
+            <div class="w-10 h-10 rounded-2xl hover:bg-gold/10 flex items-center justify-center transition-colors">
+                <i class="fas fa-mug-hot"></i>
+            </div>
+            <span class="text-[10px] font-bold uppercase tracking-widest">Menú</span>
+        </a>
+        <a href="/dashboard.html" class="flex flex-col items-center gap-1 text-white/40 hover:text-gold transition-colors">
+            <div class="w-10 h-10 rounded-2xl hover:bg-gold/10 flex items-center justify-center transition-colors">
+                <i class="fas fa-wallet"></i>
+            </div>
+            <span class="text-[10px] font-bold uppercase tracking-widest">Billetera</span>
+        </a>
+        <a href="/profile/index.html" class="flex flex-col items-center gap-1 text-gold">
+            <div class="w-10 h-10 rounded-2xl bg-gold/10 flex items-center justify-center">
+                <i class="fas fa-user-circle"></i>
+            </div>
+            <span class="text-[10px] font-black uppercase tracking-widest">Perfil</span>
+        </a>
+    </nav>
+
     <style>
         @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
         .gold-btn { background: linear-gradient(135deg, #C9A66B 0%, #B08D55 100%); color: #1E1610; }
+        #dashboard-view { padding-bottom: 100px; }
+        #login-view { padding-bottom: 100px; }
     </style>
 
 </body>

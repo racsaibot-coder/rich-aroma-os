@@ -36,16 +36,11 @@
     <!-- Header -->
     <header class="sticky top-0 z-50 bg-dark/95 backdrop-blur-md border-b border-white/5 px-6 py-4 flex justify-between items-center">
         <div>
-            <h1 class="font-display text-xl text-gold font-bold tracking-wide">RICH AROMA</h1>
-        </div>
-        <div class="flex items-center gap-3">
-            <a href="order.html" class="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center cursor-pointer text-white hover:bg-white/20 transition">
-                <i class="fas fa-arrow-left"></i>
-            </a>
+            <h1 class="font-display text-xl text-gold font-bold tracking-wide">MI BILLETERA</h1>
         </div>
     </header>
 
-    <main class="p-6 max-w-md mx-auto space-y-6">
+    <main class="p-6 max-w-md mx-auto space-y-6 pb-32">
         
         <!-- Welcome Section -->
         <div class="text-center">
@@ -82,14 +77,36 @@
         <div class="glass-card rounded-3xl p-6">
             <h3 class="font-bold text-lg mb-4">Recargar Billetera</h3>
             <div class="grid grid-cols-3 gap-3 mb-4">
-                <button onclick="openReloadModal(100)" class="bg-white/5 border border-white/10 rounded-xl py-3 font-bold hover:bg-white/10 transition">L 100</button>
-                <button onclick="openReloadModal(200)" class="bg-white/5 border border-white/10 rounded-xl py-3 font-bold hover:bg-white/10 transition">L 200</button>
-                <button onclick="openReloadModal(500)" class="bg-gold/10 border border-gold/30 text-gold rounded-xl py-3 font-bold hover:bg-gold/20 transition">L 500</button>
+                <button onclick="openReloadModal(150, 0)" class="bg-white/5 border border-white/10 rounded-xl py-3 font-bold hover:bg-white/10 transition">L 150</button>
+                <button onclick="openReloadModal(250, 0)" class="bg-white/5 border border-white/10 rounded-xl py-3 font-bold hover:bg-white/10 transition">L 250</button>
+                <button onclick="openReloadModal(500, 25)" class="bg-gold/10 border border-gold/30 text-gold rounded-xl py-3 font-bold hover:bg-gold/20 transition">L 500</button>
             </div>
             <button onclick="openCustomReload()" class="w-full bg-white/5 border border-white/10 rounded-xl py-3 font-bold text-sm text-white/70 hover:bg-white/10 transition">Otro Monto</button>
         </div>
 
     </main>
+
+    <!-- UNIVERSAL BOTTOM NAVIGATION -->
+    <nav class="fixed bottom-0 left-0 right-0 z-[150] bg-dark/80 backdrop-blur-xl border-t border-white/5 px-6 pb-8 pt-3 flex justify-between items-center safe-area-inset-bottom">
+        <a href="/order.html" class="flex flex-col items-center gap-1 text-white/40 hover:text-gold transition-colors">
+            <div class="w-10 h-10 rounded-2xl hover:bg-gold/10 flex items-center justify-center transition-colors">
+                <i class="fas fa-mug-hot"></i>
+            </div>
+            <span class="text-[10px] font-bold uppercase tracking-widest">Menú</span>
+        </a>
+        <a href="/dashboard.html" class="flex flex-col items-center gap-1 text-gold">
+            <div class="w-10 h-10 rounded-2xl bg-gold/10 flex items-center justify-center">
+                <i class="fas fa-wallet"></i>
+            </div>
+            <span class="text-[10px] font-black uppercase tracking-widest">Billetera</span>
+        </a>
+        <a href="/profile/index.html" class="flex flex-col items-center gap-1 text-white/40 hover:text-gold transition-colors">
+            <div class="w-10 h-10 rounded-2xl hover:bg-gold/10 flex items-center justify-center transition-colors">
+                <i class="fas fa-user-circle"></i>
+            </div>
+            <span class="text-[10px] font-bold uppercase tracking-widest">Perfil</span>
+        </a>
+    </nav>
 
     <!-- Reload Modal -->
     <div id="reload-modal" class="hidden fixed inset-0 bg-black/90 backdrop-blur-sm z-[100] flex flex-col justify-end">
@@ -134,9 +151,9 @@
         let isVipPurchase = false;
 
         async function loadProfile() {
-            const phone = localStorage.getItem('ra_phone');
+            const phone = localStorage.getItem('ra_customer_phone');
             if (!phone) {
-                window.location.href = 'join.html';
+                window.location.href = '/profile/index.html';
                 return;
             }
 
@@ -146,7 +163,7 @@
                     currentCustomer = await res.json();
                     renderProfile();
                 } else {
-                    window.location.href = 'join.html';
+                    window.location.href = '/profile/index.html';
                 }
             } catch (e) {
                 console.error(e);
@@ -256,6 +273,7 @@
             reader.readAsDataURL(file);
         }
 
+        window.addEventListener('focus', loadProfile);
         loadProfile();
     </script>
 </body>
