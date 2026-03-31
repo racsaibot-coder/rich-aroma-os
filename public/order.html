@@ -117,7 +117,7 @@
     </div>
 
     <!-- UNIVERSAL BOTTOM NAVIGATION -->
-    <nav class="fixed bottom-0 left-0 right-0 z-[150] bg-dark/80 backdrop-blur-xl border-t border-white/5 px-6 pb-8 pt-3 flex justify-between items-center safe-area-inset-bottom">
+    <nav class="fixed bottom-0 left-0 right-0 z-[200] bg-dark/80 backdrop-blur-xl border-t border-white/5 px-6 pb-8 pt-3 flex justify-between items-center safe-area-inset-bottom shadow-[0_-10px_40px_rgba(0,0,0,0.5)]">
         <a href="/order.html" class="flex flex-col items-center gap-1 text-gold">
             <div class="w-10 h-10 rounded-2xl bg-gold/10 flex items-center justify-center">
                 <i class="fas fa-mug-hot"></i>
@@ -422,7 +422,7 @@
     </style>
 
     <!-- Floating Cart Bar -->
-    <div id="cart-bar" class="fixed bottom-6 left-4 right-4 bg-gold rounded-2xl p-4 floating-cart flex justify-between items-center transform translate-y-[150%] transition-transform duration-300 z-50">
+    <div id="cart-bar" class="fixed bottom-24 left-4 right-4 bg-gold rounded-2xl p-4 floating-cart flex justify-between items-center transform translate-y-[150%] transition-transform duration-300 z-50 shadow-2xl">
         <div class="flex flex-col cursor-pointer" onclick="openCartModal()">
             <span class="text-dark text-xs font-bold uppercase tracking-wider"><span id="cart-count" class="bg-dark text-gold px-2 py-0.5 rounded-full text-[10px] mr-1">0</span> Total</span>
             <span id="cart-total" class="text-dark font-display font-bold text-xl">L 0.00</span>
