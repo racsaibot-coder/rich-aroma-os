@@ -116,8 +116,13 @@
             </div>
 
             <div id="cash-calculator" class="hidden space-y-4 mb-8 bg-gray-50 p-4 rounded-xl border border-gray-200">
-                <div class="flex justify-between items-center"><span class="text-gray-500">Efectivo Recibido:</span><input type="number" id="tender-received" onkeyup="calculateChange()" class="w-1/2 p-2 border rounded text-right text-lg font-bold" placeholder="0.00"></div>
-                <div class="flex justify-between items-center text-xl text-green-600 font-bold pt-2 border-t border-gray-200"><span>Cambio:</span><span id="tender-change">L. 0.00</span></div>
+                <div class="grid grid-cols-3 gap-2 mb-2">
+                    <button onclick="quickCash(100)" class="py-2 bg-white border border-gray-300 rounded-lg font-bold hover:bg-gray-100 transition">L. 100</button>
+                    <button onclick="quickCash(200)" class="py-2 bg-white border border-gray-300 rounded-lg font-bold hover:bg-gray-100 transition">L. 200</button>
+                    <button onclick="quickCash(500)" class="py-2 bg-white border border-gray-300 rounded-lg font-bold hover:bg-gray-100 transition">L. 500</button>
+                </div>
+                <div class="flex justify-between items-center"><span class="text-gray-500 font-bold">Efectivo Recibido:</span><input type="number" id="tender-received" oninput="calculateChange()" class="w-1/2 p-2 border-2 border-gray-300 rounded-lg text-right text-2xl font-black focus:border-green-500 outline-none" placeholder="0.00"></div>
+                <div class="flex justify-between items-center text-xl text-green-600 font-bold pt-2 border-t border-gray-200"><span>Cambio:</span><span id="tender-change" class="text-2xl font-black">L. 0.00</span></div>
             </div>
 
             <div class="flex items-center justify-between mb-6 bg-gray-50 p-4 rounded-xl border border-gray-200">
@@ -575,6 +580,13 @@
                     startTime: new Date().toISOString()
                 }));
                 
+                // Auto-open store toggle in UI
+                const toggle = document.getElementById('store-status-toggle');
+                if (toggle) {
+                    toggle.checked = true;
+                    toggleStoreStatus(toggle);
+                }
+
                 document.getElementById('shift-modal').classList.add('hidden');
                 renderMenu(); // Load UI
             } else {
@@ -618,9 +630,19 @@
                 const diff = (data.shift.closing_amount - data.shift.expected_amount).toFixed(2);
                 alert(`Shift Closed.\nStarting Cash: L. ${startingCash}\nFinal Count: L. ${parsedCash}\nExpected: L. ${data.shift.expected_amount}\nDifference: L. ${diff}\n\nSystem locking...`);
                 
+                // Auto-close store toggle in UI
+                const toggle = document.getElementById('store-status-toggle');
+                if (toggle) {
+                    toggle.checked = false;
+                    toggleStoreStatus(toggle);
+                }
+
                 // Clear from localStorage
                 localStorage.removeItem('pos_active_shift');
                 currentShiftId = null;
+                
+                // Final hard reload to lock system
+                setTimeout(() => window.location.reload(), 1500);
             }
         } catch(e) {
             console.error("End shift error:", e);
@@ -1552,15 +1574,45 @@
         if(method === 'rico_balance') ricoInstr.classList.remove('hidden');
         else ricoInstr.classList.add('hidden');
     }
+    function quickCash(amount) {
+        document.getElementById('tender-received').value = amount;
+        calculateChange();
+    }
+
     function calculateChange() {
         const total = cart.reduce((sum, item) => sum + item.finalPrice, 0) * 1.15;
         const received = parseFloat(document.getElementById('tender-received').value) || 0;
         const change = received - total;
         
         const changeEl = document.getElementById('tender-change');
+        const confirmBtn = document.getElementById('confirm-tender-btn');
+        
         changeEl.innerText = `L. ${Math.max(0, change).toFixed(2)}`;
-        if(change < 0 && received > 0) changeEl.classList.replace('text-green-600', 'text-red-500');
-        else changeEl.classList.replace('text-red-500', 'text-green-600');
+        
+        if (currentTenderMethod === 'cash') {
+            if (change < 0) {
+                changeEl.classList.replace('text-green-600', 'text-red-500');
+                confirmBtn.disabled = true;
+                confirmBtn.classList.add('opacity-50', 'cursor-not-allowed');
+            } else {
+                changeEl.classList.replace('text-red-500', 'text-green-600');
+                confirmBtn.disabled = false;
+                confirmBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+            }
+        } else if (currentTenderMethod === 'rico_balance') {
+            const bal = window.loadedCustomer ? (parseFloat(window.loadedCustomer.rico_balance) || 0) : 0;
+            if (bal < total) {
+                confirmBtn.disabled = true;
+                confirmBtn.classList.add('opacity-50', 'cursor-not-allowed');
+            } else {
+                confirmBtn.disabled = false;
+                confirmBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+            }
+        } else {
+            // Transfer/Card usually doesn't need manual received amount entry here
+            confirmBtn.disabled = false;
+            confirmBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+        }
     }
 
     let printPort = null;
