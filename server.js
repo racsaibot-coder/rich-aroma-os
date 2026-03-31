@@ -29,7 +29,28 @@ app.use(cors());
 app.use(express.json({ limit: '10mb' })); // Increased for image uploads
 
 // Global Store Status
-let storeIsOpen = true;
+let storeIsOpen = false; // Default to closed, will sync below
+
+// Initialize store status based on database
+async function syncStoreStatus() {
+    try {
+        const { data, error } = await supabase
+            .from('cash_shifts')
+            .select('id')
+            .eq('status', 'open')
+            .limit(1);
+        if (!error && data && data.length > 0) {
+            storeIsOpen = true;
+            console.log("Store initialized as OPEN (Open shift found)");
+        } else {
+            storeIsOpen = false;
+            console.log("Store initialized as CLOSED (No open shift found)");
+        }
+    } catch (e) {
+        console.error("Failed to sync store status:", e);
+    }
+}
+syncStoreStatus();
 
 app.get('/api/store/status', (req, res) => {
     res.json({ isOpen: storeIsOpen });
@@ -2702,6 +2723,10 @@ app.post('/api/cash/open-shift', ensureAuthenticated, async (req, res) => {
         .single();
         
     if (error) return res.status(500).json({ error: error.message });
+    
+    // Auto-open store
+    storeIsOpen = true;
+    
     res.json(data);
 });
 
@@ -2788,6 +2813,9 @@ app.post('/api/cash/close-shift', ensureAuthenticated, async (req, res) => {
         .single();
         
     if (updateError) return res.status(500).json({ error: updateError.message });
+    
+    // Auto-close store
+    storeIsOpen = false;
     
     res.json({
         success: true,

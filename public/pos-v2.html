@@ -1961,10 +1961,15 @@ async function fetchPendingVerifications() {
     try {
         const res = await fetch('/api/orders');
         const data = await res.json();
-        // Look for topups and transfer orders
+        // Look for topups, transfer orders, and mobile cash orders
         pendingVerifications = data.orders.filter(o => {
+            // Transfer/Reload verification
             if (o.status === 'pending_transfer' || o.status === 'pending_verification') {
                 return (o.receipt_url) || (o.notes && o.notes.includes('[RECEIPT_URL:'));
+            }
+            // Mobile Cash Order - needs payment in store
+            if (o.status === 'pending' && o.payment_method === 'cash' && o.notes && o.notes.includes('Mobile Order')) {
+                return true;
             }
             return false;
         });
@@ -2000,31 +2005,55 @@ function closeVerifyModal() {
 function renderVerifyModal() {
     const container = document.getElementById('verifyContent');
     if(pendingVerifications.length === 0) {
-        container.innerHTML = '<p>No hay transferencias pendientes de verificación.</p>';
+        container.innerHTML = '<p>No hay órdenes pendientes de cobro o verificación.</p>';
         return;
     }
     
     // Show the first one in the queue
     const order = pendingVerifications[0];
-    let receiptUrl = '';
-    if (order.notes && order.notes.includes('[RECEIPT_URL:')) {
-        receiptUrl = order.notes.split('[RECEIPT_URL:')[1].split(']')[0];
+    const isCashMobile = order.payment_method === 'cash' && order.status === 'pending';
+    
+    let contentHtml = '';
+    
+    if (isCashMobile) {
+        contentHtml = `
+            <div class="mb-6 p-6 bg-green-50 border-2 border-green-200 rounded-2xl text-center">
+                <i class="fas fa-money-bill-wave text-5xl text-green-600 mb-4"></i>
+                <h4 class="font-black text-2xl text-green-900">COBRO EN EFECTIVO</h4>
+                <p class="text-green-800 font-bold mt-2 text-lg">Orden: ${order.order_number || order.id}</p>
+                <div class="mt-4 p-4 bg-white rounded-xl shadow-inner">
+                    <p class="text-gray-500 uppercase text-xs font-black tracking-widest">Total a Cobrar</p>
+                    <p class="text-4xl font-mono font-black text-black">L ${order.total}</p>
+                </div>
+                <p class="mt-4 text-sm text-green-700 font-medium">El cliente está en la tienda y desea pagar en efectivo.</p>
+            </div>
+            <div class="flex gap-4">
+                <button onclick="approveTransfer('${order.id}')" class="flex-1 bg-green-600 text-white font-black py-5 rounded-2xl shadow-lg hover:bg-green-700 active:scale-95 transition-all text-xl uppercase">Pago Recibido</button>
+                <button onclick="closeVerifyModal()" class="px-6 bg-gray-100 text-gray-500 font-bold rounded-2xl hover:bg-gray-200">Luego</button>
+            </div>
+        `;
+    } else {
+        let receiptUrl = '';
+        if (order.notes && order.notes.includes('[RECEIPT_URL:')) {
+            receiptUrl = order.notes.split('[RECEIPT_URL:')[1].split(']')[0];
+        }
+
+        contentHtml = `
+            <div class="mb-4">
+                <h4 class="font-bold text-xl">Verificar Transferencia: ${order.id}</h4>
+                <p class="text-gray-500">Monto: <span class="font-bold text-black">L ${order.total}</span></p>
+            </div>
+            <div class="border rounded-lg overflow-hidden mb-4 bg-gray-100 flex justify-center items-center" style="min-height: 300px;">
+                ${receiptUrl ? `<img src="${receiptUrl}" class="max-w-full max-h-[50vh] object-contain" alt="Recibo">` : '<p class="text-gray-400 italic">No hay imagen adjunta</p>'}
+            </div>
+            <div class="flex gap-4">
+                <button onclick="approveTransfer('${order.id}')" class="flex-1 bg-green-500 text-white font-bold py-4 rounded-xl hover:bg-green-600 text-lg">Aprobar (Pagado)</button>
+                <button onclick="rejectTransfer('${order.id}')" class="flex-1 bg-red-500 text-white font-bold py-4 rounded-xl hover:bg-red-600 text-lg">Rechazar</button>
+            </div>
+        `;
     }
 
-    container.innerHTML = `
-        <div class="mb-4">
-            <h4 class="font-bold text-xl">Orden: ${order.id}</h4>
-            <p class="text-gray-500">Total a verificar: <span class="font-bold text-black">L ${order.total}</span></p>
-        </div>
-        <div class="border rounded-lg overflow-hidden mb-4 bg-gray-100 flex justify-center items-center" style="min-height: 300px;">
-            <img src="${receiptUrl}" class="max-w-full max-h-[50vh] object-contain" alt="Recibo">
-        </div>
-        <div class="flex gap-4">
-            <button onclick="approveTransfer('${order.id}')" class="flex-1 bg-green-500 text-white font-bold py-4 rounded-xl hover:bg-green-600 text-lg">Aprobar (Pagado)</button>
-            <button onclick="rejectTransfer('${order.id}')" class="flex-1 bg-red-500 text-white font-bold py-4 rounded-xl hover:bg-red-600 text-lg">Rechazar (Falso)</button>
-        </div>
-        <p class="text-sm text-gray-400 mt-4">${pendingVerifications.length - 1} más en cola...</p>
-    `;
+    container.innerHTML = contentHtml + `<p class="text-sm text-gray-400 mt-4">${pendingVerifications.length - 1} más en cola...</p>`;
 }
 
 async function approveTransfer(orderId) {
