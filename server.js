@@ -703,15 +703,20 @@ app.post('/api/auth/register', async (req, res) => {
 
 // MENU (Public Read)
 app.get('/api/menu', async (req, res) => {
-    const { data: items } = await supabase.from('menu_items').select('*').eq('available', true);
+    const isAdmin = req.query.admin === 'true';
+    let query = supabase.from('menu_items').select('*');
+    if (!isAdmin) {
+        query = query.eq('available', true);
+    }
+    const { data: items } = await query;
     const { data: modifiers } = await supabase.from('modifier_options').select('*');
     
     // Category metadata
     const categoryMeta = {
-        coffee: { name: 'Coffee', icon: '☕' },
-        drinks: { name: 'Drinks', icon: '🧃' },
-        food: { name: 'Food', icon: '🍳' },
-        desserts: { name: 'Desserts', icon: '🍰' }
+        Combos: { name: 'Combos', icon: '🔥' },
+        Calientes: { name: 'Calientes', icon: '☕' },
+        Heladas: { name: 'Heladas', icon: '🥤' },
+        Comida: { name: 'Comida', icon: '🥐' }
     };
     
     // Group items by category
@@ -721,8 +726,11 @@ app.get('/api/menu', async (req, res) => {
         grouped[item.category].push({
             id: item.id,
             name: item.name,
-            nameEs: item.name_es,
-            price: parseFloat(item.price)
+            price: parseFloat(item.price),
+            available: item.available,
+            image: item.image_url,
+            category: item.category,
+            base_recipe: item.base_recipe
         });
     });
     
@@ -739,7 +747,14 @@ app.get('/api/menu', async (req, res) => {
         modifiersMap[m.id] = { name: m.name, price: parseFloat(m.price) };
     });
     
-    res.json({ categories, modifiers: modifiersMap, taxRate: 0.15 });
+    res.json({ categories, modifiers: modifiersMap, taxRate: 0.15, items });
+});
+
+app.patch('/api/menu/items/:id', ensureAuthenticated, async (req, res) => {
+    const { available } = req.body;
+    const { data, error } = await supabase.from('menu_items').update({ available }).eq('id', req.params.id).select().single();
+    if (error) return res.status(500).json({ error: error.message });
+    res.json(data);
 });
 
 // ORDERS
@@ -2772,17 +2787,24 @@ app.post('/api/cash/close-shift', ensureAuthenticated, async (req, res) => {
     
     const closedAt = new Date().toISOString();
     
-    // 2. Calculate Cash Sales (Orders)
-    // Filter orders between shift.opened_at and closedAt
-    // AND payment_method = 'cash'
-    const { data: orders } = await client
+    // 2. Calculate Sales Breakdown (Orders)
+    const { data: allOrders } = await client
         .from('orders')
-        .select('total')
-        .eq('payment_method', 'cash')
+        .select('total, payment_method, subtotal')
         .gte('created_at', shift.opened_at)
-        .lte('created_at', closedAt);
+        .lte('created_at', closedAt)
+        .not('status', 'eq', 'cancelled');
         
-    const cashSales = (orders || []).reduce((sum, o) => sum + (parseFloat(o.total) || 0), 0);
+    const salesBreakdown = (allOrders || []).reduce((acc, o) => {
+        const method = o.payment_method || 'other';
+        const total = parseFloat(o.total) || 0;
+        acc[method] = (acc[method] || 0) + total;
+        acc.total_gross = (acc.total_gross || 0) + total;
+        acc.total_points = (acc.total_points || 0) + Math.floor(parseFloat(o.subtotal) || 0);
+        return acc;
+    }, { cash: 0, rico_balance: 0, transfer: 0, card: 0, total_gross: 0, total_points: 0 });
+
+    const cashSales = salesBreakdown.cash;
     
     // 3. Calculate Transactions (Payouts/Drops)
     const { data: transactions } = await client
@@ -2793,7 +2815,7 @@ app.post('/api/cash/close-shift', ensureAuthenticated, async (req, res) => {
     const totalTransactions = (transactions || []).reduce((sum, t) => sum + (parseFloat(t.amount) || 0), 0);
     
     // 4. Calculate Expected
-    // Expected = Opening + Sales + Transactions (negative for payouts)
+    // Expected = Opening + Cash Sales + Transactions (negative for payouts)
     const expectedAmount = parseFloat(shift.opening_amount) + cashSales + totalTransactions;
     const discrepancy = parseFloat(closingAmount) - expectedAmount;
     
@@ -2806,7 +2828,9 @@ app.post('/api/cash/close-shift', ensureAuthenticated, async (req, res) => {
             expected_amount: expectedAmount,
             discrepancy: discrepancy,
             status: 'closed',
-            notes: notes
+            notes: notes,
+            cash_sales: cashSales, // Standardize column if exists
+            total_sales: salesBreakdown.total_gross
         })
         .eq('id', shiftId)
         .select()
@@ -2821,7 +2845,7 @@ app.post('/api/cash/close-shift', ensureAuthenticated, async (req, res) => {
         success: true,
         report: {
             opening: parseFloat(shift.opening_amount),
-            sales: cashSales,
+            sales: salesBreakdown,
             transactions: totalTransactions,
             expected: expectedAmount,
             declared: parseFloat(closingAmount),

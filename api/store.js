@@ -182,7 +182,12 @@ export default async function handler(req, res) {
 
     // MENU
     if (action === 'menu' && req.method === 'GET') {
-        const { data: items } = await supabase.from('menu_items').select('*').eq('available', true);
+        const isAdmin = req.query.admin === 'true';
+        let query = supabase.from('menu_items').select('*');
+        if (!isAdmin) {
+            query = query.eq('available', true);
+        }
+        const { data: items } = await query;
         
         // Fetch new dynamic modifiers
         const { data: itemModGroups } = await supabase.from('item_modifier_groups').select('item_id, group_id, display_order');
@@ -190,6 +195,14 @@ export default async function handler(req, res) {
         const { data: modOptions } = await supabase.from('modifier_options').select('*');
         
         return res.json({ items, itemModGroups, modGroups, modOptions, taxRate: 0.00 });
+    }
+
+    if (action === 'menu_item_update' && req.method === 'PATCH') {
+        const id = req.query.id;
+        const { available } = req.body;
+        const { data, error } = await supabase.from('menu_items').update({ available }).eq('id', id).select().single();
+        if (error) return res.status(500).json({ error: error.message });
+        return res.json(data);
     }
 
     // ORDERS
