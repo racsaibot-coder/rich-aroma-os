@@ -932,7 +932,7 @@
             // Check if they have enough balance to cover the ENTIRE order (before the 10% discount is applied)
             // If they don't, they don't get the 10% discount. This forces them to top up.
             const totalBeforeRicoDiscount = subtotal - discount;
-            const ricoBalance = currentCustomer ? ((parseFloat(currentCustomer.cash_balance) || 0) + (parseFloat(currentCustomer.membership_credit) || 0)) : 0;
+            const ricoBalance = currentCustomer ? parseFloat(currentCustomer.rico_balance) || 0 : 0;
             const coversFull = ricoBalance >= totalBeforeRicoDiscount;
             
             if (currentSelectedPayment === 'rico_balance' && coversFull && subtotal > 0) {
@@ -979,7 +979,7 @@
             const buttonContainer = document.getElementById('checkout-options');
             const total = window.currentOrderTotal || 0;
             
-            const ricoBalance = currentCustomer ? ((parseFloat(currentCustomer.cash_balance) || 0) + (parseFloat(currentCustomer.membership_credit) || 0)) : 0;
+            const ricoBalance = currentCustomer ? parseFloat(currentCustomer.rico_balance) || 0 : 0;
             const hasAnyRicoCash = ricoBalance > 0;
             const coversFull = ricoBalance >= total;
             
@@ -1230,7 +1230,7 @@
             if (localStorage.getItem('ra_welcome_offer_30') === 'true' && subtotal > 0) discount += 30;
             
             const totalBeforeRicoDiscount = subtotal - discount;
-            const ricoBalance = currentCustomer ? ((parseFloat(currentCustomer.cash_balance) || 0) + (parseFloat(currentCustomer.membership_credit) || 0)) : 0;
+            const ricoBalance = currentCustomer ? parseFloat(currentCustomer.rico_balance) || 0 : 0;
             const coversFull = ricoBalance >= totalBeforeRicoDiscount;
             
             // Use the paymentMethod argument for discount logic
@@ -1308,7 +1308,7 @@
             document.getElementById('badge-tier').innerText = `${currentCustomer.tier || 'BRONZE'} TIER`;
             document.getElementById('loyalty-badge').classList.remove('hidden');
             
-            const balance = (parseFloat(currentCustomer.cash_balance) || 0) + (parseFloat(currentCustomer.membership_credit) || 0);
+            const balance = parseFloat(currentCustomer.rico_balance) || 0;
             document.getElementById('user-header-status').innerHTML = `
                 <div class="flex items-center gap-2">
                     <p class="text-[10px] text-gold font-bold tracking-tight">Saldo: L ${balance.toFixed(2)}</p>

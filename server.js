@@ -244,7 +244,7 @@ app.post('/api/live/pay', async (req, res) => {
     
     // 3. Check Balance
     const price = currentDrop.price;
-    const balance = (customer.cash_balance || 0) + (customer.membership_credit || 0);
+    const balance = (customer.rico_balance || 0) + (customer.rico_balance || 0);
     
     if (balance < price) {
         return res.status(400).json({ error: "Insufficient balance", balance });
@@ -256,10 +256,10 @@ app.post('/api/live/pay', async (req, res) => {
     let deductCredit = 0;
     let deductCash = 0;
     
-    if (customer.membership_credit >= remainingCost) {
+    if (customer.rico_balance >= remainingCost) {
         deductCredit = remainingCost;
     } else {
-        deductCredit = customer.membership_credit;
+        deductCredit = customer.rico_balance;
         deductCash = remainingCost - deductCredit;
     }
     
@@ -267,8 +267,8 @@ app.post('/api/live/pay', async (req, res) => {
     const { error } = await supabase
         .from('customers')
         .update({
-            membership_credit: customer.membership_credit - deductCredit,
-            cash_balance: customer.cash_balance - deductCash
+            rico_balance: customer.rico_balance - deductCredit,
+            rico_balance: customer.rico_balance - deductCash
         })
         .eq('id', customer.id);
         
@@ -545,12 +545,12 @@ app.post('/api/customer/test-cash', async (req, res) => {
         
     if (!customer) return res.status(404).json({ error: 'Customer not found' });
     
-    const currentCash = parseFloat(customer.cash_balance) || 0;
+    const currentCash = parseFloat(customer.rico_balance) || 0;
     const newCash = currentCash + 500;
     
     await supabase
         .from('customers')
-        .update({ cash_balance: newCash })
+        .update({ rico_balance: newCash })
         .eq('id', customer.id);
         
     await supabase.from('balance_history').insert({
@@ -654,7 +654,7 @@ app.post('/api/auth/register', async (req, res) => {
             email: cleanEmail,
             points: 0,
             tier: 'bronze',
-            membership_credit: 30 // Instant bribe
+            rico_balance: 30 // Instant bribe
         };
 
         if (type === 'phone') {
@@ -770,8 +770,8 @@ app.post('/api/orders', async (req, res) => {
             .single();
 
         if (customer) {
-            const credit = parseFloat(customer.membership_credit) || 0;
-            const cash = parseFloat(customer.cash_balance) || 0;
+            const credit = parseFloat(customer.rico_balance) || 0;
+            const cash = parseFloat(customer.rico_balance) || 0;
             const available = credit + cash;
             const total = parseFloat(orderData.total);
 
@@ -810,8 +810,8 @@ app.post('/api/orders', async (req, res) => {
             await supabase
                 .from('customers')
                 .update({
-                    membership_credit: credit - deductCredit,
-                    cash_balance: cash - deductCash
+                    rico_balance: credit - deductCredit,
+                    rico_balance: cash - deductCash
                 })
                 .eq('id', customer.id);
             
@@ -1051,14 +1051,14 @@ app.post('/api/orders/:id/approve-topup', ensureAuthenticated, async (req, res) 
         // Update customer balance
         const { data: customer } = await supabase
             .from('customers')
-            .select('cash_balance')
+            .select('rico_balance')
             .eq('id', order.customer_id)
             .single();
             
-        const currentBalance = customer ? (parseFloat(customer.cash_balance) || 0) : 0;
+        const currentBalance = customer ? (parseFloat(customer.rico_balance) || 0) : 0;
         
         await supabase.from('customers')
-            .update({ cash_balance: currentBalance + totalToAdd })
+            .update({ rico_balance: currentBalance + totalToAdd })
             .eq('id', order.customer_id);
             
         // Log transaction
@@ -1122,8 +1122,8 @@ app.patch('/api/orders/:id', ensureAuthenticated, async (req, res) => {
                 .eq('id', currentOrder.customer_id)
                 .single();
             if (customer) {
-                const currentCash = parseFloat(customer.cash_balance) || 0;
-                await client.from('customers').update({ cash_balance: currentCash + amountToCredit }).eq('id', customer.id);
+                const currentCash = parseFloat(customer.rico_balance) || 0;
+                await client.from('customers').update({ rico_balance: currentCash + amountToCredit }).eq('id', customer.id);
                 // Also log it
                 await client.from('balance_history').insert({
                     customer_id: customer.id,
@@ -1585,13 +1585,13 @@ app.post('/api/customers/:id/load-balance', ensureAuthenticated, async (req, res
     const totalCredit = amount + bonus;
     
     // Update balance
-    const currentCash = parseFloat(customer.cash_balance) || 0;
+    const currentCash = parseFloat(customer.rico_balance) || 0;
     const newCash = currentCash + totalCredit;
     const newLoaded = (parseFloat(customer.total_loaded) || 0) + amount;
     
     await client
         .from('customers')
-        .update({ cash_balance: newCash, total_loaded: newLoaded })
+        .update({ rico_balance: newCash, total_loaded: newLoaded })
         .eq('id', req.params.id);
     
     // Log transaction
@@ -1611,8 +1611,8 @@ app.post('/api/customers/:id/purchase-membership', ensureAuthenticated, async (r
     
     // Logic: 
     // 1. Set is_vip = true
-    // 2. Set membership_credit = 500
-    // 3. Set membership_credit_expires_at = now + 30 days
+    // 2. Set rico_balance = 500
+    // 3. Set rico_balance_expires_at = now + 30 days
     
     const expiresAt = new Date();
     expiresAt.setDate(expiresAt.getDate() + 30);
@@ -1621,8 +1621,8 @@ app.post('/api/customers/:id/purchase-membership', ensureAuthenticated, async (r
         .from('customers')
         .update({
             is_vip: true,
-            membership_credit: 500,
-            membership_credit_expires_at: expiresAt.toISOString(),
+            rico_balance: 500,
+            rico_balance_expires_at: expiresAt.toISOString(),
             vip_expiry: expiresAt.toISOString() // Assuming VIP status matches credit expiry
         })
         .eq('id', req.params.id)
@@ -1652,8 +1652,8 @@ app.post('/api/customers/:id/pay-balance', async (req, res) => {
     
     if (!customer) return res.status(404).json({ error: 'Customer not found' });
     
-    let credit = parseFloat(customer.membership_credit) || 0;
-    let cash = parseFloat(customer.cash_balance) || 0;
+    let credit = parseFloat(customer.rico_balance) || 0;
+    let cash = parseFloat(customer.rico_balance) || 0;
     const totalFunds = credit + cash;
     
     if (totalFunds < amount) {
@@ -1687,8 +1687,8 @@ app.post('/api/customers/:id/pay-balance', async (req, res) => {
     await supabase
         .from('customers')
         .update({ 
-            membership_credit: newCredit,
-            cash_balance: newCash 
+            rico_balance: newCredit,
+            rico_balance: newCash 
         })
         .eq('id', req.params.id);
     

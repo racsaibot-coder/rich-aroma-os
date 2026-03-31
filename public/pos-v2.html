@@ -1517,7 +1517,7 @@
         const btnRico = document.getElementById('btn-tender-rico');
         if (window.loadedCustomer) {
             btnRico.classList.remove('hidden');
-            const bal = (parseFloat(window.loadedCustomer.rico_balance) || 0) + (parseFloat(window.loadedCustomer.membership_credit) || 0);
+            const bal = parseFloat(window.loadedCustomer.rico_balance) || 0;
             document.getElementById('rico-available-msg').innerText = `Balance disponible: L. ${bal.toFixed(2)}`;
         } else {
             btnRico.classList.add('hidden');

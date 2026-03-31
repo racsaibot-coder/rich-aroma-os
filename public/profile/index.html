@@ -246,7 +246,7 @@
             document.getElementById('user-phone').innerText = customer.phone;
             
             const points = customer.points || 0;
-            const cash = (parseFloat(customer.cash_balance) || 0) + (parseFloat(customer.membership_credit) || 0);
+            const cash = parseFloat(customer.rico_balance) || 0;
             
             document.getElementById('points-balance').innerText = points;
             document.getElementById('cash-balance').innerText = cash.toFixed(2);
