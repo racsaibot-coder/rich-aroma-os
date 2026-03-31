@@ -651,6 +651,9 @@
                                 <div class="w-full h-36 bg-charcoal overflow-hidden relative">
                                     <img src="${imgUrl}" class="w-full h-full object-cover">
                                     <div class="absolute inset-0 bg-gradient-to-t from-dark/90 to-transparent"></div>
+                                    <div class="absolute top-2 left-2 bg-gold/90 text-dark px-2 py-0.5 rounded-lg text-[9px] font-black uppercase tracking-tighter shadow-lg">
+                                        +${Math.floor(item.price)} PTS
+                                    </div>
                                     <div class="absolute bottom-2 right-2 w-8 h-8 rounded-full bg-gold text-dark flex items-center justify-center shadow-lg"><i class="fas fa-plus text-xs"></i></div>
                                 </div>
                                 <div class="p-4 flex-1 flex flex-col justify-between">
@@ -876,10 +879,24 @@
             
             const tax = subtotal * 0.00;
             const total = subtotal - discount + tax;
+            const pointsToEarn = Math.floor(subtotal);
 
             document.getElementById('review-subtotal').innerHTML = `L ${subtotal.toFixed(2)} ${discountText}`;
             document.getElementById('review-tax').innerText = `L ${tax.toFixed(2)}`;
             document.getElementById('review-total').innerText = `L ${total.toFixed(2)}`;
+            
+            // Add points info to summary
+            const summaryContainer = document.querySelector('#cart-modal .bg-charcoal.rounded-2xl.p-4');
+            if (summaryContainer) {
+                let pointsEl = document.getElementById('review-points-earned');
+                if (!pointsEl) {
+                    pointsEl = document.createElement('div');
+                    pointsEl.id = 'review-points-earned';
+                    pointsEl.className = "flex justify-between text-xs text-gold font-bold pt-2 border-t border-white/5 mt-2";
+                    summaryContainer.appendChild(pointsEl);
+                }
+                pointsEl.innerHTML = `<span>Ganarás</span> <span>+${pointsToEarn} Rico Puntos</span>`;
+            }
             
             window.currentOrderTotal = total;
             window.currentOrderDiscount = discount;

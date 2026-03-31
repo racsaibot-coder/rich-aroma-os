@@ -84,6 +84,61 @@
             <button onclick="openCustomReload()" class="w-full bg-white/5 border border-white/10 rounded-xl py-3 font-bold text-sm text-white/70 hover:bg-white/10 transition">Otro Monto</button>
         </div>
 
+        <!-- Rico Rewards Section -->
+        <div class="glass-card rounded-3xl p-6 bg-gradient-to-br from-charcoal to-[#111]">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="font-bold text-lg">Canjear Rico Puntos</h3>
+                <div class="flex items-center gap-2 bg-gold/10 px-3 py-1 rounded-full border border-gold/20">
+                    <i class="fas fa-star text-gold text-xs"></i>
+                    <span id="rewards-points" class="font-mono font-bold text-gold text-sm">0</span>
+                </div>
+            </div>
+
+            <div class="space-y-4">
+                <!-- Points to Cash -->
+                <div class="flex items-center justify-between p-4 bg-white/5 border border-white/10 rounded-2xl group hover:border-gold/30 transition-colors">
+                    <div class="flex items-center gap-4">
+                        <div class="w-12 h-12 rounded-xl bg-green-500/10 flex items-center justify-center text-green-500 text-xl">
+                            <i class="fas fa-money-bill-wave"></i>
+                        </div>
+                        <div>
+                            <p class="font-bold text-sm">L. 50 Rico Cash</p>
+                            <p class="text-[10px] text-white/40 uppercase font-black">Cuesta 500 Puntos</p>
+                        </div>
+                    </div>
+                    <button onclick="redeemPoints('cash_50', 500)" class="bg-white/10 text-white font-bold py-2 px-4 rounded-xl text-xs hover:bg-gold hover:text-dark transition-all">Canjear</button>
+                </div>
+
+                <!-- Free Drink -->
+                <div class="flex items-center justify-between p-4 bg-white/5 border border-white/10 rounded-2xl group hover:border-gold/30 transition-colors">
+                    <div class="flex items-center gap-4">
+                        <div class="w-12 h-12 rounded-xl bg-blue-500/10 flex items-center justify-center text-blue-400 text-xl">
+                            <i class="fas fa-mug-hot"></i>
+                        </div>
+                        <div>
+                            <p class="font-bold text-sm">Americano Gratis</p>
+                            <p class="text-[10px] text-white/40 uppercase font-black">Cuesta 400 Puntos</p>
+                        </div>
+                    </div>
+                    <button onclick="redeemPoints('free_americano', 400)" class="bg-white/10 text-white font-bold py-2 px-4 rounded-xl text-xs hover:bg-gold hover:text-dark transition-all">Canjear</button>
+                </div>
+
+                <!-- Free Food -->
+                <div class="flex items-center justify-between p-4 bg-white/5 border border-white/10 rounded-2xl group hover:border-gold/30 transition-colors">
+                    <div class="flex items-center gap-4">
+                        <div class="w-12 h-12 rounded-xl bg-orange-500/10 flex items-center justify-center text-orange-400 text-xl">
+                            <i class="fas fa-bread-slice"></i>
+                        </div>
+                        <div>
+                            <p class="font-bold text-sm">Baleada Sencilla Gratis</p>
+                            <p class="text-[10px] text-white/40 uppercase font-black">Cuesta 600 Puntos</p>
+                        </div>
+                    </div>
+                    <button onclick="redeemPoints('free_baleada', 600)" class="bg-white/10 text-white font-bold py-2 px-4 rounded-xl text-xs hover:bg-gold hover:text-dark transition-all">Canjear</button>
+                </div>
+            </div>
+        </div>
+
     </main>
 
     <!-- UNIVERSAL BOTTOM NAVIGATION -->
@@ -174,13 +229,47 @@
             document.getElementById('user-name').innerText = currentCustomer.name;
             document.getElementById('user-initial').innerText = currentCustomer.name.charAt(0).toUpperCase();
             document.getElementById('user-phone').innerText = currentCustomer.phone;
-            
-            const totalCash = (parseFloat(currentCustomer.cash_balance) || 0) + (parseFloat(currentCustomer.membership_credit) || 0);
+
+            const totalCash = (parseFloat(currentCustomer.rico_balance) || 0) + (parseFloat(currentCustomer.membership_credit) || 0);
             document.getElementById('user-balance').innerText = `L ${totalCash.toFixed(2)}`;
+            document.getElementById('rewards-points').innerText = currentCustomer.points || 0;
 
             if (currentCustomer.is_vip) {
                 document.getElementById('vip-badge').classList.remove('hidden');
                 document.getElementById('vip-offer').classList.add('hidden');
+            }
+        }
+
+        async function redeemPoints(prizeId, cost) {
+            if (!currentCustomer) return;
+            if ((currentCustomer.points || 0) < cost) {
+                alert(`Te faltan ${cost - currentCustomer.points} puntos para este premio.`);
+                return;
+            }
+
+            if (!confirm(`¿Canjear ${cost} puntos por esta recompensa?`)) return;
+
+            try {
+                const res = await fetch('/api/store?action=redeem_points', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        customerId: currentCustomer.id,
+                        prizeId: prizeId,
+                        cost: cost
+                    })
+                });
+
+                const data = await res.json();
+                if (res.ok) {
+                    alert('¡Canje Exitoso! Tu recompensa ha sido procesada.');
+                    loadProfile(); // Refresh balance and points
+                } else {
+                    alert(data.error || 'Error al canjear');
+                }
+            } catch (e) {
+                console.error(e);
+                alert('Error de conexión');
             }
         }
 

@@ -332,13 +332,32 @@
         
         <!-- Customer Info -->
         <div class="p-4 border-b border-gray-200 bg-gray-50">
-            <div class="flex gap-2 mb-2">
-                <input type="text" placeholder="Phone / Loyalty ID" class="w-full p-2 border rounded" id="cust-id">
-                <button onclick="lookupCustomer()" class="bg-gray-800 text-white px-4 rounded"><i class="fas fa-search"></i></button>
+            <label class="text-[10px] font-black uppercase text-gray-400 tracking-widest mb-2 block">Customer Identification / Cliente</label>
+            
+            <div id="cust-lookup-ui">
+                <div class="flex gap-2 mb-2">
+                    <input type="text" placeholder="Phone Number / Teléfono" class="w-full p-2 border-2 border-gray-200 rounded focus:border-blue-500 outline-none font-bold" id="cust-id">
+                    <button onclick="lookupCustomer()" class="bg-blue-600 text-white px-4 rounded hover:bg-blue-700 transition-colors shadow-lg shadow-blue-600/20"><i class="fas fa-search"></i></button>
+                </div>
+
+                <!-- Join Incentive Banner -->
+                <div id="join-incentive" class="bg-gradient-to-r from-orange-500 to-orange-600 p-3 rounded-xl text-white mb-3 shadow-lg animate-pulse cursor-pointer hover:scale-[1.02] transition-transform" onclick="document.getElementById('cust-id').focus()">
+                    <div class="flex items-center gap-2">
+                        <i class="fas fa-gift text-xl"></i>
+                        <div>
+                            <p class="text-[10px] font-black uppercase leading-none opacity-80">PROMO DE HOY</p>
+                            <p class="text-xs font-bold leading-tight">¿Desea unirse? ¡Recibe L. 30 de crédito hoy!</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="space-y-2">
+                    <input type="text" id="guest-name-input" placeholder="Guest Name (Required) / Nombre" class="w-full p-2 border-2 border-gray-200 rounded focus:border-orange-500 outline-none text-sm font-medium">
+                </div>
             </div>
-            <div id="cust-profile" class="hidden">
-                <h3 class="font-bold text-lg text-blue-600">Oscar Castillo ⭐️ VIP</h3>
-                <p class="text-sm text-gray-500">Usual: Double Espresso • Balance: L. 500</p>
+
+            <div id="cust-profile" class="hidden relative">
+                <!-- Profile content injected via JS -->
             </div>
         </div>
 
@@ -1272,6 +1291,7 @@
 
             if (res.ok) {
                 currentCustomerId = data.id;
+                document.getElementById('cust-lookup-ui').classList.add('hidden');
                 
                 if (data.usual_item) {
                     window.currentUsualItem = data.usual_item;
@@ -1285,14 +1305,17 @@
                         <div>
                             <div class="flex items-center gap-2">
                                 <span class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
-                                <h3 class="font-bold text-lg text-blue-900 leading-tight">¡Hola, ${data.name}! ${data.is_vip ? '⭐️' : ''}</h3>
+                                <h3 class="font-bold text-lg text-blue-900 leading-tight">${data.name} ${data.is_vip ? '⭐️' : ''}</h3>
                             </div>
                             <p class="text-xs font-bold text-blue-700/60 uppercase tracking-tighter mt-0.5">Saldo: L. ${data.rico_balance || 0} • Pts: ${data.points || 0}</p>
-                            ${data.usual_item ? `<button onclick="addToCart(window.currentUsualItem)" class="mt-2 text-[10px] bg-white text-purple-700 border border-purple-200 font-bold px-2 py-1 rounded-lg shadow-sm hover:bg-purple-50 transition-colors uppercase">✨ Repetir Lo de Siempre</button>` : ''}
+                            ${data.usual_item ? `<button onclick="addToCart(window.currentUsualItem)" class="mt-2 text-[10px] bg-white text-purple-700 border border-purple-200 font-bold px-2 py-1 rounded-lg shadow-sm hover:bg-purple-50 transition-colors uppercase">✨ Repetir: ${data.usual_item.name}</button>` : ''}
                         </div>
-                        <button onclick="openRecargaModal()" class="bg-blue-600 text-white font-black text-[10px] px-3 py-2 rounded-lg shadow-lg shadow-blue-600/20 hover:bg-blue-700 active:scale-95 transition-all uppercase">
-                            + RECARGA
-                        </button>
+                        <div class="flex flex-col gap-1">
+                            <button onclick="openRecargaModal()" class="bg-blue-600 text-white font-black text-[10px] px-3 py-2 rounded-lg shadow-lg shadow-blue-600/20 hover:bg-blue-700 active:scale-95 transition-all uppercase">
+                                + RECARGA
+                            </button>
+                            <button onclick="clearCustomer()" class="text-[10px] text-gray-400 font-bold hover:text-red-500 uppercase">Quitar</button>
+                        </div>
                     </div>
                 `;
                 profile.classList.remove('hidden');
@@ -1310,21 +1333,41 @@
                         <p class="text-orange-800 font-bold text-sm mb-3 flex items-center gap-2">
                             <i class="fas fa-user-plus"></i> ¿Cliente Nuevo?
                         </p>
+                        <p class="text-[10px] text-orange-700 font-bold mb-2 uppercase tracking-tight">Ofrécele L. 30 de crédito si se une hoy.</p>
                         <div class="flex gap-2">
                             <input type="text" id="new-cust-name" placeholder="Nombre del Cliente" class="flex-1 p-2 text-sm border-2 border-orange-200 rounded-lg focus:border-orange-500 outline-none">
                             <button onclick="quickCreateCustomer('${query}')" class="bg-orange-600 text-white px-4 py-2 rounded-lg font-bold text-sm hover:bg-orange-700 active:scale-95 transition-all">
-                                CREAR
+                                UNIR
                             </button>
                         </div>
+                        <button onclick="useAsGuestName('${query}')" class="w-full mt-2 text-[10px] text-gray-500 font-bold hover:text-gray-700 uppercase">No desea unirse, solo usar nombre</button>
                     </div>
                 `;
                 profile.classList.remove('hidden');
+                document.getElementById('cust-lookup-ui').classList.add('hidden');
                 setTimeout(() => document.getElementById('new-cust-name').focus(), 100);
             }
         } catch (e) {
             console.error(e);
             alert("Error looking up customer");
         }
+    }
+
+    function clearCustomer() {
+        currentCustomerId = null;
+        document.getElementById('cust-id').value = '';
+        document.getElementById('guest-name-input').value = '';
+        document.getElementById('cust-profile').classList.add('hidden');
+        document.getElementById('cust-lookup-ui').classList.remove('hidden');
+    }
+
+    function useAsGuestName(phone) {
+        const name = document.getElementById('new-cust-name').value.trim();
+        if (name) {
+            document.getElementById('guest-name-input').value = name;
+        }
+        document.getElementById('cust-profile').classList.add('hidden');
+        document.getElementById('cust-lookup-ui').classList.remove('hidden');
     }
 
     async function quickCreateCustomer(phone) {
@@ -1347,12 +1390,11 @@
             });
             const newCust = await createRes.json();
             if (createRes.ok) {
-                // Success feedback
                 const profile = document.getElementById('cust-profile');
                 profile.innerHTML = `
                     <div class="bg-green-500 text-white p-4 rounded-xl text-center animate-bounce">
                         <i class="fas fa-check-circle text-2xl mb-1"></i>
-                        <p class="font-bold">¡Cuenta Creada!</p>
+                        <p class="font-bold">¡Cuenta Creada! L. 30 Bonus</p>
                     </div>
                 `;
                 setTimeout(() => {
@@ -1610,6 +1652,13 @@
             return;
         }
 
+        const guestName = document.getElementById('guest-name-input').value.trim();
+        if (!currentCustomerId && !guestName) {
+            alert("⚠️ Identificación Requerida: Por favor ingresa el nombre del cliente o busca su cuenta de lealtad.");
+            document.getElementById('guest-name-input').focus();
+            return;
+        }
+
         const total = cart.reduce((sum, item) => sum + item.finalPrice, 0);
 
         // Format items for KDS standard: mods array
@@ -1641,7 +1690,8 @@
             discount: 0,
             total: total, // no tax for now
             paymentMethod: currentTenderMethod,
-            customerId: currentCustomerId
+            customerId: currentCustomerId,
+            notes: guestName ? `[CLIENTE: ${guestName}]` : null
         };
 
         const confirmBtn = document.getElementById('confirm-tender-btn');

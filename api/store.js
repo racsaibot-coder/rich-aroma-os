@@ -134,6 +134,44 @@ export default async function handler(req, res) {
         return res.json({ success: true, customer: data });
     }
 
+    if (action === 'redeem_points' && req.method === 'POST') {
+        const { customerId, prizeId, cost } = req.body;
+        if (!customerId || !prizeId || !cost) return res.status(400).json({ error: "Missing data" });
+
+        const { data: customer, error: fetchErr } = await supabase.from('customers').select('*').eq('id', customerId).single();
+        if (fetchErr || !customer) return res.status(404).json({ error: "Customer not found" });
+
+        if ((customer.points || 0) < cost) return res.status(400).json({ error: "Insufficient points" });
+
+        const newPoints = customer.points - cost;
+
+        // Apply Reward
+        if (prizeId === 'cash_50') {
+            const newBalance = (parseFloat(customer.rico_balance) || 0) + 50;
+            await supabase.from('customers').update({ points: newPoints, rico_balance: newBalance }).eq('id', customerId);
+        } else {
+            // Menu Prize - Create a L. 0 order for the kitchen
+            const prizeNames = { 'free_americano': 'Americano Gratis (Premio)', 'free_baleada': 'Baleada Sencilla Gratis (Premio)' };
+            const { data: maxOrder } = await supabase.from('orders').select('order_number').order('order_number', { ascending: false }).limit(1);
+            const orderNum = (maxOrder?.[0]?.order_number || 0) + 1;
+            
+            await supabase.from('orders').insert({
+                id: `PRIZE-${Date.now()}`,
+                order_number: orderNum,
+                customer_id: customerId,
+                items: [{ id: prizeId, name: prizeNames[prizeId] || 'Premio', price: 0, qty: 1, finalPrice: 0 }],
+                total: 0,
+                status: 'paid',
+                payment_method: 'points',
+                notes: `[CANJE DE PUNTOS] Cliente: ${customer.name}`
+            });
+
+            await supabase.from('customers').update({ points: newPoints }).eq('id', customerId);
+        }
+
+        return res.json({ success: true, newPoints });
+    }
+
     if (action === 'customer_update' && req.method === 'PATCH') {
         const id = req.query.id;
         const { pin, notes } = req.body;
