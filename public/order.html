@@ -367,7 +367,7 @@
                 <!-- Instant Bribe Banner -->
                 <div id="guest-bribe-banner" class="hidden bg-gold/10 border border-gold/30 rounded-2xl p-4 mb-6 text-center">
                     <p class="text-gold font-bold text-sm mb-2">🎁 Crea una cuenta o inicia sesión para ganar puntos y descuentos.</p>
-                    <a href="/profile/index.html" class="inline-block bg-gold text-dark font-bold py-2 px-6 rounded-xl text-sm shadow hover:brightness-110 transition">Acceder / Crear PIN</a>
+                    <button onclick="openLoginModal()" class="inline-block bg-gold text-dark font-bold py-2 px-6 rounded-xl text-sm shadow hover:brightness-110 transition">Acceder / Crear PIN</button>
                 </div>
 
                 <!-- Guest Info (Required if not logged in) -->
@@ -416,6 +416,32 @@
             </div>
         </div>
     </div>
+
+    <!-- INLINE LOGIN MODAL -->
+    <div id="login-modal" class="hidden fixed inset-0 bg-black/90 backdrop-blur-sm z-[300] flex items-center justify-center p-6">
+        <div class="bg-dark w-full max-w-sm rounded-3xl border border-gold/20 shadow-2xl overflow-hidden p-8">
+            <div class="text-center mb-6">
+                <h3 class="text-2xl font-display font-bold text-white mb-2">Acceder</h3>
+                <p class="text-white/50 text-sm">Ingresa tu número y PIN para continuar.</p>
+            </div>
+            
+            <div class="space-y-4">
+                <div class="space-y-2">
+                    <label class="text-[10px] text-white/40 uppercase font-black tracking-widest block">Teléfono</label>
+                    <input type="tel" id="login-phone" placeholder="9999-9999" class="w-full p-4 bg-white/5 border border-white/10 text-white rounded-2xl text-center text-xl font-bold tracking-widest focus:outline-none focus:border-gold transition-colors">
+                </div>
+                <div class="space-y-2">
+                    <label class="text-[10px] text-white/40 uppercase font-black tracking-widest block">PIN de 4 dígitos</label>
+                    <input type="password" id="login-pin" maxlength="4" placeholder="••••" class="w-full p-4 bg-white/5 border border-white/10 text-white rounded-2xl text-center text-3xl font-bold tracking-[1rem] focus:outline-none focus:border-gold transition-colors">
+                </div>
+                
+                <button onclick="handleInlineLogin()" id="inline-login-btn" class="w-full gold-btn py-4 rounded-2xl font-bold text-lg shadow-xl shadow-gold/20 mt-4 active:scale-95 transition-transform">
+                    Ingresar
+                </button>
+                <button onclick="closeLoginModal()" class="w-full text-white/30 font-bold py-2 hover:text-white transition-colors text-sm">Cancelar</button>
+            </div>
+        </div>
+    </div>
     
     <style>
         @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
@@ -435,7 +461,26 @@
     <!-- Scripts -->
     <script>
         let cart = [];
-        let currentCustomer = null;
+
+        function saveCart() {
+            localStorage.setItem('ra_active_cart', JSON.stringify(cart));
+        }
+
+        function loadCart() {
+            const saved = localStorage.getItem('ra_active_cart');
+            if (saved) {
+                try {
+                    cart = JSON.parse(saved);
+                    updateCartUI();
+                } catch(e) { console.error('Cart parse error', e); }
+            }
+        }
+        let currentCustomer = (() => {
+            try {
+                const cached = localStorage.getItem('ra_customer_data');
+                return cached ? JSON.parse(cached) : null;
+            } catch(e) { return null; }
+        })();
         let menuItems = [];
         let modGroups = [];
         let modOptions = [];
@@ -454,7 +499,16 @@
         let selectedTopupAmount = 0;
         let selectedTopupBonus = 0;
 
+        function toggleNav(show = true) {
+            const nav = document.querySelector('nav.fixed.bottom-0');
+            if (nav) {
+                if (show) nav.classList.remove('hidden');
+                else nav.classList.add('hidden');
+            }
+        }
+
         function openTopupModal(suggested = 0) {
+            toggleNav(false);
             document.getElementById('topup-modal').classList.remove('hidden');
             document.getElementById('topup-step-1').classList.remove('hidden');
             document.getElementById('topup-step-2').classList.add('hidden');
@@ -466,6 +520,7 @@
         }
 
         function closeTopupModal() {
+            toggleNav(true);
             document.getElementById('topup-modal').classList.add('hidden');
         }
 
@@ -669,6 +724,7 @@
         }
 
         function openModifier(id) {
+            toggleNav(false);
             currentQuantity = 1;
             const qtyEl = document.getElementById("mod-quantity");
             if(qtyEl) qtyEl.innerText = "1";
@@ -735,6 +791,7 @@
         }
 
         function openNoteOnlyModal() {
+            toggleNav(false);
             currentQuantity = 1;
             const qtyEl = document.getElementById("mod-quantity");
             if(qtyEl) qtyEl.innerText = "1";
@@ -748,7 +805,10 @@
             document.getElementById('modifier-modal').classList.remove('hidden');
         }
 
-        function closeModal() { document.getElementById('modifier-modal').classList.add('hidden'); }
+        function closeModal() { 
+            toggleNav(true);
+            document.getElementById('modifier-modal').classList.add('hidden'); 
+        }
 
         function toggleDynamicMod(groupId, optionId, maxSelections) {
             let selected = currentMods[groupId] || [];
@@ -811,6 +871,7 @@
                 submitAddon(cartItem);
             } else {
                 cart.push(cartItem);
+                saveCart();
                 updateCartUI();
             }
             closeModal();
@@ -827,6 +888,7 @@
         }
 
         function openCartModal() {
+            toggleNav(false);
             const container = document.getElementById('cart-review-items');
             updateIdentityFields();
             
@@ -1070,12 +1132,16 @@
 
         function removeCartItem(index) {
             cart.splice(index, 1);
+            saveCart();
             updateCartUI();
             if(cart.length === 0) closeCartModal();
             else openCartModal(); // re-render
         }
 
-        function closeCartModal() { document.getElementById('cart-modal').classList.add('hidden'); }
+        function closeCartModal() { 
+            toggleNav(true);
+            document.getElementById('cart-modal').classList.add('hidden'); 
+        }
 
         async function submitOrder(paymentMethod = 'cash') {
             console.log('Submitting order with method:', paymentMethod);
@@ -1492,8 +1558,89 @@
             });
         }
 
+        function openLoginModal() {
+            toggleNav(false);
+            document.getElementById('login-modal').classList.remove('hidden');
+            document.getElementById('login-phone').focus();
+        }
+
+        function closeLoginModal() {
+            toggleNav(true);
+            document.getElementById('login-modal').classList.add('hidden');
+        }
+
+        async function handleInlineLogin() {
+            const phoneInput = document.getElementById('login-phone');
+            const pinInput = document.getElementById('login-pin');
+            const btn = document.getElementById('inline-login-btn');
+            
+            const phone = phoneInput.value.replace(/[^\d+]/g, '');
+            const pin = pinInput.value;
+            
+            if (!phone || pin.length !== 4) {
+                alert("Ingresa un número y PIN de 4 dígitos.");
+                return;
+            }
+            
+            const ogText = btn.innerHTML;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+            btn.disabled = true;
+            
+            try {
+                const res = await fetch('/api/customer/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ phone, pin })
+                });
+                
+                const data = await res.json();
+                if (res.ok) {
+                    currentCustomer = data.customer;
+                    localStorage.setItem('ra_customer_phone', phone);
+                    localStorage.setItem('ra_customer_pin', pin);
+                    localStorage.setItem('ra_customer_data', JSON.stringify(data.customer));
+                    
+                    updateLoyaltyUI();
+                    updateIdentityFields();
+                    closeLoginModal();
+                    
+                    // Re-render checkout to show new options (like Rico Cash)
+                    renderPaymentOptions();
+                } else {
+                    alert(data.error || "Login fallido");
+                }
+            } catch (e) {
+                console.error(e);
+                alert("Error de conexión");
+            } finally {
+                btn.innerHTML = ogText;
+                btn.disabled = false;
+            }
+        }
+
+        function newOrder() {
+            cart = [];
+            saveCart();
+            activeOrder = null;
+            document.getElementById('tracking-view').classList.add('hidden');
+            document.getElementById('tracking-icon-container').classList.add('hidden');
+            document.getElementById('main-view').classList.remove('hidden');
+            document.getElementById('fulfillment-selector').classList.remove('hidden');
+            updateCartUI();
+        }
+
         // Init
         async function refreshCustomerData() {
+            // Load from cache first for instant UX
+            const cachedData = localStorage.getItem('ra_customer_data');
+            if (cachedData) {
+                try {
+                    currentCustomer = JSON.parse(cachedData);
+                    updateLoyaltyUI();
+                    updateIdentityFields();
+                } catch(e) {}
+            }
+
             const phone = localStorage.getItem('ra_customer_phone');
             if (phone) {
                 try {
@@ -1501,11 +1648,13 @@
                     const u = await r.json();
                     if (u && !u.error) {
                         currentCustomer = u;
+                        localStorage.setItem('ra_customer_data', JSON.stringify(u));
                         updateLoyaltyUI();
                         updateIdentityFields();
                     } else {
                         currentCustomer = null;
                         localStorage.removeItem('ra_customer_phone');
+                        localStorage.removeItem('ra_customer_data');
                         updateLoyaltyUI();
                         updateIdentityFields();
                     }
@@ -1529,6 +1678,7 @@
             }
 
             loadMenu();
+            loadCart();
             setFulfillment('pickup');
             
             // Auto login logic
