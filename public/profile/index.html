@@ -272,12 +272,21 @@
 
         window.addEventListener('focus', refreshDashboard);
 
-        window.onload = () => {
+        window.onload = async () => {
             const savedPhone = localStorage.getItem('ra_customer_phone');
             const savedData = localStorage.getItem('ra_customer_data');
-            if (savedPhone && savedData) {
-                showDashboard(JSON.parse(savedData));
-                refreshDashboard();
+            
+            if (savedPhone) {
+                // If we have saved data, show it immediately for speed
+                if (savedData) {
+                    showDashboard(JSON.parse(savedData));
+                }
+                
+                // Always refresh from server to ensure accuracy
+                await refreshDashboard();
+                
+                // If refresh was successful, we are already showing dashboard
+                // If it failed (user deleted etc), refreshDashboard will handle cleanup
             }
         }
         
