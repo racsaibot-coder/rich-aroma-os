@@ -95,14 +95,13 @@ export default async function handler(req, res) {
         const { phone } = req.body;
         const { data: customer } = await supabase.from('customers').select('*').eq('phone', phone).single();
         if (!customer) return res.status(404).json({ error: 'Not found' });
-        
-        const { data, error } = await supabase.from('customers').update({ 
-            cash_balance: (customer.cash_balance || 0) + 500 
+
+        const { data, error } = await supabase.from('customers').update({
+            rico_balance: (customer.rico_balance || 0) + 500
         }).eq('phone', phone).select().single();
-        
+
         return res.json(data);
     }
-
     // CUSTOMER UPDATE (PIN etc)
     if (action === 'customer_create' && req.method === 'POST') {
         const { data: existing } = await supabase.from('customers').select('id').order('id', { ascending: false }).limit(1);
@@ -118,6 +117,21 @@ export default async function handler(req, res) {
         const { data, error } = await supabase.from('customers').insert(newCustomer).select().single();
         if (error) return res.status(500).json({ error: error.message });
         return res.json(data);
+    }
+
+    if (action === 'load_balance' && req.method === 'POST') {
+        const id = req.query.id;
+        const { amount } = req.body;
+        if (!id || !amount) return res.status(400).json({ error: "Missing ID or amount" });
+
+        const { data: customer, error: fetchErr } = await supabase.from('customers').select('rico_balance').eq('id', id).single();
+        if (fetchErr || !customer) return res.status(404).json({ error: "Customer not found" });
+
+        const newBalance = (parseFloat(customer.rico_balance) || 0) + parseFloat(amount);
+        const { data, error } = await supabase.from('customers').update({ rico_balance: newBalance }).eq('id', id).select().single();
+        
+        if (error) return res.status(500).json({ error: error.message });
+        return res.json({ success: true, customer: data });
     }
 
     if (action === 'customer_update' && req.method === 'PATCH') {

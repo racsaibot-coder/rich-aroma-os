@@ -116,6 +116,10 @@
       "dest": "/api/store.js?action=customer_by_phone&query=$1"
     },
     {
+      "src": "/api/customers/(.*)/load-balance",
+      "dest": "/api/store.js?action=load_balance&id=$1"
+    },
+    {
       "src": "/api/customers/(.*)",
       "dest": "/api/store.js?action=customer_update&id=$1"
     },
