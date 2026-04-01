@@ -1165,7 +1165,7 @@
             // Add a name check for guest orders
             let orderNotes = document.getElementById('order-notes')?.value || "";
             const subtotalTest = cart.reduce((sum, item) => sum + item.finalPrice, 0);
-            const totalTest = subtotalTest * 1.15;
+            const totalTest = subtotalTest;
             
             if (!currentCustomer) {
                 const nameInput = document.getElementById('guest-name');
@@ -1531,8 +1531,7 @@
                 const payload = {
                     items: [cartItem], 
                     addedSubtotal: cartItem.finalPrice, 
-                    addedTax: cartItem.finalPrice * 0.15, 
-                    addedTotal: cartItem.finalPrice * 1.15
+                    addedTotal: cartItem.finalPrice
                 };
 
                 const res = await fetch(`/api/orders/${activeOrder.id}/append`, {

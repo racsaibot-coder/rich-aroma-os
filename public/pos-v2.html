@@ -846,7 +846,7 @@
             </div>
         `).join('');
 
-        const total = cart.reduce((sum, item) => sum + (item.finalPrice * item.qty), 0) * 1.15;
+        const total = cart.reduce((sum, item) => sum + (item.finalPrice * item.qty), 0);
         document.getElementById('cart-total').innerText = `L. ${total.toFixed(2)}`;
     }
 
@@ -858,7 +858,7 @@
 
     function openTenderModal() {
         if (cart.length === 0) return;
-        const total = cart.reduce((sum, item) => sum + (item.finalPrice * item.qty), 0) * 1.15;
+        const total = cart.reduce((sum, item) => sum + (item.finalPrice * item.qty), 0);
         document.getElementById('tender-due').innerText = `L. ${total.toFixed(2)}`;
         document.getElementById('tender-received').value = '';
         document.getElementById('tender-change').innerText = 'L. 0.00';
@@ -891,7 +891,7 @@
     }
 
     function calculateChange() {
-        const total = cart.reduce((sum, item) => sum + (item.finalPrice * item.qty), 0) * 1.15;
+        const total = cart.reduce((sum, item) => sum + (item.finalPrice * item.qty), 0);
         const received = parseFloat(document.getElementById('tender-received').value) || 0;
         const change = received - total;
         const confirmBtn = document.getElementById('confirm-tender-btn');
@@ -900,8 +900,23 @@
         changeEl.innerText = `L. ${Math.max(0, change).toFixed(2)}`;
         
         let valid = true;
-        if (currentTenderMethod === 'cash' && change < 0) valid = false;
-        if (currentTenderMethod === 'rico_balance' && (!window.loadedCustomer || window.loadedCustomer.rico_balance < total)) valid = false;
+        if (currentTenderMethod === 'cash') {
+            if (received < total) {
+                valid = false;
+                confirmBtn.innerText = `Faltan L. ${(total - received).toFixed(2)}`;
+            } else {
+                confirmBtn.innerHTML = '<i class="fas fa-check mr-2"></i> Cobrar';
+            }
+        }
+        
+        if (currentTenderMethod === 'rico_balance') {
+            if (!window.loadedCustomer || window.loadedCustomer.rico_balance < total) {
+                valid = false;
+                confirmBtn.innerText = "Saldo Insuficiente";
+            } else {
+                confirmBtn.innerHTML = '<i class="fas fa-check mr-2"></i> Cobrar con Rico Cash';
+            }
+        }
         
         confirmBtn.disabled = !valid;
         confirmBtn.classList.toggle('opacity-50', !valid);
@@ -909,7 +924,7 @@
     }
 
     async function processCobrar() {
-        const total = cart.reduce((sum, item) => sum + (item.finalPrice * item.qty), 0) * 1.15;
+        const total = cart.reduce((sum, item) => sum + (item.finalPrice * item.qty), 0);
         const payload = {
             items: cart,
             total,
@@ -1006,12 +1021,12 @@
     }
 
     async function endShift() {
-        const cash = prompt("Final cash count:");
-        if (!cash) return;
+        const cash = prompt("Total Cash in Drawer (incl. starting float):");
+        if (cash === null || cash === "") return;
         const res = await fetch('/api/cash/close-shift', {
             method: 'POST',
             headers: {'Content-Type': 'application/json', 'Authorization': 'Bearer EMP-admin'},
-            body: JSON.stringify({ shiftId: currentShiftId, closingAmount: cash })
+            body: JSON.stringify({ shiftId: currentShiftId, closingAmount: parseFloat(cash) })
         });
         if (res.ok) {
             const data = await res.json();
@@ -1121,11 +1136,43 @@
 
     function showShiftReport(r) {
         const content = document.getElementById('shift-report-content');
-        content.innerHTML = `<div class="p-4 bg-gray-900 text-gold rounded-xl font-mono text-sm">
-            <p>Total Cash: L. ${r.sales.cash.toFixed(2)}</p>
-            <p>Rico Cash: L. ${r.sales.rico_balance.toFixed(2)}</p>
-            <p>Diff: L. ${r.discrepancy.toFixed(2)}</p>
-        </div>`;
+        const expected = r.opening_amount + r.sales.cash;
+        const diff = r.closing_amount - expected;
+        
+        content.innerHTML = `
+            <div class="p-6 bg-gray-900 text-gold rounded-2xl font-mono text-sm space-y-3 border border-white/10 shadow-2xl">
+                <div class="flex justify-between border-b border-white/10 pb-2">
+                    <span class="text-gray-400">Starting Float:</span>
+                    <span class="font-black text-white">L. \${r.opening_amount.toFixed(2)}</span>
+                </div>
+                <div class="flex justify-between">
+                    <span class="text-gray-400">Cash Sales:</span>
+                    <span class="font-black text-white">+ L. \${r.sales.cash.toFixed(2)}</span>
+                </div>
+                <div class="flex justify-between text-blue-400 border-t border-white/10 pt-2">
+                    <span>Expected in Drawer:</span>
+                    <span class="font-black">L. \${expected.toFixed(2)}</span>
+                </div>
+                <div class="flex justify-between text-yellow-400">
+                    <span>Actual in Drawer:</span>
+                    <span class="font-black">L. \${r.closing_amount.toFixed(2)}</span>
+                </div>
+                <div class="flex justify-between text-xl font-black p-3 rounded-xl \${diff >= 0 ? 'bg-green-900/30 text-green-400' : 'bg-red-900/30 text-red-400'}">
+                    <span>DISCREPANCY:</span>
+                    <span>L. \${diff.toFixed(2)}</span>
+                </div>
+                <div class="mt-4 pt-4 border-t border-white/10 space-y-1">
+                    <div class="flex justify-between text-[10px]">
+                        <span class="text-gray-500 uppercase">Rico Cash Sales:</span>
+                        <span class="text-white">L. \${r.sales.rico_balance.toFixed(2)}</span>
+                    </div>
+                    <div class="flex justify-between text-[10px]">
+                        <span class="text-gray-500 uppercase">Total Orders:</span>
+                        <span class="text-white">\${r.order_count}</span>
+                    </div>
+                </div>
+            </div>
+        `;
         document.getElementById('shiftReportModal').classList.remove('hidden');
     }
 
