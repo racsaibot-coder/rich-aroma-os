@@ -704,6 +704,19 @@
             return itemCat.includes(search);
         });
 
+        // Custom Sort for Combos
+        if (search === 'combos') {
+            const sortOrder = ['combo_1', 'combo_2', 'combo_3', 'combo_4'];
+            filtered.sort((a, b) => {
+                const indexA = sortOrder.indexOf(a.id);
+                const indexB = sortOrder.indexOf(b.id);
+                if (indexA !== -1 && indexB !== -1) return indexA - indexB;
+                if (indexA !== -1) return -1;
+                if (indexB !== -1) return 1;
+                return 0;
+            });
+        }
+
         // Custom Sort for Heladas
         if (search === 'heladas') {
             const sortOrder = ['cold_supreme_frappe', 'cold_fresa_frappe', 'cold_coffee_frappe', 'cold_french_vanilla', 'cold_caramel_iced'];
