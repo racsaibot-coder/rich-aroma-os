@@ -1217,22 +1217,32 @@
                 headers: {'Content-Type': 'application/json', 'Authorization': 'Bearer EMP-admin'},
                 body: JSON.stringify({ shiftId: currentShiftId, closingAmount: amount })
             });
-            
-            const data = await res.json();
+
+            const text = await res.text();
+            let data;
+            try {
+                data = JSON.parse(text);
+            } catch (e) {
+                console.error("Non-JSON response:", text);
+                throw new Error("Server returned an invalid response. Please contact admin.");
+            }
+
             if (res.ok) {
                 // Clear Local Session
                 localStorage.removeItem('pos_active_shift');
                 currentShiftId = null;
                 currentCashier = null;
                 window.currentEmployee = null;
-                
+
                 await fetchStoreStatus();
                 showShiftReport(data.report);
             } else {
-                alert("Error al cerrar caja: " + (data.error || "Error desconocido"));
+                alert("Error al cerrar caja: " + (data.error || text || "Error desconocido"));
             }
-        } catch(e) { alert("Error de conexión al cerrar caja"); }
-    }
+        } catch(e) { 
+            console.error("Close Shift Catch:", e);
+            alert("Error: " + e.message); 
+        }    }
 
     async function toggleStoreStatus(checkbox) {
         const res = await fetch('/api/store/status', {

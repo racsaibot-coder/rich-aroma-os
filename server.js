@@ -2795,90 +2795,110 @@ app.post('/api/cash/transaction', ensureAuthenticated, async (req, res) => {
 
 // Close Shift
 app.post('/api/cash/close-shift', ensureAuthenticated, async (req, res) => {
-    const client = req.supabase || supabase;
-    const { shiftId, closingAmount, notes } = req.body;
-    
-    if (!shiftId) return res.status(400).json({ error: 'Shift ID required' });
-    
-    // 1. Get Shift Details
-    const { data: shift, error: shiftError } = await client
-        .from('cash_shifts')
-        .select('*')
-        .eq('id', shiftId)
-        .single();
-        
-    if (shiftError || !shift) return res.status(404).json({ error: 'Shift not found' });
-    if (shift.status === 'closed') return res.status(400).json({ error: 'Shift already closed' });
-    
-    const closedAt = new Date().toISOString();
-    
-    // 2. Calculate Sales Breakdown (Orders)
-    const { data: allOrders } = await client
-        .from('orders')
-        .select('total, payment_method, subtotal')
-        .gte('created_at', shift.opened_at)
-        .lte('created_at', closedAt)
-        .not('status', 'eq', 'cancelled');
-        
-    const salesBreakdown = (allOrders || []).reduce((acc, o) => {
-        const method = o.payment_method || 'other';
-        const total = parseFloat(o.total) || 0;
-        acc[method] = (acc[method] || 0) + total;
-        acc.total_gross = (acc.total_gross || 0) + total;
-        acc.total_points = (acc.total_points || 0) + Math.floor(parseFloat(o.subtotal) || 0);
-        return acc;
-    }, { cash: 0, rico_balance: 0, transfer: 0, card: 0, total_gross: 0, total_points: 0 });
+    try {
+        const client = req.supabase || supabase;
+        const { shiftId, closingAmount, notes } = req.body;
 
-    const cashSales = salesBreakdown.cash;
-    
-    // 3. Calculate Transactions (Payouts/Drops)
-    const { data: transactions } = await client
-        .from('cash_transactions')
-        .select('amount')
-        .eq('shift_id', shiftId);
-        
-    const totalTransactions = (transactions || []).reduce((sum, t) => sum + (parseFloat(t.amount) || 0), 0);
-    
-    // 4. Calculate Expected
-    // Expected = Opening + Cash Sales + Transactions (negative for payouts)
-    const expectedAmount = parseFloat(shift.opening_amount) + cashSales + totalTransactions;
-    const discrepancy = parseFloat(closingAmount) - expectedAmount;
-    
-    // 5. Update Shift
-    const { data: updatedShift, error: updateError } = await client
-        .from('cash_shifts')
-        .update({
-            closed_at: closedAt,
-            closing_amount_declared: closingAmount,
-            expected_amount: expectedAmount,
-            discrepancy: discrepancy,
-            status: 'closed',
-            notes: notes
-        })
-        .eq('id', shiftId)
-        .select()
-        .single();
-        
-    if (updateError) return res.status(500).json({ error: updateError.message });
-    
-    // Auto-close store
-    storeIsOpen = false;
-    
-    res.json({
-        success: true,
-        report: {
-            opening: parseFloat(shift.opening_amount),
-            sales: salesBreakdown,
-            transactions: totalTransactions,
-            expected: expectedAmount,
-            declared: parseFloat(closingAmount),
-            discrepancy: discrepancy,
-            notes
-        },
-        shift: updatedShift
-    });
+        if (!shiftId) return res.status(400).json({ error: 'Shift ID required' });
+
+        console.log(`[Shift] Closing shift ${shiftId} with amount ${closingAmount}`);
+
+        // 1. Get Shift Details
+        const { data: shift, error: shiftError } = await client
+            .from('cash_shifts')
+            .select('*')
+            .eq('id', shiftId)
+            .single();
+
+        if (shiftError || !shift) {
+            console.error("[Shift] Shift not found:", shiftError);
+            return res.status(404).json({ error: 'Shift not found' });
+        }
+        if (shift.status === 'closed') return res.status(400).json({ error: 'Shift already closed' });
+
+        const closedAt = new Date().toISOString();
+
+        // 2. Calculate Sales Breakdown (Orders)
+        const { data: allOrders, error: ordersError } = await client
+            .from('orders')
+            .select('total, payment_method, subtotal')
+            .gte('created_at', shift.opened_at)
+            .lte('created_at', closedAt)
+            .not('status', 'eq', 'cancelled');
+
+        if (ordersError) console.error("[Shift] Error fetching orders:", ordersError);
+
+        const salesBreakdown = (allOrders || []).reduce((acc, o) => {
+            const method = o.payment_method || 'other';
+            const total = parseFloat(o.total) || 0;
+            acc[method] = (acc[method] || 0) + total;
+            acc.total_gross = (acc.total_gross || 0) + total;
+            acc.total_points = (acc.total_points || 0) + Math.floor(parseFloat(o.subtotal) || 0);
+            return acc;
+        }, { cash: 0, rico_balance: 0, transfer: 0, card: 0, total_gross: 0, total_points: 0 });
+
+        const cashSales = salesBreakdown.cash || 0;
+
+        // 3. Calculate Transactions (Payouts/Drops)
+        const { data: transactions, error: transError } = await client
+            .from('cash_transactions')
+            .select('amount')
+            .eq('shift_id', shiftId);
+
+        if (transError) console.error("[Shift] Error fetching transactions:", transError);
+
+        const totalTransactions = (transactions || []).reduce((sum, t) => sum + (parseFloat(t.amount) || 0), 0);
+
+        // 4. Calculate Expected
+        // Expected = Opening + Cash Sales + Transactions (negative for payouts)
+        const openingAmount = parseFloat(shift.opening_amount) || 0;
+        const declaredAmount = parseFloat(closingAmount) || 0;
+        const expectedAmount = openingAmount + cashSales + totalTransactions;
+        const discrepancy = declaredAmount - expectedAmount;
+
+        console.log(`[Shift] Summary: Opening=${openingAmount}, CashSales=${cashSales}, Trans=${totalTransactions}, Expected=${expectedAmount}, Declared=${declaredAmount}`);
+
+        // 5. Update Shift
+        const { data: updatedShift, error: updateError } = await client
+            .from('cash_shifts')
+            .update({
+                closed_at: closedAt,
+                closing_amount_declared: declaredAmount,
+                expected_amount: expectedAmount,
+                discrepancy: discrepancy,
+                status: 'closed',
+                notes: notes || ''
+            })
+            .eq('id', shiftId)
+            .select()
+            .single();
+
+        if (updateError) {
+            console.error("[Shift] Update Error:", updateError);
+            return res.status(500).json({ error: updateError.message });
+        }
+
+        // Auto-close store
+        storeIsOpen = false;
+
+        res.json({
+            success: true,
+            report: {
+                opening: openingAmount,
+                sales: salesBreakdown,
+                transactions: totalTransactions,
+                expected: expectedAmount,
+                declared: declaredAmount,
+                discrepancy: discrepancy,
+                notes: notes || ''
+            },
+            shift: updatedShift
+        });
+    } catch (err) {
+        console.error("[Shift] Critical Close Error:", err);
+        res.status(500).json({ error: "Internal server error during shift closure" });
+    }
 });
-
 // ============== PAGE ROUTES ==============
 
 // SETUP & SETTINGS
