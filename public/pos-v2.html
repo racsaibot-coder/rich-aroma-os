@@ -446,38 +446,66 @@
     </div>
 
 <script>
-    // --- DATA ---
+    // ==========================================
+    // ☕️ RICH AROMA POS v2.0 - CORE SCRIPT
+    // ==========================================
+
+    // --- GLOBAL STATE ---
     let menu = [];
     let modGroups = [];
     let modOptions = [];
     let itemModGroups = [];
     let cart = [];
-    let recognition;
+    
     let currentCashier = null;
     let currentShiftId = null;
     let startingCash = 0;
     let currentTenderMethod = 'cash';
+    let currentCustomerId = null;
+    window.loadedCustomer = null;
 
-    // --- INIT ---
+    let isSoloMode = false;
+    let currentQuantity = 1;
+    let currentMods = {};
+    let currentItem = null;
+
+    let liveOrders = [];
+    let pendingVerifications = [];
+    let kitchenPollInterval = null;
+
+    // --- INITIALIZATION ---
     window.onload = async () => {
-        console.log("POS v2.0 Initializing...");
+        console.log("🚀 POS v2.0 Initializing...");
         
-        // GLOBAL ERROR CATCHER
-        window.onerror = function(msg, url, line, col, error) {
-            console.error("GLOBAL POS ERROR:", msg, "at", url, ":", line);
-            return false;
-        };
+        // 1. Fetch Menu
+        await refreshMenu();
 
-        // 1. Load Menu Data
+        // 2. Restore Shift
+        await restoreShift();
+
+        // 3. Restore Cart
+        restoreCart();
+
+        // 4. Initial Renders
+        renderMenu();
+        fetchLiveOrders();
+        fetchStoreStatus();
+        fetchPendingVerifications();
+
+        // 5. Start Polling
+        setInterval(fetchLiveOrders, 10000);
+        setInterval(fetchPendingVerifications, 10000);
+        setInterval(fetchStoreStatus, 30000);
+    };
+
+    async function refreshMenu() {
         try {
             const res = await fetch('/api/menu?admin=true');
             const data = await res.json();
             
             let sourceItems = data.items || [];
             if (sourceItems.length === 0 && data.categories) {
-                data.categories.forEach(cat => {
-                    if (cat.items) sourceItems = sourceItems.concat(cat.items);
-                });
+                data.categories.forEach(cat => { if (cat.items) sourceItems = sourceItems.concat(cat.items); });
             }
 
             if (sourceItems.length > 0) {
@@ -488,545 +516,132 @@
                     category: i.category || 'Otros',
                     available: i.available !== false,
                     base_recipe: i.base_recipe || null,
-                    icon: "☕",
                     image: i.image_url || i.image || "https://images.unsplash.com/photo-1510591509098-f4fdc6d0ff04?w=400&q=80"
                 }));
                 modGroups = data.modGroups || [];
                 modOptions = data.modOptions || [];
                 itemModGroups = data.itemModGroups || [];
-                console.log(`Loaded ${menu.length} items from API.`);
+                console.log(`✅ Loaded ${menu.length} items.`);
             }
         } catch (e) {
-            console.error("Failed to load menu from API", e);
-        }
-        
-        // 2. Fallback if API failed or DB empty
-        if (menu.length === 0) {
-            console.log("Using fallback menu data.");
+            console.error("❌ Menu fetch failed", e);
+            // Fallback Menu
             menu = [
-                { id: 'hot_latte', name: 'Latte', price: 55, category: 'coffee', image: 'https://images.unsplash.com/photo-1570968992272-1512fdad694d?w=400&q=80' },
-                { id: 'hot_americano', name: 'Americano', price: 40, category: 'coffee', image: 'https://images.unsplash.com/photo-1510591509098-f4fdc6d0ff04?w=400&q=80' },
-                { id: 'cold_caramel_iced', name: 'Caramel Iced', price: 60, category: 'drinks', image: 'https://images.unsplash.com/photo-1517701604599-bb29b5c7fa69?w=400&q=80' },
-                { id: 'food_baleadas', name: 'Baleada', price: 35, category: 'food', image: 'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=400&q=80' }
+                { id: 'hot_latte', name: 'Latte', price: 55, category: 'coffee', image: 'https://images.unsplash.com/photo-1570968992272-1512fdad694d?w=400&q=80', available: true },
+                { id: 'hot_americano', name: 'Americano', price: 40, category: 'coffee', image: 'https://images.unsplash.com/photo-1510591509098-f4fdc6d0ff04?w=400&q=80', available: true }
             ];
         }
+    }
 
-        // 3. Restore Shift State
+    async function restoreShift() {
         try {
             const token = 'EMP-admin_id_here';
-            const shiftRes = await fetch('/api/cash/current-shift', {
-                headers: { 'Authorization': `Bearer \${token}` }
-            });
-            if (shiftRes.ok) {
-                const shiftData = await shiftRes.json();
-                if (shiftData && shiftData.shift && shiftData.shift.status === 'open') {
-                    currentShiftId = shiftData.shift.id;
-                    currentCashier = "Employee " + shiftData.shift.employee_id;
-                    startingCash = shiftData.shift.opening_amount;
+            const res = await fetch('/api/cash/current-shift', { headers: { 'Authorization': `Bearer ${token}` } });
+            if (res.ok) {
+                const data = await res.json();
+                if (data?.shift?.status === 'open') {
+                    currentShiftId = data.shift.id;
+                    currentCashier = "Employee " + data.shift.employee_id;
+                    startingCash = data.shift.opening_amount;
                     document.getElementById('shift-modal').classList.add('hidden');
+                    return;
                 }
             }
-        } catch (e) {
-            const savedShift = localStorage.getItem('pos_active_shift');
-            if (savedShift) {
-                try {
-                    const s = JSON.parse(savedShift);
-                    currentShiftId = s.shiftId;
-                    currentCashier = s.cashier;
-                    startingCash = s.startingCash;
-                    document.getElementById('shift-modal').classList.add('hidden');
-                } catch(err) {}
-            }
-        }
+        } catch (e) { console.warn("Shift DB restore failed, checking local..."); }
 
-        // 4. Restore Cart State
-        const savedCartStr = localStorage.getItem('pos_cart_state');
-        if (savedCartStr) {
+        const saved = localStorage.getItem('pos_active_shift');
+        if (saved) {
+            const s = JSON.parse(saved);
+            currentShiftId = s.shiftId;
+            currentCashier = s.cashier;
+            startingCash = s.startingCash;
+            document.getElementById('shift-modal').classList.add('hidden');
+        }
+    }
+
+    function restoreCart() {
+        const saved = localStorage.getItem('pos_cart_state');
+        if (saved) {
             try {
-                const savedData = JSON.parse(savedCartStr);
-                cart = savedData.cart || [];
-                currentCustomerId = savedData.customerId || null;
+                const data = JSON.parse(saved);
+                cart = data.cart || [];
+                currentCustomerId = data.customerId || null;
                 renderCart();
             } catch(e) {}
         }
-        
-        // 5. Final rendering trigger
-        renderMenu();
-        fetchLiveOrders();
-        fetchStoreStatus();
-        
-        // Start polling
-        setInterval(fetchLiveOrders, 10000);
-        setInterval(fetchPendingVerifications, 10000);
-    };
+    }
 
-    // --- SHIFT LOGIC ---
-    async function startShift() {
-        const pin = document.getElementById('shift-pin').value;
-        const cash = parseFloat(document.getElementById('shift-cash').value);
-        
-        if (!pin || isNaN(cash)) {
-            alert("Please enter PIN and starting cash amount.");
+    function saveCartState() {
+        localStorage.setItem('pos_cart_state', JSON.stringify({ cart, customerId: currentCustomerId }));
+    }
+
+    // --- HEARTBEAT (LIVE FEED) ---
+    async function fetchLiveOrders() {
+        const statusEl = document.getElementById('hb-status');
+        try {
+            const res = await fetch('/api/orders');
+            const data = await res.json();
+            const allOrders = data.orders || [];
+            
+            const todayStr = new Date().toDateString();
+            liveOrders = allOrders.filter(o => {
+                if (!o.created_at) return false;
+                return new Date(o.created_at).toDateString() === todayStr && 
+                       ['pending', 'paid', 'preparing', 'ready', 'pending_verification'].includes(o.status);
+            }).sort((a,b) => new Date(b.created_at) - new Date(a.created_at));
+
+            renderLiveFeed();
+            if (statusEl) statusEl.innerText = `Last sync: ${new Date().toLocaleTimeString()}`;
+        } catch(e) { 
+            if (statusEl) statusEl.innerText = "Sync Error";
+        }
+    }
+
+    function renderLiveFeed() {
+        const container = document.getElementById('live-order-feed');
+        document.getElementById('live-order-count').innerText = liveOrders.length;
+
+        if (liveOrders.length === 0) {
+            container.innerHTML = '<div class="text-center py-10 text-gray-600 text-xs italic">No active orders</div>';
             return;
         }
-        
-        // Add fake admin token for frontend bypassing while we switch to JWT
-        const token = 'EMP-admin_id_here';
 
-        try {
-            const res = await fetch('/api/cash/open-shift', {
-                method: 'POST',
-                headers: { 
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
-                body: JSON.stringify({ 
-                    employeeId: pin,
-                    openingAmount: cash 
-                })
-            });
+        container.innerHTML = liveOrders.map(o => {
+            const isMobile = o.notes?.includes('Mobile Order');
+            const isCashMobile = isMobile && o.payment_method === 'cash' && o.status === 'pending';
             
-            const data = await res.json();
+            let statusClass = "bg-gray-700 text-gray-300";
+            if (o.status === 'paid') statusClass = "bg-blue-900 text-blue-200 border border-blue-700";
+            if (o.status === 'preparing') statusClass = "bg-orange-900 text-orange-200 border border-orange-700";
+            if (o.status === 'ready') statusClass = "bg-green-900 text-green-200 border border-green-700 animate-pulse";
             
-            if (res.ok) {
-                currentShiftId = data.id;
-                currentCashier = "Employee " + pin;
-                startingCash = cash;
-                
-                // Fallback cache
-                localStorage.setItem('pos_active_shift', JSON.stringify({
-                    shiftId: currentShiftId,
-                    cashier: currentCashier,
-                    startingCash: startingCash,
-                    startTime: new Date().toISOString()
-                }));
-                
-                // Auto-open store toggle in UI
-                const toggle = document.getElementById('store-status-toggle');
-                if (toggle) {
-                    toggle.checked = true;
-                    toggleStoreStatus(toggle);
-                }
+            let name = "Walk-in";
+            if (o.notes?.includes('[CLIENTE:')) {
+                const match = o.notes.match(/\[CLIENTE:\s*([^\]]+)\]/);
+                if (match) name = match[1].trim();
+            } else if (o.notes?.includes('[GUEST:')) {
+                const match = o.notes.match(/\[GUEST:\s*([^|\]]+)/);
+                if (match) name = match[1].trim();
+            } else if (o.customer_id) name = "Member";
 
-                document.getElementById('shift-modal').classList.add('hidden');
-                renderMenu(); // Load UI
-            } else {
-                alert(data.error || "Failed to open shift.");
-            }
-        } catch (e) {
-            console.error("Shift error:", e);
-            alert("Network error opening shift. Please try again.");
-        }
-    }
-
-    async function endShift() {
-        const finalCash = prompt("Enter final cash in drawer:");
-        if (finalCash === null) return;
-        
-        const parsedCash = parseFloat(finalCash);
-        if (isNaN(parsedCash)) {
-            alert("Invalid amount.");
-            return;
-        }
-        // Add token
-        const token = 'EMP-admin_id_here';
-
-        try {
-            const res = await fetch('/api/cash/close-shift', {
-                method: 'POST',
-                headers: { 
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}` 
-                },
-                body: JSON.stringify({ 
-                    shiftId: currentShiftId,
-                    closingAmount: parsedCash,
-                    notes: 'Closed from POS v2'
-                })
-            });
-            
-            const data = await res.json();
-            
-            if (res.ok) {
-                const report = data.report;
-                
-                // Auto-close store toggle in UI
-                const toggle = document.getElementById('store-status-toggle');
-                if (toggle) {
-                    toggle.checked = false;
-                    toggleStoreStatus(toggle);
-                }
-
-                // Clear from localStorage
-                localStorage.removeItem('pos_active_shift');
-                currentShiftId = null;
-                
-                // Show Detailed Report Modal
-                showShiftReport(report);
-            }
-        } catch(e) {
-            console.error("End shift error:", e);
-        }
-        }
-
-        function showShiftReport(r) {
-        const container = document.getElementById('shift-report-content');
-        const diff = r.discrepancy;
-        const diffClass = diff < 0 ? 'text-red-600' : 'text-green-600';
-
-        window.lastShiftReport = r; // Store for printing
-
-        container.innerHTML = `
-            <div class="grid grid-cols-2 gap-4">
-                <div class="bg-gray-50 p-4 rounded-2xl border border-gray-100">
-                    <p class="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1">Apertura</p>
-                    <p class="text-xl font-mono font-black text-gray-900">L \${r.opening.toFixed(2)}</p>
+            return `
+                <div class="p-3 rounded-xl bg-gray-800 border border-white/5 shadow-lg mb-2">
+                    <div class="flex justify-between items-start mb-1">
+                        <span class="text-[10px] font-black text-gray-500 tracking-tighter">#${o.order_number || '---'}</span>
+                        <span class="text-[9px] px-2 py-0.5 rounded-full font-black uppercase ${statusClass}">${o.status}</span>
+                    </div>
+                    <div class="font-bold text-white text-sm truncate">${name}</div>
+                    <div class="flex justify-between items-center mt-1">
+                        <span class="text-[9px] font-bold text-gray-500 uppercase">${o.payment_method}</span>
+                        <span class="text-xs font-black text-blue-400 font-mono">L ${parseFloat(o.total).toFixed(2)}</span>
+                    </div>
+                    ${isCashMobile ? `<button onclick="openVerifyModal()" class="w-full mt-2 py-1.5 bg-green-600 text-white text-[10px] font-black uppercase rounded-lg hover:bg-green-500 transition-all">Cobrar L.${o.total}</button>` : ''}
                 </div>
-                <div class="bg-gray-50 p-4 rounded-2xl border border-gray-100">
-                    <p class="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1">Declarado</p>
-                    <p class="text-xl font-mono font-black text-gray-900">L \${r.declared.toFixed(2)}</p>
-                </div>
-            </div>
-
-            <div class="bg-gray-900 rounded-2xl p-6 text-white shadow-xl">
-                <p class="text-[9px] font-black text-gray-500 uppercase tracking-widest mb-4 border-b border-white/10 pb-2">Sales Breakdown / Ventas</p>
-                <div class="space-y-3">
-                    <div class="flex justify-between items-center text-sm">
-                        <span class="font-bold opacity-60">Efectivo (Cash)</span>
-                        <span class="font-mono font-black">L \${r.sales.cash.toFixed(2)}</span>
-                    </div>
-                    <div class="flex justify-between items-center text-sm text-blue-400">
-                        <span class="font-bold">Rico Cash</span>
-                        <span class="font-mono font-black">L \${r.sales.rico_balance.toFixed(2)}</span>
-                    </div>
-                    <div class="flex justify-between items-center text-sm text-purple-400">
-                        <span class="font-bold">Transferencia</span>
-                        <span class="font-mono font-black">L \${r.sales.transfer.toFixed(2)}</span>
-                    </div>
-                    <div class="flex justify-between items-center pt-3 border-t border-white/10">
-                        <span class="text-xs font-black uppercase tracking-widest text-gray-400">Gran Total</span>
-                        <span class="text-2xl font-mono font-black text-gold">L \${r.sales.total_gross.toFixed(2)}</span>
-                    </div>
-                </div>
-            </div>
-
-            <div class="p-4 rounded-2xl border-2 \${diff === 0 ? 'border-gray-100 bg-gray-50' : 'border-red-100 bg-red-50'} flex justify-between items-center">
-                <div>
-                    <p class="text-[9px] font-black text-gray-400 uppercase tracking-widest">Discrepancia / Diff</p>
-                    <p class="text-2xl font-mono font-black \${diffClass}">L \${diff.toFixed(2)}</p>
-                </div>
-                <div class="text-3xl">
-                    \${diff === 0 ? '✅' : '⚠️'}
-                </div>
-            </div>
-
-            <div class="bg-blue-50 p-3 rounded-xl border border-blue-100 flex justify-between items-center text-blue-900">
-                <span class="text-[10px] font-black uppercase tracking-tighter">Rico Puntos Otorgados</span>
-                <span class="font-mono font-bold">+\${r.sales.total_points} PTS</span>
-            </div>
-        `;
-
-        document.getElementById('shiftReportModal').classList.remove('hidden');
-        }
-
-        async function printShiftReport() {
-        const r = window.lastShiftReport;
-        if (!r) return;
-
-        // Use standard printing logic
-        let receipt = "\\x1B\\x40"; // Initialize
-        receipt += "\\x1B\\x61\\x01"; // Center
-        receipt += "\\x1B\\x21\\x30"; // Double height/width
-        receipt += "RICH AROMA\\n";
-        receipt += "\\x1B\\x21\\x00"; // Normal size
-        receipt += "CIERRE DE CAJA (Z-REPORT)\\n";
-        receipt += "--------------------------------\\n";
-        receipt += `Fecha: \${new Date().toLocaleString()}\\n`;
-        receipt += "--------------------------------\\n\\n";
-
-        receipt += "\\x1B\\x61\\x00"; // Left align
-        receipt += `Apertura:      L \${r.opening.toFixed(2)}\\n`;
-        receipt += `Ventas Cash:   L \${r.sales.cash.toFixed(2)}\\n`;
-        receipt += `Ventas Rico:   L \${r.sales.rico_balance.toFixed(2)}\\n`;
-        receipt += `Ventas Transf: L \${r.sales.transfer.toFixed(2)}\\n`;
-        receipt += "--------------------------------\\n";
-        receipt += `TOTAL BRUTO:   L \${r.sales.total_gross.toFixed(2)}\\n`;
-        receipt += "--------------------------------\\n\\n";
-
-        receipt += `Efectivo Esperado: L \${r.expected.toFixed(2)}\\n`;
-        receipt += `Efectivo Contado:  L \${r.declared.toFixed(2)}\\n`;
-        receipt += `DISCREPANCIA:      L \${r.discrepancy.toFixed(2)}\\n\\n`;
-
-        receipt += "--------------------------------\\n";
-        receipt += `Puntos Ganados: +\${r.sales.total_points} PTS\\n`;
-        receipt += "--------------------------------\\n\\n\\n\\n";
-
-        receipt += "\\x1D\\x56\\x42\\x00"; // Cut
-
-        try {
-            if (!printWriter) await connectHardware();
-            const encoder = new TextEncoder();
-            await printWriter.write(encoder.encode(receipt));
-        } catch (e) {
-            console.error("Print failed", e);
-            alert("Printing failed. Make sure printer is connected.");
-        }
-        }
-        // Reset App State
-        cart = [];
-        saveCartState();
-        currentCustomerId = null;
-        renderCart();
-        document.getElementById('customer-display').innerHTML = `
-            <div class="w-10 h-10 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center">
-                <i class="fas fa-user"></i>
-            </div>
-            <div>
-                <div class="text-sm text-gray-500 font-bold uppercase tracking-wider">Walk-in Customer</div>
-            </div>
-        `;
-        document.getElementById('shift-pin').value = '';
-        document.getElementById('shift-cash').value = '';
-        document.getElementById('shift-modal').classList.remove('hidden');
+            `;
+        }).join('');
     }
 
-    let currentItem = null;
-    let currentQuantity = 1;
-    let currentMods = {
-        milk: { name: 'Whole', price: 0 },
-        syrup: { name: 'None', price: 0 },
-        shots: 1,
-        note: ''
-    };
-
-    // --- ADMIN DASHBOARD ---
-    let adminClickCount = 0;
-    let adminClickTimer = null;
-
-    function triggerAdmin() {
-        adminClickCount++;
-        if (adminClickCount >= 5) {
-            document.getElementById('admin-pin-modal').classList.remove('hidden');
-            document.getElementById('admin-pin').value = '';
-            document.getElementById('admin-pin').focus();
-            adminClickCount = 0;
-        }
-        
-        clearTimeout(adminClickTimer);
-        adminClickTimer = setTimeout(() => { adminClickCount = 0; }, 2000);
-    }
-
-    function verifyAdminPin() {
-        const pin = document.getElementById('admin-pin').value;
-        if (pin === '1234') { // Default pin
-            document.getElementById('admin-pin-modal').classList.add('hidden');
-            document.getElementById('admin-dashboard').classList.remove('hidden');
-        } else {
-            alert('Incorrect PIN');
-            document.getElementById('admin-pin').value = '';
-        }
-    }
-
-    
-    function closeAdminDashboard() {
-        document.getElementById('admin-dashboard').classList.add('hidden');
-    }
-
-    // --- ADMIN LOGIC ---
-    async function showAdminTab(tab) {
-        const content = document.getElementById('admin-content-area');
-        if (tab === 'menu') {
-            content.innerHTML = '<div class="text-center mt-10"><i class="fas fa-spinner fa-spin text-3xl text-gray-400"></i><p class="mt-4">Loading menu items...</p></div>';
-            try {
-                const res = await fetch('/api/menu?admin=true');
-                const data = await res.json();
-                const items = data.items || [];
-                
-                let html = `
-                    <div class="flex justify-between items-center mb-6">
-                        <h2 class="text-3xl font-black uppercase tracking-tighter text-gray-800">Menu Manager</h2>
-                        <span class="bg-gray-100 text-gray-500 text-[10px] font-black px-2 py-1 rounded-full uppercase tracking-widest">${items.length} Products</span>
-                    </div>
-                    <p class="text-gray-500 text-sm mb-8 bg-blue-50 p-4 rounded-xl border border-blue-100">
-                        <i class="fas fa-info-circle text-blue-500 mr-2"></i> Use los interruptores para marcar productos como <b>AGOTADOS</b>. Esto los ocultará instantáneamente de la página de pedidos móviles.
-                    </p>
-                    
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                `;
-
-                items.sort((a,b) => a.category.localeCompare(b.category)).forEach(item => {
-                    const isAvail = item.available !== false;
-                    html += `
-                        <div class="p-4 bg-white border-2 ${isAvail ? 'border-gray-100' : 'border-red-100 bg-red-50'} rounded-2xl flex justify-between items-center shadow-sm hover:shadow-md transition-all">
-                            <div class="flex items-center gap-4">
-                                <div class="w-12 h-12 rounded-xl overflow-hidden border border-gray-200">
-                                    <img src="${item.image_url || 'https://via.placeholder.com/100'}" class="w-full h-full object-cover">
-                                </div>
-                                <div>
-                                    <p class="font-black text-gray-900 leading-tight">${item.name}</p>
-                                    <p class="text-[10px] font-bold text-gray-400 uppercase tracking-tighter">${item.category}</p>
-                                </div>
-                            </div>
-                            <div class="flex flex-col items-end gap-2">
-                                <label class="relative inline-flex items-center cursor-pointer scale-90">
-                                    <input type="checkbox" class="sr-only peer" ${isAvail ? 'checked' : ''} onchange="toggleItemAvailability('${item.id}', this.checked)">
-                                    <div class="w-11 h-6 bg-gray-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-green-500"></div>
-                                </label>
-                                <span class="text-[10px] font-black ${isAvail ? 'text-green-600' : 'text-red-600'} uppercase">${isAvail ? 'En Stock' : 'Agotado'}</span>
-                            </div>
-                        </div>
-                    `;
-                });
-
-                html += `</div>`;
-                content.innerHTML = html;
-            } catch(e) {
-                console.error(e);
-                content.innerHTML = '<p class="text-red-500">Failed to load menu data.</p>';
-            }
-        } else if (tab === 'sales') {
-            content.innerHTML = '<div class="text-center mt-10"><i class="fas fa-spinner fa-spin text-3xl text-gray-400"></i><p class="mt-4">Loading sales data...</p></div>';
-            try {
-                const res = await fetch('/api/orders');
-                const data = await res.json();
-                const orders = data.orders || [];
-                
-                const today = new Date().toDateString();
-                const todaysOrders = orders.filter(o => new Date(o.created_at).toDateString() === today && o.status !== 'cancelled');
-                
-                let totalSales = 0;
-                let cashSales = 0;
-                let cardSales = 0;
-                let itemCount = 0;
-                
-                todaysOrders.forEach(o => {
-                    const t = parseFloat(o.total) || 0;
-                    totalSales += t;
-                    if (o.payment_method === 'cash') cashSales += t;
-                    if (o.payment_method === 'card') cardSales += t;
-                    if (o.items) {
-                        o.items.forEach(i => itemCount += (i.quantity || i.qty || 1));
-                    }
-                });
-
-                content.innerHTML = `
-                    <h2 class="text-3xl font-bold mb-6 text-gray-800"><i class="fas fa-chart-line text-green-500 mr-3"></i> Today's Sales Dashboard</h2>
-                    
-                    <div class="grid grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-                        <div class="bg-green-50 p-6 rounded-2xl border border-green-100">
-                            <p class="text-green-600 font-bold text-sm uppercase tracking-wider mb-1">Total Revenue</p>
-                            <p class="text-4xl font-black text-gray-900">L. ${totalSales.toFixed(2)}</p>
-                        </div>
-                        <div class="bg-blue-50 p-6 rounded-2xl border border-blue-100">
-                            <p class="text-blue-600 font-bold text-sm uppercase tracking-wider mb-1">Orders</p>
-                            <p class="text-4xl font-black text-gray-900">${todaysOrders.length}</p>
-                        </div>
-                        <div class="bg-orange-50 p-6 rounded-2xl border border-orange-100">
-                            <p class="text-orange-600 font-bold text-sm uppercase tracking-wider mb-1">Items Sold</p>
-                            <p class="text-4xl font-black text-gray-900">${itemCount}</p>
-                        </div>
-                        <div class="bg-purple-50 p-6 rounded-2xl border border-purple-100">
-                            <p class="text-purple-600 font-bold text-sm uppercase tracking-wider mb-1">Avg Order Val</p>
-                            <p class="text-4xl font-black text-gray-900">L. ${todaysOrders.length > 0 ? (totalSales / todaysOrders.length).toFixed(2) : '0.00'}</p>
-                        </div>
-                    </div>
-                    
-                    <div class="grid md:grid-cols-2 gap-8">
-                        <div class="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
-                            <h3 class="text-lg font-bold text-gray-800 mb-4 border-b pb-2">Tender Breakdown</h3>
-                            <div class="flex justify-between items-center mb-3">
-                                <span class="font-semibold text-gray-600"><i class="fas fa-money-bill-wave text-green-500 w-6"></i> Cash</span>
-                                <span class="font-bold text-lg">L. ${cashSales.toFixed(2)}</span>
-                            </div>
-                            <div class="flex justify-between items-center">
-                                <span class="font-semibold text-gray-600"><i class="fas fa-credit-card text-blue-500 w-6"></i> Card</span>
-                                <span class="font-bold text-lg">L. ${cardSales.toFixed(2)}</span>
-                            </div>
-                        </div>
-                    </div>
-                `;
-            } catch(e) {
-                content.innerHTML = '<p class="text-red-500">Failed to load sales data.</p>';
-            }
-        } else if (tab === 'orders') {
-            content.innerHTML = '<div class="text-center mt-10"><i class="fas fa-spinner fa-spin text-3xl text-gray-400"></i></div>';
-            try {
-                const res = await fetch('/api/orders');
-                const data = await res.json();
-                const orders = data.orders || [];
-                
-                let html = `<h2 class="text-2xl font-bold mb-6 text-gray-800">Today's Orders (${orders.length})</h2>`;
-                html += `<div class="space-y-4">`;
-                
-                orders.forEach(o => {
-                    const time = new Date(o.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
-                    let badge = o.status === 'completed' ? '<span class="bg-green-100 text-green-800 px-2 py-1 rounded text-xs">Completed</span>' : '<span class="bg-yellow-100 text-yellow-800 px-2 py-1 rounded text-xs">Pending</span>';
-                    
-                    html += `
-                        <div class="p-4 border rounded-xl flex justify-between items-center hover:bg-gray-50">
-                            <div>
-                                <div class="font-bold text-lg">Order #${o.order_number} ${badge}</div>
-                                <div class="text-sm text-gray-500">${time} • ${o.items.length} items • ${o.payment_method.toUpperCase()}</div>
-                            </div>
-                            <div class="text-xl font-bold text-gray-800">L. ${o.total.toFixed(2)}</div>
-                        </div>
-                    `;
-                });
-                
-                html += `</div>`;
-                content.innerHTML = html;
-            } catch (e) {
-                content.innerHTML = `<div class="text-red-500">Error loading orders.</div>`;
-            }
-        }
-    }
-
-    async function toggleItemAvailability(id, available) {
-        try {
-            const token = 'EMP-admin_id_here';
-            const res = await fetch(`/api/menu/items/\${id}`, {
-                method: 'PATCH',
-                headers: { 
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer \${token}`
-                },
-                body: JSON.stringify({ available })
-            });
-            if (!res.ok) throw new Error("Failed to update");
-            
-            // Re-render menu grid in POS too
-            const menuIdx = menu.findIndex(i => i.id === id);
-            if (menuIdx !== -1) menu[menuIdx].available = available;
-            renderMenu();
-            
-            // Refresh admin tab
-            showAdminTab('menu');
-        } catch (e) {
-            console.error(e);
-            alert("Error updating item status.");
-        }
-    }
-
-
-    // --- RENDER MENU ---
-    let isSoloMode = false;
-    function toggleSoloMode() {
-        isSoloMode = !isSoloMode;
-        const btn = document.getElementById('solo-mode-btn');
-        const banner = document.getElementById('solo-banner');
-        
-        if(isSoloMode) {
-            btn.innerHTML = '<i class="fas fa-user-shield"></i> Solo Mode: ON';
-            btn.className = "bg-orange-600 text-white px-4 py-2 rounded-lg font-bold hover:bg-orange-700 transition flex items-center gap-2 shadow-lg blink-urgent";
-            banner.classList.remove('hidden');
-        } else {
-            btn.innerHTML = '<i class="fas fa-user-shield"></i> Solo Mode: OFF';
-            btn.className = "bg-orange-100 text-orange-600 px-4 py-2 rounded-lg font-bold hover:bg-orange-200 transition flex items-center gap-2";
-            banner.classList.add('hidden');
-        }
-        renderMenu(); // Re-render to disable/enable food items
-    }
-
+    // --- MENU & RENDERING ---
     function renderMenu() {
         renderMenuGrid(menu);
     }
@@ -1039,1407 +654,422 @@
             const isDisabled = isSoldOut || isLocked;
             
             const clickAction = isLocked 
-                ? `onclick="alert('Food orders are locked during Solo Shifts to prevent KDS bottlenecks. Offer the customer a free drink instead!')"` 
+                ? `onclick="alert('Food locked during Solo Shift.')"` 
                 : isSoldOut 
-                    ? `onclick="alert('ESTE PRODUCTO ESTA AGOTADO. Por favor márcalo como disponible en el Administrador si ya hay stock.')"`
+                    ? `onclick="alert('Product Sold Out!')"`
                     : `onclick="openModifier('${item.id}')"`;
             
-            const opacityClass = isDisabled ? 'opacity-50 grayscale cursor-not-allowed' : 'cursor-pointer hover:shadow-md hover:ring-4 hover:ring-blue-50 transition border border-gray-100 group';
-            
             return `
-            <div ${clickAction} class="bg-white rounded-xl shadow flex flex-col h-48 overflow-hidden relative ${opacityClass}">
+            <div ${clickAction} class="bg-white rounded-xl shadow flex flex-col h-48 overflow-hidden relative ${isDisabled ? 'opacity-50 grayscale' : 'cursor-pointer hover:shadow-md border border-gray-100 group'}">
                 <div class="h-32 w-full overflow-hidden bg-gray-100">
-                    <img src="${item.image}" alt="${item.name}" class="w-full h-full object-cover ${isDisabled ? '' : 'group-hover:scale-110 transition duration-500'}">
+                    <img src="${item.image}" class="w-full h-full object-cover group-hover:scale-110 transition duration-500">
                 </div>
-                <div class="p-3 flex justify-between items-center bg-white flex-1 relative">
-                    <div class="font-bold text-gray-800 leading-tight">${item.name}</div>
-                    <div class="text-sm bg-green-100 text-green-700 px-2 py-1 rounded font-bold">L. ${item.price}</div>
+                <div class="p-3 flex justify-between items-center bg-white flex-1">
+                    <div class="font-bold text-gray-800 leading-tight text-sm">${item.name}</div>
+                    <div class="text-xs bg-green-100 text-green-700 px-2 py-1 rounded font-bold">L. ${item.price}</div>
                 </div>
-                ${isLocked ? '<div class="absolute inset-0 bg-red-100 bg-opacity-70 flex items-center justify-center font-bold text-red-700 text-sm border-4 border-red-500 rounded-xl"><i class="fas fa-lock mr-2"></i> LOCKED</div>' : ''}
-                ${isSoldOut ? '<div class="absolute inset-0 bg-black bg-opacity-60 flex items-center justify-center font-black text-white text-sm border-4 border-gray-800 rounded-xl uppercase tracking-widest"><i class="fas fa-times-circle mr-2 text-red-500"></i> Agotado</div>' : ''}
-            </div>
-            `;
+                ${isSoldOut ? '<div class="absolute inset-0 bg-black/60 flex items-center justify-center font-black text-white text-xs uppercase tracking-widest border-4 border-gray-800 rounded-xl">Agotado</div>' : ''}
+            </div>`;
         }).join('');
     }
 
     function filterCategory(cat, btnEl) {
-        // Update active styles
-        const buttons = document.querySelectorAll('.cat-btn');
-        buttons.forEach(btn => {
-            btn.className = "cat-btn bg-gray-100 text-gray-700 px-2 py-3 rounded-xl font-bold shadow hover:bg-gray-200 border-2 border-gray-200 transition text-md tracking-wide w-full text-center";
-        });
-        if(btnEl) {
-            btnEl.className = "cat-btn bg-gray-800 text-gold px-2 py-3 rounded-xl font-bold shadow-lg hover:bg-gray-900 transition text-md tracking-wide border-2 border-gray-800 w-full text-center";
-        }
+        document.querySelectorAll('.cat-btn').forEach(btn => btn.className = "cat-btn bg-gray-100 text-gray-700 px-2 py-3 rounded-xl font-bold shadow hover:bg-gray-200 border-2 border-gray-200 transition text-md tracking-wide w-full text-center");
+        if(btnEl) btnEl.className = "cat-btn bg-gray-800 text-gold px-2 py-3 rounded-xl font-bold shadow-lg hover:bg-gray-900 transition text-md tracking-wide border-2 border-gray-800 w-full text-center";
         
-        let filtered = menu;
-        if(cat !== 'all') {
-            filtered = menu.filter(item => {
-                const itemCat = (item.category || 'Otros').toLowerCase();
-                const itemName = (item.name || '').toLowerCase();
-                const searchCat = cat.toLowerCase();
-                if (searchCat === 'calientes') return itemCat === 'hot_drinks' || itemCat === 'coffee' || itemCat.includes('caf') || itemCat.includes('t') || itemName.includes('té') || itemName.includes('chai') || itemName.includes('matcha') || itemName.includes('hot');
-                if (searchCat === 'heladas') return itemCat === 'cold_drinks' || itemCat === 'drinks' || itemCat.includes('bebida') || itemName.includes('iced') || itemName.includes('frappe') || itemName.includes('granita') || itemName.includes('licuado');
-                if (searchCat === 'comida') return itemCat === 'food' || itemCat.includes('comida');
-                if (searchCat === 'combos') return itemCat === 'combo' || itemCat.includes('combo') || itemCat.includes('paquete') || itemName.includes('combo') || itemName.includes('paquete');
-                return itemCat === searchCat;
-            });
-        }
+        const filtered = (cat === 'all') ? menu : menu.filter(i => (i.category || '').toLowerCase().includes(cat.toLowerCase()));
         renderMenuGrid(filtered);
     }
 
     // --- MODIFIER LOGIC ---
     function openModifier(id) {
-        currentQuantity = 1;
-        const qtyEl = document.getElementById("mod-quantity");
-        if(qtyEl) qtyEl.innerText = "1";
         currentItem = menu.find(i => i.id === id);
-        
-        // Find relevant dynamic groups
-        window.currentRelevantGroups = itemModGroups.filter(img => img.item_id === id).sort((a,b)=>a.display_order - b.display_order).map(img => img.group_id);
-        
-        // Skip modal for items with no modifiers
-        if(window.currentRelevantGroups.length === 0) {
-            addToCart(currentItem);
-            return;
-        }
-
-        // Reset mods
+        currentQuantity = 1;
         currentMods = {};
+        document.getElementById('mod-item-name').innerText = currentItem.name;
+        document.getElementById('mod-item-price').innerText = `L. ${currentItem.price.toFixed(2)}`;
+        document.getElementById('mod-quantity').innerText = "1";
         
-        // 1. Initial defaults
-        window.currentRelevantGroups.forEach(groupId => {
-            const options = modOptions.filter(o => o.group_id === groupId);
-            const defaultOpt = options.find(o => o.is_default);
-            currentMods[groupId] = defaultOpt ? [defaultOpt.id] : [];
-        });
-
-        // 2. Apply base recipe
-        if (currentItem.base_recipe) {
-            for (const groupId in currentMods) {
-                if (currentMods[groupId].length > 0) {
-                    const selectedOptId = currentMods[groupId][0];
-                    const selectedOpt = modOptions.find(o => o.id === selectedOptId);
-                    if (selectedOpt && currentItem.base_recipe[selectedOpt.name]) {
-                        const recipe = currentItem.base_recipe[selectedOpt.name];
-                        for (const [targetGroupId, targetOptionId] of Object.entries(recipe)) {
-                            if (currentMods[targetGroupId] !== undefined || window.currentRelevantGroups.includes(targetGroupId)) {
-                                currentMods[targetGroupId] = [targetOptionId];
-                            }
-                        }
-                    }
-                }
-            }
-        }
-
-        // 3. Build dynamic HTML
         const container = document.getElementById('mod-dynamic-container');
-        let html = '';
-
-        window.currentRelevantGroups.forEach(groupId => {
-            const group = modGroups.find(g => g.id === groupId);
-            if (!group) return;
-            const options = modOptions.filter(o => o.group_id === groupId);
-            
-            html += `
-                <div>
-                    <h3 class="font-bold text-gray-500 uppercase text-sm mb-3">${group.name}</h3>
-                    <div class="grid grid-cols-4 gap-3">
+        const relevantGroups = itemModGroups.filter(img => img.item_id === id).map(img => img.group_id);
+        
+        container.innerHTML = modGroups.filter(g => relevantGroups.includes(g.id)).map(group => {
+            const options = modOptions.filter(o => o.group_id === group.id);
+            return `
+                <div class="mb-6">
+                    <h3 class="font-bold text-gray-500 uppercase text-xs tracking-widest mb-3">${group.name}</h3>
+                    <div class="grid grid-cols-2 gap-2">
                         ${options.map(opt => `
-                            <button onclick="toggleDynamicMod('${group.id}', '${opt.id}', ${group.max_selections})" id="mod-btn-${opt.id}" class="mod-btn ${currentMods[groupId].includes(opt.id) ? 'selected border-2 border-blue-500 bg-blue-50' : 'border border-gray-200'} p-4 rounded-xl font-bold hover:bg-gray-50 text-sm">
-                                ${opt.name} ${opt.price_adjustment > 0 ? '(+' + opt.price_adjustment + ')' : ''}
+                            <button onclick="toggleMod('${group.id}', '${opt.id}', ${group.max_selections})" id="mod-${opt.id}" class="p-3 border-2 border-gray-100 rounded-xl text-sm font-bold transition-all text-left flex justify-between items-center hover:border-blue-200">
+                                <span>${opt.name}</span>
+                                <span class="text-[10px] text-green-600">${opt.price_adjustment > 0 ? '+L.' + opt.price_adjustment : ''}</span>
                             </button>
                         `).join('')}
                     </div>
                 </div>
             `;
-        });
-        
-        html += `
-            <div>
-                <h3 class="font-bold text-gray-500 uppercase text-sm mb-3">Custom Note / Nota</h3>
-                <input type="text" id="mod-note" placeholder="e.g. Extra hot, no foam..." class="w-full p-4 border border-gray-300 rounded-xl text-lg">
-            </div>
-        `;
-        
-        container.innerHTML = html;
+        }).join('');
 
-        document.getElementById('mod-item-name').innerText = currentItem.name;
-        updateDynamicModPrice();
         document.getElementById('modifier-modal').classList.remove('hidden');
+        updateModPrice();
     }
 
-    function closeModal() {
-        document.getElementById('modifier-modal').classList.add('hidden');
-    }
-
-    function toggleDynamicMod(groupId, optionId, maxSelections) {
+    function toggleMod(groupId, optId, max) {
         let selected = currentMods[groupId] || [];
-        const clickedOption = modOptions.find(o => o.id === optionId);
-        
-        if (selected.includes(optionId)) {
-            // Deselect logic
-            selected = selected.filter(id => id !== optionId);
-        } else {
-            // Select logic
-            if (maxSelections === 1) {
-                selected = [optionId];
-            } else {
-                if (selected.length < maxSelections) {
-                    selected.push(optionId);
-                } else {
-                    selected.shift(); // remove oldest
-                    selected.push(optionId);
-                }
-            }
+        if (selected.includes(optId)) selected = selected.filter(id => id !== optId);
+        else {
+            if (max === 1) selected = [optId];
+            else if (selected.length < max) selected.push(optId);
         }
         currentMods[groupId] = selected;
         
-        // --- BASE RECIPE MAGIC ---
-        if (clickedOption && currentItem.base_recipe && currentItem.base_recipe[clickedOption.name]) {
-            const recipe = currentItem.base_recipe[clickedOption.name];
-            for (const [targetGroupId, targetOptionId] of Object.entries(recipe)) {
-                if (currentMods[targetGroupId] !== undefined || window.currentRelevantGroups.includes(targetGroupId)) {
-                    // Get the name of the target option from the global modOptions
-                    const targetOptObj = modOptions.find(o => o.id === targetOptionId);
-                    if (targetOptObj) {
-                        // Find the equivalent option in THIS specific group by name
-                        const equivalentOpt = modOptions.find(o => o.group_id === targetGroupId && o.name === targetOptObj.name);
-                        if (equivalentOpt) {
-                            currentMods[targetGroupId] = [equivalentOpt.id];
-                        } else {
-                            currentMods[targetGroupId] = [targetOptionId]; // fallback
-                        }
-                    } else {
-                        currentMods[targetGroupId] = [targetOptionId];
-                    }
-                }
-            }
-        }
-        
-        // Update UI for ALL groups (in case base recipe changed other groups)
-        for (const gId in currentMods) {
-            const options = modOptions.filter(o => o.group_id === gId);
-            options.forEach(opt => {
-                const btn = document.getElementById(`mod-btn-${opt.id}`);
-                if (btn) {
-                    if (currentMods[gId].includes(opt.id)) {
-                        btn.className = "mod-btn selected border-2 border-blue-500 bg-blue-50 p-4 rounded-xl font-bold hover:bg-gray-50 text-sm";
-                    } else {
-                        btn.className = "mod-btn border border-gray-200 p-4 rounded-xl font-bold hover:bg-gray-50 text-sm";
-                    }
-                }
-            });
-        }
-        
-        updateDynamicModPrice();
+        // Update UI
+        modOptions.filter(o => o.group_id === groupId).forEach(o => {
+            const btn = document.getElementById(`mod-${o.id}`);
+            if (selected.includes(o.id)) btn.className = "p-3 border-2 border-blue-500 bg-blue-50 rounded-xl text-sm font-bold text-blue-700 flex justify-between items-center";
+            else btn.className = "p-3 border-2 border-gray-100 rounded-xl text-sm font-bold transition-all text-left flex justify-between items-center";
+        });
+        updateModPrice();
     }
 
-    function updateDynamicModPrice() {
+    function changeQuantity(amt) {
+        currentQuantity = Math.max(1, currentQuantity + amt);
+        document.getElementById('mod-quantity').innerText = currentQuantity;
+        updateModPrice();
+    }
+
+    function updateModPrice() {
         let total = currentItem.price;
-        for (const groupId in currentMods) {
-            currentMods[groupId].forEach(optId => {
-                const opt = modOptions.find(o => o.id === optId);
-                if (opt) total += parseFloat(opt.price_adjustment);
+        for (const gid in currentMods) {
+            currentMods[gid].forEach(oid => {
+                const opt = modOptions.find(o => o.id === oid);
+                if (opt) total += parseFloat(opt.price_adjustment || 0);
             });
         }
-        document.getElementById('mod-item-price').innerText = `L. ${total.toFixed(2)}`;
         document.getElementById('mod-final-price').innerText = `L. ${(total * currentQuantity).toFixed(2)}`;
     }
 
-    
-    function changeQuantity(delta) {
-        currentQuantity += delta;
-        if(currentQuantity < 1) currentQuantity = 1;
-        document.getElementById('mod-quantity').innerText = currentQuantity;
-        updateDynamicModPrice();
-    }
-    
     function confirmItem() {
         const mods = [];
-        for (const groupId in currentMods) {
-            currentMods[groupId].forEach(optId => {
-                const opt = modOptions.find(o => o.id === optId);
-                if (opt && (!opt.is_default || opt.price_adjustment > 0)) {
-                    mods.push({ name: opt.name });
-                }
+        for (const gid in currentMods) {
+            currentMods[gid].forEach(oid => {
+                const opt = modOptions.find(o => o.id === oid);
+                if (opt) mods.push({ name: opt.name });
             });
         }
-
-        const note = document.getElementById('mod-note').value;
-        if (note) {
-            mods.push({ name: `📝 ${note}` });
-        }
-
-        const finalItem = {
-            ...currentItem,
-            mods: mods, // Standardized KDS array
-            finalPrice: parseFloat(document.getElementById('mod-final-price').innerText.replace('L. ', '')),
-            note: note,
-            qty: currentQuantity
-        };
-        addToCart(finalItem);
-        closeModal();
-    }
-
-    // --- CUSTOM ITEM LOGIC ---
-    function openCustomItemModal() {
-        document.getElementById('custom-item-name').value = '';
-        document.getElementById('custom-item-price').value = '';
-        document.getElementById('custom-item-modal').classList.remove('hidden');
-        setTimeout(() => document.getElementById('custom-item-name').focus(), 100);
-    }
-
-    function closeCustomItemModal() {
-        document.getElementById('custom-item-modal').classList.add('hidden');
-    }
-
-    function addCustomItemToCart() {
-        const name = document.getElementById('custom-item-name').value.trim();
-        const price = parseFloat(document.getElementById('custom-item-price').value);
-        const cat = document.getElementById('custom-item-category').value;
-
-        if (!name || isNaN(price)) {
-            alert('Please enter a valid name and price.');
-            return;
-        }
-
-        const customItem = {
-            id: 'custom_' + Date.now(),
-            name: name + ' (Custom)',
-            price: price,
-            finalPrice: price,
-            category: cat,
-            mods: []
-        };
-
-        addToCart(customItem);
-        closeCustomItemModal();
-    }
-
-    // --- CART LOGIC ---
-    function addToCart(itemOrId) {
-        // Handle direct ID call (from upsell/voice) vs object (from modal)
-        let item;
-        if (typeof itemOrId === 'string' || typeof itemOrId === 'number') {
-            const found = menu.find(i => i.id === itemOrId);
-            item = { ...found, finalPrice: found.price };
-        } else {
-            item = { ...itemOrId };
-            if (item.finalPrice === undefined) {
-                item.finalPrice = item.price;
-            }
-        }
-        
+        const item = { ...currentItem, qty: currentQuantity, mods, finalPrice: parseFloat(document.getElementById('mod-final-price').innerText.replace('L. ', '')) / currentQuantity };
         cart.push(item);
         saveCartState();
         renderCart();
+        document.getElementById('modifier-modal').classList.add('hidden');
     }
 
-    function saveCartState() {
-        localStorage.setItem('pos_cart_state', JSON.stringify({
-            cart: cart,
-            customerId: currentCustomerId,
-            usualItem: window.currentUsualItem
-        }));
-    }
-
+    // --- CART & CHECKOUT ---
     function renderCart() {
         const container = document.getElementById('cart-items');
         if (cart.length === 0) {
-            container.innerHTML = '<div class="text-center text-gray-400 mt-10">El carrito está vacío</div>';
+            container.innerHTML = '<div class="text-center text-gray-400 mt-10 text-xs italic">Cart Empty</div>';
             document.getElementById('cart-total').innerText = 'L. 0.00';
             return;
         }
 
-        container.innerHTML = cart.map((item, index) => {
-            // Build modifier string
-            let modString = "";
-            if (item.mods) {
-                if (item.mods.milk && item.mods.milk.name !== 'Whole') modString += `• ${item.mods.milk.name} `;
-                if (item.mods.syrup && item.mods.syrup.name !== 'None') modString += `• ${item.mods.syrup.name} `;
-                if (item.mods.shots > 1) modString += `• ${item.mods.shots} shots `;
-            }
-            if (item.note) modString += `• 📝 "${item.note}"`;
-
-            return `
-            <div class="flex justify-between items-start mb-3 bg-gray-50 p-3 rounded">
-                <div>
-                    <div class="flex items-center gap-2">
-                        <span>${item.icon}</span>
-                        <span class="font-bold">${item.qty > 1 ? `<span class="bg-blue-100 text-blue-800 px-2 py-0.5 rounded mr-1">${item.qty}x</span>` : ''}${item.name}</span>
-                    </div>
-                    ${modString ? `<div class="text-xs text-gray-500 mt-1 ml-6">${modString}</div>` : ''}
+        container.innerHTML = cart.map((item, index) => `
+            <div class="flex justify-between items-start mb-3 bg-gray-50 p-3 rounded-xl border border-gray-100">
+                <div class="flex-1">
+                    <div class="font-bold text-sm text-gray-800">${item.qty}x ${item.name}</div>
+                    <div class="text-[10px] text-gray-500">${item.mods.map(m=>m.name).join(', ')}</div>
                 </div>
-                <div class="flex items-center gap-3">
-                    <button onclick="addCartItemNote(${index})" class="text-blue-500 hover:text-blue-700" title="Add Note"><i class="fas fa-edit"></i></button>
-                    <span class="font-mono">L. ${item.finalPrice.toFixed(2)}</span>
-                    <button onclick="removeFromCart(${index})" class="text-red-500 hover:text-red-700">✕</button>
+                <div class="flex flex-col items-end gap-1">
+                    <span class="font-mono text-sm font-black">L. ${(item.finalPrice * item.qty).toFixed(2)}</span>
+                    <button onclick="removeFromCart(${index})" class="text-red-400 text-[10px] font-bold uppercase">Remove</button>
                 </div>
             </div>
-        `}).join('');
+        `).join('');
 
-        const total = cart.reduce((sum, item) => sum + item.finalPrice, 0);
+        const total = cart.reduce((sum, item) => sum + (item.finalPrice * item.qty), 0) * 1.15;
         document.getElementById('cart-total').innerText = `L. ${total.toFixed(2)}`;
     }
 
-    function addCartItemNote(index) {
-        const item = cart[index];
-        const note = prompt(`Añadir nota especial para ${item.name}:`, item.note || '');
-        if (note !== null) {
-            cart[index].note = note.trim();
-            saveCartState();
-            renderCart();
-        }
-    }
-
-    function removeFromCart(index) {
-        cart.splice(index, 1);
+    function removeFromCart(idx) {
+        cart.splice(idx, 1);
         saveCartState();
         renderCart();
     }
 
-    // --- FEATURE 1: SMART UPSELL (INVENTORY LOGIC) REMOVED ---
-
-    // --- FEATURE 2: VOICE ORDER (WEB SPEECH API) ---
-    function toggleVoice() {
-        if (!('webkitSpeechRecognition' in window)) {
-            alert("Voice API not supported in this browser. Use Chrome.");
-            return;
-        }
-
-        const btn = document.getElementById('mic-btn');
-        
-        if (recognition && recognition.active) {
-            recognition.stop();
-            return;
-        }
-
-        recognition = new webkitSpeechRecognition();
-        recognition.lang = 'es-ES'; // Spanish default for Honduras
-        recognition.continuous = false;
-        recognition.interimResults = false;
-
-        recognition.onstart = () => {
-            recognition.active = true;
-            btn.classList.add('mic-active');
-            btn.innerHTML = '<i class="fas fa-wave-square"></i> Listening...';
-        };
-
-        recognition.onend = () => {
-            recognition.active = false;
-            btn.classList.remove('mic-active');
-            btn.innerHTML = '<i class="fas fa-microphone"></i> Voice Order';
-        };
-
-        recognition.onresult = (event) => {
-            const transcript = event.results[0][0].transcript.toLowerCase();
-            console.log("Heard:", transcript);
-            processVoiceCommand(transcript);
-        };
-
-        recognition.start();
-    }
-
-    function processVoiceCommand(text) {
-        // Simple keyword matching (NLP Light)
-        // "Quiero un latte y dos mocas"
-        
-        // Map Spanish/English words to IDs
-        const keywords = {
-            "espresso": 1, "café": 1, "expreso": 1,
-            "latte": 2, "late": 2, "leche": 2,
-            "cappuccino": 3, "capuchino": 3,
-            "cold brew": 4, "frío": 4,
-            "mocha": 5, "moca": 5, "chocolate": 5,
-            "banana": 6, "pan": 6,
-            "panini": 7, "pollo": 7, "sandwich": 7,
-            "avocado": 8, "tostada": 8, "aguacate": 8,
-            "açaí": 9, "acai": 9, "bowl": 9
-        };
-
-        let found = false;
-        for (const [word, id] of Object.entries(keywords)) {
-            if (text.includes(word)) {
-                addToCart(id);
-                found = true;
-            }
-        }
-
-        if (!found) alert(`Didn't catch that. Heard: "${text}"`);
-    }
-
-    // --- FEATURE 3: WHATSAPP BOT SIMULATION ---
-    function toggleBotPanel() {
-        const panel = document.getElementById('bot-panel');
-        panel.classList.toggle('hidden');
-    }
-
-    function simulateWhatsAppTraffic() {
-        const feed = document.getElementById('whatsapp-feed');
-        const messages = [
-            { name: "Maria L.", text: "Quiero un Latte Grande", time: "10:02 AM" },
-            { name: "Carlos R.", text: "2 Cold Brews para llevar", time: "10:05 AM" }
-        ];
-
-        let i = 0;
-        setInterval(() => {
-            if (i >= messages.length) return;
-            const msg = messages[i];
-            
-            const div = document.createElement('div');
-            div.className = "bg-white p-3 rounded shadow-sm border-l-4 border-green-500";
-            div.innerHTML = `
-                <div class="flex justify-between text-xs text-gray-500">
-                    <span class="font-bold text-gray-800">${msg.name}</span>
-                    <span>${msg.time}</span>
-                </div>
-                <div class="text-sm mt-1">"${msg.text}"</div>
-                <button onclick="autoFillOrder('${msg.text}')" class="mt-2 text-xs bg-blue-100 text-blue-600 px-2 py-1 rounded hover:bg-blue-200 w-full text-left">
-                    ⚡️ Auto-Create Order
-                </button>
-            `;
-            feed.prepend(div);
-            
-            // Notification sound logic here
-            i++;
-        }, 5000);
-    }
-
-    function autoFillOrder(text) {
-        processVoiceCommand(text.toLowerCase()); // Reuse the NLP logic
-        alert("Order created from WhatsApp message!");
-    }
-
-    // --- FEATURE 4: CUSTOMER LOOKUP ---
-    let currentCustomerId = null;
-
-    async function lookupCustomer() {
-        const country = document.getElementById('cust-country').value;
-        let queryRaw = document.getElementById('cust-id').value;
-        if (!queryRaw) return;
-        
-        let query = queryRaw.replace(/[^\d+]/g, '');
-        if (!query.startsWith('+')) {
-            query = country + query;
-        }
-
-        try {
-            const res = await fetch(`/api/customers/phone/${query}`);
-            const data = await res.json();
-
-            if (res.ok) {
-                currentCustomerId = data.id;
-                window.loadedCustomer = data; // Save for balance checks
-                document.getElementById('cust-lookup-ui').classList.add('hidden');
-                
-                if (data.usual_item) {
-                    window.currentUsualItem = data.usual_item;
-                } else {
-                    window.currentUsualItem = null;
-                }
-
-                const profile = document.getElementById('cust-profile');
-                profile.innerHTML = `
-                    <div class="flex justify-between items-center bg-blue-50 p-3 rounded-xl border border-blue-100 shadow-sm animate-in fade-in slide-in-from-top-2">
-                        <div>
-                            <div class="flex items-center gap-2">
-                                <span class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
-                                <h3 class="font-bold text-lg text-blue-900 leading-tight">${data.name} ${data.is_vip ? '⭐️' : ''}</h3>
-                            </div>
-                            <p class="text-xs font-bold text-blue-700/60 uppercase tracking-tighter mt-0.5">Saldo: L. ${data.rico_balance || 0} • Pts: ${data.points || 0}</p>
-                            ${data.usual_item ? `<button onclick="addToCart(window.currentUsualItem)" class="mt-2 text-[10px] bg-white text-purple-700 border border-purple-200 font-bold px-2 py-1 rounded-lg shadow-sm hover:bg-purple-50 transition-colors uppercase">✨ Repetir: ${data.usual_item.name}</button>` : ''}
-                        </div>
-                        <div class="flex flex-col gap-1">
-                            <button onclick="openRecargaModal()" class="bg-blue-600 text-white font-black text-[10px] px-3 py-2 rounded-lg shadow-lg shadow-blue-600/20 hover:bg-blue-700 active:scale-95 transition-all uppercase">
-                                + RECARGA
-                            </button>
-                            <button onclick="clearCustomer()" class="text-[10px] text-gray-400 font-bold hover:text-red-500 uppercase">Quitar</button>
-                        </div>
-                    </div>
-                `;
-                profile.classList.remove('hidden');
-
-                // Check Ghost Account Status
-                if (data.pin === null || (data.notes && data.notes.includes('GHOST_ACCOUNT'))) {
-                    openPinModal();
-                }
-
-            } else {
-                // INLINE QUICK CREATE
-                const profile = document.getElementById('cust-profile');
-                profile.innerHTML = `
-                    <div class="bg-orange-50 p-4 rounded-xl border border-orange-200 animate-in zoom-in-95 duration-200">
-                        <p class="text-orange-800 font-bold text-sm mb-3 flex items-center gap-2">
-                            <i class="fas fa-user-plus"></i> ¿Cliente Nuevo?
-                        </p>
-                        <p class="text-[10px] text-orange-700 font-bold mb-2 uppercase tracking-tight">Ofrécele L. 30 de crédito si se une hoy.</p>
-                        <div class="flex gap-2">
-                            <input type="text" id="new-cust-name" placeholder="Nombre del Cliente" class="flex-1 p-2 text-sm border-2 border-orange-200 rounded-lg focus:border-orange-500 outline-none">
-                            <button onclick="quickCreateCustomer('${query}')" class="bg-orange-600 text-white px-4 py-2 rounded-lg font-bold text-sm hover:bg-orange-700 active:scale-95 transition-all">
-                                UNIR
-                            </button>
-                        </div>
-                        <button onclick="useAsGuestName('${query}')" class="w-full mt-2 text-[10px] text-gray-500 font-bold hover:text-gray-700 uppercase">No desea unirse, solo usar nombre</button>
-                    </div>
-                `;
-                profile.classList.remove('hidden');
-                document.getElementById('cust-lookup-ui').classList.add('hidden');
-                setTimeout(() => document.getElementById('new-cust-name').focus(), 100);
-            }
-        } catch (e) {
-            console.error(e);
-            alert("Error looking up customer");
-        }
-    }
-
-    function clearCustomer() {
-        currentCustomerId = null;
-        window.loadedCustomer = null;
-        document.getElementById('cust-id').value = '';
-        document.getElementById('guest-name-input').value = '';
-        document.getElementById('cust-profile').classList.add('hidden');
-        document.getElementById('cust-lookup-ui').classList.remove('hidden');
-    }
-
-    function useAsGuestName(phone) {
-        const name = document.getElementById('new-cust-name').value.trim();
-        if (name) {
-            document.getElementById('guest-name-input').value = name;
-        }
-        document.getElementById('cust-profile').classList.add('hidden');
-        document.getElementById('cust-lookup-ui').classList.remove('hidden');
-    }
-
-    async function quickCreateCustomer(phone) {
-        const name = document.getElementById('new-cust-name').value.trim();
-        if (!name) {
-            alert("Por favor ingresa un nombre");
-            return;
-        }
-
-        const btn = event.target;
-        const ogText = btn.innerText;
-        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
-        btn.disabled = true;
-
-        try {
-            const createRes = await fetch('/api/customers', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({ phone: phone, name: name })
-            });
-            const newCust = await createRes.json();
-            if (createRes.ok) {
-                const profile = document.getElementById('cust-profile');
-                profile.innerHTML = `
-                    <div class="bg-green-500 text-white p-4 rounded-xl text-center animate-bounce">
-                        <i class="fas fa-check-circle text-2xl mb-1"></i>
-                        <p class="font-bold">¡Cuenta Creada! L. 30 Bonus</p>
-                    </div>
-                `;
-                setTimeout(() => {
-                    // Update input so lookup works
-                    document.getElementById('cust-id').value = phone;
-                    lookupCustomer(); // Reload the profile view
-                }, 1000);
-            } else {
-                alert(`Error: ${newCust.error || 'No se pudo crear'}`);
-                btn.innerText = ogText;
-                btn.disabled = false;
-            }
-        } catch(e) {
-            alert("Error de conexión");
-            btn.innerText = ogText;
-            btn.disabled = false;
-        }
-    }
-
-    function openPinModal() {
-        document.getElementById('pin-modal').classList.remove('hidden');
-        document.getElementById('new-pin').focus();
-    }
-
-    async function savePin() {
-        const pinInput = document.getElementById('new-pin');
-        const pin = pinInput.value;
-        if (pin.length !== 4) {
-            alert("PIN must be 4 digits");
-            return;
-        }
-
-        if (!currentCustomerId) {
-            alert("No customer ID found. Search again.");
-            return;
-        }
-
-        try {
-            const res = await fetch(`/api/customers/${currentCustomerId}`, {
-                method: 'PATCH',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ 
-                    pin: pin,
-                    notes: 'Active Account (PIN Set)' 
-                })
-            });
-
-            if (res.ok) {
-                document.getElementById('pin-modal').classList.add('hidden');
-                alert("✅ PIN Set! Account Activated.");
-                lookupCustomer(); 
-            } else {
-                const err = await res.json();
-                alert("Error saving PIN: " + (err.error || "Unknown"));
-            }
-        } catch (e) {
-            console.error(e);
-            alert("Network error saving PIN");
-        }
-    }
-
-    // --- RECARGA LOGIC ---
-    function openRecargaModal() {
-        document.getElementById('recarga-amount').value = '';
-        document.getElementById('recarga-modal').classList.remove('hidden');
-    }
-
-    async function submitRecarga(method) {
-        const amount = parseFloat(document.getElementById('recarga-amount').value);
-        if (!amount || amount <= 0) return;
-        
-        try {
-            const res = await fetch(`/api/customers/${currentCustomerId}/load-balance`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer EMP-test' },
-                body: JSON.stringify({ amount: amount, method: method })
-            });
-            const data = await res.json();
-            if (data.success) {
-                alert(`Recarga Exitosa! L. ${amount} added.`);
-                document.getElementById('recarga-modal').classList.add('hidden');
-                lookupCustomer(); // Refresh profile UI
-            } else {
-                alert("Error loading balance");
-            }
-        } catch(e) {
-            console.error(e);
-            alert("Network error");
-        }
-    }
-
-    // --- CHECKOUT LOGIC ---
     function openTenderModal() {
         if (cart.length === 0) return;
-        const total = cart.reduce((sum, item) => sum + item.finalPrice, 0) * 1.15;
-
+        const total = cart.reduce((sum, item) => sum + (item.finalPrice * item.qty), 0) * 1.15;
         document.getElementById('tender-due').innerText = `L. ${total.toFixed(2)}`;
         document.getElementById('tender-received').value = '';
         document.getElementById('tender-change').innerText = 'L. 0.00';
-
-        // Only show Rico Cash button if customer is loaded
+        
         const btnRico = document.getElementById('btn-tender-rico');
         if (window.loadedCustomer) {
             btnRico.classList.remove('hidden');
-            const bal = parseFloat(window.loadedCustomer.rico_balance) || 0;
-            document.getElementById('rico-available-msg').innerText = `Balance disponible: L. ${bal.toFixed(2)}`;
+            document.getElementById('rico-available-msg').innerText = `Balance: L. ${window.loadedCustomer.rico_balance.toFixed(2)}`;
         } else {
             btnRico.classList.add('hidden');
         }
-
-        setTender('cash'); // Default
+        
+        setTender('cash');
         document.getElementById('tender-modal').classList.remove('hidden');
     }
 
     function setTender(method) {
         currentTenderMethod = method;
-        const btnCash = document.getElementById('btn-tender-cash');
-        const btnCard = document.getElementById('btn-tender-card');
-        const btnTransfer = document.getElementById('btn-tender-transfer');
-        const btnRico = document.getElementById('btn-tender-rico');
-
-        const calc = document.getElementById('cash-calculator');
-        const transfInstr = document.getElementById('transfer-instructions');
-        const ricoInstr = document.getElementById('rico-instructions');
-
-        btnCash.className = "py-6 rounded-xl border-2 font-bold text-lg flex flex-col items-center gap-2 transition " + (method === 'cash' ? "border-green-500 bg-green-50 text-green-700" : "border-gray-200 text-gray-500 bg-white hover:bg-gray-50");
-        btnCard.className = "py-6 rounded-xl border-2 font-bold text-lg flex flex-col items-center gap-2 transition " + (method === 'card' ? "border-blue-500 bg-blue-50 text-blue-700" : "border-gray-200 text-gray-500 bg-white hover:bg-gray-50");
-        btnTransfer.className = "py-6 rounded-xl border-2 font-bold text-lg flex flex-col items-center gap-2 transition " + (method === 'transfer' ? "border-purple-500 bg-purple-50 text-purple-700" : "border-gray-200 text-gray-500 bg-white hover:bg-gray-50");
-        btnRico.className = "py-6 rounded-xl border-2 font-bold text-lg flex flex-col items-center gap-2 transition " + (method === 'rico_balance' ? "border-blue-500 bg-blue-50 text-blue-700" : "border-gray-200 text-gray-500 bg-white hover:bg-gray-50");
-
-        if(method === 'cash') calc.classList.remove('hidden');
-        else calc.classList.add('hidden');
-
-        if(method === 'transfer') transfInstr.classList.remove('hidden');
-        else transfInstr.classList.add('hidden');
-
-        if(method === 'rico_balance') ricoInstr.classList.remove('hidden');
-        else ricoInstr.classList.add('hidden');
+        document.querySelectorAll('[id^="btn-tender-"]').forEach(b => b.className = "py-6 rounded-xl border-2 border-gray-200 text-gray-500 font-bold text-lg flex flex-col items-center gap-2 hover:bg-gray-50 transition");
+        document.getElementById(`btn-tender-${method === 'rico_balance' ? 'rico' : method}`).className = "py-6 rounded-xl border-2 border-blue-500 bg-blue-50 text-blue-700 font-bold text-lg flex flex-col items-center gap-2 transition";
+        
+        document.getElementById('cash-calculator').classList.toggle('hidden', method !== 'cash');
+        document.getElementById('rico-instructions').classList.toggle('hidden', method !== 'rico_balance');
+        calculateChange();
     }
-    function quickCash(amount) {
-        document.getElementById('tender-received').value = amount;
+
+    function quickCash(amt) {
+        document.getElementById('tender-received').value = amt;
         calculateChange();
     }
 
     function calculateChange() {
-        const total = cart.reduce((sum, item) => sum + item.finalPrice, 0) * 1.15;
+        const total = cart.reduce((sum, item) => sum + (item.finalPrice * item.qty), 0) * 1.15;
         const received = parseFloat(document.getElementById('tender-received').value) || 0;
         const change = received - total;
-        
-        const changeEl = document.getElementById('tender-change');
         const confirmBtn = document.getElementById('confirm-tender-btn');
+        const changeEl = document.getElementById('tender-change');
         
         changeEl.innerText = `L. ${Math.max(0, change).toFixed(2)}`;
         
-        if (currentTenderMethod === 'cash') {
-            if (change < 0) {
-                changeEl.classList.replace('text-green-600', 'text-red-500');
-                confirmBtn.disabled = true;
-                confirmBtn.classList.add('opacity-50', 'cursor-not-allowed');
-            } else {
-                changeEl.classList.replace('text-red-500', 'text-green-600');
-                confirmBtn.disabled = false;
-                confirmBtn.classList.remove('opacity-50', 'cursor-not-allowed');
-            }
-        } else if (currentTenderMethod === 'rico_balance') {
-            const bal = window.loadedCustomer ? (parseFloat(window.loadedCustomer.rico_balance) || 0) : 0;
-            if (bal < total) {
-                confirmBtn.disabled = true;
-                confirmBtn.classList.add('opacity-50', 'cursor-not-allowed');
-            } else {
-                confirmBtn.disabled = false;
-                confirmBtn.classList.remove('opacity-50', 'cursor-not-allowed');
-            }
-        } else {
-            // Transfer/Card usually doesn't need manual received amount entry here
-            confirmBtn.disabled = false;
-            confirmBtn.classList.remove('opacity-50', 'cursor-not-allowed');
-        }
-    }
-
-    let printPort = null;
-    let printWriter = null;
-
-    async function connectHardware() {
-        if (!navigator.serial) {
-            alert("Web Serial API not supported in this browser. Use Chrome or Edge on Desktop/Android.");
-            return;
-        }
-        try {
-            printPort = await navigator.serial.requestPort();
-            await printPort.open({ baudRate: 9600 }); // Common default, adjust if needed (e.g., 115200)
-            
-            printWriter = printPort.writable.getWriter();
-            
-            const btn = document.getElementById('printer-status').parentElement;
-            btn.classList.replace('bg-gray-200', 'bg-green-600');
-            btn.classList.replace('text-gray-700', 'text-white');
-            document.getElementById('printer-status').innerText = 'Hardware 🟢';
-            alert("✅ Wired Hardware connected successfully!");
-            
-        } catch (err) {
-            console.error(err);
-            alert("Hardware connection failed: " + err.message);
-        }
-    }
-
-    async function printTestReceipt() {
-        if (!printWriter) {
-            alert("Please connect hardware first from the Config menu.");
-            return;
-        }
-        try {
-            const encoder = new TextEncoder();
-            let receipt = "\x1B\x40"; // Init
-            receipt += "\x1B\x61\x01"; // Center align
-            receipt += "\x1B\x21\x10"; // Double height text
-            receipt += "TEST RECEIPT\n";
-            receipt += "\x1B\x21\x00"; // Normal text
-            receipt += "Hardware is connected.\n\n\n\n";
-            receipt += "\x1D\x56\x42\x00"; // Cut paper
-            receipt += "\x1B\x70\x00\x19\xFA"; // Kick drawer
-            await printWriter.write(encoder.encode(receipt));
-            alert("Test receipt sent!");
-        } catch(e) {
-            alert("Error: " + e.message);
-        }
-    }
-
-    async function kickDrawerOnly() {
-        if (!printWriter) return;
-        try {
-            const encoder = new TextEncoder();
-            await printWriter.write(encoder.encode("\x1B\x70\x00\x19\xFA")); // Kick drawer
-        } catch (e) {
-            console.error("Drawer kick error", e);
-        }
-    }
-
-    async function printReceiptAndKickDrawer(orderPayload, orderId) {
-        if (!printWriter) return;
-        try {
-            const encoder = new TextEncoder();
-            let receipt = "\x1B\x40"; // Init
-            
-            // Header
-            receipt += "\x1B\x61\x01"; // Center align
-            receipt += "\x1B\x21\x10"; // Double height text
-            receipt += "RICH AROMA\n";
-            receipt += "\x1B\x21\x00"; // Normal text
-            receipt += "Cafe & Comida\n";
-            receipt += "Quimistan, Honduras\n";
-            receipt += "--------------------------------\n";
-            
-            // Body
-            receipt += "\x1B\x61\x00"; // Left align
-            receipt += `Order: #${orderId || 'NEW'}\n`;
-            receipt += `Time: ${new Date().toLocaleString()}\n`;
-            receipt += "--------------------------------\n";
-            
-            orderPayload.items.forEach(item => {
-                const line = `${item.qty || 1}x ${item.name.substring(0, 20)}`;
-                const price = `L.${item.finalPrice.toFixed(2)}`;
-                // Pad space to right align price
-                receipt += line + " ".repeat(Math.max(0, 32 - line.length - price.length)) + price + "\n";
-                if (item.mods) {
-                    item.mods.forEach(mod => {
-                        receipt += `   - ${mod.name}\n`;
-                    });
-                }
-            });
-            
-            receipt += "--------------------------------\n";
-            const subLine = `SUBTOTAL:`;
-            const subPrice = `L.${orderPayload.subtotal.toFixed(2)}`;
-            receipt += subLine + " ".repeat(32 - subLine.length - subPrice.length) + subPrice + "\n";
-            
-            const taxLine = `TAX (15%):`;
-            const taxPrice = `L.${orderPayload.tax.toFixed(2)}`;
-            receipt += taxLine + " ".repeat(32 - taxLine.length - taxPrice.length) + taxPrice + "\n";
-            
-            receipt += "\x1B\x21\x10"; // Double height
-            const totLine = `TOTAL:`;
-            const totPrice = `L.${orderPayload.total.toFixed(2)}`;
-            receipt += totLine + " ".repeat(Math.max(0, 32 - totLine.length - totPrice.length)) + totPrice + "\n";
-            receipt += "\x1B\x21\x00"; // Normal
-            
-            receipt += "\n\x1B\x61\x01"; // Center align
-            receipt += "Thank you for your order!\n";
-            receipt += "Captain Rico awaits you.\n\n\n\n";
-            
-            // Cut paper (GS V m)
-            receipt += "\x1D\x56\x42\x00"; 
-
-            // Kick Cash Drawer (ESC p 0 25 250)
-            receipt += "\x1B\x70\x00\x19\xFA";
-
-            // Send Data
-            const data = encoder.encode(receipt);
-            await printWriter.write(data);
-
-        } catch (err) {
-            console.error("Print/Drawer error:", err);
-            alert("Hardware error: " + err.message);
-        }
+        let valid = true;
+        if (currentTenderMethod === 'cash' && change < 0) valid = false;
+        if (currentTenderMethod === 'rico_balance' && (!window.loadedCustomer || window.loadedCustomer.rico_balance < total)) valid = false;
+        
+        confirmBtn.disabled = !valid;
+        confirmBtn.classList.toggle('opacity-50', !valid);
+        changeEl.classList.toggle('text-red-500', !valid && received > 0);
     }
 
     async function processCobrar() {
-        if (cart.length === 0) {
-            alert("El carrito está vacío");
-            return;
-        }
-
-        const guestName = document.getElementById('guest-name-input').value.trim();
-        if (!currentCustomerId && !guestName) {
-            alert("⚠️ Identificación Requerida: Por favor ingresa el nombre del cliente o busca su cuenta de lealtad.");
-            document.getElementById('guest-name-input').focus();
-            return;
-        }
-
-        const total = cart.reduce((sum, item) => sum + item.finalPrice, 0);
-
-        // Format items for KDS standard: mods array
-        const formattedItems = cart.map(item => {
-            const formattedItem = { ...item, qty: item.qty || 1 };
-            if (item.mods && !Array.isArray(item.mods)) {
-                formattedItem.mods = [];
-                if (item.mods.milk && item.mods.milk.name !== 'Whole') {
-                    formattedItem.mods.push({ name: item.mods.milk.name + ' Milk' });
-                }
-                if (item.mods.syrup && item.mods.syrup.name !== 'None') {
-                    formattedItem.mods.push({ name: item.mods.syrup.name + ' Syrup' });
-                }
-                if (item.mods.shots > 1) {
-                    formattedItem.mods.push({ name: item.mods.shots + ' Shots' });
-                }
-            }
-            if (item.note) {
-                formattedItem.mods = formattedItem.mods || [];
-                formattedItem.mods.push({ name: `📝 ${item.note}` });
-            }
-            return formattedItem;
-        });
-
-        const orderPayload = {
-            items: formattedItems,
-            subtotal: total,
-            tax: 0,
-            discount: 0,
-            total: total, // no tax for now
+        const total = cart.reduce((sum, item) => sum + (item.finalPrice * item.qty), 0) * 1.15;
+        const payload = {
+            items: cart,
+            total,
             paymentMethod: currentTenderMethod,
             customerId: currentCustomerId,
-            notes: guestName ? `[CLIENTE: ${guestName}]` : null
+            notes: document.getElementById('guest-name-input').value.trim() ? `[CLIENTE: ${document.getElementById('guest-name-input').value.trim()}]` : null
         };
-
-        const confirmBtn = document.getElementById('confirm-tender-btn');
-        confirmBtn.disabled = true;
-        confirmBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
 
         try {
             const res = await fetch('/api/orders', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(orderPayload)
+                body: JSON.stringify(payload)
             });
-
             if (res.ok) {
-                const savedOrder = await res.json();
-                
-                // Trigger Hardware
-                const printToggle = document.getElementById('print-receipt-toggle');
-                if (printToggle && printToggle.checked) {
-                    await printReceiptAndKickDrawer(orderPayload, savedOrder.order_number);
-                } else {
-                    await kickDrawerOnly();
-                }
-
-                document.getElementById('tender-modal').classList.add('hidden');
-
-                alert("✅ ¡Orden Completada!");
+                alert("✅ Success!");
                 cart = [];
                 currentCustomerId = null;
+                window.loadedCustomer = null;
                 saveCartState();
-                document.getElementById('cust-id').value = '';
-                document.getElementById('cust-profile').classList.add('hidden');
-                renderCart();
-                fetchLiveOrders(); // Refresh heartbeat
-            } else {
-                const err = await res.json();
-                alert("Error placing order: " + (err.error || "Unknown"));
+                location.reload();
             }
-        } catch (e) {
-            console.error(e);
-            alert("Network error placing order");
-        } finally {
-            confirmBtn.disabled = false;
-            confirmBtn.innerHTML = '<i class="fas fa-check"></i> Complete Sale';
-        }
+        } catch(e) { alert("Error!"); }
     }
 
-    // --- CONNECTION STATUS MONITORING ---
-    function updateOnlineStatus() {
-        const statusEl = document.getElementById('connection-status');
-        if (navigator.onLine) {
-            statusEl.className = "bg-green-100 text-green-800 px-4 py-2 rounded-lg font-mono transition-colors duration-300";
-            statusEl.innerHTML = "System: ONLINE 🟢";
-        } else {
-            statusEl.className = "bg-red-100 text-red-800 px-4 py-2 rounded-lg font-mono transition-colors duration-300";
-            statusEl.innerHTML = "System: OFFLINE 🔴";
-        }
-    }
+    // --- CUSTOMER LOOKUP ---
+    async function lookupCustomer() {
+        const country = document.getElementById('cust-country').value;
+        const input = document.getElementById('cust-id');
+        let query = input.value.replace(/\D/g, '');
+        if (!query.startsWith('+')) query = country + query;
 
-    window.addEventListener('online', updateOnlineStatus);
-    window.addEventListener('offline', updateOnlineStatus);
-    
-    // Initial check
-    updateOnlineStatus();
-
-    // --- KITCHEN STATUS LOGIC ---
-    let kitchenPollInterval = null;
-
-    async function loadKitchenOrders() {
-        const container = document.getElementById('kitchen-orders-container');
         try {
-            const res = await fetch('/api/orders');
+            const res = await fetch(`/api/customers/phone/${query}`);
             const data = await res.json();
-            const orders = data.orders || [];
-            
-            // Show orders that are pending, preparing, drinks_ready, food_ready, or ready
-            const activeOrders = orders.filter(o => ['pending', 'paid', 'preparing', 'prep', 'drinks_ready', 'food_ready', 'ready'].includes(o.status));
-            
-            if (activeOrders.length === 0) {
-                container.innerHTML = '<div class="text-center text-gray-500 mt-10 text-xl"><i class="fas fa-check-circle text-green-500 text-4xl mb-4"></i><br>No active orders!</div>';
-                return;
-            }
-            
-            let html = '<div class="grid grid-cols-2 gap-4">';
-            activeOrders.forEach(o => {
-                let statusColor = 'bg-yellow-100 text-yellow-800';
-                let statusText = o.status.toUpperCase();
-                
-                if (['preparing', 'prep'].includes(o.status)) { statusColor = 'bg-blue-100 text-blue-800'; statusText = 'IN PREP'; }
-                if (['drinks_ready'].includes(o.status)) { statusColor = 'bg-purple-100 text-purple-800'; statusText = 'DRINKS READY (WAITING FOOD)'; }
-                if (['food_ready'].includes(o.status)) { statusColor = 'bg-orange-100 text-orange-800'; statusText = 'FOOD READY (WAITING DRINKS)'; }
-                if (o.status === 'ready') { statusColor = 'bg-green-100 text-green-800 border-2 border-green-500'; statusText = 'ALL READY (VERIFY & SERVE)'; }
-                
-                const timeStr = new Date(o.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
-                
-                const itemsList = (o.items || []).map(i => {
-                    const mods = (i.mods || []).map(m => `<span class="text-xs text-gray-500 ml-4 block">+ ${m.name}</span>`).join('');
-                    return `<div class="text-sm font-semibold">${i.quantity || 1}x ${i.name} ${i.is_addon ? '<span class="text-xs bg-yellow-300 px-1 rounded ml-1">ADD-ON</span>' : ''}</div>${mods}`;
-                }).join('');
-
-                html += `
-                    <div class="bg-white p-4 rounded-xl shadow-md border border-gray-200 flex flex-col justify-between">
+            if (res.ok) {
+                currentCustomerId = data.id;
+                window.loadedCustomer = data;
+                document.getElementById('cust-lookup-ui').classList.add('hidden');
+                const profile = document.getElementById('cust-profile');
+                profile.innerHTML = `
+                    <div class="bg-blue-50 p-4 rounded-2xl border border-blue-100 flex justify-between items-center shadow-sm">
                         <div>
-                            <div class="flex justify-between items-center mb-2 border-b pb-2">
-                                <h3 class="font-bold text-lg">Order #${o.order_number}</h3>
-                                <span class="text-xs font-bold px-2 py-1 rounded ${statusColor}">${statusText}</span>
-                            </div>
-                            <p class="text-xs text-gray-500 mb-2"><i class="far fa-clock"></i> ${timeStr} - ${o.fulfillment_type || 'Takeout'}</p>
-                            <div class="mb-4">
-                                ${itemsList}
-                            </div>
+                            <div class="font-black text-blue-900">${data.name}</div>
+                            <div class="text-[10px] font-bold text-blue-600">Balance: L. ${data.rico_balance.toFixed(2)}</div>
                         </div>
-                        <button onclick="markOrderCompleted('${o.id}')" class="w-full bg-green-500 hover:bg-green-600 text-white font-bold py-3 rounded-lg mt-2 shadow flex items-center justify-center gap-2">
-                            <i class="fas fa-check-double"></i> Verify & Mark Delivered
-                        </button>
+                        <button onclick="clearCustomer()" class="text-xs font-bold text-gray-400">Clear</button>
                     </div>
                 `;
-            });
-            html += '</div>';
-            container.innerHTML = html;
-        } catch(e) {
-            console.error('Error loading kitchen orders', e);
-            container.innerHTML = '<div class="text-center text-red-500 mt-10">Error loading orders.</div>';
-        }
-    }
-
-    function openKitchenStatus() {
-        document.getElementById('kitchen-modal').classList.remove('hidden');
-        loadKitchenOrders();
-        // Poll every 5 seconds while modal is open
-        kitchenPollInterval = setInterval(loadKitchenOrders, 5000);
-    }
-
-    function closeKitchenStatus() {
-        document.getElementById('kitchen-modal').classList.add('hidden');
-        if (kitchenPollInterval) clearInterval(kitchenPollInterval);
-    }
-
-    async function markOrderCompleted(orderId) {
-        if (!confirm("Mark this order as delivered/completed?")) return;
-        try {
-            const res = await fetch(`/api/orders/${orderId}/status`, {
-                method: 'PATCH',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ status: 'completed' })
-            });
-            if (res.ok) {
-                loadKitchenOrders(); // Refresh list
-                fetchLiveOrders(); // Refresh heartbeat
+                profile.classList.remove('hidden');
             } else {
-                alert("Failed to update status.");
+                // Quick create UI
+                document.getElementById('cust-profile').innerHTML = `
+                    <div class="bg-orange-50 p-4 rounded-2xl border border-orange-200">
+                        <p class="text-orange-800 font-bold text-xs mb-2 italic">New Customer?</p>
+                        <input type="text" id="new-cust-name" placeholder="Full Name" class="w-full p-2 border-2 border-orange-200 rounded-lg mb-2">
+                        <button onclick="quickCreateCustomer('${query}')" class="w-full bg-orange-600 text-white font-bold py-2 rounded-lg">Unir + L.30 Bonus</button>
+                    </div>
+                `;
+                document.getElementById('cust-profile').classList.remove('hidden');
+                document.getElementById('cust-lookup-ui').classList.add('hidden');
             }
-        } catch (e) {
-            console.error("Error updating status", e);
-            alert("Network error.");
+        } catch(e) {}
+    }
+
+    function clearCustomer() {
+        currentCustomerId = null;
+        window.loadedCustomer = null;
+        document.getElementById('cust-profile').classList.add('hidden');
+        document.getElementById('cust-lookup-ui').classList.remove('hidden');
+    }
+
+    async function quickCreateCustomer(phone) {
+        const name = document.getElementById('new-cust-name').value;
+        await fetch('/api/customers', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ phone, name })
+        });
+        document.getElementById('cust-id').value = phone;
+        lookupCustomer();
+    }
+
+    // --- SHIFT & STATUS ---
+    async function startShift() {
+        const pin = document.getElementById('shift-pin').value;
+        const cash = document.getElementById('shift-cash').value;
+        const res = await fetch('/api/cash/open-shift', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json', 'Authorization': 'Bearer EMP-admin'},
+            body: JSON.stringify({ employeeId: pin, openingAmount: cash })
+        });
+        if (res.ok) location.reload();
+    }
+
+    async function endShift() {
+        const cash = prompt("Final cash count:");
+        if (!cash) return;
+        const res = await fetch('/api/cash/close-shift', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json', 'Authorization': 'Bearer EMP-admin'},
+            body: JSON.stringify({ shiftId: currentShiftId, closingAmount: cash })
+        });
+        if (res.ok) {
+            const data = await res.json();
+            showShiftReport(data.report);
         }
     }
 
-    // --- STORE STATUS LOGIC ---
     async function toggleStoreStatus(checkbox) {
-        const isOpen = checkbox.checked;
-        const label = document.getElementById('store-status-label');
-        
-        try {
-            const res = await fetch('/api/store/status', {
-                method: 'PATCH',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ isOpen })
-            });
-            
-            if (res.ok) {
-                if (isOpen) {
-                    label.innerText = 'ABIERTO';
-                    label.className = 'text-sm font-bold text-green-600 px-2 w-16 text-center';
-                } else {
-                    label.innerText = 'CERRADO';
-                    label.className = 'text-sm font-bold text-red-600 px-2 w-16 text-center';
-                }
-            } else {
-                // Revert on error
-                checkbox.checked = !isOpen;
-                alert("Failed to update store status.");
-            }
-        } catch (e) {
-            console.error("Store status update error:", e);
-            checkbox.checked = !isOpen;
-            alert("Network error updating store status.");
-        }
+        await fetch('/api/store/status', {
+            method: 'PATCH',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ isOpen: checkbox.checked })
+        });
+        fetchStoreStatus();
     }
 
     async function fetchStoreStatus() {
-        try {
-            const res = await fetch('/api/store/status');
+        const res = await fetch('/api/store/status');
+        const data = await res.json();
+        document.getElementById('store-status-toggle').checked = data.isOpen;
+        document.getElementById('store-status-label').innerText = data.isOpen ? 'ABIERTO' : 'CERRADO';
+        document.getElementById('store-status-label').className = `text-sm font-bold ${data.isOpen ? 'text-green-600' : 'text-red-600'} px-2 w-16 text-center`;
+    }
+
+    // --- ADMIN PANEL ---
+    function triggerAdmin() {
+        document.getElementById('admin-dashboard').classList.remove('hidden');
+    }
+    function closeAdminDashboard() {
+        document.getElementById('admin-dashboard').classList.add('hidden');
+    }
+    async function showAdminTab(tab) {
+        const content = document.getElementById('admin-content-area');
+        content.innerHTML = '<div class="text-center py-20"><i class="fas fa-spinner fa-spin text-3xl text-gray-300"></i></div>';
+        
+        if (tab === 'menu') {
+            const res = await fetch('/api/menu?admin=true');
             const data = await res.json();
-            const checkbox = document.getElementById('store-status-toggle');
-            const label = document.getElementById('store-status-label');
-            
-            checkbox.checked = data.isOpen;
-            if (data.isOpen) {
-                label.innerText = 'ABIERTO';
-                label.className = 'text-sm font-bold text-green-600 px-2 w-16 text-center';
-            } else {
-                label.innerText = 'CERRADO';
-                label.className = 'text-sm font-bold text-red-600 px-2 w-16 text-center';
-            }
-        } catch (e) {
-            console.error("Failed to fetch store status", e);
+            content.innerHTML = `<div class="grid grid-cols-2 gap-4">${data.items.map(i => `
+                <div class="p-4 border rounded-xl flex justify-between items-center ${i.available ? '' : 'bg-red-50'}">
+                    <span>${i.name}</span>
+                    <input type="checkbox" ${i.available ? 'checked' : ''} onchange="toggleItemAvailability('${i.id}', this.checked)">
+                </div>
+            `).join('')}</div>`;
+        } else {
+            content.innerHTML = '<p class="text-center text-gray-400 py-20 italic">Reporting module loading...</p>';
         }
     }
 
-    // Fetch store status on load
-    fetchStoreStatus();
+    async function toggleItemAvailability(id, available) {
+        await fetch(`/api/menu/items/${id}`, {
+            method: 'PATCH',
+            headers: {'Content-Type': 'application/json', 'Authorization': 'Bearer EMP-admin'},
+            body: JSON.stringify({ available })
+        });
+        showAdminTab('menu');
+    }
 
-    // Close config menu if clicked outside
-    document.addEventListener('click', function(event) {
-        const menu = document.getElementById('config-menu');
-        const button = menu.previousElementSibling;
-        if (!menu.contains(event.target) && !button.contains(event.target)) {
-            menu.classList.add('hidden');
-        }
-    });
-
-
-let pendingVerifications = [];
-async function fetchPendingVerifications() {
-    try {
+    // --- VERIFICATION QUEUE ---
+    async function fetchPendingVerifications() {
         const res = await fetch('/api/orders');
         const data = await res.json();
-        // Look for topups, transfer orders, and mobile cash orders
-        pendingVerifications = data.orders.filter(o => {
-            // Transfer/Reload verification
-            if (o.status === 'pending_transfer' || o.status === 'pending_verification') {
-                return (o.receipt_url) || (o.notes && o.notes.includes('[RECEIPT_URL:'));
-            }
-            // Mobile Cash Order - needs payment in store
-            if (o.status === 'pending' && o.payment_method === 'cash' && o.notes && o.notes.includes('Mobile Order')) {
-                return true;
-            }
-            return false;
-        });
+        pendingVerifications = data.orders.filter(o => o.status === 'pending_verification' || (o.payment_method === 'cash' && o.notes?.includes('Mobile Order') && o.status === 'pending'));
         
-        const alertBtn = document.getElementById('verifyPaymentAlert');
-        const countSpan = document.getElementById('verifyCount');
-        
-        if (pendingVerifications.length > 0) {
-            alertBtn.classList.remove('hidden');
-            countSpan.innerText = pendingVerifications.length;
-            // Also update modal if it's open
-            if (!document.getElementById('verifyModal').classList.contains('hidden')) {
-                renderVerifyModal();
-            }
-        } else {
-            alertBtn.classList.add('hidden');
-            if (!document.getElementById('verifyModal').classList.contains('hidden')) {
-                closeVerifyModal();
-            }
-        }
-    } catch(e) { console.error('Error fetching verifications', e); }
-}
-
-function openVerifyModal() {
-    document.getElementById('verifyModal').classList.remove('hidden');
-    renderVerifyModal();
-}
-
-function closeVerifyModal() {
-    document.getElementById('verifyModal').classList.add('hidden');
-}
-
-function renderVerifyModal() {
-    const container = document.getElementById('verifyContent');
-    if(pendingVerifications.length === 0) {
-        container.innerHTML = '<p>No hay órdenes pendientes de cobro o verificación.</p>';
-        return;
+        const btn = document.getElementById('verifyPaymentAlert');
+        btn.classList.toggle('hidden', pendingVerifications.length === 0);
+        document.getElementById('verifyCount').innerText = pendingVerifications.length;
     }
-    
-    // Show the first one in the queue
-    const order = pendingVerifications[0];
-    const isCashMobile = order.payment_method === 'cash' && order.status === 'pending';
-    
-    let contentHtml = '';
-    
-    if (isCashMobile) {
-        contentHtml = `
-            <div class="mb-6 p-6 bg-green-50 border-2 border-green-200 rounded-2xl text-center">
-                <i class="fas fa-money-bill-wave text-5xl text-green-600 mb-4"></i>
-                <h4 class="font-black text-2xl text-green-900">COBRO EN EFECTIVO</h4>
-                <p class="text-green-800 font-bold mt-2 text-lg">Orden: ${order.order_number || order.id}</p>
-                <div class="mt-4 p-4 bg-white rounded-xl shadow-inner">
-                    <p class="text-gray-500 uppercase text-xs font-black tracking-widest">Total a Cobrar</p>
-                    <p class="text-4xl font-mono font-black text-black">L ${order.total}</p>
+
+    function openVerifyModal() {
+        document.getElementById('verifyModal').classList.remove('hidden');
+        renderVerifyModal();
+    }
+    function closeVerifyModal() {
+        document.getElementById('verifyModal').classList.add('hidden');
+    }
+    function renderVerifyModal() {
+        const container = document.getElementById('verifyContent');
+        if (pendingVerifications.length === 0) return closeVerifyModal();
+        
+        const o = pendingVerifications[0];
+        const isCash = o.payment_method === 'cash';
+        
+        container.innerHTML = `
+            <div class="text-center">
+                <h4 class="text-2xl font-bold">${isCash ? 'Cobro en Efectivo' : 'Verificar Pago'}</h4>
+                <p class="text-4xl font-black my-4">L. ${o.total}</p>
+                ${isCash ? '' : `<div class="bg-gray-100 p-4 rounded mb-4 italic">Check receipt in notes...</div>`}
+                <div class="flex gap-4">
+                    <button onclick="approveTransfer('${o.id}')" class="flex-1 bg-green-600 text-white font-bold py-4 rounded-xl">Aprobar</button>
+                    <button onclick="closeVerifyModal()" class="flex-1 bg-gray-200 py-4 rounded-xl">Luego</button>
                 </div>
-                <p class="mt-4 text-sm text-green-700 font-medium">El cliente está en la tienda y desea pagar en efectivo.</p>
-            </div>
-            <div class="flex gap-4">
-                <button onclick="approveTransfer('${order.id}')" class="flex-1 bg-green-600 text-white font-black py-5 rounded-2xl shadow-lg hover:bg-green-700 active:scale-95 transition-all text-xl uppercase">Pago Recibido</button>
-                <button onclick="closeVerifyModal()" class="px-6 bg-gray-100 text-gray-500 font-bold rounded-2xl hover:bg-gray-200">Luego</button>
-            </div>
-        `;
-    } else {
-        let receiptUrl = '';
-        if (order.notes && order.notes.includes('[RECEIPT_URL:')) {
-            receiptUrl = order.notes.split('[RECEIPT_URL:')[1].split(']')[0];
-        }
-
-        contentHtml = `
-            <div class="mb-4">
-                <h4 class="font-bold text-xl">Verificar Transferencia: ${order.id}</h4>
-                <p class="text-gray-500">Monto: <span class="font-bold text-black">L ${order.total}</span></p>
-            </div>
-            <div class="border rounded-lg overflow-hidden mb-4 bg-gray-100 flex justify-center items-center" style="min-height: 300px;">
-                ${receiptUrl ? `<img src="${receiptUrl}" class="max-w-full max-h-[50vh] object-contain" alt="Recibo">` : '<p class="text-gray-400 italic">No hay imagen adjunta</p>'}
-            </div>
-            <div class="flex gap-4">
-                <button onclick="approveTransfer('${order.id}')" class="flex-1 bg-green-500 text-white font-bold py-4 rounded-xl hover:bg-green-600 text-lg">Aprobar (Pagado)</button>
-                <button onclick="rejectTransfer('${order.id}')" class="flex-1 bg-red-500 text-white font-bold py-4 rounded-xl hover:bg-red-600 text-lg">Rechazar</button>
             </div>
         `;
     }
 
-    container.innerHTML = contentHtml + `<p class="text-sm text-gray-400 mt-4">${pendingVerifications.length - 1} más en cola...</p>`;
-}
-
-async function approveTransfer(orderId) {
-    try {
-        await fetch(`/api/orders/${orderId}`, {
+    async function approveTransfer(id) {
+        await fetch(`/api/orders/${id}`, {
             method: 'PATCH',
-            headers: {'Content-Type': 'application/json'},
+            headers: {'Content-Type': 'application/json', 'Authorization': 'Bearer EMP-admin'},
             body: JSON.stringify({ status: 'paid' })
         });
-        alert('Pago aprobado.');
-        await fetchPendingVerifications(); // Wait for the new list to fetch
-        await fetchLiveOrders(); // Refresh heartbeat
-        if (pendingVerifications.length > 0) {
-            renderVerifyModal(); // Re-render the next one in queue
-        } else {
-            closeVerifyModal(); // Close if queue is empty
-        }
-    } catch(e) { console.error(e); }
-}
-
-async function rejectTransfer(orderId) {
-    if(!confirm('¿Estás seguro de que esta transferencia es inválida? Esto devolverá la orden a estado pendiente.')) return;
-    try {
-        await fetch(`/api/orders/${orderId}`, {
-            method: 'PATCH',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({ status: 'pending' })
-        });
-        alert('Pago rechazado. El cliente debe intentar de nuevo o pagar en caja.');
-        await fetchPendingVerifications();
-        await fetchLiveOrders();
-        if (pendingVerifications.length > 0) {
-            renderVerifyModal();
-        } else {
-            closeVerifyModal();
-        }
-    } catch(e) { console.error(e); }
-}
-
-// --- FEATURE 10: LIVE ORDER FEED (HEARTBEAT) ---
-let liveOrders = [];
-    async function fetchLiveOrders() {
-        const statusEl = document.getElementById('hb-status');
-        try {
-            const res = await fetch('/api/orders');
-            if (!res.ok) throw new Error(`HTTP \${res.status}`);
-            const data = await res.json();
-            const allOrders = data.orders || [];
-            
-            // RELIABLE RECENT ORDERS FILTER (Last 24 Hours)
-            const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
-            
-            liveOrders = allOrders.filter(o => {
-                if (!o.created_at) return false;
-                const orderDate = new Date(o.created_at);
-                const isActive = ['pending', 'paid', 'preparing', 'ready', 'pending_verification', 'pending_transfer'].includes(o.status);
-                return orderDate > twentyFourHoursAgo && isActive;
-            }).sort((a,b) => new Date(b.created_at) - new Date(a.created_at)).slice(0, 50);
-
-            renderLiveFeed();
-            if (statusEl) statusEl.innerText = `Last sync: \${new Date().toLocaleTimeString()}`;
-        } catch(e) { 
-            console.error('Heartbeat failed', e); 
-            if (statusEl) statusEl.innerText = "Sync Failed: Connection Error";
-        }
+        fetchPendingVerifications();
+        fetchLiveOrders();
+        closeVerifyModal();
     }
 
-function renderLiveFeed() {
-    const container = document.getElementById('live-order-feed');
-    const countEl = document.getElementById('live-order-count');
-    countEl.innerText = liveOrders.length;
-
-    if (liveOrders.length === 0) {
-        container.innerHTML = '<div class="text-center py-10 text-gray-600 text-xs italic">No active orders</div>';
-        return;
+    function showShiftReport(r) {
+        const content = document.getElementById('shift-report-content');
+        content.innerHTML = `<div class="p-4 bg-gray-900 text-gold rounded-xl font-mono text-sm">
+            <p>Total Cash: L. ${r.sales.cash.toFixed(2)}</p>
+            <p>Rico Cash: L. ${r.sales.rico_balance.toFixed(2)}</p>
+            <p>Diff: L. ${r.discrepancy.toFixed(2)}</p>
+        </div>`;
+        document.getElementById('shiftReportModal').classList.remove('hidden');
     }
 
-    container.innerHTML = liveOrders.map(o => {
-        const isMobile = o.notes && o.notes.includes('Mobile Order');
-        const isCashMobile = isMobile && o.payment_method === 'cash' && o.status === 'pending';
-        const isTransfer = o.payment_method === 'transfer' && o.status === 'pending';
-        
-        let statusClass = "bg-gray-700 text-gray-300";
-        if (o.status === 'paid') statusClass = "bg-blue-900 text-blue-200 border border-blue-700";
-        if (o.status === 'preparing') statusClass = "bg-orange-900 text-orange-200 border border-orange-700";
-        if (o.status === 'ready') statusClass = "bg-green-900 text-green-200 border border-green-700 animate-pulse";
-        
-        let name = "Walk-in";
-        if (o.notes) {
-            const clienteMatch = o.notes.match(/\[CLIENTE:\s*([^\]]+)\]/);
-            const guestMatch = o.notes.match(/\[GUEST:\s*([^|\]]+)/);
-            
-            if (clienteMatch) {
-                name = clienteMatch[1].trim();
-            } else if (guestMatch) {
-                name = guestMatch[1].trim();
-            }
-        }
-        if (name === "Walk-in" && o.customer_id) name = "Loyalty Member";
-
-        return `
-            <div class="p-3 rounded-xl bg-gray-800 border border-white/5 shadow-lg group hover:border-blue-500/50 transition-all">
-                <div class="flex justify-between items-start mb-2">
-                    <span class="text-[10px] font-black text-gray-500 tracking-tighter">#${o.order_number || o.id.slice(-4)}</span>
-                    <span class="text-[9px] px-2 py-0.5 rounded-full font-black uppercase ${statusClass}">${o.status}</span>
-                </div>
-                <div class="font-bold text-white text-sm truncate mb-1">${name}</div>
-                <div class="flex justify-between items-center">
-                    <span class="text-[10px] font-bold text-gray-400 uppercase">${o.payment_method}</span>
-                    <span class="text-xs font-black text-blue-400 font-mono">L ${parseFloat(o.total).toFixed(2)}</span>
-                </div>
-                
-                ${isCashMobile ? `
-                    <button onclick="openVerifyModal()" class="w-full mt-3 py-2 bg-green-600 text-white text-[10px] font-black uppercase rounded-lg shadow-lg shadow-green-900/20 hover:bg-green-500 transition-all">
-                        <i class="fas fa-hand-holding-usd mr-1"></i> Cobrar Ahora
-                    </button>
-                ` : ''}
-                
-                ${isTransfer ? `
-                    <button onclick="openVerifyModal()" class="w-full mt-3 py-2 bg-purple-600 text-white text-[10px] font-black uppercase rounded-lg shadow-lg shadow-purple-900/20 hover:bg-purple-500 transition-all">
-                        <i class="fas fa-search-dollar mr-1"></i> Verificar
-                    </button>
-                ` : ''}
-            </div>
-        `;
-    }).join('');
-}
-
-// Start heartbeat
-// setInterval(fetchLiveOrders, 10000); // Removed duplicate
-// fetchLiveOrders(); // Removed duplicate
+    function closeModal() { document.getElementById('modifier-modal').classList.add('hidden'); }
 
 </script>
 
