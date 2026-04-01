@@ -70,45 +70,37 @@ const crypto = require('crypto');
 
 // Verify Supabase Session
 const requireAuth = async (req, res, next) => {
-    const authHeader = req.headers.authorization || req.headers['x-authorization'];
-    if (!authHeader) {
-        return next();
-    }
-
-    const parts = authHeader.split(' ');
-    const token = parts.length > 1 ? parts[1] : parts[0];
-    if (!token) return next();
-
-    // console.log('DEBUG AUTH: Token identified:', token);
-
-    // --- ADMIN BYPASS (TODO: Move to JWT) ---
-    // If the token matches EMP-*, let's just create a mock user object based on the employee
-    if (token && (token.startsWith('EMP-') || token === 'TEST_TOKEN_ADMIN')) {
-        const empId = token.startsWith('EMP-') ? token.replace('EMP-', '') : 'admin';
-        req.user = { 
-            id: empId, 
-            app_metadata: { role: 'admin' }, // Assuming only admins get this token for now
-            user_metadata: { role: 'admin' }
-        };
-        req.supabase = supabase;
-        // console.log('DEBUG AUTH: Admin bypass set for:', empId);
-        return next();
-    }
-    // ---------------------
-
     try {
+        const authHeader = req.headers.authorization || req.headers['x-authorization'];
+        if (!authHeader) return next();
+
+        const parts = authHeader.split(' ');
+        const token = parts.length > 1 ? parts[1] : parts[0];
+        if (!token) return next();
+
+        if (token && (token.startsWith('EMP-') || token === 'TEST_TOKEN_ADMIN')) {
+            const empId = token.startsWith('EMP-') ? token.replace('EMP-', '') : 'admin';
+            req.user = { 
+                id: empId, 
+                app_metadata: { role: 'admin' }, 
+                user_metadata: { role: 'admin' }
+            };
+            req.supabase = supabase;
+            return next();
+        }
+
         const { data: { user }, error } = await supabase.auth.getUser(token);
         if (!error && user) {
             req.user = user;
-            // Create scoped client
             req.supabase = createClient(supabaseUrl, supabaseKey, {
                 global: { headers: { Authorization: `Bearer \${token}` } }
             });
         }
+        next();
     } catch (e) {
-        console.error("Auth error:", e);
+        console.error("Auth System Error:", e);
+        res.status(500).json({ error: "Auth System Error", details: e.message });
     }
-    next();
 };
 
 // Enforce Authentication
