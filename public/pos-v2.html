@@ -362,7 +362,7 @@
         </div>
 
         <!-- Menu Grid -->
-        <div class="p-4 overflow-y-auto grid grid-cols-4 gap-4" id="menu-grid">
+        <div class="p-4 overflow-y-auto grid grid-cols-4 gap-4 flex-1" id="menu-grid">
             <!-- Items injected via JS -->
         </div>
     </div>
@@ -2384,8 +2384,9 @@ async function fetchLiveOrders() {
         // Robust Today Filter: Check if date string starts with today's YYYY-MM-DD
         const todayISO = new Date().toISOString().split('T')[0];
         liveOrders = allOrders.filter(o => {
+            if (!o.created_at) return false;
             const orderDate = o.created_at.split('T')[0];
-            const isActive = ['pending', 'paid', 'preparing', 'ready'].includes(o.status);
+            const isActive = ['pending', 'paid', 'preparing', 'ready', 'pending_verification', 'pending_transfer'].includes(o.status);
             return orderDate === todayISO && isActive;
         }).sort((a,b) => new Date(b.created_at) - new Date(a.created_at));
 
