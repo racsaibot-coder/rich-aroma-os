@@ -88,6 +88,10 @@
       "dest": "/api/admin.js?action=leads"
     },
     {
+      "src": "/api/cash/verify-pin",
+      "dest": "/api/cash.js?action=verify-pin"
+    },
+    {
       "src": "/api/cash/current-shift",
       "dest": "/api/cash.js?action=current-shift"
     },

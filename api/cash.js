@@ -33,6 +33,21 @@ export default async function handler(req, res) {
 
     const { action } = req.query;
 
+    if (action === 'verify-pin' && req.method === 'POST') {
+        const { pin } = req.body;
+        if (!pin) return res.status(400).json({ error: 'PIN required' });
+
+        const { data: emp, error } = await supabase
+            .from('employees')
+            .select('id, name, role')
+            .eq('pin', pin)
+            .eq('active', true)
+            .single();
+
+        if (error || !emp) return res.status(401).json({ error: 'PIN Inválido' });
+        return res.json({ employee: emp });
+    }
+
     if (action === 'current-shift' && req.method === 'GET') {
         const { data, error } = await supabase
             .from('cash_shifts')
