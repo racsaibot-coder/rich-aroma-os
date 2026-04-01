@@ -681,27 +681,52 @@
         let filtered = (cat === 'all') ? menu : menu.filter(i => {
             const itemCat = (i.category || '').toLowerCase();
             const itemName = (i.name || '').toLowerCase();
+            const itemId = (i.id || '').toLowerCase();
             
-            if (search === 'combos') return itemCat.includes('combo') || itemName.includes('combo');
-            if (search === 'calientes') return itemCat.includes('hot') || itemCat.includes('coffee') || itemCat.includes('caliente');
+            if (search === 'combos') {
+                return itemId.startsWith('combo_') || itemName.includes('combo');
+            }
+            if (search === 'calientes') {
+                return itemCat.includes('hot') || itemCat.includes('coffee') || itemCat.includes('caliente');
+            }
             if (search === 'heladas') {
                 // Remove 'Te' from Heladas
                 if (itemName.includes('te') && !itemName.includes('frappe')) return false;
                 return itemCat.includes('cold') || itemCat.includes('drink') || itemCat.includes('helada') || itemCat.includes('frappe') || itemCat.includes('granita');
             }
-            if (search === 'comida') return itemCat.includes('food') || itemCat.includes('comida');
+            if (search === 'comida') {
+                // Show only FOOD that is NOT a combo
+                const isFood = itemCat.includes('food') || itemCat.includes('comida');
+                const isCombo = itemId.startsWith('combo_') || itemName.includes('combo');
+                return isFood && !isCombo;
+            }
             
             return itemCat.includes(search);
         });
 
         // Custom Sort for Heladas
         if (search === 'heladas') {
+            const sortOrder = ['cold_supreme_frappe', 'cold_fresa_frappe', 'cold_coffee_frappe', 'cold_french_vanilla', 'cold_caramel_iced'];
+            filtered.sort((a, b) => {
+                const indexA = sortOrder.indexOf(a.id);
+                const indexB = sortOrder.indexOf(b.id);
+                if (indexA !== -1 && indexB !== -1) return indexA - indexB;
+                if (indexA !== -1) return -1;
+                if (indexB !== -1) return 1;
+                return 0;
+            });
+        }
+
+        // Custom Sort for Comida
+        if (search === 'comida') {
             const sortOrder = [
-                'cold_supreme_frappe',
-                'cold_fresa_frappe',
-                'cold_coffee_frappe',
-                'cold_french_vanilla',
-                'cold_caramel_iced'
+                'food_avocado_toast_huevo',
+                'food_banano_almond_toast',
+                'food_chicken_melt',
+                'food_grill_cheese_jamon',
+                'food_grill_cheese',
+                'food_crepas_3',
+                'food_crepas_1'
             ];
             filtered.sort((a, b) => {
                 const indexA = sortOrder.indexOf(a.id);
