@@ -70,12 +70,13 @@ const crypto = require('crypto');
 
 // Verify Supabase Session
 const requireAuth = async (req, res, next) => {
-    const authHeader = req.headers.authorization;
+    const authHeader = req.headers.authorization || req.headers['x-authorization'];
     if (!authHeader) {
         return next();
     }
 
-    const token = authHeader.split(' ')[1];
+    const parts = authHeader.split(' ');
+    const token = parts.length > 1 ? parts[1] : parts[0];
     if (!token) return next();
 
     // --- ADMIN BYPASS (TODO: Move to JWT) ---
@@ -98,7 +99,7 @@ const requireAuth = async (req, res, next) => {
             req.user = user;
             // Create scoped client
             req.supabase = createClient(supabaseUrl, supabaseKey, {
-                global: { headers: { Authorization: `Bearer ${token}` } }
+                global: { headers: { Authorization: `Bearer \${token}` } }
             });
         }
     } catch (e) {
