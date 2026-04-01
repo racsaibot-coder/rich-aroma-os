@@ -2828,9 +2828,7 @@ app.post('/api/cash/close-shift', ensureAuthenticated, async (req, res) => {
             expected_amount: expectedAmount,
             discrepancy: discrepancy,
             status: 'closed',
-            notes: notes,
-            cash_sales: cashSales, // Standardize column if exists
-            total_sales: salesBreakdown.total_gross
+            notes: notes
         })
         .eq('id', shiftId)
         .select()
