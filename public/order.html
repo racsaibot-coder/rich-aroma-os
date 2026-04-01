@@ -840,7 +840,11 @@
             let total = currentItem.price;
             let allRequiredMet = true;
 
-            const relevantGroups = itemModGroups.filter(img => img.item_id === currentItem.id).map(img => img.group_id);
+            const relevantGroups = itemModGroups
+                .filter(img => img.item_id === currentItem.id)
+                .sort((a, b) => (a.display_order || 0) - (b.display_order || 0))
+                .map(img => img.group_id);
+
             relevantGroups.forEach(groupId => {
                 const group = modGroups.find(g => g.id === groupId);
                 const selected = currentMods[groupId] || [];
