@@ -564,7 +564,7 @@
 
         try {
             const token = 'EMP-admin';
-            const res = await fetch('/api/cash/current-shift', { headers: { 'Authorization': `Bearer \${token}` } });
+            const res = await fetch('/api/cash/current-shift', { headers: { 'Authorization': `Bearer ${token}` } });
             if (res.ok) {
                 const data = await res.json();
                 if (data?.shift?.status === 'open') {
@@ -836,16 +836,16 @@
             return `
                 <div class="mb-6">
                     <h3 class="font-bold text-gray-500 uppercase text-xs tracking-widest mb-3">
-                        \${group.name} \${group.required ? '<span class="text-red-500">*</span>' : ''}
+                        ${group.name} ${group.required ? '<span class="text-red-500">*</span>' : ''}
                     </h3>
                     <div class="grid grid-cols-2 gap-2">
-                        \${options.map(opt => {
+                        ${options.map(opt => {
                             const isSel = selected.includes(opt.id);
                             return `
-                            <button onclick="toggleMod('\${group.id}', '\${opt.id}', \${group.max_selections}, '\${id}')" id="mod-\${opt.id}" 
-                                class="p-3 border-2 rounded-xl text-sm font-bold transition-all text-left flex justify-between items-center \${isSel ? 'border-blue-500 bg-blue-50 text-blue-700' : 'border-gray-100 hover:border-blue-200'}">
-                                <span>\${opt.name}</span>
-                                <span class="text-[10px] text-green-600">\${opt.price_adjustment > 0 ? '+L.' + opt.price_adjustment : ''}</span>
+                            <button onclick="toggleMod('${group.id}', '${opt.id}', ${group.max_selections}, '${id}')" id="mod-${opt.id}" 
+                                class="p-3 border-2 rounded-xl text-sm font-bold transition-all text-left flex justify-between items-center ${isSel ? 'border-blue-500 bg-blue-50 text-blue-700' : 'border-gray-100 hover:border-blue-200'}">
+                                <span>${opt.name}</span>
+                                <span class="text-[10px] text-green-600">${opt.price_adjustment > 0 ? '+L.' + opt.price_adjustment : ''}</span>
                             </button>
                         \`}).join('')}
                     </div>
@@ -1133,7 +1133,7 @@
                 // No shift open, proceed to Step 2
                 document.getElementById('login-stage').classList.add('hidden');
                 document.getElementById('open-shift-stage').classList.remove('hidden');
-                document.getElementById('welcome-msg').innerText = `Hola, \${window.currentEmployee.name}`;
+                document.getElementById('welcome-msg').innerText = `Hola, ${window.currentEmployee.name}`;
             }
         } catch (err) {
             alert(err.message);
@@ -1229,7 +1229,7 @@
             if (toggle) toggle.checked = data.isOpen;
             if (label) {
                 label.innerText = data.isOpen ? 'ABIERTO' : 'CERRADO';
-                label.className = `text-sm font-bold \${data.isOpen ? 'text-green-600' : 'text-red-600'} px-2 w-16 text-center`;
+                label.className = `text-sm font-bold ${data.isOpen ? 'text-green-600' : 'text-red-600'} px-2 w-16 text-center`;
             }
             
             // Also update a global banner or pulse if closed
@@ -1338,32 +1338,32 @@
             <div class="p-6 bg-gray-900 text-gold rounded-2xl font-mono text-sm space-y-3 border border-white/10 shadow-2xl">
                 <div class="flex justify-between border-b border-white/10 pb-2">
                     <span class="text-gray-400">Starting Float:</span>
-                    <span class="font-black text-white">L. \${r.opening_amount.toFixed(2)}</span>
+                    <span class="font-black text-white">L. ${r.opening_amount.toFixed(2)}</span>
                 </div>
                 <div class="flex justify-between">
                     <span class="text-gray-400">Cash Sales:</span>
-                    <span class="font-black text-white">+ L. \${r.sales.cash.toFixed(2)}</span>
+                    <span class="font-black text-white">+ L. ${r.sales.cash.toFixed(2)}</span>
                 </div>
                 <div class="flex justify-between text-blue-400 border-t border-white/10 pt-2">
                     <span>Expected in Drawer:</span>
-                    <span class="font-black">L. \${expected.toFixed(2)}</span>
+                    <span class="font-black">L. ${expected.toFixed(2)}</span>
                 </div>
                 <div class="flex justify-between text-yellow-400">
                     <span>Actual in Drawer:</span>
-                    <span class="font-black">L. \${r.closing_amount.toFixed(2)}</span>
+                    <span class="font-black">L. ${r.closing_amount.toFixed(2)}</span>
                 </div>
-                <div class="flex justify-between text-xl font-black p-3 rounded-xl \${diff >= 0 ? 'bg-green-900/30 text-green-400' : 'bg-red-900/30 text-red-400'}">
+                <div class="flex justify-between text-xl font-black p-3 rounded-xl ${diff >= 0 ? 'bg-green-900/30 text-green-400' : 'bg-red-900/30 text-red-400'}">
                     <span>DISCREPANCY:</span>
-                    <span>L. \${diff.toFixed(2)}</span>
+                    <span>L. ${diff.toFixed(2)}</span>
                 </div>
                 <div class="mt-4 pt-4 border-t border-white/10 space-y-1">
                     <div class="flex justify-between text-[10px]">
                         <span class="text-gray-500 uppercase">Rico Cash Sales:</span>
-                        <span class="text-white">L. \${r.sales.rico_balance.toFixed(2)}</span>
+                        <span class="text-white">L. ${r.sales.rico_balance.toFixed(2)}</span>
                     </div>
                     <div class="flex justify-between text-[10px]">
                         <span class="text-gray-500 uppercase">Total Orders:</span>
-                        <span class="text-white">\${r.order_count}</span>
+                        <span class="text-white">${r.order_count}</span>
                     </div>
                 </div>
             </div>

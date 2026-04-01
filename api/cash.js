@@ -26,7 +26,7 @@ export default async function handler(req, res) {
                 if (!error && sbUser) {
                     user = sbUser;
                     supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_ANON_KEY, {
-                        global: { headers: { Authorization: `Bearer \${token}` } }
+                        global: { headers: { Authorization: `Bearer ${token}` } }
                     });
                 }
             } catch(e) { console.error("Auth error:", e); }
