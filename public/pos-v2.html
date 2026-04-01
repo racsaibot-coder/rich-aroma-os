@@ -43,15 +43,21 @@
     <!-- LEFT SIDEBAR: LIVE ORDER FEED -->
     <div class="w-1/5 bg-gray-900 flex flex-col border-r border-black overflow-hidden shadow-2xl">
         <div class="p-4 bg-gray-800 border-b border-black flex justify-between items-center">
-            <h3 class="text-white font-black text-xs uppercase tracking-widest flex items-center gap-2">
-                <span class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
-                Shop Heartbeat
-            </h3>
-            <span id="live-order-count" class="bg-blue-600 text-white text-[10px] px-2 py-0.5 rounded-full font-bold">0</span>
+            <div>
+                <h3 class="text-white font-black text-xs uppercase tracking-widest flex items-center gap-2">
+                    <span class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
+                    Heartbeat
+                </h3>
+                <p id="hb-status" class="text-[8px] text-gray-500 font-bold uppercase mt-0.5 tracking-tighter">Last sync: Just now</p>
+            </div>
+            <div class="flex items-center gap-2">
+                <button onclick="fetchLiveOrders()" class="text-gray-500 hover:text-white transition-colors"><i class="fas fa-sync-alt text-[10px]"></i></button>
+                <span id="live-order-count" class="bg-blue-600 text-white text-[10px] px-2 py-0.5 rounded-full font-bold">0</span>
+            </div>
         </div>
         <div class="flex-1 overflow-y-auto p-2 space-y-2 custom-scrollbar" id="live-order-feed">
             <!-- Orders injected here -->
-            <div class="text-center py-10 text-gray-600 text-xs italic">Waiting for orders...</div>
+            <div class="text-center py-10 text-gray-600 text-xs italic">Connecting...</div>
         </div>
     </div>
 
@@ -441,40 +447,54 @@
 
 <script>
     // --- DATA ---
-    // Updated with Stock Images
     let menu = [];
     let modGroups = [];
     let modOptions = [];
     let itemModGroups = [];
+    let cart = [];
+    let recognition;
+    let currentCashier = null;
+    let currentShiftId = null;
+    let startingCash = 0;
+    let currentTenderMethod = 'cash';
 
     // --- INIT ---
     window.onload = async () => {
+        console.log("POS v2.0 Initializing...");
+        
+        // GLOBAL ERROR CATCHER
+        window.onerror = function(msg, url, line, col, error) {
+            console.error("GLOBAL POS ERROR:", msg, "at", url, ":", line);
+            return false;
+        };
+
         // 1. Load Menu Data
         try {
-            const res = await fetch('/api/menu');
+            const res = await fetch('/api/menu?admin=true');
             const data = await res.json();
             
             let sourceItems = data.items || [];
             if (sourceItems.length === 0 && data.categories) {
                 data.categories.forEach(cat => {
-                    sourceItems = sourceItems.concat(cat.items);
+                    if (cat.items) sourceItems = sourceItems.concat(cat.items);
                 });
             }
 
             if (sourceItems.length > 0) {
                 menu = sourceItems.map(i => ({
-                    id: i.id,
-                    name: i.name,
-                    price: i.price,
-                    category: i.category,
+                    id: i.id || 'unknown',
+                    name: i.name || 'Unnamed Item',
+                    price: parseFloat(i.price) || 0,
+                    category: i.category || 'Otros',
                     available: i.available !== false,
-                    base_recipe: i.base_recipe,
+                    base_recipe: i.base_recipe || null,
                     icon: "☕",
                     image: i.image_url || i.image || "https://images.unsplash.com/photo-1510591509098-f4fdc6d0ff04?w=400&q=80"
                 }));
                 modGroups = data.modGroups || [];
                 modOptions = data.modOptions || [];
                 itemModGroups = data.itemModGroups || [];
+                console.log(`Loaded ${menu.length} items from API.`);
             }
         } catch (e) {
             console.error("Failed to load menu from API", e);
@@ -482,6 +502,7 @@
         
         // 2. Fallback if API failed or DB empty
         if (menu.length === 0) {
+            console.log("Using fallback menu data.");
             menu = [
                 { id: 'hot_latte', name: 'Latte', price: 55, category: 'coffee', image: 'https://images.unsplash.com/photo-1570968992272-1512fdad694d?w=400&q=80' },
                 { id: 'hot_americano', name: 'Americano', price: 40, category: 'coffee', image: 'https://images.unsplash.com/photo-1510591509098-f4fdc6d0ff04?w=400&q=80' },
@@ -508,11 +529,13 @@
         } catch (e) {
             const savedShift = localStorage.getItem('pos_active_shift');
             if (savedShift) {
-                const s = JSON.parse(savedShift);
-                currentShiftId = s.shiftId;
-                currentCashier = s.cashier;
-                startingCash = s.startingCash;
-                document.getElementById('shift-modal').classList.add('hidden');
+                try {
+                    const s = JSON.parse(savedShift);
+                    currentShiftId = s.shiftId;
+                    currentCashier = s.cashier;
+                    startingCash = s.startingCash;
+                    document.getElementById('shift-modal').classList.add('hidden');
+                } catch(err) {}
             }
         }
 
@@ -527,21 +550,17 @@
             } catch(e) {}
         }
         
-        // 5. Initial Renderings
+        // 5. Final rendering trigger
         renderMenu();
         fetchLiveOrders();
         fetchStoreStatus();
+        
+        // Start polling
+        setInterval(fetchLiveOrders, 10000);
+        setInterval(fetchPendingVerifications, 10000);
     };
 
-    let cart = [];
-    let recognition;
-    
     // --- SHIFT LOGIC ---
-    let currentCashier = null;
-    let currentShiftId = null;
-    let startingCash = 0;
-    let currentTenderMethod = 'cash';
-
     async function startShift() {
         const pin = document.getElementById('shift-pin').value;
         const cash = parseFloat(document.getElementById('shift-cash').value);
@@ -2329,33 +2348,33 @@ async function rejectTransfer(orderId) {
     } catch(e) { console.error(e); }
 }
 
-// Poll every 10 seconds for new transfers
-setInterval(fetchPendingVerifications, 10000);
-fetchPendingVerifications();
-
 // --- FEATURE 10: LIVE ORDER FEED (HEARTBEAT) ---
 let liveOrders = [];
-async function fetchLiveOrders() {
-    try {
-        const res = await fetch('/api/orders');
-        const data = await res.json();
-        const allOrders = data.orders || [];
-        
-        // Robust Local Today Filter (Honduras is UTC-6)
-        const now = new Date();
-        const offset = now.getTimezoneOffset() * 60000;
-        const localTodayISO = (new Date(now - offset)).toISOString().split('T')[0];
+    async function fetchLiveOrders() {
+        const statusEl = document.getElementById('hb-status');
+        try {
+            const res = await fetch('/api/orders');
+            if (!res.ok) throw new Error(`HTTP \${res.status}`);
+            const data = await res.json();
+            const allOrders = data.orders || [];
+            
+            // RELIABLE RECENT ORDERS FILTER (Last 24 Hours)
+            const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+            
+            liveOrders = allOrders.filter(o => {
+                if (!o.created_at) return false;
+                const orderDate = new Date(o.created_at);
+                const isActive = ['pending', 'paid', 'preparing', 'ready', 'pending_verification', 'pending_transfer'].includes(o.status);
+                return orderDate > twentyFourHoursAgo && isActive;
+            }).sort((a,b) => new Date(b.created_at) - new Date(a.created_at)).slice(0, 50);
 
-        liveOrders = allOrders.filter(o => {
-            if (!o.created_at) return false;
-            const orderDate = o.created_at.split('T')[0];
-            const isActive = ['pending', 'paid', 'preparing', 'ready', 'pending_verification', 'pending_transfer'].includes(o.status);
-            return orderDate === localTodayISO && isActive;
-        }).sort((a,b) => new Date(b.created_at) - new Date(a.created_at));
-
-        renderLiveFeed();
-    } catch(e) { console.error('Heartbeat failed', e); }
-}
+            renderLiveFeed();
+            if (statusEl) statusEl.innerText = `Last sync: \${new Date().toLocaleTimeString()}`;
+        } catch(e) { 
+            console.error('Heartbeat failed', e); 
+            if (statusEl) statusEl.innerText = "Sync Failed: Connection Error";
+        }
+    }
 
 function renderLiveFeed() {
     const container = document.getElementById('live-order-feed');
@@ -2419,8 +2438,8 @@ function renderLiveFeed() {
 }
 
 // Start heartbeat
-setInterval(fetchLiveOrders, 10000);
-fetchLiveOrders();
+// setInterval(fetchLiveOrders, 10000); // Removed duplicate
+// fetchLiveOrders(); // Removed duplicate
 
 </script>
 
