@@ -238,16 +238,29 @@
         let renderedOrderIds = new Set();
 
         
-        function isDrinkItem(name) {
-            name = (name || '').toLowerCase();
-            return name.includes('latte') || name.includes('brew') || name.includes('capp') || 
-                   name.includes('tea') || name.includes('icee') || name.includes('espresso') || 
-                   name.includes('mocha') || name.includes('matcha') || name.includes('frappe') || 
-                   name.includes('macchiato') || name.includes('jugo') || name.includes('licuado') || 
-                   name.includes('granita') || name.includes('smoothie') || name.includes('caliente') || 
-                   name.includes('helada');
+        function isDrinkItem(item) {
+            const name = (item.name || '').toLowerCase();
+            const id = (item.id || '').toLowerCase();
+            return id.startsWith('hot_') || id.startsWith('cold_') || id.startsWith('frappe_') || 
+                   name.includes('latte') || name.includes('brew') || name.includes('capp') || 
+                   name.includes('tea') || name.includes('te ') || name.includes('icee') || 
+                   name.includes('espresso') || name.includes('mocha') || name.includes('matcha') || 
+                   name.includes('frappe') || name.includes('macchiato') || name.includes('jugo') || 
+                   name.includes('licuado') || name.includes('granita') || name.includes('smoothie') || 
+                   name.includes('caliente') || name.includes('helada') || name.includes('americano') ||
+                   name.includes('chocolate') || name.includes('cafe') || name.includes('café');
         }
         
+        function isFoodItem(item) {
+            const name = (item.name || '').toLowerCase();
+            const id = (item.id || '').toLowerCase();
+            if (isComboItem(name)) return true; // Combos have food
+            return id.startsWith('food_') || name.includes('baleada') || name.includes('sandwich') || 
+                   name.includes('crepa') || name.includes('bowl') || name.includes('toast') || 
+                   name.includes('melt') || name.includes('fries') || name.includes('papas') || 
+                   name.includes('burger') || name.includes('hamburguesa');
+        }
+
         function isComboItem(name) {
             return (name || '').toLowerCase().includes('combo');
         }
@@ -267,16 +280,32 @@
             activeOrders.forEach(order => {
                 // Filter Items based on Mode
                 const relevantItems = (order.items || []).filter(item => {
-                    const name = item.name || '';
-                    const isDrink = isDrinkItem(name);
-                    const isCombo = isComboItem(name);
-                    
-                    if(currentMode === 'drinks') return isDrink || isCombo;
-                    if(currentMode === 'food') return !isDrink || isCombo; // Combos show on both
+                    if(currentMode === 'drinks') return isDrinkItem(item) || isComboItem(item.name);
+                    if(currentMode === 'food') return isFoodItem(item);
                     return true;
                 });
 
                 if(relevantItems.length === 0) return; // Skip ticket if nothing for this station
+                
+                // Extra check for combos: if in drink mode, does it HAVE a drink choice?
+                // If in food mode, does it HAVE a food choice?
+                const actualRelevantItems = relevantItems.filter(item => {
+                    if (isComboItem(item.name)) {
+                        const mods = item.mods || [];
+                        const hasDrinkMod = mods.some(m => 
+                            m.name.toLowerCase().includes('bebida') || 
+                            m.name.toLowerCase().includes('jugo') || 
+                            m.name.toLowerCase().includes('granita') || 
+                            m.name.toLowerCase().includes('frappe') ||
+                            m.name.toLowerCase().includes('iced')
+                        );
+                        if (currentMode === 'drinks') return hasDrinkMod;
+                        if (currentMode === 'food') return true; // Combos always have food base
+                    }
+                    return true;
+                });
+
+                if(actualRelevantItems.length === 0) return;
                 
                 // Time Color
                 const orderTime = new Date(order.created_at);
@@ -315,7 +344,7 @@
                     </div>
                     
                     <div class="space-y-3 flex-1 py-2">
-                        ${relevantItems.map(i => {
+                        ${actualRelevantItems.map(i => {
 
                             // Modifier Filtering Logic
                             let filteredMods = i.mods || [];
