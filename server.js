@@ -3677,3 +3677,4 @@ app.get('/api/cali/orders', requireAdmin, async (req, res) => {
     if (error) return res.status(500).json({ error: error.message });
     res.json(data);
 });
+\nmodule.exports = app;
