@@ -452,15 +452,25 @@
         try {
             const res = await fetch('/api/menu');
             const data = await res.json();
-            if (data && data.items) {
-                menu = data.items.map(i => ({
+            
+            // Extract items from either 'items' or 'categories' structure
+            let sourceItems = data.items || [];
+            if (sourceItems.length === 0 && data.categories) {
+                data.categories.forEach(cat => {
+                    sourceItems = sourceItems.concat(cat.items);
+                });
+            }
+
+            if (sourceItems.length > 0) {
+                menu = sourceItems.map(i => ({
                     id: i.id,
                     name: i.name,
                     price: i.price,
                     category: i.category,
-                    base_recipe: i.base_recipe, // <-- ADDED THIS
+                    available: i.available !== false,
+                    base_recipe: i.base_recipe,
                     icon: "☕",
-                    image: i.image_url || "https://images.unsplash.com/photo-1510591509098-f4fdc6d0ff04?w=400&q=80"
+                    image: i.image_url || i.image || "https://images.unsplash.com/photo-1510591509098-f4fdc6d0ff04?w=400&q=80"
                 }));
                 modGroups = data.modGroups || [];
                 modOptions = data.modOptions || [];
@@ -469,6 +479,10 @@
         } catch (e) {
             console.error("Failed to load menu", e);
         }
+        
+        // Initial rendering
+        renderMenu();
+        fetchLiveOrders();
         
         // Fallback if DB empty
         if (menu.length === 0) {
@@ -2367,12 +2381,12 @@ async function fetchLiveOrders() {
         const data = await res.json();
         const allOrders = data.orders || [];
         
-        // Filter for today's active/recent orders
-        const today = new Date().toDateString();
+        // Robust Today Filter: Check if date string starts with today's YYYY-MM-DD
+        const todayISO = new Date().toISOString().split('T')[0];
         liveOrders = allOrders.filter(o => {
-            const isToday = new Date(o.created_at).toDateString() === today;
+            const orderDate = o.created_at.split('T')[0];
             const isActive = ['pending', 'paid', 'preparing', 'ready'].includes(o.status);
-            return isToday && isActive;
+            return orderDate === todayISO && isActive;
         }).sort((a,b) => new Date(b.created_at) - new Date(a.created_at));
 
         renderLiveFeed();
@@ -2400,10 +2414,14 @@ function renderLiveFeed() {
         if (o.status === 'ready') statusClass = "bg-green-900 text-green-200 border border-green-700 animate-pulse";
         
         let name = "Walk-in";
-        if (o.customer_id) name = "Member"; // TODO: Fetch name if needed, but for now use notes
-        if (o.notes && o.notes.includes('[CLIENTE:')) {
-            name = o.notes.split('[CLIENTE: ')[1].split(']')[0];
+        if (o.notes) {
+            if (o.notes.includes('[CLIENTE:')) {
+                name = o.notes.split('[CLIENTE: ')[1].split(']')[0];
+            } else if (o.notes.includes('[GUEST:')) {
+                name = o.notes.split('[GUEST: ')[1].split('|')[0].trim();
+            }
         }
+        if (name === "Walk-in" && o.customer_id) name = "Loyalty Member";
 
         return `
             <div class="p-3 rounded-xl bg-gray-800 border border-white/5 shadow-lg group hover:border-blue-500/50 transition-all">
