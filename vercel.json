@@ -88,20 +88,8 @@
       "dest": "/api/admin.js?action=leads"
     },
     {
-      "src": "/api/cash/verify-pin",
-      "dest": "/api/cash.js?action=verify-pin"
-    },
-    {
-      "src": "/api/cash/current-shift",
-      "dest": "/api/cash.js?action=current-shift"
-    },
-    {
-      "src": "/api/cash/open-shift",
-      "dest": "/api/cash.js?action=open-shift"
-    },
-    {
-      "src": "/api/cash/close-shift",
-      "dest": "/api/cash.js?action=close-shift"
+      "src": "/api/cash/(.*)",
+      "dest": "/api/index.js"
     },
     {
       "src": "/api/store/status",

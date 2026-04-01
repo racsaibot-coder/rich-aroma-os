@@ -2693,6 +2693,23 @@ app.get('/api/admin/stats', requireAdmin, async (req, res) => {
 // === CASH MANAGEMENT (Shift Close & Petty Cash) ===
 
 // Get Current Shift
+app.post('/api/cash/verify-pin', async (req, res) => {
+    const client = req.supabase || supabase;
+    const { pin } = req.body;
+    if (!pin) return res.status(400).json({ error: 'PIN required' });
+
+    const { data: emp, error } = await client
+        .from('employees')
+        .select('id, name, role')
+        .eq('pin', pin)
+        .eq('active', true)
+        .limit(1)
+        .single();
+
+    if (error || !emp) return res.status(401).json({ error: 'PIN Inválido' });
+    res.json({ employee: emp });
+});
+
 app.get('/api/cash/current-shift', ensureAuthenticated, async (req, res) => {
     const client = req.supabase || supabase;
     const { data, error } = await client
