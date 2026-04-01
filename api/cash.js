@@ -34,7 +34,16 @@ export default async function handler(req, res) {
     }
 
     // Special bypass for verify-pin since it's the login mechanism itself
-    if (action !== 'verify-pin' && !user) return res.status(401).json({ error: "Unauthorized" });
+    if (action !== 'verify-pin' && !user) {
+        return res.status(401).json({ 
+            error: "Unauthorized", 
+            debug: { 
+                action, 
+                hasAuth: !!authHeader, 
+                tokenType: authHeader ? authHeader.split(' ')[0] : 'none' 
+            } 
+        });
+    }
     // ------------------
 
     if (action === 'verify-pin' && req.method === 'POST') {
