@@ -449,11 +449,11 @@
 
     // --- INIT ---
     window.onload = async () => {
+        // 1. Load Menu Data
         try {
             const res = await fetch('/api/menu');
             const data = await res.json();
             
-            // Extract items from either 'items' or 'categories' structure
             let sourceItems = data.items || [];
             if (sourceItems.length === 0 && data.categories) {
                 data.categories.forEach(cat => {
@@ -477,52 +477,24 @@
                 itemModGroups = data.itemModGroups || [];
             }
         } catch (e) {
-            console.error("Failed to load menu", e);
+            console.error("Failed to load menu from API", e);
         }
         
-        // Initial rendering
-        renderMenu();
-        fetchLiveOrders();
-        
-        // Fallback if DB empty
+        // 2. Fallback if API failed or DB empty
         if (menu.length === 0) {
             menu = [
-                { id: 'hot_cappuccino', name: 'Cappuccino', price: 55, category: 'coffee', image: 'https://images.unsplash.com/photo-1572442388796-11668a67e53d?w=400&q=80' },
                 { id: 'hot_latte', name: 'Latte', price: 55, category: 'coffee', image: 'https://images.unsplash.com/photo-1570968992272-1512fdad694d?w=400&q=80' },
                 { id: 'hot_americano', name: 'Americano', price: 40, category: 'coffee', image: 'https://images.unsplash.com/photo-1510591509098-f4fdc6d0ff04?w=400&q=80' },
-                { id: 'hot_chai_latte', name: 'Chai Latte', price: 60, category: 'coffee', image: 'https://images.unsplash.com/photo-1578314675249-a6910f80cc4e?w=400&q=80' },
-                { id: 'hot_dirty_chai', name: 'Dirty Chai', price: 75, category: 'coffee', image: 'https://images.unsplash.com/photo-1578314675249-a6910f80cc4e?w=400&q=80' },
-                { id: 'hot_chocolate', name: 'Hot Chocolate', price: 50, category: 'coffee', image: 'https://images.unsplash.com/photo-1542990253-0d0f5be5f0ed?w=400&q=80' },
-                { id: 'hot_matcha_latte', name: 'Matcha Latte', price: 70, category: 'coffee', image: 'https://images.unsplash.com/photo-1515823662972-da6a2e4d3002?w=400&q=80' },
-                { id: 'hot_dirty_matcha', name: 'Dirty Matcha', price: 85, category: 'coffee', image: 'https://images.unsplash.com/photo-1515823662972-da6a2e4d3002?w=400&q=80' },
-                { id: 'hot_mocha', name: 'Mocha', price: 65, category: 'coffee', image: 'https://images.unsplash.com/photo-1578314675249-a6910f80cc4e?w=400&q=80' },
-                { id: 'cold_caramel_iced', name: 'Caramel Iced Coffee', price: 60, category: 'drinks', image: 'https://images.unsplash.com/photo-1517701604599-bb29b5c7fa69?w=400&q=80' },
-                { id: 'cold_french_vanilla', name: 'French Vanilla Chai', price: 65, category: 'drinks', image: 'https://images.unsplash.com/photo-1517701604599-bb29b5c7fa69?w=400&q=80' },
-                { id: 'cold_iced_matcha', name: 'Iced Matcha', price: 70, category: 'drinks', image: 'https://images.unsplash.com/photo-1515823662972-da6a2e4d3002?w=400&q=80' },
-                { id: 'cold_supreme_frappe', name: 'Supreme Frappe', price: 80, category: 'drinks', image: 'https://images.unsplash.com/photo-1572442388796-11668a67e53d?w=400&q=80' },
-                { id: 'cold_fresa_frappe', name: 'Fresa Frappe', price: 75, category: 'drinks', image: 'https://images.unsplash.com/photo-1572442388796-11668a67e53d?w=400&q=80' },
-                { id: 'cold_coffee_frappe', name: 'Coffee Frappe', price: 70, category: 'drinks', image: 'https://images.unsplash.com/photo-1517701604599-bb29b5c7fa69?w=400&q=80' },
-                { id: 'cold_magoneada', name: 'Magoneada', price: 65, category: 'drinks', image: 'https://images.unsplash.com/photo-1556679343-c7306c1976bc?w=400&q=80' },
-                { id: 'cold_mango_granita', name: 'Mango Granita', price: 55, category: 'drinks', image: 'https://images.unsplash.com/photo-1556679343-c7306c1976bc?w=400&q=80' },
-                { id: 'cold_lemonade_granita', name: 'Lemonade Granita', price: 55, category: 'drinks', image: 'https://images.unsplash.com/photo-1556679343-c7306c1976bc?w=400&q=80' },
-                { id: 'cold_fresa_granita', name: 'Fresa Granita', price: 55, category: 'drinks', image: 'https://images.unsplash.com/photo-1556679343-c7306c1976bc?w=400&q=80' },
-                { id: 'cold_licuado', name: 'Licuado', price: 60, category: 'drinks', image: 'https://images.unsplash.com/photo-1556679343-c7306c1976bc?w=400&q=80' },
-                { id: 'cold_niahs_licuadito', name: 'Niahs Licuadito', price: 50, category: 'drinks', image: 'https://images.unsplash.com/photo-1556679343-c7306c1976bc?w=400&q=80' },
-                { id: 'food_chicken_hummus', name: 'Chicken Salad Bowl', price: 140, category: 'food', image: 'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=400&q=80' },
-                { id: 'food_bean_rice', name: 'Bean & Rice Bowl', price: 120, category: 'food', image: 'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=400&q=80' },
-                { id: 'food_acai_bowl', name: 'Açaí Bowl', price: 125, category: 'food', image: 'https://images.unsplash.com/photo-1590301157890-4810ed352733?w=400&q=80' },
-                { id: 'food_acai_cup', name: 'Açaí Cup', price: 85, category: 'food', image: 'https://images.unsplash.com/photo-1590301157890-4810ed352733?w=400&q=80' },
-                { id: 'food_burgers_fries', name: 'Burgers and Fries', price: 150, category: 'food', image: 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=400&q=80' },
-                { id: 'food_sourdough_ham', name: 'Sourdough Ham/Turkey', price: 110, category: 'food', image: 'https://images.unsplash.com/photo-1528735602780-2552fd46c7af?w=400&q=80' },
-                { id: 'food_grill_cheese', name: 'Grill Cheese', price: 80, category: 'food', image: 'https://images.unsplash.com/photo-1528735602780-2552fd46c7af?w=400&q=80' }
+                { id: 'cold_caramel_iced', name: 'Caramel Iced', price: 60, category: 'drinks', image: 'https://images.unsplash.com/photo-1517701604599-bb29b5c7fa69?w=400&q=80' },
+                { id: 'food_baleadas', name: 'Baleada', price: 35, category: 'food', image: 'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=400&q=80' }
             ];
         }
-        
-        // Restore shift state from Database
+
+        // 3. Restore Shift State
         try {
             const token = 'EMP-admin_id_here';
             const shiftRes = await fetch('/api/cash/current-shift', {
-                headers: { 'Authorization': `Bearer ${token}` }
+                headers: { 'Authorization': `Bearer \${token}` }
             });
             if (shiftRes.ok) {
                 const shiftData = await shiftRes.json();
@@ -534,47 +506,35 @@
                 }
             }
         } catch (e) {
-            console.error("Failed to load shift state", e);
-            // Fallback to localStorage if offline
             const savedShift = localStorage.getItem('pos_active_shift');
             if (savedShift) {
-                const shiftData = JSON.parse(savedShift);
-                currentShiftId = shiftData.shiftId;
-                currentCashier = shiftData.cashier;
-                startingCash = shiftData.startingCash;
+                const s = JSON.parse(savedShift);
+                currentShiftId = s.shiftId;
+                currentCashier = s.cashier;
+                startingCash = s.startingCash;
                 document.getElementById('shift-modal').classList.add('hidden');
             }
         }
 
-        // Restore Cart State
+        // 4. Restore Cart State
         const savedCartStr = localStorage.getItem('pos_cart_state');
         if (savedCartStr) {
             try {
                 const savedData = JSON.parse(savedCartStr);
                 cart = savedData.cart || [];
                 currentCustomerId = savedData.customerId || null;
-                window.currentUsualItem = savedData.usualItem || null;
-                
-                if (currentCustomerId) {
-                    // Re-render customer UI if needed
-                    document.getElementById('cust-profile').classList.remove('hidden');
-                }
-                
                 renderCart();
-            } catch(e) {
-                console.error("Failed to restore cart state", e);
-            }
+            } catch(e) {}
         }
         
+        // 5. Initial Renderings
         renderMenu();
-        // simulateWhatsAppTraffic();
+        fetchLiveOrders();
+        fetchStoreStatus();
     };
 
     let cart = [];
     let recognition;
-
-    // Fixed init duplications
-
     
     // --- SHIFT LOGIC ---
     let currentCashier = null;
@@ -2381,13 +2341,16 @@ async function fetchLiveOrders() {
         const data = await res.json();
         const allOrders = data.orders || [];
         
-        // Robust Today Filter: Check if date string starts with today's YYYY-MM-DD
-        const todayISO = new Date().toISOString().split('T')[0];
+        // Robust Local Today Filter (Honduras is UTC-6)
+        const now = new Date();
+        const offset = now.getTimezoneOffset() * 60000;
+        const localTodayISO = (new Date(now - offset)).toISOString().split('T')[0];
+
         liveOrders = allOrders.filter(o => {
             if (!o.created_at) return false;
             const orderDate = o.created_at.split('T')[0];
             const isActive = ['pending', 'paid', 'preparing', 'ready', 'pending_verification', 'pending_transfer'].includes(o.status);
-            return orderDate === todayISO && isActive;
+            return orderDate === localTodayISO && isActive;
         }).sort((a,b) => new Date(b.created_at) - new Date(a.created_at));
 
         renderLiveFeed();
@@ -2416,10 +2379,13 @@ function renderLiveFeed() {
         
         let name = "Walk-in";
         if (o.notes) {
-            if (o.notes.includes('[CLIENTE:')) {
-                name = o.notes.split('[CLIENTE: ')[1].split(']')[0];
-            } else if (o.notes.includes('[GUEST:')) {
-                name = o.notes.split('[GUEST: ')[1].split('|')[0].trim();
+            const clienteMatch = o.notes.match(/\[CLIENTE:\s*([^\]]+)\]/);
+            const guestMatch = o.notes.match(/\[GUEST:\s*([^|\]]+)/);
+            
+            if (clienteMatch) {
+                name = clienteMatch[1].trim();
+            } else if (guestMatch) {
+                name = guestMatch[1].trim();
             }
         }
         if (name === "Walk-in" && o.customer_id) name = "Loyalty Member";
