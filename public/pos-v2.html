@@ -678,17 +678,41 @@
         if(btnEl) btnEl.className = "cat-btn bg-gray-800 text-gold px-2 py-3 rounded-xl font-bold shadow-lg hover:bg-gray-900 transition text-md tracking-wide border-2 border-gray-800 w-full text-center";
         
         const search = cat.toLowerCase();
-        const filtered = (cat === 'all') ? menu : menu.filter(i => {
+        let filtered = (cat === 'all') ? menu : menu.filter(i => {
             const itemCat = (i.category || '').toLowerCase();
             const itemName = (i.name || '').toLowerCase();
             
             if (search === 'combos') return itemCat.includes('combo') || itemName.includes('combo');
             if (search === 'calientes') return itemCat.includes('hot') || itemCat.includes('coffee') || itemCat.includes('caliente');
-            if (search === 'heladas') return itemCat.includes('cold') || itemCat.includes('drink') || itemCat.includes('helada') || itemCat.includes('frappe') || itemCat.includes('granita');
+            if (search === 'heladas') {
+                // Remove 'Te' from Heladas
+                if (itemName.includes('te') && !itemName.includes('frappe')) return false;
+                return itemCat.includes('cold') || itemCat.includes('drink') || itemCat.includes('helada') || itemCat.includes('frappe') || itemCat.includes('granita');
+            }
             if (search === 'comida') return itemCat.includes('food') || itemCat.includes('comida');
             
             return itemCat.includes(search);
         });
+
+        // Custom Sort for Heladas
+        if (search === 'heladas') {
+            const sortOrder = [
+                'cold_supreme_frappe',
+                'cold_fresa_frappe',
+                'cold_coffee_frappe',
+                'cold_french_vanilla',
+                'cold_caramel_iced'
+            ];
+            filtered.sort((a, b) => {
+                const indexA = sortOrder.indexOf(a.id);
+                const indexB = sortOrder.indexOf(b.id);
+                if (indexA !== -1 && indexB !== -1) return indexA - indexB;
+                if (indexA !== -1) return -1;
+                if (indexB !== -1) return 1;
+                return 0;
+            });
+        }
+
         renderMenuGrid(filtered);
     }
 
