@@ -762,49 +762,66 @@
         currentItem = menu.find(i => i.id === id);
         currentQuantity = 1;
         currentMods = {};
+        
+        // Pre-select defaults
+        const relevantGroups = itemModGroups.filter(img => img.item_id === id).map(img => img.group_id);
+        modGroups.filter(g => relevantGroups.includes(g.id)).forEach(group => {
+            const defaults = modOptions.filter(o => o.group_id === group.id && o.is_default);
+            if (defaults.length > 0) {
+                currentMods[group.id] = defaults.map(d => d.id);
+            }
+        });
+
         document.getElementById('mod-item-name').innerText = currentItem.name;
         document.getElementById('mod-item-price').innerText = `L. ${currentItem.price.toFixed(2)}`;
         document.getElementById('mod-quantity').innerText = "1";
         
+        renderModifiers(id);
+        document.getElementById('modifier-modal').classList.remove('hidden');
+        updateModPrice();
+    }
+
+    function renderModifiers(id) {
         const container = document.getElementById('mod-dynamic-container');
         const relevantGroups = itemModGroups.filter(img => img.item_id === id).map(img => img.group_id);
         
         container.innerHTML = modGroups.filter(g => relevantGroups.includes(g.id)).map(group => {
             const options = modOptions.filter(o => o.group_id === group.id);
+            const selected = currentMods[group.id] || [];
             return `
                 <div class="mb-6">
-                    <h3 class="font-bold text-gray-500 uppercase text-xs tracking-widest mb-3">${group.name}</h3>
+                    <h3 class="font-bold text-gray-500 uppercase text-xs tracking-widest mb-3">
+                        ${group.name} ${group.required ? '<span class="text-red-500">*</span>' : ''}
+                    </h3>
                     <div class="grid grid-cols-2 gap-2">
-                        ${options.map(opt => `
-                            <button onclick="toggleMod('${group.id}', '${opt.id}', ${group.max_selections})" id="mod-${opt.id}" class="p-3 border-2 border-gray-100 rounded-xl text-sm font-bold transition-all text-left flex justify-between items-center hover:border-blue-200">
+                        ${options.map(opt => {
+                            const isSel = selected.includes(opt.id);
+                            return `
+                            <button onclick="toggleMod('${group.id}', '${opt.id}', ${group.max_selections}, '${id}')" id="mod-${opt.id}" 
+                                class="p-3 border-2 rounded-xl text-sm font-bold transition-all text-left flex justify-between items-center ${isSel ? 'border-blue-500 bg-blue-50 text-blue-700' : 'border-gray-100 hover:border-blue-200'}">
                                 <span>${opt.name}</span>
                                 <span class="text-[10px] text-green-600">${opt.price_adjustment > 0 ? '+L.' + opt.price_adjustment : ''}</span>
                             </button>
-                        `).join('')}
+                        `}).join('')}
                     </div>
                 </div>
             `;
         }).join('');
-
-        document.getElementById('modifier-modal').classList.remove('hidden');
-        updateModPrice();
     }
 
-    function toggleMod(groupId, optId, max) {
+    function toggleMod(groupId, optId, max, itemId) {
         let selected = currentMods[groupId] || [];
-        if (selected.includes(optId)) selected = selected.filter(id => id !== optId);
-        else {
+        if (selected.includes(optId)) {
+            // Only allow deselect if not required or if multiple are allowed
+            if (!modGroups.find(g => g.id === groupId).required || selected.length > 1) {
+                selected = selected.filter(id => id !== optId);
+            }
+        } else {
             if (max === 1) selected = [optId];
             else if (selected.length < max) selected.push(optId);
         }
         currentMods[groupId] = selected;
-        
-        // Update UI
-        modOptions.filter(o => o.group_id === groupId).forEach(o => {
-            const btn = document.getElementById(`mod-${o.id}`);
-            if (selected.includes(o.id)) btn.className = "p-3 border-2 border-blue-500 bg-blue-50 rounded-xl text-sm font-bold text-blue-700 flex justify-between items-center";
-            else btn.className = "p-3 border-2 border-gray-100 rounded-xl text-sm font-bold transition-all text-left flex justify-between items-center";
-        });
+        renderModifiers(itemId);
         updateModPrice();
     }
 
@@ -816,12 +833,23 @@
 
     function updateModPrice() {
         let total = currentItem.price;
-        for (const gid in currentMods) {
-            currentMods[gid].forEach(oid => {
+        let allRequiredMet = true;
+
+        const relevantGroups = itemModGroups.filter(img => img.item_id === currentItem.id).map(img => img.group_id);
+        modGroups.filter(g => relevantGroups.includes(g.id)).forEach(group => {
+            const selected = currentMods[group.id] || [];
+            if (group.required && selected.length === 0) allRequiredMet = false;
+            
+            selected.forEach(oid => {
                 const opt = modOptions.find(o => o.id === oid);
                 if (opt) total += parseFloat(opt.price_adjustment || 0);
             });
-        }
+        });
+
+        const confirmBtn = document.querySelector('button[onclick="confirmItem()"]');
+        confirmBtn.disabled = !allRequiredMet;
+        confirmBtn.className = `w-full py-5 rounded-2xl font-black text-2xl shadow-xl active:scale-95 transition-all flex justify-between px-10 ${allRequiredMet ? 'bg-blue-600 text-white hover:bg-blue-700' : 'bg-gray-300 text-gray-500 cursor-not-allowed shadow-none'}`;
+
         document.getElementById('mod-final-price').innerText = `L. ${(total * currentQuantity).toFixed(2)}`;
     }
 

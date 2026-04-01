@@ -838,14 +838,28 @@
 
         function updateDynamicModPrice() {
             let total = currentItem.price;
-            for (const groupId in currentMods) {
-                currentMods[groupId].forEach(optId => {
+            let allRequiredMet = true;
+
+            const relevantGroups = itemModGroups.filter(img => img.item_id === currentItem.id).map(img => img.group_id);
+            relevantGroups.forEach(groupId => {
+                const group = modGroups.find(g => g.id === groupId);
+                const selected = currentMods[groupId] || [];
+                if (group && group.required && selected.length === 0) allRequiredMet = false;
+                
+                selected.forEach(optId => {
                     const opt = modOptions.find(o => o.id === optId);
                     if (opt) total += parseFloat(opt.price_adjustment);
                 });
+            });
+
+            const confirmBtn = document.querySelector('button[onclick="confirmItem()"]');
+            if (confirmBtn) {
+                confirmBtn.disabled = !allRequiredMet;
+                confirmBtn.className = `w-full py-4 rounded-2xl font-black text-xl flex justify-between px-8 shadow-xl transition-all active:scale-95 \${allRequiredMet ? 'bg-gold text-dark' : 'bg-white/10 text-white/30 cursor-not-allowed shadow-none'}`;
             }
-            document.getElementById('mod-item-price').innerText = `L. ${total.toFixed(2)}`;
-            document.getElementById('mod-final-price').innerText = `L. ${(total * currentQuantity).toFixed(2)}`;
+
+            document.getElementById('mod-item-price').innerText = `L. \${total.toFixed(2)}`;
+            document.getElementById('mod-final-price').innerText = `L. \${(total * currentQuantity).toFixed(2)}`;
         }
 
         
