@@ -11,6 +11,23 @@ export default async function handler(req, res) {
 
     const { action } = req.query; 
 
+    // STORE STATUS
+    if (action === 'store_status' && req.method === 'GET') {
+        const { data, error } = await supabase.from('system_settings').select('value').eq('key', 'store_is_open').single();
+        return res.json({ isOpen: data?.value?.isOpen ?? true });
+    }
+
+    if (action === 'store_status' && req.method === 'PATCH') {
+        const { isOpen } = req.body;
+        const { data, error } = await supabase.from('system_settings').upsert({
+            key: 'store_is_open',
+            value: { isOpen: isOpen === true || isOpen === 'true' }
+        }, { onConflict: 'key' }).select().single();
+        
+        if (error) return res.status(500).json({ error: error.message });
+        return res.json({ success: true, isOpen: data.value.isOpen });
+    }
+
     // CUSTOMER LOGIN
     if (action === 'customer_login' && req.method === 'POST') {
         const { phone, pin } = req.body;

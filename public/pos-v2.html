@@ -535,8 +535,8 @@
 
     async function restoreShift() {
         try {
-            const token = 'EMP-admin_id_here';
-            const res = await fetch('/api/cash/current-shift', { headers: { 'Authorization': `Bearer ${token}` } });
+            const token = 'EMP-admin';
+            const res = await fetch('/api/cash/current-shift', { headers: { 'Authorization': `Bearer \${token}` } });
             if (res.ok) {
                 const data = await res.json();
                 if (data?.shift?.status === 'open') {
@@ -544,6 +544,7 @@
                     currentCashier = "Employee " + data.shift.employee_id;
                     startingCash = data.shift.opening_amount;
                     document.getElementById('shift-modal').classList.add('hidden');
+                    console.log("✅ Shift restored from DB:", currentShiftId);
                     return;
                 }
             }
@@ -1064,6 +1065,14 @@
             body: JSON.stringify({ employeeId: pin, openingAmount: parseFloat(cash) })
         });
         if (res.ok) {
+            const data = await res.json();
+            // Local fallback save
+            localStorage.setItem('pos_active_shift', JSON.stringify({
+                shiftId: data.id,
+                cashier: "Employee " + pin,
+                startingCash: parseFloat(cash),
+                startTime: new Date().toISOString()
+            }));
             await fetchStoreStatus();
             location.reload();
         } else {

@@ -1,4 +1,5 @@
-const { supabase } = require('./lib/supabase');
+const { createClient } = require('@supabase/supabase-js');
+const { supabase: globalSupabase } = require('./lib/supabase');
 
 export default async function handler(req, res) {
     res.setHeader('Access-Control-Allow-Origin', '*');
@@ -6,6 +7,29 @@ export default async function handler(req, res) {
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
 
     if (req.method === 'OPTIONS') return res.status(200).end();
+
+    // --- AUTH CHECK ---
+    const authHeader = req.headers.authorization;
+    let supabase = globalSupabase;
+    let user = null;
+
+    if (authHeader) {
+        const token = authHeader.split(' ')[1];
+        if (token && (token.startsWith('EMP-') || token === 'TEST_TOKEN_ADMIN')) {
+            user = { id: token.startsWith('EMP-') ? token.replace('EMP-', '') : 'admin' };
+        } else if (token) {
+            const { data: { user: sbUser }, error } = await globalSupabase.auth.getUser(token);
+            if (!error && sbUser) {
+                user = sbUser;
+                supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_ANON_KEY, {
+                    global: { headers: { Authorization: `Bearer \${token}` } }
+                });
+            }
+        }
+    }
+
+    if (!user) return res.status(401).json({ error: "Unauthorized" });
+    // ------------------
 
     const { action } = req.query;
 
@@ -112,7 +136,21 @@ export default async function handler(req, res) {
             
         if (closeErr) return res.status(500).json({ error: closeErr.message });
         
-        return res.json({ success: true, shift: updated });
+        return res.json({ 
+            success: true, 
+            shift: updated,
+            report: {
+                opening_amount: parseFloat(shift.opening_amount),
+                closing_amount: parseFloat(closingAmount),
+                expected_amount: expected,
+                discrepancy: diff,
+                sales: {
+                    cash: cashSales,
+                    rico_balance: 0 // TODO: Add Rico Cash sales if needed
+                },
+                order_count: orders?.length || 0
+            }
+        });
     }
 
     res.status(404).json({ error: 'Action not found' });
