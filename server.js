@@ -79,6 +79,8 @@ const requireAuth = async (req, res, next) => {
     const token = parts.length > 1 ? parts[1] : parts[0];
     if (!token) return next();
 
+    // console.log('DEBUG AUTH: Token identified:', token);
+
     // --- ADMIN BYPASS (TODO: Move to JWT) ---
     // If the token matches EMP-*, let's just create a mock user object based on the employee
     if (token && (token.startsWith('EMP-') || token === 'TEST_TOKEN_ADMIN')) {
@@ -89,6 +91,7 @@ const requireAuth = async (req, res, next) => {
             user_metadata: { role: 'admin' }
         };
         req.supabase = supabase;
+        // console.log('DEBUG AUTH: Admin bypass set for:', empId);
         return next();
     }
     // ---------------------
@@ -111,7 +114,15 @@ const requireAuth = async (req, res, next) => {
 // Enforce Authentication
 const ensureAuthenticated = (req, res, next) => {
     if (!req.user) {
-        return res.status(401).json({ error: 'Unauthorized: Valid Supabase session required' });
+        return res.status(401).json({ 
+            error: 'Unauthorized: Valid Supabase session required',
+            debug: {
+                hasUser: !!req.user,
+                hasAuth: !!req.headers.authorization,
+                method: req.method,
+                path: req.path
+            }
+        });
     }
     next();
 };
