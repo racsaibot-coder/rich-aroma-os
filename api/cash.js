@@ -42,9 +42,13 @@ export default async function handler(req, res) {
             .select('id, name, role')
             .eq('pin', pin)
             .eq('active', true)
+            .limit(1)
             .single();
 
-        if (error || !emp) return res.status(401).json({ error: 'PIN Inválido' });
+        if (error || !emp) {
+            console.error("PIN Login Error:", error);
+            return res.status(401).json({ error: 'PIN Inválido' });
+        }
         return res.json({ employee: emp });
     }
 
