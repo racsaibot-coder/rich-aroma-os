@@ -1056,17 +1056,26 @@
     async function startShift() {
         const pin = document.getElementById('shift-pin').value;
         const cash = document.getElementById('shift-cash').value;
+        if (!pin || !cash) return alert("Ingrese PIN y base de caja");
+
         const res = await fetch('/api/cash/open-shift', {
             method: 'POST',
             headers: {'Content-Type': 'application/json', 'Authorization': 'Bearer EMP-admin'},
-            body: JSON.stringify({ employeeId: pin, openingAmount: cash })
+            body: JSON.stringify({ employeeId: pin, openingAmount: parseFloat(cash) })
         });
-        if (res.ok) location.reload();
+        if (res.ok) {
+            await fetchStoreStatus();
+            location.reload();
+        } else {
+            const err = await res.json();
+            alert(err.error || "Error al abrir caja");
+        }
     }
 
     async function endShift() {
-        const cash = prompt("Total Cash in Drawer (incl. starting float):");
+        const cash = prompt("💰 CIERRE DE CAJA\n\nIngrese el TOTAL DE EFECTIVO físico en caja\n(Incluyendo la base de L. " + startingCash + "):");
         if (cash === null || cash === "") return;
+        
         const res = await fetch('/api/cash/close-shift', {
             method: 'POST',
             headers: {'Content-Type': 'application/json', 'Authorization': 'Bearer EMP-admin'},
@@ -1074,25 +1083,47 @@
         });
         if (res.ok) {
             const data = await res.json();
+            await fetchStoreStatus();
             showShiftReport(data.report);
+        } else {
+            alert("Error al cerrar caja");
         }
     }
 
     async function toggleStoreStatus(checkbox) {
-        await fetch('/api/store/status', {
+        const res = await fetch('/api/store/status', {
             method: 'PATCH',
             headers: {'Content-Type': 'application/json'},
             body: JSON.stringify({ isOpen: checkbox.checked })
         });
-        fetchStoreStatus();
+        if (res.ok) fetchStoreStatus();
     }
 
     async function fetchStoreStatus() {
-        const res = await fetch('/api/store/status');
-        const data = await res.json();
-        document.getElementById('store-status-toggle').checked = data.isOpen;
-        document.getElementById('store-status-label').innerText = data.isOpen ? 'ABIERTO' : 'CERRADO';
-        document.getElementById('store-status-label').className = `text-sm font-bold ${data.isOpen ? 'text-green-600' : 'text-red-600'} px-2 w-16 text-center`;
+        try {
+            const res = await fetch('/api/store/status');
+            const data = await res.json();
+            const toggle = document.getElementById('store-status-toggle');
+            const label = document.getElementById('store-status-label');
+            
+            if (toggle) toggle.checked = data.isOpen;
+            if (label) {
+                label.innerText = data.isOpen ? 'ABIERTO' : 'CERRADO';
+                label.className = `text-sm font-bold \${data.isOpen ? 'text-green-600' : 'text-red-600'} px-2 w-16 text-center`;
+            }
+            
+            // Also update a global banner or pulse if closed
+            const banner = document.getElementById('connection-status');
+            if (banner) {
+                if (!data.isOpen) {
+                    banner.innerText = "TIENDA CERRADA 🔴";
+                    banner.className = "bg-red-100 text-red-800 px-3 py-1.5 rounded-lg font-mono text-sm transition-all";
+                } else {
+                    banner.innerText = "TIENDA ABIERTA 🟢";
+                    banner.className = "bg-green-100 text-green-800 px-3 py-1.5 rounded-lg font-mono text-sm transition-all";
+                }
+            }
+        } catch(e) { console.error("Error fetching store status", e); }
     }
 
     // --- ADMIN PANEL ---
