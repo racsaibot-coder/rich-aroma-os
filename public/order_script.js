@@ -136,7 +136,7 @@
                                 </div>
                                 <div class="p-4 flex-1 flex flex-col justify-between">
                                     <h3 class="font-bold text-base leading-tight mb-2">${item.name}</h3>
-                                    <span class="text-gold font-mono font-bold">L ${parseFloat(item.price).toFixed(2)}</span>
+                                    <span class="text-gold font-mono font-bold">L ${(Number(item.price) || 0).toFixed(2)}</span>
                                 </div>
                             </div>`;
                     });
@@ -245,11 +245,11 @@
         }
 
         function updateDynamicModPrice() {
-            let total = currentItem.price;
+            let total = Number(currentItem.price) || 0;
             for (const groupId in currentMods) {
                 currentMods[groupId].forEach(optId => {
                     const opt = modOptions.find(o => o.id === optId);
-                    if (opt) total += parseFloat(opt.price_adjustment);
+                    if (opt) total += (parseFloat(opt.price_adjustment) || 0);
                 });
             }
             document.getElementById('mod-item-price').innerText = `L. ${total.toFixed(2)}`;
@@ -267,8 +267,16 @@
             const note = document.getElementById('mod-note').value;
             if (note) mods.push({ name: `📝 ${note}` });
 
-            const finalPrice = parseFloat(document.getElementById('mod-final-price').innerText.replace('L. ', ''));
-            const cartItem = { id: currentItem.id, name: currentItem.name, price: currentItem.price, finalPrice, mods, qty: 1 };
+            const finalPriceText = document.getElementById('mod-final-price').innerText.replace('L. ', '');
+            const finalPrice = parseFloat(finalPriceText) || 0;
+            const cartItem = { 
+                id: currentItem.id, 
+                name: currentItem.name, 
+                price: Number(currentItem.price) || 0, 
+                finalPrice, 
+                mods, 
+                qty: 1 
+            };
             
             if (isAddonMode) {
                 // Instantly submit add-on
@@ -281,7 +289,7 @@
         }
 
         function updateCartUI() {
-            const total = cart.reduce((sum, item) => sum + item.finalPrice, 0);
+            const total = cart.reduce((sum, item) => sum + (parseFloat(item.finalPrice) || 0), 0);
             document.getElementById('cart-total').innerText = `L ${total.toFixed(2)}`;
             document.getElementById('cart-count').innerText = cart.length;
             
@@ -316,7 +324,7 @@
                             ${item.mods && item.mods.length > 0 ? `<div class="text-xs text-white/50 mt-1">${item.mods.map(m=>m.name).join(', ')}</div>` : ''}
                         </div>
                         <div class="flex items-center gap-3">
-                            <span class="font-mono text-gold font-bold">L ${item.finalPrice.toFixed(2)}</span>
+                            <span class="font-mono text-gold font-bold">L ${(parseFloat(item.finalPrice) || 0).toFixed(2)}</span>
                             <button onclick="removeCartItem(${index})" class="text-white/30 hover:text-red-400"><i class="fas fa-trash"></i></button>
                         </div>
                     </div>
@@ -330,7 +338,7 @@
         }
 
         function updateCartSummary() {
-            let subtotal = cart.reduce((sum, item) => sum + item.finalPrice, 0);
+            let subtotal = cart.reduce((sum, item) => sum + (parseFloat(item.finalPrice) || 0), 0);
             let discount = 0;
             let discountText = "";
             
@@ -373,7 +381,7 @@
         function renderPaymentOptions() {
             const container = document.getElementById('payment-selection-container');
             const buttonContainer = document.getElementById('checkout-options');
-            const total = window.currentOrderTotal || 0;
+            const total = Number(window.currentOrderTotal) || 0;
             
             const ricoBalance = currentCustomer ? ((parseFloat(currentCustomer.cash_balance) || 0) + (parseFloat(currentCustomer.membership_credit) || 0)) : 0;
             const hasAnyRicoCash = ricoBalance > 0;
@@ -539,7 +547,7 @@
                 if (!customerName) return; // cancelled
             }
             const phone = currentCustomer ? currentCustomer.phone : '';
-            const msg = `¡Hola! Aquí está mi comprobante de pago por L.${totalAmount.toFixed(2)} para mi orden a nombre de ${customerName}. ${phone ? 'Mi número es ' + phone : ''}`;
+            const msg = `¡Hola! Aquí está mi comprobante de pago por L.${(totalAmount || 0).toFixed(2)} para mi orden a nombre de ${customerName}. ${phone ? 'Mi número es ' + phone : ''}`;
             const shopPhone = "50495200236"; // Update this with your actual shop WhatsApp number
             
             // Also submit the order to the kitchen as pending/unpaid
@@ -564,7 +572,7 @@
             
             // Add a name check for guest orders
             let orderNotes = document.getElementById('order-notes').value;
-            const subtotalTest = cart.reduce((sum, item) => sum + item.finalPrice, 0);
+            const subtotalTest = cart.reduce((sum, item) => sum + (parseFloat(item.finalPrice) || 0), 0);
             const totalTest = subtotalTest * 1.15;
             
             if (!currentCustomer) {
@@ -620,7 +628,7 @@
 
             const items = Object.values(itemsMap);
             // Force recalculation to ensure accuracy
-            let subtotal = cart.reduce((sum, item) => sum + item.finalPrice, 0);
+            let subtotal = cart.reduce((sum, item) => sum + (parseFloat(item.finalPrice) || 0), 0);
             let discount = 0;
             if (localStorage.getItem('ra_welcome_offer_30') === 'true' && subtotal > 0) discount += 30;
             

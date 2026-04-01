@@ -245,7 +245,7 @@
         <div class="bg-dark w-full max-h-[85vh] rounded-t-3xl shadow-2xl flex flex-col overflow-hidden border-t border-gold/20 relative animate-[slideUp_0.3s_ease-out]">
             <div class="absolute top-3 left-1/2 -translate-x-1/2 w-12 h-1.5 bg-white/20 rounded-full"></div>
             
-            <div class="p-6 pt-8 pb-4 border-b border-white/5 flex justify-between items-center">
+            <div class="p-4 pt-6 pb-2 border-b border-white/5 flex justify-between items-center">
                 <div>
                     <h2 class="text-2xl font-bold text-white font-display" id="mod-item-name">Latte</h2>
                     <p class="text-gold font-mono text-xl font-bold mt-1" id="mod-item-price">L. 55.00</p>
@@ -257,25 +257,24 @@
 
             <div class="flex-1 overflow-y-auto p-6 space-y-8" id="mod-dynamic-container"></div>
 
-            <div class="p-6 bg-dark/95 backdrop-blur-md border-t border-white/5 pb-32 space-y-6">
-                <!-- Quantity Selector -->
-                <div class="flex items-center justify-between bg-white/5 p-4 rounded-2xl border border-white/10">
-                    <span class="text-white/60 font-bold uppercase text-xs tracking-widest">Cantidad</span>
-                    <div class="flex items-center gap-6">
-                        <button onclick="changeQuantity(-1)" class="w-12 h-12 flex items-center justify-center rounded-full bg-white/10 text-gold border border-gold/20 active:scale-90 transition-transform text-2xl font-light">
-                            <i class="fas fa-minus"></i>
+            <div class="p-4 bg-dark/95 backdrop-blur-md border-t border-white/5 pb-10">
+                <div class="flex items-center gap-4">
+                    <!-- Quantity Selector (Compact) -->
+                    <div class="flex items-center bg-white/5 rounded-2xl border border-white/10 p-1">
+                        <button onclick="changeQuantity(-1)" class="w-10 h-10 flex items-center justify-center rounded-xl bg-white/5 text-gold active:scale-90 transition-transform">
+                            <i class="fas fa-minus text-xs"></i>
                         </button>
-                        <span id="mod-quantity" class="font-display font-bold text-3xl text-white min-w-[1.5rem] text-center">1</span>
-                        <button onclick="changeQuantity(1)" class="w-12 h-12 flex items-center justify-center rounded-full bg-gold text-dark active:scale-90 transition-transform text-2xl font-light">
-                            <i class="fas fa-plus"></i>
+                        <span id="mod-quantity" class="font-display font-bold text-xl text-white px-4">1</span>
+                        <button onclick="changeQuantity(1)" class="w-10 h-10 flex items-center justify-center rounded-xl bg-gold text-dark active:scale-90 transition-transform">
+                            <i class="fas fa-plus text-xs"></i>
                         </button>
                     </div>
-                </div>
 
-                <button onclick="confirmItem()" class="w-full gold-btn py-5 rounded-2xl font-bold text-xl shadow-xl shadow-gold/20 flex justify-between items-center px-8 active:scale-95 transition-transform">
-                    <span id="mod-confirm-text">Confirmar</span>
-                    <span id="mod-final-price" class="font-mono bg-dark/20 px-4 py-1 rounded-xl">L. 55.00</span>
-                </button>
+                    <button onclick="confirmItem()" class="flex-1 gold-btn py-4 rounded-2xl font-bold text-lg shadow-xl shadow-gold/20 flex justify-between items-center px-6 active:scale-95 transition-transform">
+                        <span id="mod-confirm-text">Confirmar</span>
+                        <span id="mod-final-price" class="font-mono bg-dark/20 px-3 py-1 rounded-lg text-sm">L. 55.00</span>
+                    </button>
+                </div>
             </div>
         </div>
     </div>
@@ -416,7 +415,7 @@
             </div>
 
             <!-- Sticky Checkout Button Footer -->
-            <div class="p-6 bg-dark/95 backdrop-blur-md border-t border-white/5 pb-40" id="checkout-options">
+            <div class="p-6 bg-dark/95 backdrop-blur-md border-t border-white/5 pb-10" id="checkout-options">
             </div>
         </div>
     </div>
@@ -717,7 +716,7 @@
                                 </div>
                                 <div class="p-4 flex-1 flex flex-col justify-between">
                                     <h3 class="font-bold text-base leading-tight mb-2">${item.name}</h3>
-                                    <span class="text-gold font-mono font-bold">L ${parseFloat(item.price).toFixed(2)}</span>
+                                    <span class="text-gold font-mono font-bold">L ${(Number(item.price) || 0).toFixed(2)}</span>
                                 </div>
                             </div>`;
                     });
@@ -803,8 +802,8 @@
             const container = document.getElementById('mod-dynamic-container');
             container.innerHTML = `<div class="mb-6"><h3 class="text-white/60 uppercase text-xs tracking-widest font-bold mb-3">Instrucciones para este plato</h3><input type="text" id="mod-note" placeholder="Ej. Bien caliente..." class="w-full p-4 bg-white/5 border border-white/10 text-white rounded-2xl text-base focus:outline-none focus:border-gold"></div>`;
             document.getElementById('mod-item-name').innerText = currentItem.name;
-            document.getElementById('mod-item-price').innerText = `L. ${currentItem.price.toFixed(2)}`;
-            document.getElementById('mod-final-price').innerText = `L. ${currentItem.price.toFixed(2)}`;
+            document.getElementById('mod-item-price').innerText = 'L. ' + currentItem.price.toFixed(2);
+            document.getElementById('mod-final-price').innerText = 'L. ' + currentItem.price.toFixed(2);
             document.getElementById('mod-confirm-text').innerText = isAddonMode ? 'Agregar a Orden Activa' : 'Agregar';
             document.getElementById('modifier-modal').classList.remove('hidden');
         }
@@ -837,7 +836,7 @@
         }
 
         function updateDynamicModPrice() {
-            let total = currentItem.price;
+            let total = Number(currentItem.price) || 0;
             let allRequiredMet = true;
 
             const relevantGroups = itemModGroups
@@ -852,25 +851,26 @@
                 
                 selected.forEach(optId => {
                     const opt = modOptions.find(o => o.id === optId);
-                    if (opt) total += parseFloat(opt.price_adjustment);
+                    if (opt) total += (parseFloat(opt.price_adjustment) || 0);
                 });
             });
 
             const confirmBtn = document.querySelector('button[onclick="confirmItem()"]');
             if (confirmBtn) {
                 confirmBtn.disabled = !allRequiredMet;
-                confirmBtn.className = `w-full py-4 rounded-2xl font-black text-xl flex justify-between px-8 shadow-xl transition-all active:scale-95 \${allRequiredMet ? 'bg-gold text-dark' : 'bg-white/10 text-white/30 cursor-not-allowed shadow-none'}`;
+                confirmBtn.className = `w-full py-4 rounded-2xl font-black text-xl flex justify-between px-8 shadow-xl transition-all active:scale-95 ${allRequiredMet ? 'bg-gold text-dark' : 'bg-white/10 text-white/30 cursor-not-allowed shadow-none'}`;
             }
 
-            document.getElementById('mod-item-price').innerText = `L. \${total.toFixed(2)}`;
-            document.getElementById('mod-final-price').innerText = `L. \${(total * currentQuantity).toFixed(2)}`;
+            document.getElementById('mod-item-price').innerText = 'L. ' + total.toFixed(2);
+            document.getElementById('mod-final-price').innerText = 'L. ' + (total * currentQuantity).toFixed(2);
         }
 
         
         function changeQuantity(delta) {
             currentQuantity += delta;
             if(currentQuantity < 1) currentQuantity = 1;
-            document.getElementById('mod-quantity').innerText = currentQuantity;
+            const qtyEl = document.getElementById('mod-quantity');
+            if (qtyEl) qtyEl.innerText = currentQuantity;
             updateDynamicModPrice();
         }
     
@@ -882,11 +882,20 @@
                     if (opt) mods.push({ name: opt.name });
                 });
             }
-            const note = document.getElementById('mod-note').value;
+            const noteInput = document.getElementById('mod-note');
+            const note = noteInput ? noteInput.value : '';
             if (note) mods.push({ name: `📝 ${note}` });
 
-            const finalPrice = parseFloat(document.getElementById('mod-final-price').innerText.replace('L. ', ''));
-            const cartItem = { id: currentItem.id, name: currentItem.name, price: currentItem.price, finalPrice, mods, qty: currentQuantity };
+            const finalPriceText = document.getElementById('mod-final-price').innerText.replace('L. ', '');
+            const finalPrice = parseFloat(finalPriceText) || 0;
+            const cartItem = { 
+                id: currentItem.id, 
+                name: currentItem.name, 
+                price: Number(currentItem.price) || 0, 
+                finalPrice, 
+                mods, 
+                qty: currentQuantity 
+            };
             
             if (isAddonMode) {
                 // Instantly submit add-on
@@ -900,8 +909,8 @@
         }
 
         function updateCartUI() {
-            const total = cart.reduce((sum, item) => sum + item.finalPrice, 0);
-            document.getElementById('cart-total').innerText = `L ${total.toFixed(2)}`;
+            const total = cart.reduce((sum, item) => sum + (parseFloat(item.finalPrice) || 0), 0);
+            document.getElementById('cart-total').innerText = 'L ' + total.toFixed(2);
             document.getElementById('cart-count').innerText = cart.length;
             
             const cartBar = document.getElementById('cart-bar');
@@ -909,67 +918,75 @@
             else cartBar.classList.add('translate-y-[150%]');
         }
 
+        function clearCart() {
+            if (confirm('¿Estás seguro de que deseas vaciar el carrito?')) {
+                cart = [];
+                saveCart();
+                updateCartUI();
+                closeCartModal();
+            }
+        }
+
         function openCartModal() {
             toggleNav(false);
             const container = document.getElementById('cart-review-items');
             updateIdentityFields();
-            
+
             if(cart.length === 0) {
-                container.innerHTML = `<div class="text-white/50 text-center py-6">Tu carrito está vacío</div>`;
+                container.innerHTML = '<div class="text-white/50 text-center py-6">Tu carrito está vacío</div>';
             } else {
-                container.innerHTML = cart.map((item, index) => `
-                    <div class="flex justify-between items-start bg-white/5 border border-white/10 p-4 rounded-xl">
+                let html = '<div class="flex justify-between items-center mb-4"><h3 class="text-white/40 uppercase text-[10px] font-black tracking-widest">Resumen de Orden</h3><button onclick="clearCart()" class="text-red-400/60 text-[10px] font-black uppercase tracking-widest hover:text-red-400 transition-colors"><i class="fas fa-trash-alt mr-1"></i> Vaciar Carrito</button></div>';
+                html += cart.map((item, index) => `
+                    <div class="flex justify-between items-start bg-white/5 border border-white/10 p-4 rounded-xl mb-2">
                         <div>
                             <div class="font-bold text-white">${item.qty > 1 ? `<span class="text-gold mr-2">${item.qty}x</span>` : ''}${item.name}</div>
                             ${item.mods && item.mods.length > 0 ? `<div class="text-xs text-white/50 mt-1">${item.mods.map(m=>m.name).join(', ')}</div>` : ''}
                         </div>
                         <div class="flex items-center gap-3">
-                            <span class="font-mono text-gold font-bold">L ${item.finalPrice.toFixed(2)}</span>
+                            <span class="font-mono text-gold font-bold">L ${(parseFloat(item.finalPrice) || 0).toFixed(2)}</span>
                             <button onclick="removeCartItem(${index})" class="text-white/30 hover:text-red-400"><i class="fas fa-trash"></i></button>
                         </div>
                     </div>
                 `).join('');
+                container.innerHTML = html;
             }
 
             updateCartSummary();
             renderPaymentOptions();
-            
+
             document.getElementById('cart-modal').classList.remove('hidden');
         }
 
         function updateCartSummary() {
-            let subtotal = cart.reduce((sum, item) => sum + item.finalPrice, 0);
+            let subtotal = cart.reduce((sum, item) => sum + (parseFloat(item.finalPrice) || 0), 0);
             let discount = 0;
             let discountText = "";
-            
+
             if (localStorage.getItem('ra_welcome_offer_30') === 'true' && subtotal > 0) {
                 discount += 30;
-                discountText += `<br><span class="text-gold text-xs">- L 30.00 (Bienvenida L.30)</span>`;
+                discountText += '<br><span class="text-gold text-xs">- L 30.00 (Bienvenida L.30)</span>';
             }
-            
-            // Check if they have enough balance to cover the ENTIRE order (before the 10% discount is applied)
-            // If they don't, they don't get the 10% discount. This forces them to top up.
+
             const totalBeforeRicoDiscount = subtotal - discount;
             const ricoBalance = currentCustomer ? parseFloat(currentCustomer.rico_balance) || 0 : 0;
             const coversFull = ricoBalance >= totalBeforeRicoDiscount;
-            
+
             if (currentSelectedPayment === 'rico_balance' && coversFull && subtotal > 0) {
                 const ricoDiscount = subtotal * 0.10;
                 discount += ricoDiscount;
-                discountText += `<br><span class="text-gold text-xs">- L ${ricoDiscount.toFixed(2)} (10% Rico Cash)</span>`;
+                discountText += '<br><span class="text-gold text-xs">- L ' + ricoDiscount.toFixed(2) + ' (10% Rico Cash)</span>';
             }
 
-            if (discount > subtotal) discount = subtotal; // don't go negative
-            
+            if (discount > subtotal) discount = subtotal;
+
             const tax = subtotal * 0.00;
             const total = subtotal - discount + tax;
             const pointsToEarn = Math.floor(subtotal);
 
-            document.getElementById('review-subtotal').innerHTML = `L ${subtotal.toFixed(2)} ${discountText}`;
-            document.getElementById('review-tax').innerText = `L ${tax.toFixed(2)}`;
-            document.getElementById('review-total').innerText = `L ${total.toFixed(2)}`;
-            
-            // Add points info to summary
+            document.getElementById('review-subtotal').innerHTML = 'L ' + subtotal.toFixed(2) + ' ' + discountText;
+            document.getElementById('review-tax').innerText = 'L ' + tax.toFixed(2);
+            document.getElementById('review-total').innerText = 'L ' + total.toFixed(2);
+
             const summaryContainer = document.querySelector('#cart-modal .bg-charcoal.rounded-2xl.p-4');
             if (summaryContainer) {
                 let pointsEl = document.getElementById('review-points-earned');
@@ -979,13 +996,12 @@
                     pointsEl.className = "flex justify-between text-xs text-gold font-bold pt-2 border-t border-white/5 mt-2";
                     summaryContainer.appendChild(pointsEl);
                 }
-                pointsEl.innerHTML = `<span>Ganarás</span> <span>+${pointsToEarn} Rico Puntos</span>`;
+                pointsEl.innerHTML = '<span>Ganarás</span> <span>+' + pointsToEarn + ' Rico Puntos</span>';
             }
-            
+
             window.currentOrderTotal = total;
             window.currentOrderDiscount = discount;
         }
-
         function selectPaymentMethod(method) {
             currentSelectedPayment = method;
             updateCartSummary();
@@ -995,7 +1011,7 @@
         function renderPaymentOptions() {
             const container = document.getElementById('payment-selection-container');
             const buttonContainer = document.getElementById('checkout-options');
-            const total = window.currentOrderTotal || 0;
+            const total = Number(window.currentOrderTotal) || 0;
             
             const ricoBalance = currentCustomer ? parseFloat(currentCustomer.rico_balance) || 0 : 0;
             const hasAnyRicoCash = ricoBalance > 0;
@@ -1182,7 +1198,7 @@
             
             // Add a name check for guest orders
             let orderNotes = document.getElementById('order-notes')?.value || "";
-            const subtotalTest = cart.reduce((sum, item) => sum + item.finalPrice, 0);
+            const subtotalTest = cart.reduce((sum, item) => sum + (parseFloat(item.finalPrice) || 0), 0);
             const totalTest = subtotalTest;
             
             if (!currentCustomer) {
@@ -1243,7 +1259,7 @@
             });
 
             const items = Object.values(itemsMap);
-            let subtotal = cart.reduce((sum, item) => sum + item.finalPrice, 0);
+            let subtotal = cart.reduce((sum, item) => sum + (parseFloat(item.finalPrice) || 0), 0);
             let discount = 0;
             if (localStorage.getItem('ra_welcome_offer_30') === 'true' && subtotal > 0) discount += 30;
             
@@ -1289,6 +1305,7 @@
                 if (discount > 0) localStorage.removeItem('ra_welcome_offer_30');
 
                 cart = [];
+                saveCart();
                 updateCartUI();
                 closeCartModal();
                 

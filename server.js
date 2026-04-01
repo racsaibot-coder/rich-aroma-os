@@ -789,16 +789,12 @@ app.post('/api/orders', async (req, res) => {
         subtotal: req.body.subtotal,
         tax: req.body.tax || 0,
         discount: req.body.discount || 0,
-        // Ensure total includes delivery fee
         total: req.body.total,
         status: 'pending',
         payment_method: req.body.paymentMethod,
         customer_id: req.body.customerId,
         discount_code: req.body.discountCode,
-        notes: req.body.notes, scheduled_for: req.body.scheduledFor || null,
-        fulfillment_type: req.body.fulfillment || 'pickup',
-        delivery_address: req.body.deliveryAddress || null,
-        delivery_status: req.body.fulfillment === 'delivery' ? 'pending' : null
+        notes: req.body.notes
     };
 
     // 2. Handle Split Payment / Rico Balance
@@ -810,59 +806,47 @@ app.post('/api/orders', async (req, res) => {
             .single();
 
         if (customer) {
-            const credit = parseFloat(customer.rico_balance) || 0;
-            const cash = parseFloat(customer.rico_balance) || 0;
-            const available = credit + cash;
+            const currentBalance = parseFloat(customer.rico_balance) || 0;
             const total = parseFloat(orderData.total);
 
-            let deductCredit = 0;
-            let deductCash = 0;
-            let paidAmount = 0;
-
-            if (available >= total) {
+            if (currentBalance >= total) {
                 // Full Payment
-                paidAmount = total;
                 orderData.status = 'paid';
-                // orderData.amount_paid = total;
-                // orderData.amount_due = 0;
 
-                // Deduct logic
-                let remaining = total;
-                if (credit >= remaining) {
-                    deductCredit = remaining;
-                } else {
-                    deductCredit = credit;
-                    deductCash = remaining - credit;
-                }
-            } else {
-                // Partial Payment
-                paidAmount = available;
-                orderData.status = 'partial_paid'; // Custom status for Ticket
-                // orderData.amount_paid = paidAmount;
-                // orderData.amount_due = total - paidAmount;
+                // Update Customer Balance
+                await supabase
+                    .from('customers')
+                    .update({
+                        rico_balance: currentBalance - total
+                    })
+                    .eq('id', customer.id);
 
-                // Deduct everything
-                deductCredit = credit;
-                deductCash = cash;
-            }
-
-            // Update Customer Balance
-            await supabase
-                .from('customers')
-                .update({
-                    rico_balance: credit - deductCredit,
-                    rico_balance: cash - deductCash
-                })
-                .eq('id', customer.id);
-            
-            // Log Balance History
-            if (paidAmount > 0) {
+                // Log Balance History
                 await supabase.from('balance_history').insert({
                     customer_id: customer.id,
                     type: 'payment',
-                    amount: -paidAmount,
+                    amount: -total,
                     order_id: orderData.id
                 });
+            } else {
+                // Partial Payment (if they used whatever was left)
+                orderData.status = 'partial_paid';
+
+                await supabase
+                    .from('customers')
+                    .update({
+                        rico_balance: 0
+                    })
+                    .eq('id', customer.id);
+
+                if (currentBalance > 0) {
+                    await supabase.from('balance_history').insert({
+                        customer_id: customer.id,
+                        type: 'payment',
+                        amount: -currentBalance,
+                        order_id: orderData.id
+                    });
+                }
             }
         }
     } else if (['cash', 'card'].includes(req.body.paymentMethod)) {
