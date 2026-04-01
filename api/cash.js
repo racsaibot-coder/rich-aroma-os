@@ -9,7 +9,7 @@ export default async function handler(req, res) {
     if (req.method === 'OPTIONS') return res.status(200).end();
 
     // --- AUTH CHECK ---
-    const authHeader = req.headers.authorization || req.headers['x-authorization'];
+    const authHeader = req.headers.authorization || req.headers['authorization'] || req.headers['x-authorization'];
     let supabase = globalSupabase;
     let user = null;
 
@@ -31,7 +31,8 @@ export default async function handler(req, res) {
         }
     }
 
-    if (!user) return res.status(401).json({ error: "Unauthorized" });
+    // Special bypass for verify-pin since it's the login mechanism itself
+    if (action !== 'verify-pin' && !user) return res.status(401).json({ error: "Unauthorized" });
     // ------------------
 
     const { action } = req.query;
