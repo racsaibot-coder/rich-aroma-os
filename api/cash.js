@@ -87,6 +87,8 @@ export default async function handler(req, res) {
     if (action === 'close-shift' && req.method === 'POST') {
         const { shiftId, closingAmount, notes } = req.body;
         
+        if (!shiftId) return res.status(400).json({ error: 'Shift ID missing' });
+
         const { data: shift, error: shiftErr } = await supabase
             .from('cash_shifts')
             .select('*')
@@ -94,14 +96,16 @@ export default async function handler(req, res) {
             .single();
             
         if (shiftErr || !shift) return res.status(404).json({ error: 'Shift not found' });
+        if (shift.status === 'closed') return res.status(400).json({ error: 'Shift is already closed' });
         
         const { data: orders } = await supabase
             .from('orders')
             .select('total')
             .eq('payment_method', 'cash')
-            .gte('created_at', shift.opened_at);
+            .gte('created_at', shift.opened_at)
+            .not('status', 'eq', 'cancelled');
             
-        const cashSales = (orders || []).reduce((sum, o) => sum + o.total, 0);
+        const cashSales = (orders || []).reduce((sum, o) => sum + (parseFloat(o.total) || 0), 0);
         
         const { data: txns } = await supabase
             .from('cash_transactions')
@@ -112,20 +116,23 @@ export default async function handler(req, res) {
         let drops = 0;
         if (txns) {
             txns.forEach(t => {
-                if (t.type === 'payout') payouts += t.amount;
-                if (t.type === 'drop') drops += t.amount;
+                const amt = parseFloat(t.amount) || 0;
+                if (t.type === 'payout') payouts += amt;
+                if (t.type === 'drop') drops += amt;
             });
         }
         
-        const expected = shift.opening_amount + cashSales - payouts - drops;
-        const diff = closingAmount - expected;
+        const opening = parseFloat(shift.opening_amount) || 0;
+        const expected = opening + cashSales - payouts - drops;
+        const declared = parseFloat(closingAmount) || 0;
+        const diff = declared - expected;
         
         const { data: updated, error: closeErr } = await supabase
             .from('cash_shifts')
             .update({
                 status: 'closed',
                 closed_at: new Date().toISOString(),
-                closing_amount_declared: closingAmount,
+                closing_amount_declared: declared,
                 expected_amount: expected,
                 discrepancy: diff,
                 notes: notes
@@ -134,19 +141,19 @@ export default async function handler(req, res) {
             .select()
             .single();
             
-        if (closeErr) return res.status(500).json({ error: closeErr.message });
+        if (closeErr) return res.status(500).json({ error: "DB Update Failed: " + closeErr.message });
         
         return res.json({ 
             success: true, 
             shift: updated,
             report: {
-                opening_amount: parseFloat(shift.opening_amount),
-                closing_amount: parseFloat(closingAmount),
+                opening_amount: opening,
+                closing_amount: declared,
                 expected_amount: expected,
                 discrepancy: diff,
                 sales: {
                     cash: cashSales,
-                    rico_balance: 0 // TODO: Add Rico Cash sales if needed
+                    rico_balance: 0 
                 },
                 order_count: orders?.length || 0
             }

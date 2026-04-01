@@ -1093,20 +1093,26 @@
     }
 
     async function endShift() {
+        if (!currentShiftId) return alert("No hay una sesión activa para cerrar.");
+        
         const cash = prompt("💰 CIERRE DE CAJA\n\nIngrese el TOTAL DE EFECTIVO físico en caja\n(Incluyendo la base de L. " + startingCash + "):");
         if (cash === null || cash === "") return;
         
+        const amount = parseFloat(cash);
+        if (isNaN(amount)) return alert("Monto inválido");
+
         const res = await fetch('/api/cash/close-shift', {
             method: 'POST',
             headers: {'Content-Type': 'application/json', 'Authorization': 'Bearer EMP-admin'},
-            body: JSON.stringify({ shiftId: currentShiftId, closingAmount: parseFloat(cash) })
+            body: JSON.stringify({ shiftId: currentShiftId, closingAmount: amount })
         });
+        
+        const data = await res.json();
         if (res.ok) {
-            const data = await res.json();
             await fetchStoreStatus();
             showShiftReport(data.report);
         } else {
-            alert("Error al cerrar caja");
+            alert("Error al cerrar caja: " + (data.error || "Error desconocido"));
         }
     }
 
