@@ -9,22 +9,25 @@ export default async function handler(req, res) {
     if (req.method === 'OPTIONS') return res.status(200).end();
 
     // --- AUTH CHECK ---
-    const authHeader = req.headers.authorization;
+    const authHeader = req.headers.authorization || req.headers['x-authorization'];
     let supabase = globalSupabase;
     let user = null;
 
     if (authHeader) {
-        const token = authHeader.split(' ')[1];
+        const parts = authHeader.split(' ');
+        const token = parts.length > 1 ? parts[1] : parts[0];
         if (token && (token.startsWith('EMP-') || token === 'TEST_TOKEN_ADMIN')) {
             user = { id: token.startsWith('EMP-') ? token.replace('EMP-', '') : 'admin' };
-        } else if (token) {
-            const { data: { user: sbUser }, error } = await globalSupabase.auth.getUser(token);
-            if (!error && sbUser) {
-                user = sbUser;
-                supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_ANON_KEY, {
-                    global: { headers: { Authorization: `Bearer \${token}` } }
-                });
-            }
+        } else if (token && token.length > 20) {
+            try {
+                const { data: { user: sbUser }, error } = await globalSupabase.auth.getUser(token);
+                if (!error && sbUser) {
+                    user = sbUser;
+                    supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_ANON_KEY, {
+                        global: { headers: { Authorization: `Bearer \${token}` } }
+                    });
+                }
+            } catch(e) { console.error("Auth error:", e); }
         }
     }
 
