@@ -598,7 +598,9 @@
     async function fetchLiveOrders() {
         const statusEl = document.getElementById('hb-status');
         try {
-            const res = await fetch('/api/orders');
+            const res = await fetch('/api/orders', {
+                headers: { 'Authorization': 'Bearer EMP-admin' }
+            });
             const data = await res.json();
             const allOrders = data.orders || [];
             
@@ -1282,7 +1284,9 @@
 
     // --- VERIFICATION QUEUE ---
     async function fetchPendingVerifications() {
-        const res = await fetch('/api/orders');
+        const res = await fetch('/api/orders', {
+            headers: { 'Authorization': 'Bearer EMP-admin' }
+        });
         const data = await res.json();
         pendingVerifications = data.orders.filter(o => o.status === 'pending_verification' || (o.payment_method === 'cash' && o.notes?.includes('Mobile Order') && o.status === 'pending'));
         

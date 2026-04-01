@@ -707,51 +707,71 @@ app.post('/api/auth/register', async (req, res) => {
 
 // MENU (Public Read)
 app.get('/api/menu', async (req, res) => {
-    const isAdmin = req.query.admin === 'true';
-    let query = supabase.from('menu_items').select('*');
-    if (!isAdmin) {
-        query = query.eq('available', true);
-    }
-    const { data: items } = await query;
-    const { data: modifiers } = await supabase.from('modifier_options').select('*');
-    
-    // Category metadata
-    const categoryMeta = {
-        Combos: { name: 'Combos', icon: '🔥' },
-        Calientes: { name: 'Calientes', icon: '☕' },
-        Heladas: { name: 'Heladas', icon: '🥤' },
-        Comida: { name: 'Comida', icon: '🥐' }
-    };
-    
-    // Group items by category
-    const grouped = {};
-    (items || []).forEach(item => {
-        if (!grouped[item.category]) grouped[item.category] = [];
-        grouped[item.category].push({
-            id: item.id,
-            name: item.name,
-            price: parseFloat(item.price),
-            available: item.available,
-            image: item.image_url,
-            category: item.category,
-            base_recipe: item.base_recipe
+    try {
+        const isAdmin = req.query.admin === 'true';
+        
+        const { data: items, error: e1 } = await supabase.from('menu_items').select('*').order('name');
+        const { data: modGroups, error: e2 } = await supabase.from('modifier_groups').select('*').order('display_order');
+        const { data: modOptions, error: e3 } = await supabase.from('modifier_options').select('*').order('name');
+        const { data: itemModGroups, error: e4 } = await supabase.from('item_modifier_groups').select('*');
+
+        if (e1 || e2 || e3 || e4) {
+            console.error("Menu fetch error:", { e1, e2, e3, e4 });
+        }
+
+        // Filter available items for public view
+        const rawItems = items || [];
+        const filteredItems = isAdmin ? rawItems : rawItems.filter(i => i.available !== false);
+
+        // Category metadata
+        const categoryMeta = {
+            Combos: { name: 'Combos', icon: '🔥' },
+            Calientes: { name: 'Calientes', icon: '☕' },
+            Heladas: { name: 'Heladas', icon: '🥤' },
+            Comida: { name: 'Comida', icon: '🥐' }
+        };
+
+        // Group items by category
+        const grouped = {};
+        filteredItems.forEach(item => {
+            if (!grouped[item.category]) grouped[item.category] = [];
+            grouped[item.category].push({
+                id: item.id,
+                name: item.name,
+                price: parseFloat(item.price) || 0,
+                available: item.available,
+                image: item.image_url,
+                category: item.category,
+                base_recipe: item.base_recipe
+            });
         });
-    });
-    
-    // Transform to array format expected by POS
-    const categories = Object.keys(grouped).map(catId => ({
-        id: catId,
-        name: categoryMeta[catId]?.name || catId,
-        icon: categoryMeta[catId]?.icon || '📦',
-        items: grouped[catId]
-    }));
-    
-    const modifiersMap = {};
-    (modifiers || []).forEach(m => {
-        modifiersMap[m.id] = { name: m.name, price: parseFloat(m.price) };
-    });
-    
-    res.json({ categories, modifiers: modifiersMap, taxRate: 0.15, items });
+
+        // Transform to array format expected by POS
+        const categories = Object.keys(grouped).map(catId => ({
+            id: catId,
+            name: categoryMeta[catId]?.name || catId,
+            icon: categoryMeta[catId]?.icon || '📦',
+            items: grouped[catId]
+        }));
+
+        const modifiersMap = {};
+        (modOptions || []).forEach(m => {
+            modifiersMap[m.id] = { name: m.name, price: parseFloat(m.price) || 0 };
+        });
+
+        res.json({ 
+            categories, 
+            modifiers: modifiersMap, 
+            taxRate: 0.15, 
+            items: filteredItems,
+            modGroups: modGroups || [],
+            modOptions: modOptions || [],
+            itemModGroups: itemModGroups || []
+        });
+    } catch (err) {
+        console.error("Critical menu error:", err);
+        res.status(500).json({ error: "Internal server error loading menu" });
+    }
 });
 
 app.patch('/api/menu/items/:id', ensureAuthenticated, async (req, res) => {
