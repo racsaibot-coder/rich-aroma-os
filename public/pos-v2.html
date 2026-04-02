@@ -636,7 +636,8 @@
         let html = '';
         liveOrders.forEach(o => {
             const isMobile = o.notes && o.notes.includes('Mobile Order');
-            const isCashMobile = isMobile && o.payment_method === 'cash' && o.status === 'pending';
+            // Cash mobile orders stay in "Cobrar" mode until status is 'paid' or further
+            const isUnpaidCashMobile = isMobile && o.payment_method === 'cash' && ['pending', 'preparing', 'ready'].includes(o.status);
             const isReady = o.status === 'ready';
             
             let statusClass = "bg-gray-700 text-gray-300";
@@ -666,10 +667,11 @@
             html += '        <span class="text-[9px] font-bold text-gray-500 uppercase">' + o.payment_method + '</span>';
             html += '        <span class="text-xs font-black text-blue-400 font-mono">L ' + (parseFloat(o.total) || 0).toFixed(2) + '</span>';
             html += '    </div>';
-            if (isCashMobile) {
+            if (isUnpaidCashMobile) {
                 html += '    <button onclick="openVerifyModal()" class="w-full mt-2 py-1.5 bg-green-600 text-white text-[10px] font-black uppercase rounded-lg hover:bg-green-500 transition-all">Cobrar L.' + o.total + '</button>';
             }
-            if (isReady) {
+            // Only show Deliver button if it's ready AND paid (or not an unpaid mobile cash order)
+            if (isReady && !isUnpaidCashMobile) {
                 html += '    <button onclick="deliverOrder(\'' + o.id + '\')" class="w-full mt-2 py-2 bg-green-500 text-dark font-black text-[10px] uppercase rounded-lg shadow-lg hover:bg-green-400 transition-all">✅ ENTREGAR</button>';
             }
             html += '</div>';
@@ -1320,7 +1322,13 @@
             headers: { 'Authorization': 'Bearer EMP-admin' }
         });
         const data = await res.json();
-        pendingVerifications = data.orders.filter(o => o.status === 'pending_verification' || (o.payment_method === 'cash' && o.notes?.includes('Mobile Order') && o.status === 'pending'));
+        pendingVerifications = data.orders.filter(o => {
+            if (o.status === 'pending_verification') return true;
+            if (o.payment_method === 'cash' && o.notes?.includes('Mobile Order')) {
+                return ['pending', 'preparing', 'ready'].includes(o.status);
+            }
+            return false;
+        });
         
         const btn = document.getElementById('verifyPaymentAlert');
         btn.classList.toggle('hidden', pendingVerifications.length === 0);
