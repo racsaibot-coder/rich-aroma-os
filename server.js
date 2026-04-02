@@ -2920,12 +2920,13 @@ app.post('/api/cash/close-shift', ensureAuthenticated, async (req, res) => {
         res.json({
             success: true,
             report: {
-                opening: openingAmount,
+                opening_amount: openingAmount,
                 sales: salesBreakdown,
                 transactions: totalTransactions,
-                expected: expectedAmount,
-                declared: declaredAmount,
+                expected_amount: expectedAmount,
+                closing_amount: declaredAmount,
                 discrepancy: discrepancy,
+                order_count: (allOrders || []).length,
                 notes: notes || ''
             },
             shift: updatedShift

@@ -838,7 +838,7 @@
         });
 
         document.getElementById('mod-item-name').innerText = currentItem.name;
-        document.getElementById('mod-item-price').innerText = `L. ${currentItem.price.toFixed(2)}`;
+        document.getElementById('mod-item-price').innerText = `L. ${(parseFloat(currentItem.price) || 0).toFixed(2)}`;
         document.getElementById('mod-quantity').innerText = "1";
         
         renderModifiers(id);
@@ -903,7 +903,7 @@
     }
 
     function updateModPrice() {
-        let total = currentItem.price;
+        let total = parseFloat(currentItem.price) || 0;
         let allRequiredMet = true;
 
         const relevantGroupIds = itemModGroups
@@ -924,8 +924,10 @@
         });
 
         const confirmBtn = document.querySelector('button[onclick="confirmItem()"]');
-        confirmBtn.disabled = !allRequiredMet;
-        confirmBtn.className = `w-full py-5 rounded-2xl font-black text-2xl shadow-xl active:scale-95 transition-all flex justify-between px-10 ${allRequiredMet ? 'bg-blue-600 text-white hover:bg-blue-700' : 'bg-gray-300 text-gray-500 cursor-not-allowed shadow-none'}`;
+        if (confirmBtn) {
+            confirmBtn.disabled = !allRequiredMet;
+            confirmBtn.className = `w-full py-5 rounded-2xl font-black text-2xl shadow-xl active:scale-95 transition-all flex justify-between px-10 ${allRequiredMet ? 'bg-blue-600 text-white hover:bg-blue-700' : 'bg-gray-300 text-gray-500 cursor-not-allowed shadow-none'}`;
+        }
 
         document.getElementById('mod-final-price').innerText = `L. ${(total * currentQuantity).toFixed(2)}`;
     }
@@ -961,13 +963,13 @@
                     <div class="text-[10px] text-gray-500">${item.mods.map(m=>m.name).join(', ')}</div>
                 </div>
                 <div class="flex flex-col items-end gap-1">
-                    <span class="font-mono text-sm font-black">L. ${(item.finalPrice * item.qty).toFixed(2)}</span>
+                    <span class="font-mono text-sm font-black">L. ${(parseFloat(item.finalPrice || 0) * item.qty).toFixed(2)}</span>
                     <button onclick="removeFromCart(${index})" class="text-red-400 text-[10px] font-bold uppercase">Remove</button>
                 </div>
             </div>
         `).join('');
 
-        const total = cart.reduce((sum, item) => sum + (item.finalPrice * item.qty), 0);
+        const total = cart.reduce((sum, item) => sum + (parseFloat(item.finalPrice || 0) * item.qty), 0);
         document.getElementById('cart-total').innerText = `L. ${total.toFixed(2)}`;
     }
 
@@ -979,7 +981,7 @@
 
     function openTenderModal() {
         if (cart.length === 0) return;
-        const total = cart.reduce((sum, item) => sum + (item.finalPrice * item.qty), 0);
+        const total = cart.reduce((sum, item) => sum + (parseFloat(item.finalPrice || 0) * item.qty), 0);
         document.getElementById('tender-due').innerText = `L. ${total.toFixed(2)}`;
         document.getElementById('tender-received').value = '';
         document.getElementById('tender-change').innerText = 'L. 0.00';
@@ -987,7 +989,7 @@
         const btnRico = document.getElementById('btn-tender-rico');
         if (window.loadedCustomer) {
             btnRico.classList.remove('hidden');
-            document.getElementById('rico-available-msg').innerText = `Balance: L. ${window.loadedCustomer.rico_balance.toFixed(2)}`;
+            document.getElementById('rico-available-msg').innerText = `Balance: L. ${(parseFloat(window.loadedCustomer.rico_balance) || 0).toFixed(2)}`;
         } else {
             btnRico.classList.add('hidden');
         }
@@ -1012,7 +1014,7 @@
     }
 
     function calculateChange() {
-        const total = cart.reduce((sum, item) => sum + (item.finalPrice * item.qty), 0);
+        const total = cart.reduce((sum, item) => sum + (parseFloat(item.finalPrice || 0) * item.qty), 0);
         const received = parseFloat(document.getElementById('tender-received').value) || 0;
         const change = received - total;
         const confirmBtn = document.getElementById('confirm-tender-btn');
@@ -1090,7 +1092,7 @@
                     <div class="bg-blue-50 p-4 rounded-2xl border border-blue-100 flex justify-between items-center shadow-sm">
                         <div>
                             <div class="font-black text-blue-900">${data.name}</div>
-                            <div class="text-[10px] font-bold text-blue-600">Balance: L. ${data.rico_balance.toFixed(2)}</div>
+                            <div class="text-[10px] font-bold text-blue-600">Balance: L. ${(parseFloat(data.rico_balance) || 0).toFixed(2)}</div>
                         </div>
                         <button onclick="clearCustomer()" class="text-xs font-bold text-gray-400">Clear</button>
                     </div>
@@ -1375,18 +1377,27 @@
 
     function showShiftReport(r) {
         const content = document.getElementById('shift-report-content');
-        const expected = r.opening_amount + r.sales.cash;
-        const diff = r.closing_amount - expected;
+        if (!r || !r.sales) {
+            content.innerHTML = '<p class="text-red-500">Error: Report data incomplete.</p>';
+            document.getElementById('shiftReportModal').classList.remove('hidden');
+            return;
+        }
+        const opening = parseFloat(r.opening_amount) || 0;
+        const cashSales = parseFloat(r.sales.cash) || 0;
+        const closing = parseFloat(r.closing_amount) || 0;
+        const expected = opening + cashSales + (parseFloat(r.transactions) || 0);
+        const diff = closing - expected;
+        const ricoSales = parseFloat(r.sales.rico_balance) || 0;
         
         content.innerHTML = `
             <div class="p-6 bg-gray-900 text-gold rounded-2xl font-mono text-sm space-y-3 border border-white/10 shadow-2xl">
                 <div class="flex justify-between border-b border-white/10 pb-2">
                     <span class="text-gray-400">Starting Float:</span>
-                    <span class="font-black text-white">L. ${r.opening_amount.toFixed(2)}</span>
+                    <span class="font-black text-white">L. ${opening.toFixed(2)}</span>
                 </div>
                 <div class="flex justify-between">
                     <span class="text-gray-400">Cash Sales:</span>
-                    <span class="font-black text-white">+ L. ${r.sales.cash.toFixed(2)}</span>
+                    <span class="font-black text-white">+ L. ${cashSales.toFixed(2)}</span>
                 </div>
                 <div class="flex justify-between text-blue-400 border-t border-white/10 pt-2">
                     <span>Expected in Drawer:</span>
@@ -1394,7 +1405,7 @@
                 </div>
                 <div class="flex justify-between text-yellow-400">
                     <span>Actual in Drawer:</span>
-                    <span class="font-black">L. ${r.closing_amount.toFixed(2)}</span>
+                    <span class="font-black">L. ${closing.toFixed(2)}</span>
                 </div>
                 <div class="flex justify-between text-xl font-black p-3 rounded-xl ${diff >= 0 ? 'bg-green-900/30 text-green-400' : 'bg-red-900/30 text-red-400'}">
                     <span>DISCREPANCY:</span>
@@ -1403,11 +1414,11 @@
                 <div class="mt-4 pt-4 border-t border-white/10 space-y-1">
                     <div class="flex justify-between text-[10px]">
                         <span class="text-gray-500 uppercase">Rico Cash Sales:</span>
-                        <span class="text-white">L. ${r.sales.rico_balance.toFixed(2)}</span>
+                        <span class="text-white">L. ${ricoSales.toFixed(2)}</span>
                     </div>
                     <div class="flex justify-between text-[10px]">
                         <span class="text-gray-500 uppercase">Total Orders:</span>
-                        <span class="text-white">${r.order_count}</span>
+                        <span class="text-white">${r.order_count || 0}</span>
                     </div>
                 </div>
             </div>
