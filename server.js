@@ -1102,22 +1102,25 @@ app.post('/api/orders/:id/approve-topup', ensureAuthenticated, async (req, res) 
             .single();
 
         const currentBalance = customer ? (parseFloat(customer.rico_balance) || 0) : 0;
-        const currentTags = customer?.tags || '';
+        const currentTags = Array.isArray(customer?.tags) ? customer.tags : [];
 
         const customerUpdates = { rico_balance: currentBalance + totalToAdd };
         if (isVipPurchase) {
-            customerUpdates.is_vip = true;
             customerUpdates.tier = 'gold'; // VIPs are automatically gold
             
-            // Fallback for missing is_vip column
+            // Handle tags as array
             if (!currentTags.includes('VIP')) {
-                customerUpdates.tags = currentTags ? `${currentTags},VIP` : 'VIP';
+                customerUpdates.tags = [...currentTags, 'VIP'];
             }
         }
 
-        await supabase.from('customers')
+        const { error: updateCustErr } = await supabase.from('customers')
             .update(customerUpdates)
             .eq('id', order.customer_id);
+            
+        if (updateCustErr) {
+            console.error('[ApproveTopup] Customer update error:', updateCustErr);
+        }
 
         // Log transaction
         await supabase.from('balance_history').insert({
@@ -1190,17 +1193,17 @@ app.patch('/api/orders/:id', ensureAuthenticated, async (req, res) => {
                 .single();
             if (customer) {
                 const currentCash = parseFloat(customer.rico_balance) || 0;
-                const currentTags = customer.tags || '';
+                const currentTags = Array.isArray(customer?.tags) ? customer.tags : [];
                 const customerUpdates = { rico_balance: currentCash + amountToCredit };
                 if (isVipPurchase) {
-                    customerUpdates.is_vip = true;
                     customerUpdates.tier = 'gold';
                     if (!currentTags.includes('VIP')) {
-                        customerUpdates.tags = currentTags ? `${currentTags},VIP` : 'VIP';
+                        customerUpdates.tags = [...currentTags, 'VIP'];
                     }
                 }
 
-                await client.from('customers').update(customerUpdates).eq('id', customer.id);
+                const { error: updErr } = await client.from('customers').update(customerUpdates).eq('id', customer.id);
+                if (updErr) console.error('[OrderPatch] Customer update failed:', updErr);
                 // Also log it
                 await client.from('balance_history').insert({
                     customer_id: customer.id,
@@ -3437,18 +3440,24 @@ app.post('/api/topup', async (req, res) => {
         const cleanName = (fileName || 'topup').replace(/[^a-zA-Z0-9.]/g, '');
         const storagePath = `receipts/TOPUP_${customer.id}_${Date.now()}_${cleanName}.${ext}`;
 
-        const { data, error } = await supabase.storage
-            .from('menu-images')
-            .upload(storagePath, buffer, {
-                contentType: mimeType,
-                upsert: true
-            });
+        let publicUrl = null;
+        try {
+            const { data: uploadData, error: uploadError } = await supabase.storage
+                .from('menu-images')
+                .upload(storagePath, buffer, {
+                    contentType: mimeType,
+                    upsert: true
+                });
 
-        if (error) throw error;
+            if (uploadError) throw uploadError;
 
-        const { data: { publicUrl } } = supabase.storage
-            .from('menu-images')
-            .getPublicUrl(storagePath);
+            const { data: urlData } = supabase.storage
+                .from('menu-images')
+                .getPublicUrl(storagePath);
+            publicUrl = urlData.publicUrl;
+        } catch (storageErr) {
+            console.warn('[Topup] Storage upload failed, proceeding without receipt URL:', storageErr.message);
+        }
 
         // Instead of updating a balance immediately, we create an order that the POS has to approve
         // This acts as the "ticket" for the cashier to review
@@ -3472,9 +3481,7 @@ app.post('/api/topup', async (req, res) => {
             discount: 0,
             status: 'pending_transfer', // Special status that POS will look for
             payment_method: 'transfer',
-            fulfillment_type: 'pickup',
-            notes: isVip ? `[VIP_PURCHASE] Membresía Mensual. Total a acreditar: L.${amount + bonus}` : `[RECARGA] +L.${bonus} Bono. Total a acreditar: L.${amount + bonus}`,
-            receipt_url: publicUrl
+            notes: (isVip ? `[VIP_PURCHASE] Membresía Mensual. Total a acreditar: L.${amount + bonus}` : `[RECARGA] +L.${bonus} Bono. Total a acreditar: L.${amount + bonus}`) + (publicUrl ? ` [COMPROBANTE: ${publicUrl}]` : '')
         };
 
         const { error: dbError } = await supabase.from('orders').insert(topupOrder);
