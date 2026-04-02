@@ -891,7 +891,7 @@ app.get('/api/orders', ensureAuthenticated, async (req, res) => {
     const client = req.supabase || supabase;
     const { data, error } = await client
         .from('orders')
-        .select('*')
+        .select('*, customers(name)')
         .order('created_at', { ascending: false })
         .limit(100);
     res.json({ orders: data || [] });

@@ -322,23 +322,21 @@
                 card.className = `p-5 rounded-2xl shadow-xl border border-white/10 flex flex-col gap-4 ${timeColor} break-inside-avoid transition-all duration-300 transform bg-[#251D17] hover:-translate-y-1`;
                 
                 card.innerHTML = `
-                    <div class="flex justify-between items-center border-b border-white/10 pb-4">
-                        <div class="flex items-center gap-3">
-                            <div class="w-12 h-12 bg-white/5 rounded-full flex items-center justify-center font-bold text-xl text-gold border border-gold/20">
-                                ${order.order_number}
+                    <div class="flex justify-between items-start border-b border-white/10 pb-4">
+                        <div class="flex items-start gap-3 flex-1 overflow-hidden">
+                            <div class="min-w-[3.5rem] h-10 bg-white/5 rounded-lg flex items-center justify-center font-mono font-black text-lg text-gold border border-gold/20 px-2">
+                                #${order.order_number}
                             </div>
-                            <div>
-                                <h3 class="font-bold text-lg text-white">${order.customers?.name || 'Guest'}</h3>
-                                <div class="flex gap-2 mt-1">
-                                    <span class="text-[10px] bg-white/10 px-2 py-0.5 rounded text-white/70 font-bold uppercase tracking-wider">${order.fulfillment_type === 'delivery' ? '🚗 Delivery' : order.fulfillment_type === 'pickup' ? '🛍️ Pickup' : '🍽️ Dine-in'}</span>
-                                    ${order.payment_method === 'split_cash' ? '<span class="text-[10px] bg-red-500/20 px-2 py-0.5 rounded text-red-400 font-bold uppercase tracking-wider border border-red-500/50">COBRAR EFECTIVO</span>' : ''}
-                                    ${order.payment_method === 'split_transfer' ? '<span class="text-[10px] bg-orange-500/20 px-2 py-0.5 rounded text-orange-400 font-bold uppercase tracking-wider border border-orange-500/50">SPLIT: TRANSFER</span>' : ''}
-                                    ${order.payment_method === 'rico_balance' ? '<span class="text-[10px] bg-gold/20 px-2 py-0.5 rounded text-gold font-bold uppercase tracking-wider border border-gold/50">100% RICO CASH</span>' : ''}
-                                    ${order.status === 'preparing' ? '<span class="text-[10px] bg-blue-500/20 px-2 py-0.5 rounded text-blue-300 font-bold uppercase tracking-wider blink">En Proceso</span>' : ''}
+                            <div class="overflow-hidden">
+                                <h3 class="font-bold text-lg text-white truncate">${order.customers?.name || 'Guest'}</h3>
+                                <div class="flex flex-wrap gap-1.5 mt-1">
+                                    <span class="text-[9px] bg-white/10 px-2 py-0.5 rounded text-white/70 font-bold uppercase tracking-wider">${order.fulfillment_type === 'delivery' ? '🚗 Delivery' : order.fulfillment_type === 'pickup' ? '🛍️ Pickup' : '🍽️ Dine-in'}</span>
+                                    ${order.payment_method === 'split_cash' ? '<span class="text-[9px] bg-red-500/20 px-2 py-0.5 rounded text-red-400 font-bold uppercase tracking-wider border border-red-500/50">COBRAR</span>' : ''}
+                                    ${order.payment_method === 'rico_balance' ? '<span class="text-[9px] bg-gold/20 px-2 py-0.5 rounded text-gold font-bold uppercase tracking-wider border border-gold/50">RICO CASH</span>' : ''}
                                 </div>
                             </div>
                         </div>
-                        <div class="flex flex-col items-end">
+                        <div class="flex flex-col items-end shrink-0 ml-2">
                             <span class="font-mono text-sm font-bold ${elapsed > 10 ? 'text-red-400' : elapsed > 5 ? 'text-yellow-400' : 'text-green-400'} timer-display" data-time="${order.created_at}">${Math.floor(elapsed)}m</span>
                         </div>
                     </div>
