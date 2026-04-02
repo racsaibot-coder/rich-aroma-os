@@ -1069,21 +1069,21 @@ app.post('/api/orders/:id/append', async (req, res) => {
 app.post('/api/orders/:id/approve-topup', ensureAuthenticated, async (req, res) => {
     try {
         const orderId = req.params.id;
-        
+
         // Get the order
         const { data: order, error: orderErr } = await supabase
             .from('orders')
             .select('*')
             .eq('id', orderId)
             .single();
-            
+
         if (orderErr || !order) return res.status(404).json({ error: 'Order not found' });
-        
+
         if (order.status === 'completed') {
             return res.status(400).json({ error: 'Already approved' });
         }
-        
-        // Parse amount from notes: "[RECARGA] +L.25 Bono. Total a acreditar: L.525"
+
+        // Parse amount from notes: "[RECARGA] ... Total a acreditar: L.XXX"
         let totalToAdd = order.total; // Default to order total
         if (order.notes && order.notes.includes('Total a acreditar: L.')) {
             const parts = order.notes.split('Total a acreditar: L.');
@@ -1091,20 +1091,34 @@ app.post('/api/orders/:id/approve-topup', ensureAuthenticated, async (req, res) 
                 totalToAdd = parseFloat(parts[1].trim());
             }
         }
-        
-        // Update customer balance
+
+        const isVipPurchase = order.notes && order.notes.includes('[VIP_PURCHASE]');
+
+        // Update customer balance and VIP status
         const { data: customer } = await supabase
             .from('customers')
             .select('rico_balance')
             .eq('id', order.customer_id)
             .single();
-            
+
         const currentBalance = customer ? (parseFloat(customer.rico_balance) || 0) : 0;
-        
-        await supabase.from('customers')
-            .update({ rico_balance: currentBalance + totalToAdd })
-            .eq('id', order.customer_id);
+        const currentTags = customer?.tags || '';
+
+        const customerUpdates = { rico_balance: currentBalance + totalToAdd };
+        if (isVipPurchase) {
+            customerUpdates.is_vip = true;
+            customerUpdates.tier = 'gold'; // VIPs are automatically gold
             
+            // Fallback for missing is_vip column
+            if (!currentTags.includes('VIP')) {
+                customerUpdates.tags = currentTags ? `${currentTags},VIP` : 'VIP';
+            }
+        }
+
+        await supabase.from('customers')
+            .update(customerUpdates)
+            .eq('id', order.customer_id);
+
         // Log transaction
         await supabase.from('balance_history').insert({
             customer_id: order.customer_id,
@@ -1113,19 +1127,18 @@ app.post('/api/orders/:id/approve-topup', ensureAuthenticated, async (req, res) 
             order_id: orderId,
             notes: order.notes
         });
-        
+
         // Mark order completed
         await supabase.from('orders')
             .update({ status: 'completed' })
             .eq('id', orderId);
-            
-        res.json({ success: true, balance: currentBalance + totalToAdd });
+
+        res.json({ success: true, balance: currentBalance + totalToAdd, is_vip: isVipPurchase });
     } catch (e) {
         console.error(e);
         res.status(500).json({ error: e.message });
     }
 });
-
 app.patch('/api/orders/:id', ensureAuthenticated, async (req, res) => {
     // Only auth'd staff can update orders
     const client = req.supabase || supabase;
@@ -1158,7 +1171,17 @@ app.patch('/api/orders/:id', ensureAuthenticated, async (req, res) => {
         // Check if any item is a reload
         const reloadItem = currentOrder.items.find(i => i.id === 'rico_cash_reload');
         if (reloadItem && currentOrder.customer_id) {
-            const amountToCredit = parseFloat(reloadItem.finalPrice) || 0;
+            const isVipPurchase = currentOrder.notes && currentOrder.notes.includes('[VIP_PURCHASE]');
+            
+            let amountToCredit = parseFloat(reloadItem.finalPrice) || 0;
+            // Parse amount from notes if bonus exists
+            if (currentOrder.notes && currentOrder.notes.includes('Total a acreditar: L.')) {
+                const parts = currentOrder.notes.split('Total a acreditar: L.');
+                if (parts.length > 1) {
+                    amountToCredit = parseFloat(parts[1].trim());
+                }
+            }
+
             // Get customer
             const { data: customer } = await client
                 .from('customers')
@@ -1167,13 +1190,23 @@ app.patch('/api/orders/:id', ensureAuthenticated, async (req, res) => {
                 .single();
             if (customer) {
                 const currentCash = parseFloat(customer.rico_balance) || 0;
-                await client.from('customers').update({ rico_balance: currentCash + amountToCredit }).eq('id', customer.id);
+                const currentTags = customer.tags || '';
+                const customerUpdates = { rico_balance: currentCash + amountToCredit };
+                if (isVipPurchase) {
+                    customerUpdates.is_vip = true;
+                    customerUpdates.tier = 'gold';
+                    if (!currentTags.includes('VIP')) {
+                        customerUpdates.tags = currentTags ? `${currentTags},VIP` : 'VIP';
+                    }
+                }
+
+                await client.from('customers').update(customerUpdates).eq('id', customer.id);
                 // Also log it
                 await client.from('balance_history').insert({
                     customer_id: customer.id,
                     amount: amountToCredit,
                     type: 'credit',
-                    description: 'Recarga Rico Cash (Transferencia Aprobada)',
+                    description: isVipPurchase ? 'Membresía VIP Aprobada' : 'Recarga Rico Cash (Transferencia Aprobada)',
                     balance_after: currentCash + amountToCredit
                 });
             }
@@ -3380,8 +3413,8 @@ app.post('/api/receipt', async (req, res) => {
 
 app.post('/api/topup', async (req, res) => {
     try {
-        const { imageBase64, phone, amount, bonus, fileName } = req.body;
-        
+        const { imageBase64, phone, amount, bonus, fileName, isVip } = req.body;
+
         if (!phone || !imageBase64 || !amount) {
             return res.status(400).json({ error: 'Missing data' });
         }
@@ -3400,7 +3433,7 @@ app.post('/api/topup', async (req, res) => {
         const buffer = Buffer.from(base64Data, 'base64');
         const mimeType = imageBase64.match(/^data:(image\/\w+);base64,/)?.[1] || 'image/png';
         const ext = mimeType.split('/')[1] || 'png';
-        
+
         const cleanName = (fileName || 'topup').replace(/[^a-zA-Z0-9.]/g, '');
         const storagePath = `receipts/TOPUP_${customer.id}_${Date.now()}_${cleanName}.${ext}`;
 
@@ -3420,14 +3453,14 @@ app.post('/api/topup', async (req, res) => {
         // Instead of updating a balance immediately, we create an order that the POS has to approve
         // This acts as the "ticket" for the cashier to review
         const orderNum = Math.floor(Date.now() / 1000) - 1769000000;
-        
+
         const topupOrder = {
             id: `TOPUP-${Date.now()}`,
             order_number: orderNum,
             customer_id: customer.id,
             items: [{
                 id: 'rico_cash_reload',
-                name: `Recarga Rico Cash (Bono: L.${bonus})`,
+                name: isVip ? 'Membresía VIP (L.1500)' : `Recarga Rico Cash (Bono: L.${bonus})`,
                 price: amount,
                 finalPrice: amount,
                 qty: 1,
@@ -3440,7 +3473,7 @@ app.post('/api/topup', async (req, res) => {
             status: 'pending_transfer', // Special status that POS will look for
             payment_method: 'transfer',
             fulfillment_type: 'pickup',
-            notes: `[RECARGA] +L.${bonus} Bono. Total a acreditar: L.${amount + bonus}`,
+            notes: isVip ? `[VIP_PURCHASE] Membresía Mensual. Total a acreditar: L.${amount + bonus}` : `[RECARGA] +L.${bonus} Bono. Total a acreditar: L.${amount + bonus}`,
             receipt_url: publicUrl
         };
 
@@ -3454,7 +3487,6 @@ app.post('/api/topup', async (req, res) => {
         return res.status(500).json({ error: error.message });
     }
 });
-
 app.post('/api/upload-receipt', async (req, res) => {
     const { imageBase64, ticketCode, refNumber } = req.body;
     

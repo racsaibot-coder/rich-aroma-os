@@ -29,6 +29,31 @@
         body { background-color: #0F0F0F; color: white; }
         .gold-gradient { background: linear-gradient(135deg, #C9A66B 0%, #F4E2C0 50%, #C9A66B 100%); }
         .glass-card { background: rgba(26, 26, 26, 0.8); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.1); }
+        
+        /* VIP Card Flip CSS */
+        .vip-card-container { perspective: 1000px; height: 220px; width: 100%; cursor: pointer; }
+        .vip-card-inner { position: relative; width: 100%; height: 100%; text-align: center; transition: transform 0.8s; transform-style: preserve-3d; }
+        .vip-card-inner.flipped { transform: rotateY(180deg); }
+        .vip-card-front, .vip-card-back { position: absolute; width: 100%; height: 100%; -webkit-backface-visibility: hidden; backface-visibility: hidden; border-radius: 24px; display: flex; flex-direction: column; overflow: hidden; }
+        .vip-card-back { transform: rotateY(180deg); background: white; color: black; align-items: center; justify-content: center; }
+        
+        .gold-shimmer {
+            background: linear-gradient(
+                135deg, 
+                #C9A66B 0%, 
+                #F4E2C0 25%, 
+                #C9A66B 50%, 
+                #F4E2C0 75%, 
+                #C9A66B 100%
+            );
+            background-size: 400% 400%;
+            animation: shimmer 8s ease infinite;
+        }
+        @keyframes shimmer {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
     </style>
 </head>
 <body class="pb-32 bg-dark">
@@ -49,6 +74,44 @@
             </div>
             <h2 class="text-2xl font-bold font-display" id="user-name">Cargando...</h2>
             <p class="text-white/50 text-sm font-mono mt-1" id="user-phone">---</p>
+        </div>
+
+        <!-- VIP Golden Card (Hidden by default) -->
+        <div id="vip-card-section" class="hidden">
+            <div class="vip-card-container" onclick="flipCard()">
+                <div class="vip-card-inner" id="vip-card-inner">
+                    <!-- Front: Aesthetic Golden Card -->
+                    <div class="vip-card-front gold-shimmer p-6 text-dark shadow-2xl relative">
+                        <div class="absolute -right-6 -top-6 text-9xl opacity-10"><i class="fas fa-crown"></i></div>
+                        <div class="flex justify-between items-start mb-8">
+                            <div class="w-12 h-12 bg-dark/10 rounded-full flex items-center justify-center">
+                                <i class="fas fa-crown text-2xl"></i>
+                            </div>
+                            <span class="font-black italic tracking-widest text-xs opacity-60">VIP MEMBER</span>
+                        </div>
+                        <div class="mt-auto">
+                            <p class="text-[10px] font-black uppercase tracking-widest opacity-60 mb-1">Nombre del Miembro</p>
+                            <h3 class="text-xl font-bold font-display truncate" id="vip-card-name">---</h3>
+                            <div class="flex justify-between items-end mt-4">
+                                <p class="text-sm font-mono tracking-tighter" id="vip-card-phone">---</p>
+                                <p class="text-[10px] font-bold opacity-60">Exp: <span id="vip-expiry">---</span></p>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Back: QR Code for POS -->
+                    <div class="vip-card-back p-6 shadow-2xl border-4 border-gold">
+                        <p class="text-xs font-black uppercase tracking-widest mb-3 text-gold">Escanea en Barra</p>
+                        <div id="qrcode" class="bg-white p-2 rounded-xl mb-3">
+                            <!-- QR will be generated here -->
+                            <img id="qr-img" class="w-32 h-32 mx-auto" src="" alt="QR Code">
+                        </div>
+                        <p class="text-[10px] font-bold text-gray-400">Toca para volver</p>
+                    </div>
+                </div>
+            </div>
+            <p class="text-center text-gold/50 text-[10px] font-bold mt-3 uppercase tracking-widest animate-pulse">
+                <i class="fas fa-sync-alt mr-1"></i> Toca para ver QR de beneficios
+            </p>
         </div>
 
         <!-- Balance Card -->
@@ -234,10 +297,34 @@
             document.getElementById('user-balance').innerText = `L ${totalCash.toFixed(2)}`;
             document.getElementById('rewards-points').innerText = currentCustomer.points || 0;
 
-            if (currentCustomer.is_vip) {
+            const isVip = currentCustomer.is_vip === true || (currentCustomer.tags && currentCustomer.tags.includes('VIP'));
+
+            if (isVip) {
                 document.getElementById('vip-badge').classList.remove('hidden');
                 document.getElementById('vip-offer').classList.add('hidden');
+                
+                // Show Golden Card
+                document.getElementById('vip-card-section').classList.remove('hidden');
+                document.getElementById('vip-card-name').innerText = currentCustomer.name;
+                document.getElementById('vip-card-phone').innerText = currentCustomer.phone;
+                
+                // Set expiry (placeholder: 30 days from creation or fixed)
+                const expiry = new Date(currentCustomer.created_at || Date.now());
+                expiry.setMonth(expiry.getMonth() + 1);
+                document.getElementById('vip-expiry').innerText = expiry.toLocaleDateString('es-HN', { month: '2-digit', year: '2-digit' });
+                
+                // Generate QR (Phone number is used for lookup in POS)
+                const qrData = currentCustomer.phone;
+                document.getElementById('qr-img').src = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(qrData)}`;
+            } else {
+                document.getElementById('vip-badge').classList.add('hidden');
+                document.getElementById('vip-offer').classList.remove('hidden');
+                document.getElementById('vip-card-section').classList.add('hidden');
             }
+        }
+
+        function flipCard() {
+            document.getElementById('vip-card-inner').classList.toggle('flipped');
         }
 
         async function redeemPoints(prizeId, cost) {
