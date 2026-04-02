@@ -208,24 +208,12 @@
       "dest": "/public/cali/admin.html"
     },
     {
-      "src": "/api/cali/products",
-      "dest": "/api/cali.js?action=products"
+      "src": "/api/cali/(.*)",
+      "dest": "/api/cali.js?action=$1"
     },
     {
-      "src": "/api/cali/products/(.*)",
-      "dest": "/api/cali.js?action=product_update&id=$1"
-    },
-    {
-      "src": "/api/cali/locations",
-      "dest": "/api/cali.js?action=locations"
-    },
-    {
-      "src": "/api/cali/locations/(.*)",
-      "dest": "/api/cali.js?action=location_update&id=$1"
-    },
-    {
-      "src": "/api/cali/orders",
-      "dest": "/api/cali.js?action=orders"
+      "src": "/api/cali",
+      "dest": "/api/cali.js"
     },
     {
       "src": "/api/checkout",
