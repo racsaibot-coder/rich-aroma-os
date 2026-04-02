@@ -644,8 +644,13 @@ app.post('/api/customer/login', async (req, res) => {
 });
 
 app.get('/api/customer/profile', async (req, res) => {
-    const phone = req.query.phone;
+    let phone = req.query.phone;
     if(!phone) return res.status(400).json({error: "Phone required"});
+
+    // Forgiveness for missing '+' encoding (space to plus)
+    if (phone.includes(' ')) {
+        phone = phone.replace(/ /g, '+');
+    }
 
     const { data: customer } = await supabase
         .from('customers')

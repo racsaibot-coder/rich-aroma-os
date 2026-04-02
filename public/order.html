@@ -1744,7 +1744,7 @@
             const phone = localStorage.getItem('ra_customer_phone');
             if (phone) {
                 try {
-                    const r = await fetch(`/api/customer/profile?phone=${phone}`);
+                    const r = await fetch(`/api/customer/profile?phone=${encodeURIComponent(phone)}`);
                     const u = await r.json();
                     if (u && !u.error) {
                         currentCustomer = u;

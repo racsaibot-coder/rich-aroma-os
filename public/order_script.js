@@ -917,7 +917,7 @@
             // Auto login logic for testing
             const phone = localStorage.getItem('ra_customer_phone') || localStorage.getItem('ra_phone');
             if (phone) {
-                fetch(`/api/customer/profile?phone=${phone}`)
+                fetch(`/api/customer/profile?phone=${encodeURIComponent(phone)}`)
                 .then(r => r.json())
                 .then(u => {
                     if (u && !u.error) {

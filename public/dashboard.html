@@ -276,7 +276,7 @@
             }
 
             try {
-                const res = await fetch(`/api/customer/profile?phone=${phone}`);
+                const res = await fetch(`/api/customer/profile?phone=${encodeURIComponent(phone)}`);
                 if (res.ok) {
                     currentCustomer = await res.json();
                     renderProfile();
