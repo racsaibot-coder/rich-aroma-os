@@ -636,7 +636,7 @@
 
         function filterCategory(cat, btnEl) {
             activeCategory = cat;
-            
+
             const buttons = document.querySelectorAll('.cat-btn');
             buttons.forEach(btn => {
                 btn.className = "cat-btn px-6 py-2 rounded-full border border-white/10 bg-white/5 text-white/70 text-sm font-bold hover:bg-white/10 transition-colors";
@@ -644,43 +644,54 @@
             if(btnEl) {
                 btnEl.className = "cat-btn px-6 py-2 rounded-full border border-gold bg-gold text-dark text-sm font-bold shadow-lg";
             }
-            
+
             renderMenu();
+        }
+
+        function getItemCategory(item) {
+            const cat = (item.category || 'Otros').toLowerCase();
+            const name = (item.name || '').toLowerCase();
+            const id = (item.id || '').toLowerCase();
+
+            // Match POS logic
+            if (id.startsWith('combo_') || name.includes('combo')) return 'Combos';
+            if (cat.includes('hot') || cat.includes('coffee') || cat.includes('caliente')) return 'Calientes';
+
+            // Heladas: Remove 'Te' unless it's a frappe
+            if (cat.includes('cold') || cat.includes('drink') || cat.includes('helada') || cat.includes('frappe') || cat.includes('granita')) {
+                if (name.includes('te') && !name.includes('frappe')) return 'Otros';
+                return 'Heladas';
+            }
+
+            if (cat.includes('food') || cat.includes('comida')) return 'Comida';
+            return 'Otros';
         }
 
         function renderMenu() {
             const container = document.getElementById('menu-container');
             const categories = {};
-            
+
             let filteredItems = menuItems;
             if (activeCategory !== 'all') {
                 filteredItems = menuItems.filter(item => {
-                    const itemCat = (item.category || 'Otros').toLowerCase();
-                    const itemName = (item.name || '').toLowerCase();
-                    const searchCat = activeCategory.toLowerCase();
-                    if (searchCat === 'calientes') return itemCat === 'hot_drinks' || itemCat === 'coffee' || itemCat.includes('caf') || itemCat.includes('t') || itemName.includes('té') || itemName.includes('chai') || itemName.includes('matcha') || itemName.includes('hot');
-                    if (searchCat === 'heladas') return itemCat === 'cold_drinks' || itemCat === 'drinks' || itemCat.includes('bebida') || itemName.includes('iced') || itemName.includes('frappe') || itemName.includes('granita') || itemName.includes('licuado');
-                    if (searchCat === 'comida') return itemCat === 'food' || itemCat.includes('comida');
-                    if (searchCat === 'combos') return itemCat === 'combo' || itemCat.includes('combo') || itemCat.includes('paquete') || itemName.includes('combo') || itemName.includes('paquete');
-                    return itemCat === searchCat;
+                    const itemCat = getItemCategory(item);
+                    if (activeCategory === 'Comida' && itemCat === 'Comida') {
+                        // Ensure food doesn't include combos even if category matches
+                        const itemId = (item.id || '').toLowerCase();
+                        const itemName = (item.name || '').toLowerCase();
+                        if (itemId.startsWith('combo_') || itemName.includes('combo')) return false;
+                    }
+                    return itemCat === activeCategory;
                 });
             }
 
             filteredItems.forEach(item => {
-                let cat = item.category || 'Otros';
-                const itemName = (item.name || '').toLowerCase();
-                const catLower = cat.toLowerCase();
-                
-                if (catLower === 'hot_drinks' || catLower === 'coffee') cat = 'Calientes';
-                else if (catLower === 'cold_drinks' || catLower === 'drinks') cat = 'Heladas';
-                else if (catLower === 'food') cat = 'Comida';
-                else if (catLower === 'combos' || catLower === 'combo' || catLower.includes('paquete') || itemName.includes('combo') || itemName.includes('paquete')) cat = 'Combos';
-                
+                const cat = getItemCategory(item);
                 if(!categories[cat]) categories[cat] = [];
                 categories[cat].push(item);
             });
 
-            const categoryOrder = ['Café', 'Bebidas', 'Combos', 'Comida', 'Postres', 'Otros'];
+            const categoryOrder = ['Combos', 'Calientes', 'Heladas', 'Comida', 'Otros'];
             const sortedCategories = Object.keys(categories).sort((a, b) => {
                 let indexA = categoryOrder.indexOf(a);
                 let indexB = categoryOrder.indexOf(b);
@@ -695,9 +706,53 @@
             } else {
                 sortedCategories.forEach(category => {
                     let items = categories[category];
-                    
-                    // Sort items: especially useful for Combos to be Combo 1, Combo 2, etc.
-                    items.sort((a, b) => a.name.localeCompare(b.name, undefined, {numeric: true, sensitivity: 'base'}));
+
+                    // Apply POS Sort Orders
+                    if (category === 'Combos') {
+                        const sortOrder = ['combo_1', 'combo_2', 'combo_3', 'combo_4'];
+                        items.sort((a, b) => {
+                            const indexA = sortOrder.indexOf(a.id);
+                            const indexB = sortOrder.indexOf(b.id);
+                            if (indexA !== -1 && indexB !== -1) return indexA - indexB;
+                            if (indexA !== -1) return -1;
+                            if (indexB !== -1) return 1;
+                            return a.name.localeCompare(b.name, undefined, {numeric: true});
+                        });
+                    } else if (category === 'Heladas') {
+                        const sortOrder = ['cold_supreme_frappe', 'cold_fresa_frappe', 'cold_coffee_frappe', 'cold_french_vanilla', 'cold_caramel_iced'];
+                        items.sort((a, b) => {
+                            const indexA = sortOrder.indexOf(a.id);
+                            const indexB = sortOrder.indexOf(b.id);
+                            if (indexA !== -1 && indexB !== -1) return indexA - indexB;
+                            if (indexA !== -1) return -1;
+                            if (indexB !== -1) return 1;
+                            return a.name.localeCompare(b.name);
+                        });
+                    } else if (category === 'Comida') {
+                        const sortOrder = [
+                            'food_avocado_toast_huevo',
+                            'food_banano_almond_toast',
+                            'food_chicken_salad_bowl',
+                            'food_baleadas',
+                            'food_chicken_melt',
+                            'food_grill_cheese_jamon',
+                            'food_grill_cheese',
+                            'food_papas',
+                            'food_crepas_3',
+                            'food_crepas_1'
+                        ];
+                        items.sort((a, b) => {
+                            const indexA = sortOrder.indexOf(a.id);
+                            const indexB = sortOrder.indexOf(b.id);
+                            if (indexA !== -1 && indexB !== -1) return indexA - indexB;
+                            if (indexA !== -1) return -1;
+                            if (indexB !== -1) return 1;
+                            return a.name.localeCompare(b.name);
+                        });
+                    } else {
+                        // Default alphabetical sort for others (like Calientes)
+                        items.sort((a, b) => a.name.localeCompare(b.name, undefined, {numeric: true}));
+                    }
 
                     html += `<div class="mb-8"><h2 class="text-gold text-sm font-bold uppercase tracking-widest mb-4 border-l-2 border-gold pl-3">${category}</h2><div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">`;
                     items.forEach(item => {
