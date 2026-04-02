@@ -1377,17 +1377,21 @@
 
     function showShiftReport(r) {
         const content = document.getElementById('shift-report-content');
-        if (!r || !r.sales) {
-            content.innerHTML = '<p class="text-red-500">Error: Report data incomplete.</p>';
+        if (!r) {
+            content.innerHTML = '<p class="text-red-500 text-center py-10 font-bold">Error: Report data is missing.</p>';
             document.getElementById('shiftReportModal').classList.remove('hidden');
             return;
         }
-        const opening = parseFloat(r.opening_amount) || 0;
-        const cashSales = parseFloat(r.sales.cash) || 0;
-        const closing = parseFloat(r.closing_amount) || 0;
-        const expected = opening + cashSales + (parseFloat(r.transactions) || 0);
+        
+        // Ensure all fields exist and are numbers
+        const opening = parseFloat(r.opening_amount || 0);
+        const cashSales = parseFloat(r.sales?.cash || 0);
+        const closing = parseFloat(r.closing_amount || 0);
+        const transactions = parseFloat(r.transactions || 0);
+        const expected = opening + cashSales + transactions;
         const diff = closing - expected;
-        const ricoSales = parseFloat(r.sales.rico_balance) || 0;
+        const ricoSales = parseFloat(r.sales?.rico_balance || 0);
+        const orderCount = parseInt(r.order_count || 0);
         
         content.innerHTML = `
             <div class="p-6 bg-gray-900 text-gold rounded-2xl font-mono text-sm space-y-3 border border-white/10 shadow-2xl">
@@ -1418,12 +1422,16 @@
                     </div>
                     <div class="flex justify-between text-[10px]">
                         <span class="text-gray-500 uppercase">Total Orders:</span>
-                        <span class="text-white">${r.order_count || 0}</span>
+                        <span class="text-white">${orderCount}</span>
                     </div>
                 </div>
             </div>
         `;
         document.getElementById('shiftReportModal').classList.remove('hidden');
+    }
+
+    function printShiftReport() {
+        window.print();
     }
 
     function closeModal() { document.getElementById('modifier-modal').classList.add('hidden'); }
