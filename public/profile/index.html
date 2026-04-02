@@ -314,15 +314,28 @@
             localStorage.removeItem('ra_customer_data');
             location.reload();
         }
+
+        // Check for active order tracking
+        const activeOrder = localStorage.getItem('ra_active_order');
+        if (activeOrder) {
+            const navTracking = document.getElementById('nav-tracking');
+            if (navTracking) navTracking.classList.remove('hidden');
+        }
     </script>
 
     <!-- UNIVERSAL BOTTOM NAVIGATION -->
-    <nav class="fixed bottom-0 left-0 right-0 z-[200] bg-dark/80 backdrop-blur-xl border-t border-white/5 px-6 pb-8 pt-3 flex justify-between items-center safe-area-inset-bottom shadow-[0_-10px_40px_rgba(0,0,0,0.5)]">
+    <nav class="fixed bottom-0 left-0 right-0 z-[200] bg-dark/80 backdrop-blur-xl border-t border-white/5 px-4 pb-8 pt-3 flex justify-around items-center safe-area-inset-bottom shadow-[0_-10px_40px_rgba(0,0,0,0.5)]">
         <a href="/order" class="flex flex-col items-center gap-1 text-white/40 hover:text-gold transition-colors">
             <div class="w-10 h-10 rounded-2xl hover:bg-gold/10 flex items-center justify-center transition-colors">
                 <i class="fas fa-mug-hot"></i>
             </div>
             <span class="text-[10px] font-bold uppercase tracking-widest">Menú</span>
+        </a>
+        <a href="/order?view=tracking" id="nav-tracking" class="hidden flex flex-col items-center gap-1 text-white/40 hover:text-gold transition-colors">
+            <div class="w-10 h-10 rounded-2xl hover:bg-gold/10 flex items-center justify-center transition-colors">
+                <i class="fas fa-receipt"></i>
+            </div>
+            <span class="text-[10px] font-bold uppercase tracking-widest">Estado</span>
         </a>
         <a href="/dashboard.html" class="flex flex-col items-center gap-1 text-white/40 hover:text-gold transition-colors">
             <div class="w-10 h-10 rounded-2xl hover:bg-gold/10 flex items-center justify-center transition-colors">

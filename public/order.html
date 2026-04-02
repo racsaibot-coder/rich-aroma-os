@@ -117,12 +117,18 @@
     </div>
 
     <!-- UNIVERSAL BOTTOM NAVIGATION -->
-    <nav class="fixed bottom-0 left-0 right-0 z-[200] bg-dark/80 backdrop-blur-xl border-t border-white/5 px-6 pb-8 pt-3 flex justify-between items-center safe-area-inset-bottom shadow-[0_-10px_40px_rgba(0,0,0,0.5)]">
-        <a href="/order" class="flex flex-col items-center gap-1 text-gold">
+    <nav class="fixed bottom-0 left-0 right-0 z-[200] bg-dark/80 backdrop-blur-xl border-t border-white/5 px-4 pb-8 pt-3 flex justify-around items-center safe-area-inset-bottom shadow-[0_-10px_40px_rgba(0,0,0,0.5)]">
+        <a href="/order" class="flex flex-col items-center gap-1 text-gold" id="nav-menu" onclick="showMenuView(); return false;">
             <div class="w-10 h-10 rounded-2xl bg-gold/10 flex items-center justify-center">
                 <i class="fas fa-mug-hot"></i>
             </div>
             <span class="text-[10px] font-black uppercase tracking-widest">Menú</span>
+        </a>
+        <a href="/order" id="nav-tracking" class="hidden flex flex-col items-center gap-1 text-white/40 hover:text-gold transition-colors" onclick="showTracking(); return false;">
+            <div class="w-10 h-10 rounded-2xl hover:bg-gold/10 flex items-center justify-center transition-colors">
+                <i class="fas fa-receipt"></i>
+            </div>
+            <span class="text-[10px] font-bold uppercase tracking-widest">Estado</span>
         </a>
         <a href="/dashboard.html" class="flex flex-col items-center gap-1 text-white/40 hover:text-gold transition-colors">
             <div class="w-10 h-10 rounded-2xl hover:bg-gold/10 flex items-center justify-center transition-colors">
@@ -494,7 +500,21 @@
         let currentMods = {};
         
         let fulfillmentType = 'pickup'; // default
-        let activeOrder = null;
+        let activeOrder = (() => {
+            try {
+                const saved = localStorage.getItem('ra_active_order');
+                return saved ? JSON.parse(saved) : null;
+            } catch(e) { return null; }
+        })();
+
+        function saveActiveOrder() {
+            if (activeOrder) {
+                localStorage.setItem('ra_active_order', JSON.stringify(activeOrder));
+            } else {
+                localStorage.removeItem('ra_active_order');
+            }
+        }
+
         let addonTimer = null;
         let isAddonMode = false;
         let currentQuantity = 1;
@@ -1307,6 +1327,7 @@
                 closeCartModal();
                 
                 activeOrder = savedOrder;
+                saveActiveOrder();
                 showTracking();
 
             } catch (err) {
@@ -1410,14 +1431,44 @@
             }, 1000);
         }
 
+        function showMenuView() {
+            document.getElementById('main-view').classList.remove('hidden');
+            document.getElementById('fulfillment-selector').classList.remove('hidden');
+            document.getElementById('tracking-view').classList.add('hidden');
+
+            // Update Nav State
+            const navTracking = document.getElementById('nav-tracking');
+            const navMenu = document.getElementById('nav-menu');
+            if (navTracking) {
+                navTracking.classList.replace('text-gold', 'text-white/40');
+                navTracking.querySelector('div').classList.replace('bg-gold/10', 'hover:bg-gold/10');
+            }
+            if (navMenu) {
+                navMenu.classList.replace('text-white/40', 'text-gold');
+                navMenu.querySelector('div').classList.replace('hover:bg-gold/10', 'bg-gold/10');
+            }
+        }
+
         function showTracking() {
             document.getElementById('main-view').classList.add('hidden');
             document.getElementById('fulfillment-selector').classList.add('hidden');
             document.getElementById('tracking-view').classList.remove('hidden');
             document.getElementById('tracking-icon-container').classList.remove('hidden');
-            
-            if (activeOrder && activeOrder.payment_method === 'transfer') {
-                document.getElementById('transfer-upload-section').classList.remove('hidden');
+
+            // Update Nav State
+            const navTracking = document.getElementById('nav-tracking');
+            const navMenu = document.getElementById('nav-menu');
+            if (navTracking) {
+                navTracking.classList.remove('hidden');
+                navTracking.classList.replace('text-white/40', 'text-gold');
+                navTracking.querySelector('div').classList.replace('hover:bg-gold/10', 'bg-gold/10');
+            }
+            if (navMenu) {
+                navMenu.classList.replace('text-gold', 'text-white/40');
+                navMenu.querySelector('div').classList.replace('bg-gold/10', 'hover:bg-gold/10');
+            }
+
+            if (activeOrder && activeOrder.payment_method === 'transfer') {                document.getElementById('transfer-upload-section').classList.remove('hidden');
                 document.getElementById('track-bank-info').classList.remove('hidden');
             } else {
                 document.getElementById('transfer-upload-section').classList.add('hidden');
@@ -1512,14 +1563,9 @@
 
         function showTrackingIfActive() {
             if(activeOrder) {
-                document.getElementById('main-view').classList.add('hidden');
-                document.getElementById('fulfillment-selector').classList.add('hidden');
-                document.getElementById('tracking-view').classList.remove('hidden');
-                renderTrackedItems();
+                showTracking();
             }
         }
-
-// Audio Chimes for customer
         const prepChime = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3'); // soft ding
         const readyChime = new Audio('https://assets.mixkit.co/active_storage/sfx/2013/2013-preview.mp3'); // happy chime
         let currentStepState = 'pending';
@@ -1575,6 +1621,7 @@
                 if (res.ok) {
                     const data = await res.json();
                     activeOrder = data.order; // update local active order
+                    saveActiveOrder();
                     isAddonMode = false;
                     showTracking(); // go back
                 } else {
@@ -1664,6 +1711,7 @@
             cart = [];
             saveCart();
             activeOrder = null;
+            saveActiveOrder();
             document.getElementById('tracking-view').classList.add('hidden');
             document.getElementById('tracking-icon-container').classList.add('hidden');
             document.getElementById('main-view').classList.remove('hidden');
@@ -1673,6 +1721,12 @@
 
         // Init
         async function refreshCustomerData() {
+            // Check for active order tracking nav
+            if (activeOrder) {
+                const navTracking = document.getElementById('nav-tracking');
+                if (navTracking) navTracking.classList.remove('hidden');
+            }
+
             // Load from cache first for instant UX
             const cachedData = localStorage.getItem('ra_customer_data');
             if (cachedData) {
@@ -1725,6 +1779,17 @@
             
             // Auto login logic
             refreshCustomerData();
+
+            // Check if there is an active order to track
+            const urlParams = new URLSearchParams(window.location.search);
+            if (activeOrder || urlParams.get('view') === 'tracking') {
+                if (activeOrder) {
+                    showTracking();
+                } else if (urlParams.get('view') === 'tracking') {
+                    // If they forced tracking view but none active, show menu
+                    showMenuView();
+                }
+            }
         });
 
     </script>
