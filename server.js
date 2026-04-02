@@ -68,6 +68,109 @@ app.patch('/api/store/status', (req, res) => {
 const RECEIPT_HASHES = new Set(); 
 const crypto = require('crypto');
 
+// === VIP MEMBERSHIP LOGIC ===
+const VIP_MONTHLY_RELOAD = 500.00;
+const HONDURAS_TZ = 'America/Tegucigalpa';
+
+function getHondurasDate() {
+    return new Intl.DateTimeFormat('en-CA', { 
+        timeZone: HONDURAS_TZ, 
+        year: 'numeric', 
+        month: '2-digit', 
+        day: '2-digit' 
+    }).format(new Date());
+}
+
+async function syncMembershipState(customer) {
+    if (!customer || !customer.is_vip) return customer;
+
+    const today = getHondurasDate();
+    const updates = {};
+    let stateChanged = false;
+
+    // RULE 2: Monthly Rico Cash Sweep & Reload
+    // Reset balance to 0 (breakage) and deposit fresh 500.00 every 30 days
+    if (customer.next_renewal_date && today >= customer.next_renewal_date) {
+        const breakage = parseFloat(customer.rico_balance) || 0;
+        
+        // Log breakage/renewal event
+        try {
+            await supabase.from('membership_billing_events').insert({
+                customer_id: customer.id,
+                event_type: 'renewal_sweep',
+                amount_swept: breakage,
+                amount_deposited: VIP_MONTHLY_RELOAD
+            });
+        } catch (e) { console.error("[VIP] Failed to log billing event:", e.message); }
+
+        updates.rico_balance = VIP_MONTHLY_RELOAD;
+        
+        // Calculate next renewal (Today + 30 days)
+        const nextDate = new Date();
+        nextDate.setDate(nextDate.getDate() + 30);
+        updates.next_renewal_date = nextDate.toISOString().split('T')[0];
+        
+        stateChanged = true;
+        console.log(`[VIP] Swept L.\${breakage} and reloaded L.\${VIP_MONTHLY_RELOAD} for \${customer.id}`);
+    }
+
+    if (stateChanged) {
+        const { data, error } = await supabase
+            .from('customers')
+            .update(updates)
+            .eq('id', customer.id)
+            .select()
+            .single();
+        if (!error && data) return data;
+    }
+
+    return customer;
+}
+
+function applyVipBenefits(orderItems, customer, paymentMethod) {
+    const today = getHondurasDate();
+    let freeDrinkClaimedThisOrder = false;
+    
+    // Check daily eligibility
+    const canClaimFreeDrink = customer.is_vip && (customer.last_free_drink_date !== today);
+
+    const processedItems = orderItems.map(item => {
+        let finalPrice = parseFloat(item.price) || 0;
+        let appliedDiscount = 0;
+
+        // RULE 1: Daily Drink Validation (Highest Priority)
+        if (canClaimFreeDrink && !freeDrinkClaimedThisOrder && item.is_vip_free_eligible) {
+            appliedDiscount = finalPrice;
+            finalPrice = 0;
+            freeDrinkClaimedThisOrder = true;
+            item.is_free_benefit = true;
+        }
+
+        // RULE 3: Conditional 10% Discount
+        // Apply only if: VIP, paying with Rico Cash, and item is house-made
+        if (customer.is_vip && paymentMethod === 'rico_balance' && item.is_house_made && finalPrice > 0) {
+            const discount = finalPrice * 0.10;
+            finalPrice -= discount;
+            appliedDiscount += discount;
+        }
+
+        return {
+            ...item,
+            finalPrice: parseFloat(finalPrice.toFixed(2)),
+            appliedDiscount: parseFloat(appliedDiscount.toFixed(2))
+        };
+    });
+
+    const finalTotal = processedItems.reduce((sum, i) => sum + (i.finalPrice * i.qty), 0);
+
+    return {
+        items: processedItems,
+        total: parseFloat(finalTotal.toFixed(2)),
+        freeDrinkClaimed: freeDrinkClaimedThisOrder
+    };
+}
+// =============================
+
 // Verify Supabase Session
 const requireAuth = async (req, res, next) => {
     try {
@@ -551,7 +654,8 @@ app.get('/api/customer/profile', async (req, res) => {
         .single();
         
     if(customer) {
-        res.json(customer);
+        const synced = await syncMembershipState(customer);
+        res.json(synced);
     } else {
         res.status(404).json({error: "Not found"});
     }
@@ -795,53 +899,76 @@ app.get('/api/orders', ensureAuthenticated, async (req, res) => {
 
 app.post('/api/orders', async (req, res) => {
     // Public/POS can create orders (Anon allowed)
-    
-    // 1. Get next order number
-    // Fix: Instead of reading max and adding 1 (race condition), we let the DB auto-increment the ID
-    // Since we don't have an RPC setup for atomic order creation yet, we'll use a timestamp-based ID as fallback
-    // to prevent collisions, but keep the sequential order_number for display if possible.
-    const orderNum = Math.floor(Date.now() / 1000) - 1769000000; // Generate a pseudo-sequential number based on time
-    
-    const orderData = {
-        id: `ORD-${Date.now()}`,
-        order_number: orderNum,
-        items: req.body.items,
-        subtotal: req.body.subtotal,
-        tax: req.body.tax || 0,
-        discount: req.body.discount || 0,
-        total: req.body.total,
-        status: 'pending',
-        payment_method: req.body.paymentMethod,
-        customer_id: req.body.customerId,
-        discount_code: req.body.discountCode,
-        notes: req.body.notes
-    };
+    try {
+        const orderNum = Math.floor(Date.now() / 1000) - 1769000000;
+        let customer = null;
+        let paymentMethod = req.body.paymentMethod;
 
-    // 2. Handle Split Payment / Rico Balance
-    if (req.body.paymentMethod === 'rico_balance' && req.body.customerId) {
-        const { data: customer } = await supabase
-            .from('customers')
-            .select('*')
-            .eq('id', req.body.customerId)
-            .single();
+        // 1. Fetch & Sync Customer (VIP Logic)
+        if (req.body.customerId) {
+            const { data } = await supabase.from('customers').select('*').eq('id', req.body.customerId).single();
+            if (data) {
+                customer = await syncMembershipState(data);
+            }
+        }
 
-        if (customer) {
+        // 2. Fetch Item Metadata for VIP calculation
+        const itemIds = (req.body.items || []).map(i => i.id);
+        const { data: menuItems } = await supabase.from('menu_items').select('id, is_house_made, is_vip_free_eligible').in('id', itemIds);
+        
+        const itemsWithMeta = (req.body.items || []).map(item => {
+            const meta = (menuItems || []).find(m => m.id === item.id);
+            return {
+                ...item,
+                is_house_made: meta?.is_house_made || false,
+                is_vip_free_eligible: meta?.is_vip_free_eligible || false
+            };
+        });
+
+        // 3. Apply VIP Benefits
+        let finalOrderData = {
+            items: itemsWithMeta,
+            subtotal: parseFloat(req.body.subtotal) || 0,
+            total: parseFloat(req.body.total) || 0,
+            discount: parseFloat(req.body.discount) || 0
+        };
+
+        let freeDrinkClaimed = false;
+        if (customer && customer.is_vip) {
+            const calculation = applyVipBenefits(itemsWithMeta, customer, paymentMethod);
+            finalOrderData.items = calculation.items;
+            finalOrderData.total = calculation.total;
+            finalOrderData.discount = calculation.items.reduce((sum, i) => sum + (i.appliedDiscount || 0), 0);
+            freeDrinkClaimed = calculation.freeDrinkClaimed;
+            
+            if (freeDrinkClaimed) {
+                await supabase.from('customers').update({ last_free_drink_date: getHondurasDate() }).eq('id', customer.id);
+            }
+        }
+
+        const orderData = {
+            id: `ORD-\${Date.now()}`,
+            order_number: orderNum,
+            items: finalOrderData.items,
+            subtotal: finalOrderData.subtotal,
+            tax: req.body.tax || 0,
+            discount: finalOrderData.discount,
+            total: finalOrderData.total,
+            status: 'pending',
+            payment_method: paymentMethod,
+            customer_id: req.body.customerId,
+            discount_code: req.body.discountCode,
+            notes: req.body.notes
+        };
+
+        // 4. Handle Rico Balance Deduction
+        if (paymentMethod === 'rico_balance' && customer) {
             const currentBalance = parseFloat(customer.rico_balance) || 0;
             const total = parseFloat(orderData.total);
 
             if (currentBalance >= total) {
-                // Full Payment
                 orderData.status = 'paid';
-
-                // Update Customer Balance
-                await supabase
-                    .from('customers')
-                    .update({
-                        rico_balance: currentBalance - total
-                    })
-                    .eq('id', customer.id);
-
-                // Log Balance History
+                await supabase.from('customers').update({ rico_balance: currentBalance - total }).eq('id', customer.id);
                 await supabase.from('balance_history').insert({
                     customer_id: customer.id,
                     type: 'payment',
@@ -849,99 +976,71 @@ app.post('/api/orders', async (req, res) => {
                     order_id: orderData.id
                 });
             } else {
-                // Partial Payment (if they used whatever was left)
-                orderData.status = 'partial_paid';
+                return res.status(400).json({ error: 'Saldo insuficiente en Rico Cash' });
+            }
+        }
 
-                await supabase
-                    .from('customers')
-                    .update({
-                        rico_balance: 0
-                    })
-                    .eq('id', customer.id);
+        const { data, error } = await supabase.from('orders').insert(orderData).select().single();
+        if (error) throw error;
 
-                if (currentBalance > 0) {
-                    await supabase.from('balance_history').insert({
-                        customer_id: customer.id,
-                        type: 'payment',
-                        amount: -currentBalance,
-                        order_id: orderData.id
+        // --- LOCAL FALLBACK / HYBRID SYNC ---
+        try {
+            const ordersPath = path.join(__dirname, 'data', 'orders.json');
+            let localOrders = { orders: [] };
+            if (fs.existsSync(ordersPath)) {
+                localOrders = JSON.parse(fs.readFileSync(ordersPath, 'utf8'));
+            }
+            localOrders.orders.unshift(orderData);
+            fs.writeFileSync(ordersPath, JSON.stringify(localOrders, null, 2));
+        } catch (fsErr) { console.error("Local save failed:", fsErr); }
+
+        // --- DEDUCTION ENGINE ---
+        try {
+            const orderItems = orderData.items || []; 
+            for (const item of orderItems) {
+                // 1. Deduct for Menu Item
+                const { data: ingredients } = await supabase
+                    .from('menu_item_ingredients')
+                    .select('*')
+                    .eq('item_id', item.id);
+                
+                for (const ing of (ingredients || [])) {
+                    const amountToDeduct = ing.quantity * (item.qty || 1);
+                    await supabase.rpc('decrement_inventory', { 
+                        item_id: ing.inventory_item_id, 
+                        amount: amountToDeduct 
                     });
                 }
-            }
-        }
-    } else if (['cash', 'card'].includes(req.body.paymentMethod)) {
-         // Assume paid if cash/card? Usually cash is 'pending' until closed, 
-         // but for this logic we might want to track paid amount.
-         // If it's a simple order, we leave amount_paid 0 or full depending on workflow.
-         // Let's assume standard orders are "paid" upon completion, or "pending" payment.
-         // We'll leave defaults (amount_paid=0) for standard flows unless specified.
-    }
-    
-    const { data, error } = await supabase.from('orders').insert(orderData).select().single();
-    
-    // --- LOCAL FALLBACK / HYBRID SYNC ---
-    // Save to local JSON as backup/offline storage
-    try {
-        const ordersPath = path.join(__dirname, 'data', 'orders.json');
-        let localOrders = { orders: [] };
-        if (fs.existsSync(ordersPath)) {
-            localOrders = JSON.parse(fs.readFileSync(ordersPath, 'utf8'));
-        }
-        localOrders.orders.unshift(orderData); // Add new order to top
-        fs.writeFileSync(ordersPath, JSON.stringify(localOrders, null, 2));
-        console.log(`[Hybrid] Saved Order ${orderData.id} to local JSON.`);
-    } catch (fsErr) {
-        console.error("Local save failed:", fsErr);
-    }
-    // ------------------------------------
 
-    if (error) return res.status(500).json({ error: error.message });
+                // 2. Deduct for Modifiers
+                if (item.mods && Array.isArray(item.mods)) {
+                    for (const mod of item.mods) {
+                        const modId = typeof mod === 'object' ? mod.id : mod;
+                        if (!modId) continue;
 
-    // DEDUCTION ENGINE
-    try {
-        const orderItems = orderData.items || []; 
-        for (const item of orderItems) {
-            // 1. Deduct for Menu Item
-            const { data: ingredients } = await supabase
-                .from('menu_item_ingredients')
-                .select('*')
-                .eq('item_id', item.id);
-            
-            for (const ing of (ingredients || [])) {
-                const amountToDeduct = ing.quantity * (item.quantity || 1);
-                await supabase.rpc('decrement_inventory', { 
-                    item_id: ing.inventory_item_id, 
-                    amount: amountToDeduct 
-                });
-            }
-
-            // 2. Deduct for Modifiers
-            if (item.modifiers && Array.isArray(item.modifiers)) {
-                for (const mod of item.modifiers) {
-                    // Handle modifier as object { id, ... } or string ID
-                    const modId = typeof mod === 'object' ? mod.id : mod;
-                    if (!modId) continue;
-
-                    const { data: modIngs } = await supabase
-                        .from('modifier_ingredients')
-                        .select('*')
-                        .eq('modifier_id', modId);
-                        
-                    for (const mIng of (modIngs || [])) {
-                        const amountToDeduct = mIng.quantity * (item.quantity || 1); 
-                        await supabase.rpc('decrement_inventory', {
-                            item_id: mIng.inventory_item_id,
-                            amount: amountToDeduct
-                        });
+                        const { data: modIngs } = await supabase
+                            .from('modifier_ingredients')
+                            .select('*')
+                            .eq('modifier_id', modId);
+                            
+                        for (const mIng of (modIngs || [])) {
+                            const amountToDeduct = mIng.quantity * (item.qty || 1); 
+                            await supabase.rpc('decrement_inventory', {
+                                item_id: mIng.inventory_item_id,
+                                amount: amountToDeduct
+                            });
+                        }
                     }
                 }
             }
-        }
-    } catch (deductError) {
-        console.error("Inventory deduction failed:", deductError);
-    }
+        } catch (deductError) { console.error("Inventory deduction failed:", deductError); }
 
-    res.json(data);
+        res.json(data);
+
+    } catch (err) {
+        console.error("[Order] VIP Process Error:", err);
+        res.status(500).json({ error: err.message });
+    }
 });
 
 // BATCH SYNC (Offline Orders)
@@ -1545,8 +1644,11 @@ app.get('/api/customers/phone/:phone', async (req, res) => {
     
     if (error || !data) return res.status(404).json({ error: 'Customer not found' });
 
+    // Sync VIP Membership State
+    const syncedData = await syncMembershipState(data);
+
     // Calculate "The Usual"
-    const { data: orders } = await supabase.from('orders').select('items').eq('customer_id', data.id);
+    const { data: orders } = await supabase.from('orders').select('items').eq('customer_id', syncedData.id);
     if (orders && orders.length > 0) {
         const itemCounts = {};
         const itemObjects = {};
@@ -1568,11 +1670,11 @@ app.get('/api/customers/phone/:phone', async (req, res) => {
             }
         }
         if (usualItem) {
-            data.usual_item = usualItem;
+            syncedData.usual_item = usualItem;
         }
     }
 
-    res.json(data);
+    res.json(syncedData);
 });
 
 app.post('/api/customers', async (req, res) => {
