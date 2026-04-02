@@ -82,7 +82,10 @@ function getHondurasDate() {
 }
 
 async function syncMembershipState(customer) {
-    if (!customer || !customer.is_vip) return customer;
+    if (!customer) return customer;
+    
+    const isVip = customer.is_vip === true || (Array.isArray(customer.tags) && customer.tags.includes('VIP'));
+    if (!isVip) return customer;
 
     const today = getHondurasDate();
     const updates = {};
@@ -131,8 +134,10 @@ function applyVipBenefits(orderItems, customer, paymentMethod) {
     const today = getHondurasDate();
     let freeDrinkClaimedThisOrder = false;
     
+    const isVip = customer.is_vip === true || (Array.isArray(customer.tags) && customer.tags.includes('VIP'));
+
     // Check daily eligibility
-    const canClaimFreeDrink = customer.is_vip && (customer.last_free_drink_date !== today);
+    const canClaimFreeDrink = isVip && (customer.last_free_drink_date !== today);
 
     const processedItems = orderItems.map(item => {
         let finalPrice = parseFloat(item.price) || 0;
@@ -148,7 +153,7 @@ function applyVipBenefits(orderItems, customer, paymentMethod) {
 
         // RULE 3: Conditional 10% Discount
         // Apply only if: VIP, paying with Rico Cash, and item is house-made
-        if (customer.is_vip && paymentMethod === 'rico_balance' && item.is_house_made && finalPrice > 0) {
+        if (isVip && paymentMethod === 'rico_balance' && item.is_house_made && finalPrice > 0) {
             const discount = finalPrice * 0.10;
             finalPrice -= discount;
             appliedDiscount += discount;
@@ -938,8 +943,10 @@ app.post('/api/orders', async (req, res) => {
             discount: parseFloat(req.body.discount) || 0
         };
 
+        const isVip = customer && (customer.is_vip === true || (Array.isArray(customer.tags) && customer.tags.includes('VIP')));
+        
         let freeDrinkClaimed = false;
-        if (customer && customer.is_vip) {
+        if (isVip) {
             const calculation = applyVipBenefits(itemsWithMeta, customer, paymentMethod);
             finalOrderData.items = calculation.items;
             finalOrderData.total = calculation.total;
@@ -1212,7 +1219,7 @@ app.post('/api/orders/:id/approve-topup', ensureAuthenticated, async (req, res) 
         if (isVipPurchase) {
             customerUpdates.tier = 'gold'; // VIPs are automatically gold
             
-            // Handle tags as array
+            // Use tags as the reliable indicator since is_vip column is missing
             if (!currentTags.includes('VIP')) {
                 customerUpdates.tags = [...currentTags, 'VIP'];
             }

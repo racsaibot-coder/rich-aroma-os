@@ -83,18 +83,42 @@
                     <!-- Front: Aesthetic Golden Card -->
                     <div class="vip-card-front gold-shimmer p-6 text-dark shadow-2xl relative">
                         <div class="absolute -right-6 -top-6 text-9xl opacity-10"><i class="fas fa-crown"></i></div>
-                        <div class="flex justify-between items-start mb-8">
+                        
+                        <!-- Top: Logo and Label -->
+                        <div class="flex justify-between items-start mb-4">
                             <div class="w-12 h-12 bg-dark/10 rounded-full flex items-center justify-center">
                                 <i class="fas fa-crown text-2xl"></i>
                             </div>
-                            <span class="font-black italic tracking-widest text-xs opacity-60">VIP MEMBER</span>
+                            <div class="text-right">
+                                <span class="font-black italic tracking-widest text-[10px] block opacity-60">VIP MEMBER</span>
+                                <span class="font-mono text-[10px] font-bold" id="vip-card-id">#---</span>
+                            </div>
                         </div>
-                        <div class="mt-auto">
-                            <p class="text-[10px] font-black uppercase tracking-widest opacity-60 mb-1">Nombre del Miembro</p>
-                            <h3 class="text-xl font-bold font-display truncate" id="vip-card-name">---</h3>
-                            <div class="flex justify-between items-end mt-4">
-                                <p class="text-sm font-mono tracking-tighter" id="vip-card-phone">---</p>
-                                <p class="text-[10px] font-bold opacity-60">Exp: <span id="vip-expiry">---</span></p>
+
+                        <!-- Center: Balances -->
+                        <div class="grid grid-cols-2 gap-4 my-auto">
+                            <div class="bg-dark/5 rounded-2xl p-3 border border-dark/5">
+                                <p class="text-[8px] font-black uppercase tracking-widest opacity-60">Rico Cash</p>
+                                <p class="text-lg font-black font-mono" id="vip-card-cash">L 0.00</p>
+                            </div>
+                            <div class="bg-dark/5 rounded-2xl p-3 border border-dark/5">
+                                <p class="text-[8px] font-black uppercase tracking-widest opacity-60">Rico Points</p>
+                                <p class="text-lg font-black font-mono" id="vip-card-points">0</p>
+                            </div>
+                        </div>
+
+                        <!-- Bottom: Name and Streak -->
+                        <div class="mt-auto pt-4 flex justify-between items-end">
+                            <div class="flex-1 overflow-hidden pr-4">
+                                <p class="text-[8px] font-black uppercase tracking-widest opacity-60 mb-0.5">Titular</p>
+                                <h3 class="text-lg font-bold font-display truncate leading-none" id="vip-card-name">---</h3>
+                            </div>
+                            <div class="text-right shrink-0">
+                                <p class="text-[8px] font-black uppercase tracking-widest opacity-60 mb-0.5">Racha</p>
+                                <div class="flex items-center gap-1 justify-end">
+                                    <i class="fas fa-fire text-orange-600 animate-pulse text-xs"></i>
+                                    <span class="font-black text-sm" id="vip-card-streak">0</span>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -303,7 +327,11 @@
             document.getElementById('user-balance').innerText = `L ${totalCash.toFixed(2)}`;
             document.getElementById('rewards-points').innerText = currentCustomer.points || 0;
 
-            const isVip = currentCustomer.is_vip === true || (currentCustomer.tags && currentCustomer.tags.includes('VIP'));
+            // Defensive VIP check
+            const tags = currentCustomer.tags || [];
+            const isVip = currentCustomer.is_vip === true || 
+                          (Array.isArray(tags) && tags.includes('VIP')) || 
+                          (typeof tags === 'string' && tags.includes('VIP'));
 
             if (isVip) {
                 document.getElementById('vip-badge').classList.remove('hidden');
@@ -312,12 +340,10 @@
                 // Show Golden Card
                 document.getElementById('vip-card-section').classList.remove('hidden');
                 document.getElementById('vip-card-name').innerText = currentCustomer.name;
-                document.getElementById('vip-card-phone').innerText = currentCustomer.phone;
-                
-                // Set expiry (placeholder: 30 days from creation or fixed)
-                const expiry = new Date(currentCustomer.created_at || Date.now());
-                expiry.setMonth(expiry.getMonth() + 1);
-                document.getElementById('vip-expiry').innerText = expiry.toLocaleDateString('es-HN', { month: '2-digit', year: '2-digit' });
+                document.getElementById('vip-card-id').innerText = `#${currentCustomer.id || '---'}`;
+                document.getElementById('vip-card-cash').innerText = `L ${totalCash.toFixed(2)}`;
+                document.getElementById('vip-card-points').innerText = currentCustomer.points || 0;
+                document.getElementById('vip-card-streak').innerText = currentCustomer.visits || 0;
                 
                 // Generate QR (Phone number is used for lookup in POS)
                 const qrData = currentCustomer.phone;
