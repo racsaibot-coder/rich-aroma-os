@@ -6,7 +6,7 @@
     <title>Cali Distro HQ | Admin</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Inter:wght@300;400;500;600;700;900&display=swap" rel="stylesheet">
     <script>
         tailwind.config = {
             theme: {
@@ -17,7 +17,7 @@
                     },
                     colors: {
                         brand: {
-                            dark: '#1e1b18',
+                            dark: '#120e0c',
                             brown: '#8b5a2b',
                             cream: '#fdfbf7',
                             gold: '#d4af37'
@@ -28,250 +28,253 @@
         }
     </script>
     <style>
-        .glass-panel { background: rgba(255, 255, 255, 0.8); backdrop-filter: blur(10px); border: 1px solid rgba(0,0,0,0.05); }
-        .tab-btn.active { border-bottom: 2px solid #8b5a2b; color: #8b5a2b; }
+        body { background-color: #fdfbf7; color: #120e0c; }
+        .glass-panel { background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px); border: 1px solid rgba(0,0,0,0.05); }
+        .tab-btn { transition: all 0.3s ease; border-bottom: 2px solid transparent; }
+        .tab-btn.active { color: #8b5a2b; border-bottom-color: #8b5a2b; }
+        .product-card { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+        .product-card:hover { transform: translateY(-4px); box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.05); }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
     </style>
 </head>
-<body class="bg-gray-50 text-gray-800 antialiased min-h-screen">
-    <div class="max-w-7xl mx-auto p-4 md:p-8">
+<body class="bg-[#fdfbf7] text-gray-800 antialiased min-h-screen pb-20">
+    <div class="max-w-6xl mx-auto p-6 md:p-12">
         <!-- Header -->
-        <header class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
+        <header class="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-12">
             <div>
-                <h1 class="text-3xl font-serif font-bold text-brand-dark flex items-center gap-3">
-                    <i class="fas fa-palm-tree text-brand-brown"></i>
+                <div class="inline-block px-3 py-1 rounded-full bg-brand-brown/5 border border-brand-brown/10 mb-2">
+                    <span class="text-brand-brown font-black tracking-[0.2em] uppercase text-[8px]">Administration Portal</span>
+                </div>
+                <h1 class="text-4xl font-serif font-bold text-brand-dark flex items-center gap-3">
                     Cali Distro HQ
                 </h1>
-                <p class="text-gray-500 text-sm">Online Store Management Dashboard</p>
             </div>
             <div class="flex items-center gap-4">
-                <div class="bg-white px-4 py-2 rounded-xl shadow-sm border border-gray-200">
-                    <span class="text-[10px] font-black text-gray-400 uppercase tracking-widest block">Stats</span>
-                    <div class="flex items-center gap-4">
-                        <div class="text-lg font-bold" id="total-orders-count">0 <span class="text-xs text-gray-400 font-normal">Orders</span></div>
-                        <div class="text-lg font-bold text-green-600" id="total-revenue">$0.00</div>
+                <div class="bg-white px-6 py-3 rounded-2xl shadow-sm border border-gray-100 flex items-center gap-6">
+                    <div>
+                        <span class="text-[9px] font-black text-gray-400 uppercase tracking-widest block mb-0.5">Confirmed Revenue</span>
+                        <div class="text-xl font-black font-mono text-green-600" id="total-revenue">$0.00</div>
+                    </div>
+                    <div class="w-px h-8 bg-gray-100"></div>
+                    <div>
+                        <span class="text-[9px] font-black text-gray-400 uppercase tracking-widest block mb-0.5">Active Orders</span>
+                        <div class="text-xl font-black font-mono text-brand-dark" id="total-orders-count">0</div>
                     </div>
                 </div>
-                <button onclick="logout()" class="w-10 h-10 rounded-full bg-white border border-gray-200 flex items-center justify-center text-gray-400 hover:text-red-500 transition-colors">
+                <button onclick="logout()" class="w-12 h-12 rounded-2xl bg-white border border-gray-100 flex items-center justify-center text-gray-400 hover:text-red-500 transition-all shadow-sm">
                     <i class="fas fa-sign-out-alt"></i>
                 </button>
             </div>
         </header>
 
         <!-- Main Navigation Tabs -->
-        <div class="flex border-b border-gray-200 mb-8 overflow-x-auto">
-            <button onclick="showTab('orders')" id="tab-orders" class="tab-btn active px-6 py-3 font-bold text-sm uppercase tracking-widest whitespace-nowrap">Orders & Fulfillment</button>
-            <button onclick="showTab('products')" id="tab-products" class="tab-btn px-6 py-3 font-bold text-sm uppercase tracking-widest whitespace-nowrap">Products</button>
-            <button onclick="showTab('locations')" id="tab-locations" class="tab-btn px-6 py-3 font-bold text-sm uppercase tracking-widest whitespace-nowrap">Locations</button>
+        <div class="flex gap-8 border-b border-gray-200 mb-12 overflow-x-auto no-scrollbar">
+            <button onclick="showTab('orders')" id="tab-orders" class="tab-btn active pb-4 font-black text-[10px] uppercase tracking-[0.2em] whitespace-nowrap">Orders & Fulfillment</button>
+            <button onclick="showTab('products')" id="tab-products" class="tab-btn pb-4 font-black text-[10px] uppercase tracking-[0.2em] whitespace-nowrap">Store Catalog</button>
+            <button onclick="showTab('locations')" id="tab-locations" class="tab-btn pb-4 font-black text-[10px] uppercase tracking-[0.2em] whitespace-nowrap">Drop Locations</button>
         </div>
 
         <!-- Orders View -->
-        <div id="view-orders" class="space-y-6">
+        <div id="view-orders" class="space-y-8 animate-fade-in">
             <div class="flex justify-between items-center">
-                <h2 class="text-xl font-bold font-serif">Order Management</h2>
-                <div class="flex gap-2">
-                    <button onclick="loadOrders()" class="bg-white border border-gray-200 p-2 rounded-lg text-gray-500 hover:text-brand-brown shadow-sm transition">
-                        <i class="fas fa-sync-alt"></i>
-                    </button>
-                </div>
+                <h2 class="text-2xl font-serif font-bold">Recent Orders</h2>
+                <button onclick="loadOrders()" class="w-10 h-10 bg-white border border-gray-100 rounded-xl text-gray-400 hover:text-brand-brown shadow-sm transition flex items-center justify-center">
+                    <i class="fas fa-sync-alt text-xs"></i>
+                </button>
             </div>
 
-            <div class="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
-                <table class="w-full text-left border-collapse">
-                    <thead class="bg-gray-50 text-[10px] font-black uppercase tracking-widest text-gray-400 border-b border-gray-100">
-                        <tr>
-                            <th class="px-6 py-4">Order / Customer</th>
-                            <th class="px-6 py-4">Product</th>
-                            <th class="px-6 py-4">Total</th>
-                            <th class="px-6 py-4">Location</th>
-                            <th class="px-6 py-4">Status</th>
-                            <th class="px-6 py-4">Payment</th>
-                            <th class="px-6 py-4">Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody id="orders-tbody" class="divide-y divide-gray-50">
-                        <!-- Rows injected here -->
-                        <tr><td colspan="7" class="px-6 py-12 text-center text-gray-400 italic">Loading orders...</td></tr>
-                    </tbody>
-                </table>
+            <div class="bg-white rounded-[2.5rem] shadow-sm border border-gray-100 overflow-hidden">
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse">
+                        <thead class="bg-gray-50/50 text-[9px] font-black uppercase tracking-[0.15em] text-gray-400 border-b border-gray-100">
+                            <tr>
+                                <th class="px-8 py-5">Customer</th>
+                                <th class="px-8 py-5">Selection</th>
+                                <th class="px-8 py-5 text-right">Amount</th>
+                                <th class="px-8 py-5">Drop Location</th>
+                                <th class="px-8 py-5">Status</th>
+                                <th class="px-8 py-5 text-center">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="orders-tbody" class="divide-y divide-gray-50">
+                            <tr><td colspan="6" class="px-8 py-20 text-center text-gray-400 italic text-sm">Loading orders...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </div>
 
         <!-- Products View -->
-        <div id="view-products" class="hidden space-y-6">
+        <div id="view-products" class="hidden space-y-8 animate-fade-in">
             <div class="flex justify-between items-center">
-                <h2 class="text-xl font-bold font-serif">Store Catalog</h2>
-                <button onclick="openProductModal()" class="bg-brand-dark text-white px-4 py-2 rounded-xl text-sm font-bold shadow hover:bg-brand-brown transition flex items-center gap-2">
-                    <i class="fas fa-plus"></i> Add Product
+                <h2 class="text-2xl font-serif font-bold">Menu Items</h2>
+                <button onclick="openProductModal()" class="bg-brand-dark text-white px-6 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-xl hover:bg-brand-brown transition flex items-center gap-2">
+                    <i class="fas fa-plus"></i> New Product
                 </button>
             </div>
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" id="products-grid">
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8" id="products-grid">
                 <!-- Product cards injected here -->
             </div>
         </div>
 
         <!-- Locations View -->
-        <div id="view-locations" class="hidden space-y-6">
+        <div id="view-locations" class="hidden space-y-8 animate-fade-in">
             <div class="flex justify-between items-center">
-                <h2 class="text-xl font-bold font-serif">Drop Locations</h2>
-                <button onclick="openLocationModal()" class="bg-brand-dark text-white px-4 py-2 rounded-xl text-sm font-bold shadow hover:bg-brand-brown transition flex items-center gap-2">
-                    <i class="fas fa-plus"></i> Add Location
+                <h2 class="text-2xl font-serif font-bold">Drop Locations</h2>
+                <button onclick="openLocationModal()" class="bg-brand-dark text-white px-6 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-xl hover:bg-brand-brown transition flex items-center gap-2">
+                    <i class="fas fa-plus"></i> New Location
                 </button>
             </div>
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" id="locations-grid">
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8" id="locations-grid">
                 <!-- Location cards injected here -->
             </div>
         </div>
     </div>
 
     <!-- Product Modal -->
-    <div id="product-modal" class="hidden fixed inset-0 bg-black/70 flex items-center justify-center z-[100] p-4">
-        <div class="bg-white w-full max-w-md p-8 rounded-3xl shadow-2xl relative">
-            <button onclick="closeModal('product-modal')" class="absolute top-6 right-6 text-gray-400 hover:text-gray-600"><i class="fas fa-times text-xl"></i></button>
-            <h2 class="text-2xl font-bold font-serif mb-6" id="product-modal-title">Product Details</h2>
+    <div id="product-modal" class="hidden fixed inset-0 bg-brand-dark/80 backdrop-blur-sm flex items-center justify-center z-[100] p-4">
+        <div class="bg-white w-full max-w-lg p-10 rounded-[3rem] shadow-2xl relative border border-white/10">
+            <button onclick="closeModal('product-modal')" class="absolute top-8 right-8 w-10 h-10 rounded-full bg-gray-100 text-gray-400 hover:text-gray-600 flex items-center justify-center transition-colors"><i class="fas fa-times"></i></button>
+            
+            <div class="mb-10">
+                <div class="inline-block px-3 py-1 rounded-full bg-brand-brown/5 border border-brand-brown/10 mb-2">
+                    <span class="text-brand-brown font-black tracking-[0.2em] uppercase text-[8px]">Catalog Management</span>
+                </div>
+                <h2 class="text-3xl font-serif font-bold" id="product-modal-title">Product Details</h2>
+            </div>
+
             <input type="hidden" id="prod-id">
             
-            <div class="space-y-4">
+            <div class="space-y-6">
                 <div>
-                    <label class="block text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1">Product Name</label>
-                    <input type="text" id="prod-name" placeholder="e.g. 12 Pack Sampler" class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 outline-none focus:border-brand-brown transition">
+                    <label class="block text-[9px] font-black uppercase tracking-[0.2em] text-gray-400 mb-2 ml-1">Display Name</label>
+                    <input type="text" id="prod-name" placeholder="e.g. 3 Bottle Bundle" class="w-full bg-gray-50 border border-gray-100 rounded-2xl px-5 py-4 text-sm font-medium outline-none focus:border-brand-brown transition shadow-inner">
                 </div>
                 <div class="grid grid-cols-2 gap-4">
                     <div>
-                        <label class="block text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1">Price ($)</label>
-                        <input type="number" id="prod-price" step="0.01" class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 outline-none focus:border-brand-brown">
+                        <label class="block text-[9px] font-black uppercase tracking-[0.2em] text-gray-400 mb-2 ml-1">Base Price ($)</label>
+                        <input type="number" id="prod-price" step="0.01" class="w-full bg-gray-50 border border-gray-100 rounded-2xl px-5 py-4 text-sm font-mono font-bold outline-none focus:border-brand-brown shadow-inner">
                     </div>
                     <div>
-                        <label class="block text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1">Items per Pack</label>
-                        <input type="number" id="prod-bottles" class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 outline-none focus:border-brand-brown">
+                        <label class="block text-[9px] font-black uppercase tracking-[0.2em] text-gray-400 mb-2 ml-1">Bottles per Pack</label>
+                        <input type="number" id="prod-bottles" class="w-full bg-gray-50 border border-gray-100 rounded-2xl px-5 py-4 text-sm font-bold outline-none focus:border-brand-brown shadow-inner">
                     </div>
                 </div>
                 <div>
-                    <label class="block text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1">Image URL</label>
-                    <input type="text" id="prod-image" placeholder="https://..." class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 outline-none focus:border-brand-brown mb-2">
-                    <input type="file" id="prod-file" class="hidden" onchange="handleFileUpload(this, 'prod-image')">
-                    <button onclick="document.getElementById('prod-file').click()" class="text-xs text-brand-brown font-bold flex items-center gap-2 px-1"><i class="fas fa-upload"></i> Upload from Device</button>
+                    <label class="block text-[9px] font-black uppercase tracking-[0.2em] text-gray-400 mb-2 ml-1">Product Imagery</label>
+                    <div class="relative group cursor-pointer" onclick="document.getElementById('prod-file').click()">
+                        <input type="file" id="prod-file" class="hidden" accept="image/*" onchange="handleFileUpload(this, 'prod-image')">
+                        <div class="w-full h-32 bg-gray-50 border-2 border-dashed border-gray-200 rounded-2xl flex flex-col items-center justify-center group-hover:border-brand-brown transition-all">
+                            <i class="fas fa-camera text-2xl text-gray-300 mb-2"></i>
+                            <span class="text-[10px] font-black uppercase tracking-widest text-gray-400" id="upload-status-text">Click to upload photo</span>
+                        </div>
+                        <input type="hidden" id="prod-image">
+                    </div>
                 </div>
-                <div class="grid grid-cols-2 gap-4 pt-2">
+                <div class="flex items-center justify-between p-2">
                     <div class="flex items-center gap-3">
-                        <input type="checkbox" id="prod-active" checked class="w-5 h-5 rounded border-gray-300 text-brand-brown focus:ring-brand-brown">
-                        <span class="text-sm font-bold text-gray-700">Active</span>
+                        <input type="checkbox" id="prod-active" checked class="w-5 h-5 rounded-lg border-gray-300 text-brand-brown focus:ring-brand-brown">
+                        <span class="text-xs font-black uppercase tracking-widest text-gray-600">Visible in Store</span>
                     </div>
-                    <div>
-                        <input type="number" id="prod-limit" placeholder="Stock Limit" class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2 text-sm outline-none focus:border-brand-brown">
-                    </div>
+                    <button onclick="deleteProduct()" id="prod-delete-btn" class="hidden text-red-400 font-black text-[9px] uppercase tracking-widest hover:text-red-600 transition-colors">
+                        <i class="fas fa-trash-alt mr-1"></i> Archive
+                    </button>
                 </div>
             </div>
 
-            <div class="mt-8 pt-6 border-t border-gray-100 flex justify-between">
-                <button onclick="deleteProduct()" id="prod-delete-btn" class="hidden text-red-500 font-bold text-sm"><i class="fas fa-trash mr-1"></i> Delete</button>
-                <button onclick="saveProduct()" id="prod-save-btn" class="bg-brand-dark text-white px-8 py-3 rounded-xl font-bold shadow hover:bg-brand-brown transition ml-auto">Save Changes</button>
+            <div class="mt-10 pt-8 border-t border-gray-50">
+                <button onclick="saveProduct()" id="prod-save-btn" class="w-full bg-brand-dark text-white py-5 rounded-2xl font-black text-xs uppercase tracking-[0.2em] shadow-2xl hover:bg-brand-brown transition-all hover:scale-[1.02] active:scale-95">Save Product Changes</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Fulfillment Modal -->
+    <div id="order-modal" class="hidden fixed inset-0 bg-brand-dark/80 backdrop-blur-sm flex items-center justify-center z-[100] p-4">
+        <div class="bg-white w-full max-w-lg p-10 rounded-[3rem] shadow-2xl relative border border-white/10">
+            <button onclick="closeModal('order-modal')" class="absolute top-8 right-8 w-10 h-10 rounded-full bg-gray-100 text-gray-400 hover:text-gray-600 flex items-center justify-center transition-colors"><i class="fas fa-times"></i></button>
+            <h2 class="text-2xl font-serif font-bold mb-2">Update Order</h2>
+            <p id="order-modal-subtitle" class="text-sm text-gray-500 mb-8">Order Details</p>
+            <input type="hidden" id="edit-order-id">
+            
+            <div class="space-y-8">
+                <div>
+                    <label class="block text-[9px] font-black uppercase tracking-[0.2em] text-gray-400 mb-4 text-center">Payment Status</label>
+                    <div class="grid grid-cols-2 gap-3" id="payment-status-btns">
+                        <button onclick="updateOrderStatus('confirmed')" class="py-4 px-4 rounded-2xl border-2 border-green-50 text-green-600 font-black text-[10px] uppercase tracking-widest hover:bg-green-50 transition flex flex-col items-center gap-2">
+                            <i class="fas fa-check-circle text-lg"></i>
+                            Confirm Paid
+                        </button>
+                        <button onclick="updateOrderStatus('rejected')" class="py-4 px-4 rounded-2xl border-2 border-red-50 text-red-600 font-black text-[10px] uppercase tracking-widest hover:bg-red-50 transition flex flex-col items-center gap-2">
+                            <i class="fas fa-times-circle text-lg"></i>
+                            Reject Order
+                        </button>
+                    </div>
+                </div>
+
+                <div class="pt-8 border-t border-gray-50">
+                    <label class="block text-[9px] font-black uppercase tracking-[0.2em] text-gray-400 mb-3 ml-1">Tracking Information</label>
+                    <div class="flex gap-2">
+                        <input type="text" id="tracking-input" placeholder="e.g. UPS-123456" class="flex-1 bg-gray-50 border border-gray-100 rounded-2xl px-5 py-4 text-sm font-mono outline-none focus:border-brand-brown shadow-inner">
+                        <button onclick="saveTracking()" class="bg-brand-dark text-white px-6 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-brand-brown transition-all active:scale-95 shadow-lg">Update</button>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
 
     <!-- Location Modal -->
-    <div id="location-modal" class="hidden fixed inset-0 bg-black/70 flex items-center justify-center z-[100] p-4">
-        <div class="bg-white w-full max-w-md p-8 rounded-3xl shadow-2xl relative">
-            <button onclick="closeModal('location-modal')" class="absolute top-6 right-6 text-gray-400 hover:text-gray-600"><i class="fas fa-times text-xl"></i></button>
-            <h2 class="text-2xl font-bold font-serif mb-6" id="loc-modal-title">Location Info</h2>
+    <div id="location-modal" class="hidden fixed inset-0 bg-brand-dark/80 backdrop-blur-sm flex items-center justify-center z-[100] p-4">
+        <div class="bg-white w-full max-w-md p-10 rounded-[3rem] shadow-2xl relative border border-white/10">
+            <button onclick="closeModal('location-modal')" class="absolute top-8 right-8 w-10 h-10 rounded-full bg-gray-100 text-gray-400 hover:text-gray-600 flex items-center justify-center transition-colors"><i class="fas fa-times"></i></button>
+            <h2 class="text-3xl font-serif font-bold mb-8">Drop Point</h2>
             <input type="hidden" id="loc-id">
-            
-            <div class="space-y-4">
-                <div>
-                    <label class="block text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1">Location Name</label>
-                    <input type="text" id="loc-name" placeholder="e.g. Kaiser Permanente" class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 outline-none focus:border-brand-brown transition">
-                </div>
-                <div>
-                    <label class="block text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1">City / Region</label>
-                    <input type="text" id="loc-city" placeholder="e.g. Anaheim, CA" class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 outline-none focus:border-brand-brown transition">
-                </div>
-                <div>
-                    <label class="block text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1">Distributor / Lead</label>
-                    <input type="text" id="loc-distro" placeholder="Sister Name / Team Lead" class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 outline-none focus:border-brand-brown transition">
-                </div>
-                <div class="flex items-center gap-3 pt-2">
-                    <input type="checkbox" id="loc-active" checked class="w-5 h-5 rounded border-gray-300 text-brand-brown focus:ring-brand-brown">
-                    <span class="text-sm font-bold text-gray-700">Active / Receiving Drops</span>
-                </div>
-            </div>
-
-            <div class="mt-8 pt-6 border-t border-gray-100">
-                <button onclick="saveLocation()" id="loc-save-btn" class="w-full bg-brand-dark text-white py-4 rounded-xl font-bold shadow hover:bg-brand-brown transition">Save Location</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Fulfillment Modal (Status/Tracking) -->
-    <div id="order-modal" class="hidden fixed inset-0 bg-black/70 flex items-center justify-center z-[100] p-4">
-        <div class="bg-white w-full max-w-md p-8 rounded-3xl shadow-2xl relative">
-            <button onclick="closeModal('order-modal')" class="absolute top-6 right-6 text-gray-400 hover:text-gray-600"><i class="fas fa-times text-xl"></i></button>
-            <h2 class="text-2xl font-bold font-serif mb-2">Update Order</h2>
-            <p id="order-modal-subtitle" class="text-sm text-gray-500 mb-6">#ORD-12345</p>
-            <input type="hidden" id="edit-order-id">
             
             <div class="space-y-6">
                 <div>
-                    <label class="block text-[10px] font-black uppercase tracking-widest text-gray-400 mb-3 text-center">Payment Verification</label>
-                    <div class="grid grid-cols-2 gap-3" id="payment-status-btns">
-                        <button onclick="updateOrderStatus('confirmed')" class="py-3 px-4 rounded-xl border-2 border-green-100 text-green-600 font-bold hover:bg-green-50 transition flex flex-col items-center gap-1">
-                            <i class="fas fa-check-circle"></i>
-                            <span class="text-xs">Confirm Payment</span>
-                        </button>
-                        <button onclick="updateOrderStatus('rejected')" class="py-3 px-4 rounded-xl border-2 border-red-100 text-red-600 font-bold hover:bg-red-50 transition flex flex-col items-center gap-1">
-                            <i class="fas fa-times-circle"></i>
-                            <span class="text-xs">Reject / Issue</span>
-                        </button>
-                    </div>
+                    <label class="block text-[9px] font-black uppercase tracking-[0.2em] text-gray-400 mb-2 ml-1">Point Name</label>
+                    <input type="text" id="loc-name" placeholder="e.g. Kaiser Anaheim" class="w-full bg-gray-50 border border-gray-100 rounded-2xl px-5 py-4 text-sm font-bold outline-none focus:border-brand-brown shadow-inner">
                 </div>
+                <div>
+                    <label class="block text-[9px] font-black uppercase tracking-[0.2em] text-gray-400 mb-2 ml-1">City / Neighborhood</label>
+                    <input type="text" id="loc-city" placeholder="Anaheim, CA" class="w-full bg-gray-50 border border-gray-100 rounded-2xl px-5 py-4 text-sm outline-none focus:border-brand-brown shadow-inner">
+                </div>
+                <div class="flex items-center gap-3 p-2">
+                    <input type="checkbox" id="loc-active" checked class="w-5 h-5 rounded-lg border-gray-300 text-brand-brown focus:ring-brand-brown">
+                    <span class="text-xs font-black uppercase tracking-widest text-gray-600">Active Drop Point</span>
+                </div>
+            </div>
 
-                <div class="pt-4 border-t border-gray-100">
-                    <label class="block text-[10px] font-black uppercase tracking-widest text-gray-400 mb-2">Tracking Number</label>
-                    <div class="flex gap-2">
-                        <input type="text" id="tracking-input" placeholder="Enter tracking..." class="flex-1 bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 outline-none focus:border-brand-brown text-sm">
-                        <button onclick="saveTracking()" class="bg-brand-dark text-white px-4 rounded-xl font-bold hover:bg-brand-brown transition">Set</button>
-                    </div>
-                </div>
-
-                <div id="payment-proof-container" class="hidden pt-4 border-t border-gray-100">
-                    <label class="block text-[10px] font-black uppercase tracking-widest text-gray-400 mb-2">Payment Proof</label>
-                    <a id="proof-link" href="#" target="_blank" class="block w-full bg-blue-50 border border-blue-100 rounded-xl p-4 text-center text-blue-600 hover:bg-blue-100 transition">
-                        <i class="fas fa-image mr-2"></i> View Transfer Receipt
-                    </a>
-                </div>
+            <div class="mt-10 pt-8 border-t border-gray-50">
+                <button onclick="saveLocation()" id="loc-save-btn" class="w-full bg-brand-dark text-white py-5 rounded-2xl font-black text-xs uppercase tracking-[0.2em] shadow-2xl hover:bg-brand-brown transition-all active:scale-95">Save Location</button>
             </div>
         </div>
     </div>
 
     <script>
-        // Setup Headers
-        const getToken = () => localStorage.getItem('token') || 'EMP-admin';
         const getHeaders = () => ({
-            'Authorization': `Bearer ${getToken()}`,
+            'Authorization': `Bearer EMP-admin`,
             'Content-Type': 'application/json'
         });
 
-        // App State
         let products = [];
         let locations = [];
         let orders = [];
 
         async function init() {
-            console.log("Initializing Cali Dashboard...");
+            console.log("Artisan Admin Initializing...");
             await loadProducts();
             await loadLocations();
             await loadOrders();
         }
 
-        // --- TAB NAVIGATION ---
         function showTab(tab) {
             document.querySelectorAll('[id^="view-"]').forEach(v => v.classList.add('hidden'));
             document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-            
             document.getElementById(`view-${tab}`).classList.remove('hidden');
             document.getElementById(`tab-${tab}`).classList.add('active');
         }
 
-        // --- PRODUCTS ---
         async function loadProducts() {
             try {
                 const res = await fetch('/api/cali?action=products');
@@ -282,190 +285,39 @@
 
         function renderProducts() {
             const grid = document.getElementById('products-grid');
-            if (products.length === 0) {
-                grid.innerHTML = '<div class="col-span-3 text-center py-12 text-gray-400 italic border-2 border-dashed border-gray-200 rounded-3xl">No products yet.</div>';
+            if (!products || products.length === 0) {
+                grid.innerHTML = '<div class="col-span-full text-center py-20 bg-white rounded-[3rem] border-2 border-dashed border-gray-100 text-gray-400 italic">No products in catalog.</div>';
                 return;
             }
 
             grid.innerHTML = products.map(p => `
-                <div class="bg-white p-5 rounded-3xl shadow-sm border border-gray-100 relative ${p.active ? '' : 'opacity-60'}">
-                    <div class="absolute top-4 right-4 flex gap-2">
-                        <button onclick="openProductModal('${p.id}')" class="w-8 h-8 rounded-full bg-gray-50 text-gray-400 hover:text-brand-brown hover:bg-white border border-gray-100 flex items-center justify-center transition shadow-sm"><i class="fas fa-edit text-xs"></i></button>
+                <div class="product-card bg-white p-8 rounded-[3rem] shadow-sm border border-gray-100 flex flex-col relative ${p.active ? '' : 'opacity-50 grayscale'}">
+                    <button onclick="openProductModal('${p.id}')" class="absolute top-6 right-6 w-10 h-10 rounded-full bg-gray-50 text-gray-400 hover:text-brand-brown hover:bg-white border border-gray-100 flex items-center justify-center transition-all shadow-sm z-10">
+                        <i class="fas fa-pen text-xs"></i>
+                    </button>
+                    <div class="w-full h-48 bg-brand-cream rounded-[2rem] flex items-center justify-center mb-8 overflow-hidden border border-brand-brown/5 shadow-inner">
+                        ${p.image_url ? `<img src="${p.image_url}" class="w-full h-full object-cover">` : '<i class="fas fa-mug-hot text-4xl text-brand-brown/20"></i>'}
                     </div>
-                    <div class="flex items-center gap-4 mb-4">
-                        <div class="w-16 h-16 bg-brand-cream rounded-2xl flex items-center justify-center text-3xl overflow-hidden border border-gray-100">
-                            ${p.image_url ? `<img src="${p.image_url}" class="w-full h-full object-cover">` : '<i class="fas fa-coffee text-brand-brown"></i>'}
+                    <div class="px-2 flex-1">
+                        <h3 class="text-2xl font-serif font-bold text-brand-dark mb-1">${p.name}</h3>
+                        <p class="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-6">${p.bottles_per_pack} BOTTLE PACK</p>
+                        
+                        <div class="flex justify-between items-end pt-6 border-t border-gray-50">
+                            <div>
+                                <p class="text-[8px] font-black text-gray-400 uppercase tracking-widest mb-1">Base Price</p>
+                                <p class="text-2xl font-black font-mono text-brand-brown">$${parseFloat(p.price).toFixed(2)}</p>
+                            </div>
+                            <div class="text-right">
+                                <span class="text-[9px] font-black uppercase tracking-widest px-3 py-1 rounded-full ${p.active ? 'bg-green-50 text-green-600' : 'bg-gray-100 text-gray-400'}">
+                                    ${p.active ? 'Live' : 'Hidden'}
+                                </span>
+                            </div>
                         </div>
-                        <div>
-                            <h3 class="font-bold text-gray-800">${p.name}</h3>
-                            <p class="text-xs text-gray-400 font-bold uppercase tracking-widest">${p.bottles_per_pack} Items</p>
-                        </div>
-                    </div>
-                    <div class="flex justify-between items-center bg-gray-50 p-3 rounded-2xl">
-                        <div>
-                            <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest">Price</p>
-                            <p class="font-black font-mono text-brand-dark text-lg">$${parseFloat(p.price).toFixed(2)}</p>
-                        </div>
-                        <div class="text-right">
-                            <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest">Inventory</p>
-                            <p class="text-sm font-bold ${p.inventory_limit < 10 ? 'text-red-500' : 'text-gray-700'}">${p.inventory_limit === null ? '∞' : p.inventory_limit + ' left'}</p>
-                        </div>
-                    </div>
-                </div>
-            `).join('');
-        }
-
-        function openProductModal(id = null) {
-            document.getElementById('product-modal').classList.remove('hidden');
-            const title = document.getElementById('product-modal-title');
-            const delBtn = document.getElementById('prod-delete-btn');
-            
-            if (id) {
-                const p = products.find(x => x.id === id);
-                title.innerText = 'Edit Product';
-                document.getElementById('prod-id').value = p.id;
-                document.getElementById('prod-name').value = p.name;
-                document.getElementById('prod-price').value = p.price;
-                document.getElementById('prod-bottles').value = p.bottles_per_pack;
-                document.getElementById('prod-image').value = p.image_url || '';
-                document.getElementById('prod-limit').value = p.inventory_limit || '';
-                document.getElementById('prod-active').checked = p.active;
-                delBtn.classList.remove('hidden');
-            } else {
-                title.innerText = 'Add New Product';
-                document.getElementById('prod-id').value = '';
-                document.getElementById('prod-name').value = '';
-                document.getElementById('prod-price').value = '';
-                document.getElementById('prod-bottles').value = '1';
-                document.getElementById('prod-image').value = '';
-                document.getElementById('prod-limit').value = '';
-                document.getElementById('prod-active').checked = true;
-                delBtn.classList.add('hidden');
-            }
-        }
-
-        async function saveProduct() {
-            const id = document.getElementById('prod-id').value;
-            const btn = document.getElementById('prod-save-btn');
-            const ogText = btn.innerText;
-            
-            btn.disabled = true;
-            btn.innerText = 'Saving...';
-
-            const payload = {
-                name: document.getElementById('prod-name').value,
-                price: parseFloat(document.getElementById('prod-price').value),
-                bottles_per_pack: parseInt(document.getElementById('prod-bottles').value),
-                image_url: document.getElementById('prod-image').value,
-                inventory_limit: document.getElementById('prod-limit').value ? parseInt(document.getElementById('prod-limit').value) : null,
-                active: document.getElementById('prod-active').checked
-            };
-
-            if (window.pendingImageBase64) {
-                payload.imageBase64 = window.pendingImageBase64;
-            }
-
-            const url = id ? `/api/cali?action=products&id=${id}` : '/api/cali?action=products';
-            const method = id ? 'PUT' : 'POST';
-
-            try {
-                const res = await fetch(url, { method, headers: getHeaders(), body: JSON.stringify(payload) });
-                if (res.ok) { 
-                    closeModal('product-modal'); 
-                    window.pendingImageBase64 = null;
-                    loadProducts(); 
-                } else {
-                    const err = await res.json();
-                    alert("Error saving product: " + err.error);
-                }
-            } catch (e) { 
-                console.error(e); 
-                alert("Connection error.");
-            } finally {
-                btn.disabled = false;
-                btn.innerText = ogText;
-            }
-        }
-
-        async function deleteProduct() {
-            const id = document.getElementById('prod-id').value;
-            if(!confirm("Delete this product permanently?")) return;
-            try {
-                const res = await fetch(`/api/cali?action=products&id=${id}`, { method: 'DELETE', headers: getHeaders() });
-                if(res.ok) { closeModal('product-modal'); loadProducts(); }
-            } catch(e) { console.error(e); }
-        }
-
-        // --- LOCATIONS ---
-        async function loadLocations() {
-            try {
-                const res = await fetch('/api/cali?action=locations');
-                locations = await res.json();
-                renderLocations();
-            } catch (e) { console.error(e); }
-        }
-
-        function renderLocations() {
-            const grid = document.getElementById('locations-grid');
-            if (locations.length === 0) {
-                grid.innerHTML = '<div class="col-span-3 text-center py-12 text-gray-400 italic">No locations found.</div>';
-                return;
-            }
-
-            grid.innerHTML = locations.map(l => `
-                <div class="bg-white p-6 rounded-3xl shadow-sm border border-gray-100 ${l.active ? '' : 'opacity-60'}">
-                    <div class="flex justify-between items-start mb-4">
-                        <div>
-                            <h3 class="font-bold text-gray-800">${l.name}</h3>
-                            <p class="text-xs text-brand-brown font-semibold"><i class="fas fa-map-marker-alt mr-1"></i>${l.city}</p>
-                        </div>
-                        <button onclick="openLocationModal('${l.id}')" class="text-gray-300 hover:text-brand-brown"><i class="fas fa-edit"></i></button>
-                    </div>
-                    <div class="pt-4 border-t border-gray-50">
-                        <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Distributor</p>
-                        <p class="text-sm font-bold text-gray-700">${l.distributor_name || 'Unassigned'}</p>
                     </div>
                 </div>
             `).join('');
         }
 
-        function openLocationModal(id = null) {
-            document.getElementById('location-modal').classList.remove('hidden');
-            if (id) {
-                const l = locations.find(x => x.id === id);
-                document.getElementById('loc-id').value = l.id;
-                document.getElementById('loc-name').value = l.name;
-                document.getElementById('loc-city').value = l.city;
-                document.getElementById('loc-distro').value = l.distributor_name || '';
-                document.getElementById('loc-active').checked = l.active;
-            } else {
-                document.getElementById('loc-id').value = '';
-                document.getElementById('loc-name').value = '';
-                document.getElementById('loc-city').value = '';
-                document.getElementById('loc-distro').value = '';
-                document.getElementById('loc-active').checked = true;
-            }
-        }
-
-        async function saveLocation() {
-            const id = document.getElementById('loc-id').value;
-            const payload = {
-                name: document.getElementById('loc-name').value,
-                city: document.getElementById('loc-city').value,
-                distributor_name: document.getElementById('loc-distro').value,
-                active: document.getElementById('loc-active').checked
-            };
-
-            const url = id ? `/api/cali?action=locations&id=${id}` : '/api/cali?action=locations';
-            const method = id ? 'PUT' : 'POST';
-
-            try {
-                const res = await fetch(url, { method, headers: getHeaders(), body: JSON.stringify(payload) });
-                if (res.ok) { closeModal('location-modal'); loadLocations(); }
-            } catch (e) { console.error(e); }
-        }
-
-        // --- ORDERS ---
         async function loadOrders() {
             try {
                 const res = await fetch('/api/cali?action=orders', { headers: getHeaders() });
@@ -477,55 +329,50 @@
 
         function renderOrders() {
             const tbody = document.getElementById('orders-tbody');
-            if (orders.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="7" class="px-6 py-12 text-center text-gray-400 italic">No orders found.</td></tr>';
+            if (!orders || orders.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" class="px-8 py-20 text-center text-gray-400 italic text-sm">No orders yet.</td></tr>';
                 return;
             }
 
             tbody.innerHTML = orders.map(o => {
-                let statusClass = "bg-gray-100 text-gray-500";
-                if (o.payment_status === 'confirmed') statusClass = "bg-green-100 text-green-600";
-                if (o.payment_status === 'rejected') statusClass = "bg-red-100 text-red-600";
+                const isPaid = o.payment_status === 'confirmed';
+                const statusClass = isPaid ? "bg-green-50 text-green-600" : "bg-orange-50 text-orange-600";
+                
+                // Construct selection text from cart array if available
+                let selectionText = "";
+                if (o.selections && o.selections.cart) {
+                    selectionText = o.selections.cart.map(i => `${i.qty}x ${i.flavor} (${i.milk})`).join(', ');
+                } else {
+                    selectionText = `${o.quantity}x ${o.cali_products?.name || 'Artisan Pack'}`;
+                }
 
                 return `
-                    <tr class="hover:bg-gray-50/50 transition-colors">
-                        <td class="px-6 py-4">
-                            <div class="font-bold text-sm text-gray-800">${o.customer_name}</div>
-                            <div class="text-[10px] text-gray-400 font-mono">${o.customer_phone}</div>
+                    <tr class="hover:bg-gray-50/50 transition-colors group text-sm">
+                        <td class="px-8 py-6">
+                            <div class="font-bold text-gray-800 mb-0.5">${o.customer_name}</div>
+                            <div class="text-[10px] font-mono text-gray-400 uppercase tracking-tighter">${o.customer_phone}</div>
                         </td>
-                        <td class="px-6 py-4 text-sm font-medium">
-                            <div class="flex items-center gap-2">
-                                <span class="text-gray-400 font-bold">${o.quantity}x</span>
-                                <div>
-                                    <div class="text-brand-dark">${o.cali_products?.name || 'Unknown'}</div>
-                                    <div class="text-[10px] text-gray-400 font-bold uppercase tracking-tight">
-                                        ${o.selections?.flavor || 'N/A'} • ${o.selections?.milk || 'Regular'}
-                                    </div>
-                                </div>
+                        <td class="px-8 py-6">
+                            <div class="text-xs font-black text-brand-dark mb-1">${selectionText}</div>
+                            <div class="text-[9px] font-bold text-brand-brown uppercase tracking-wider opacity-60">
+                                ${new Date(o.created_at).toLocaleDateString()}
                             </div>
                         </td>
-                        <td class="px-6 py-4 font-mono font-bold text-sm text-brand-dark">
-                            $${parseFloat(o.total_price).toFixed(2)}
+                        <td class="px-8 py-6 text-right">
+                            <span class="font-black font-mono text-gray-800">$${parseFloat(o.total_price).toFixed(2)}</span>
                         </td>
-                        <td class="px-6 py-4">
-                            <div class="text-xs font-bold text-gray-700">${o.cali_locations?.name || 'Custom'}</div>
-                            <div class="text-[9px] text-gray-400 uppercase tracking-tight">${o.cali_locations?.city || ''}</div>
+                        <td class="px-8 py-6">
+                            <div class="text-[10px] font-bold text-gray-700">${o.cali_locations?.name || 'Custom Drop'}</div>
+                            <div class="text-[9px] text-gray-400 uppercase tracking-tighter">${o.cali_locations?.city || ''}</div>
                         </td>
-                        <td class="px-6 py-4">
-                            <span class="px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest ${statusClass}">
+                        <td class="px-8 py-6">
+                            <span class="px-3 py-1 rounded-full text-[8px] font-black uppercase tracking-[0.1em] border ${statusClass}">
                                 ${o.payment_status}
                             </span>
                         </td>
-                        <td class="px-6 py-4">
-                            ${o.payment_proof_url ? `
-                                <a href="${o.payment_proof_url}" target="_blank" class="text-blue-500 hover:text-blue-700 text-xs font-bold flex items-center gap-1">
-                                    <i class="fas fa-file-invoice-dollar"></i> View
-                                </a>
-                            ` : '<span class="text-gray-300 text-xs italic">No Proof</span>'}
-                        </td>
-                        <td class="px-6 py-4">
-                            <button onclick="openOrderModal('${o.id}')" class="bg-gray-100 text-gray-600 px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest hover:bg-brand-dark hover:text-white transition">
-                                Manage
+                        <td class="px-8 py-6 text-center">
+                            <button onclick="openOrderModal('${o.id}')" class="w-8 h-8 rounded-full bg-white border border-gray-100 text-gray-400 hover:text-brand-dark hover:shadow-md transition-all flex items-center justify-center mx-auto">
+                                <i class="fas fa-edit text-[10px]"></i>
                             </button>
                         </td>
                     </tr>
@@ -533,19 +380,85 @@
             }).join('');
         }
 
+        async function saveProduct() {
+            const id = document.getElementById('prod-id').value;
+            const btn = document.getElementById('prod-save-btn');
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Syncing...';
+
+            const payload = {
+                name: document.getElementById('prod-name').value,
+                price: parseFloat(document.getElementById('prod-price').value),
+                bottles_per_pack: parseInt(document.getElementById('prod-bottles').value),
+                active: document.getElementById('prod-active').checked
+            };
+
+            if (window.pendingImageBase64) payload.imageBase64 = window.pendingImageBase64;
+
+            const url = id ? `/api/cali?action=products&id=${id}` : '/api/cali?action=products';
+            const method = id ? 'PUT' : 'POST';
+
+            try {
+                const res = await fetch(url, { method, headers: getHeaders(), body: JSON.stringify(payload) });
+                if (res.ok) { closeModal('product-modal'); loadProducts(); }
+                else alert("Error saving product");
+            } catch (e) { console.error(e); }
+            finally { btn.disabled = false; btn.innerText = 'Save Product Changes'; }
+        }
+
+        function openProductModal(id = null) {
+            document.getElementById('product-modal').classList.remove('hidden');
+            const title = document.getElementById('product-modal-title');
+            const delBtn = document.getElementById('prod-delete-btn');
+            const statusText = document.getElementById('upload-status-text');
+            
+            statusText.innerText = "Click to upload photo";
+            statusText.className = "text-[10px] font-black uppercase tracking-widest text-gray-400";
+            
+            if (id) {
+                const p = products.find(x => x.id === id);
+                title.innerText = 'Edit Artisan Item';
+                document.getElementById('prod-id').value = p.id;
+                document.getElementById('prod-name').value = p.name;
+                document.getElementById('prod-price').value = p.price;
+                document.getElementById('prod-bottles').value = p.bottles_per_pack;
+                document.getElementById('prod-image').value = p.image_url || '';
+                document.getElementById('prod-active').checked = p.active;
+                delBtn.classList.remove('hidden');
+            } else {
+                title.innerText = 'New Artisan Item';
+                document.getElementById('prod-id').value = '';
+                document.getElementById('prod-name').value = '';
+                document.getElementById('prod-price').value = '';
+                document.getElementById('prod-bottles').value = '1';
+                document.getElementById('prod-image').value = '';
+                document.getElementById('prod-active').checked = true;
+                delBtn.classList.add('hidden');
+            }
+        }
+
+        async function handleFileUpload(input, targetId) {
+            const file = input.files[0];
+            if (!file) return;
+            const statusText = document.getElementById('upload-status-text');
+            statusText.innerText = "Processing Image...";
+            
+            try {
+                const reader = new FileReader();
+                reader.onloadend = () => {
+                    window.pendingImageBase64 = reader.result;
+                    statusText.innerText = "✨ Photo Ready (Save to Finish)";
+                    statusText.className = "text-[10px] font-black uppercase tracking-widest text-brand-brown animate-pulse";
+                };
+                reader.readAsDataURL(file);
+            } catch (e) { alert("Image processing failed."); }
+        }
+
         function openOrderModal(id) {
             const o = orders.find(x => x.id === id);
             document.getElementById('edit-order-id').value = o.id;
-            document.getElementById('order-modal-subtitle').innerText = `Order #${o.id.slice(-8).toUpperCase()} | ${o.customer_name}`;
+            document.getElementById('order-modal-subtitle').innerText = `${o.customer_name} | ${o.customer_phone}`;
             document.getElementById('tracking-input').value = o.tracking_number || '';
-            
-            const proofCont = document.getElementById('payment-proof-container');
-            const proofLink = document.getElementById('proof-link');
-            if (o.payment_proof_url) {
-                proofCont.classList.remove('hidden');
-                proofLink.href = o.payment_proof_url;
-            } else proofCont.classList.add('hidden');
-
             document.getElementById('order-modal').classList.remove('hidden');
         }
 
@@ -574,49 +487,79 @@
             } catch (e) { console.error(e); }
         }
 
+        async function loadLocations() {
+            try {
+                const res = await fetch('/api/cali?action=locations');
+                locations = await res.json();
+                renderLocations();
+            } catch (e) { console.error(e); }
+        }
+
+        function renderLocations() {
+            const grid = document.getElementById('locations-grid');
+            grid.innerHTML = locations.map(l => `
+                <div class="bg-white p-8 rounded-[3rem] shadow-sm border border-gray-100 group transition-all hover:shadow-lg">
+                    <div class="flex justify-between items-start mb-6">
+                        <div>
+                            <h3 class="text-xl font-bold text-brand-dark mb-1">${l.name}</h3>
+                            <p class="text-[10px] text-brand-brown font-black uppercase tracking-widest"><i class="fas fa-map-marker-alt mr-1"></i>${l.city}</p>
+                        </div>
+                        <button onclick="openLocationModal('${l.id}')" class="w-8 h-8 rounded-full bg-gray-50 text-gray-300 hover:text-brand-brown transition-all flex items-center justify-center">
+                            <i class="fas fa-pen text-[10px]"></i>
+                        </button>
+                    </div>
+                    <div class="pt-6 border-t border-gray-50 flex justify-between items-center">
+                        <span class="text-[9px] font-black uppercase tracking-[0.15em] text-gray-400">Receiving Drops</span>
+                        <div class="w-2.5 h-2.5 rounded-full ${l.active ? 'bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.5)]' : 'bg-gray-200'}"></div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function openLocationModal(id = null) {
+            document.getElementById('location-modal').classList.remove('hidden');
+            if (id) {
+                const l = locations.find(x => x.id === id);
+                document.getElementById('loc-id').value = l.id;
+                document.getElementById('loc-name').value = l.name;
+                document.getElementById('loc-city').value = l.city;
+                document.getElementById('loc-active').checked = l.active;
+            } else {
+                document.getElementById('loc-id').value = '';
+                document.getElementById('loc-name').value = '';
+                document.getElementById('loc-city').value = '';
+                document.getElementById('loc-active').checked = true;
+            }
+        }
+
+        async function saveLocation() {
+            const id = document.getElementById('loc-id').value;
+            const payload = {
+                name: document.getElementById('loc-name').value,
+                city: document.getElementById('loc-city').value,
+                active: document.getElementById('loc-active').checked
+            };
+            const url = id ? `/api/cali?action=locations&id=${id}` : '/api/cali?action=locations';
+            const method = id ? 'PUT' : 'POST';
+            try {
+                await fetch(url, { method, headers: getHeaders(), body: JSON.stringify(payload) });
+                closeModal('location-modal'); loadLocations();
+            } catch (e) { console.error(e); }
+        }
+
         function updateStats() {
-            document.getElementById('total-orders-count').innerText = orders.length;
-            const revenue = orders.filter(o => o.payment_status === 'confirmed').reduce((sum, o) => sum + parseFloat(o.total_price), 0);
+            document.getElementById('total-orders-count').innerText = (orders || []).filter(o => o.payment_status !== 'rejected').length;
+            const revenue = (orders || []).filter(o => o.payment_status === 'confirmed').reduce((sum, o) => sum + parseFloat(o.total_price), 0);
             document.getElementById('total-revenue').innerText = `$${revenue.toFixed(2)}`;
         }
 
-        // --- UTILS ---
         function closeModal(id) { 
             document.getElementById(id).classList.add('hidden'); 
             window.pendingImageBase64 = null;
         }
-        
-        async function handleFileUpload(input, targetId) {
-            const file = input.files[0];
-            if (!file) return;
 
-            // Feedback
-            const btn = input.nextElementSibling;
-            const ogText = btn.innerHTML;
-            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
+        function logout() { localStorage.removeItem('token'); location.href = '/login.html'; }
 
-            try {
-                const reader = new FileReader();
-                reader.onloadend = () => {
-                    window.pendingImageBase64 = reader.result;
-                    document.getElementById(targetId).value = "Image attached (Click Save to upload)";
-                    btn.innerHTML = '<i class="fas fa-check"></i> Image Ready';
-                    btn.classList.add('text-green-600');
-                };
-                reader.readAsDataURL(file);
-            } catch (e) {
-                console.error(e);
-                alert("Failed to process image.");
-                btn.innerHTML = ogText;
-            }
-        }
-
-        function logout() {
-            localStorage.removeItem('token');
-            location.href = '/login.html';
-        }
-
-        // Boot
         window.onload = init;
     </script>
 </body>
