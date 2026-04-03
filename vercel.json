@@ -216,6 +216,10 @@
       "dest": "/api/cali.js"
     },
     {
+      "src": "/api/stripe-webhook",
+      "dest": "/api/stripe-webhook.js"
+    },
+    {
       "src": "/api/checkout",
       "dest": "/api/checkout.js"
     },
