@@ -11,6 +11,10 @@ module.exports = async function handler(req, res) {
         }
 
         const { action, id } = req.query;
+
+        if (action === 'ping') {
+            return res.json({ status: 'ok', time: new Date().toISOString(), message: 'Artisan API is live' });
+        }
         
         // Auth Check
         const authHeader = req.headers.authorization;
@@ -188,6 +192,6 @@ module.exports = async function handler(req, res) {
         return res.status(404).json({ error: 'Action Not Found' });
     } catch (error) {
         console.error("Cali API Error:", error);
-        return res.status(500).json({ error: error.message });
+        return res.status(500).json({ error: error.message, stack: error.stack, detail: error });
     }
 };
