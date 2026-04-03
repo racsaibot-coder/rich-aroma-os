@@ -1,8 +1,4 @@
-const { createClient } = require('@supabase/supabase-js');
-
-const supabaseUrl = process.env.SUPABASE_URL || 'https://zcqubacfcettwawcimsy.supabase.co';
-const supabaseKey = process.env.SUPABASE_ANON_KEY || 'sb_publishable_hRVyru_6sektmVGQyJFfwQ_4b2-7MKq';
-const supabase = createClient(supabaseUrl, supabaseKey);
+const { supabase } = require('./lib/supabase');
 
 module.exports = async function handler(req, res) {
     try {
@@ -40,19 +36,23 @@ module.exports = async function handler(req, res) {
             
             // Image Upload Logic
             if (imageBase64 && imageBase64.startsWith('data:image')) {
-                const base64Data = imageBase64.replace(/^data:image\/\w+;base64,/, "");
-                const buffer = Buffer.from(base64Data, 'base64');
-                const mimeType = imageBase64.match(/^data:(image\/\w+);base64,/)?.[1] || 'image/png';
-                const ext = mimeType.split('/')[1] || 'png';
-                const storagePath = `cali_products/PROD_${id || Date.now()}_${Date.now()}.${ext}`;
+                try {
+                    const base64Data = imageBase64.replace(/^data:image\/\w+;base64,/, "");
+                    const buffer = Buffer.from(base64Data, 'base64');
+                    const mimeType = imageBase64.match(/^data:(image\/\w+);base64,/)?.[1] || 'image/png';
+                    const ext = mimeType.split('/')[1] || 'png';
+                    const storagePath = `cali_products/PROD_${id || Date.now()}_${Date.now()}.${ext}`;
 
-                const { error: uploadError } = await supabase.storage
-                    .from('menu-images')
-                    .upload(storagePath, buffer, { contentType: mimeType, upsert: true });
+                    const { error: uploadError } = await supabase.storage
+                        .from('menu-images')
+                        .upload(storagePath, buffer, { contentType: mimeType, upsert: true });
 
-                if (!uploadError) {
-                    const { data: { publicUrl } } = supabase.storage.from('menu-images').getPublicUrl(storagePath);
-                    productData.image_url = publicUrl;
+                    if (!uploadError) {
+                        const { data: { publicUrl } } = supabase.storage.from('menu-images').getPublicUrl(storagePath);
+                        productData.image_url = publicUrl;
+                    }
+                } catch (err) {
+                    console.error("Image upload failed:", err);
                 }
             }
 
@@ -99,6 +99,6 @@ module.exports = async function handler(req, res) {
 
     } catch (e) {
         console.error("Cali API Error:", e);
-        res.status(500).json({ error: e.message, detail: e });
+        res.status(500).json({ error: e.message });
     }
 };
