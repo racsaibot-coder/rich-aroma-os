@@ -271,11 +271,19 @@
 
             } catch (e) { 
                 console.error("Cali Store Init Error:", e);
+                let detail = e.message;
+                try {
+                    // Try to parse JSON from error if it was a server 500 with JSON body
+                    if (e.message.includes('Server error')) {
+                        // This part is tricky as e.message might just be the throw from above
+                    }
+                } catch(err) {}
+
                 document.getElementById('pack-grid').innerHTML = `
                     <div class="col-span-full text-center py-20 bg-white rounded-[3rem] border border-red-100 shadow-xl">
                         <i class="fas fa-exclamation-circle text-red-400 text-4xl mb-4"></i>
                         <p class="text-gray-800 font-bold mb-2">Unable to connect to Artisan Database.</p>
-                        <p class="text-gray-400 text-xs mb-6">Error: ${e.message}</p>
+                        <p class="text-red-500 text-[10px] font-mono mb-6 whitespace-pre-wrap px-4">${detail}</p>
                         <button onclick="location.reload()" class="bg-brand-dark text-white px-8 py-3 rounded-full text-xs font-black uppercase tracking-widest hover:bg-brand-brown transition-all">Retry Connection</button>
                     </div>`;
             }
