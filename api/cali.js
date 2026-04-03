@@ -80,7 +80,79 @@ module.exports = async function handler(req, res) {
             return res.json(data || []);
         }
 
-        // 5. UPDATE ORDER
+        // 5. PRODUCT MANAGEMENT (Admin)
+        if (action === 'products' && (req.method === 'POST' || (req.method === 'PUT' && id))) {
+            const auth = req.headers.authorization;
+            if (!auth || !auth.includes('EMP-admin')) {
+                return res.status(401).json({ error: 'Unauthorized' });
+            }
+
+            const { imageBase64, ...productData } = req.body;
+            
+            if (imageBase64 && imageBase64.startsWith('data:image')) {
+                try {
+                    const base64Data = imageBase64.replace(/^data:image\/\w+;base64,/, "");
+                    const buffer = Buffer.from(base64Data, 'base64');
+                    const mimeType = imageBase64.match(/^data:(image\/\w+);base64,/)?.[1] || 'image/png';
+                    const ext = mimeType.split('/')[1] || 'png';
+                    const storagePath = `cali_products/PROD_${id || Date.now()}_${Date.now()}.${ext}`;
+
+                    const { error: uploadError } = await supabase.storage
+                        .from('menu-images')
+                        .upload(storagePath, buffer, { contentType: mimeType, upsert: true });
+
+                    if (!uploadError) {
+                        const { data: { publicUrl } } = supabase.storage.from('menu-images').getPublicUrl(storagePath);
+                        productData.image_url = publicUrl;
+                    }
+                } catch (e) {
+                    console.error("Image processing error:", e);
+                }
+            }
+
+            let result;
+            if (req.method === 'POST') {
+                result = await supabase.from('cali_products').insert(productData).select().single();
+            } else {
+                result = await supabase.from('cali_products').update(productData).eq('id', id).select().single();
+            }
+
+            if (result.error) return res.status(500).json({ error: result.error.message });
+            return res.json(result.data);
+        }
+
+        if (action === 'products' && id && req.method === 'DELETE') {
+            const auth = req.headers.authorization;
+            if (!auth || !auth.includes('EMP-admin')) return res.status(401).json({ error: 'Unauthorized' });
+            const { error } = await supabase.from('cali_products').delete().eq('id', id);
+            if (error) return res.status(500).json({ error: error.message });
+            return res.json({ success: true });
+        }
+
+        // 6. LOCATION MANAGEMENT (Admin)
+        if (action === 'locations' && (req.method === 'POST' || (req.method === 'PUT' && id))) {
+            const auth = req.headers.authorization;
+            if (!auth || !auth.includes('EMP-admin')) return res.status(401).json({ error: 'Unauthorized' });
+
+            let result;
+            if (req.method === 'POST') {
+                result = await supabase.from('cali_locations').insert(req.body).select().single();
+            } else {
+                result = await supabase.from('cali_locations').update(req.body).eq('id', id).select().single();
+            }
+            if (result.error) return res.status(500).json({ error: result.error.message });
+            return res.json(result.data);
+        }
+
+        if (action === 'locations' && id && req.method === 'DELETE') {
+            const auth = req.headers.authorization;
+            if (!auth || !auth.includes('EMP-admin')) return res.status(401).json({ error: 'Unauthorized' });
+            const { error } = await supabase.from('cali_locations').delete().eq('id', id);
+            if (error) return res.status(500).json({ error: error.message });
+            return res.json({ success: true });
+        }
+
+        // 7. UPDATE ORDER (Admin or Receipt Upload)
         if (req.method === 'PATCH' && action === 'update_order' && id) {
             const { action: subAction, imageBase64, ...updates } = req.body;
 
