@@ -230,18 +230,35 @@
                 }
 
                 // Load Products
-                const pRes = await fetch('/api/cali/products');
-                allProducts = await pRes.json();
+                console.log("Fetching products...");
+                const pRes = await fetch('/api/cali?action=products');
+                if (!pRes.ok) {
+                    const errorText = await pRes.text();
+                    console.error("Products fetch failed:", pRes.status, errorText);
+                    throw new Error(`Server error: ${pRes.status}`);
+                }
+                const pData = await pRes.json();
+                allProducts = Array.isArray(pData) ? pData : [];
+                console.log("Products loaded:", allProducts.length);
                 renderPackGrid();
 
                 // Load Locations
-                const lRes = await fetch('/api/cali/locations');
-                allLocations = await lRes.json();
-                populateLocations();
+                const lRes = await fetch('/api/cali?action=locations');
+                if (lRes.ok) {
+                    const lData = await lRes.json();
+                    allLocations = Array.isArray(lData) ? lData : [];
+                    populateLocations();
+                }
 
             } catch (e) { 
-                console.error("Load failed", e);
-                document.getElementById('pack-grid').innerHTML = '<div class="col-span-full text-center py-20 text-red-400">Unable to load catalog. Please refresh.</div>';
+                console.error("Cali Store Init Error:", e);
+                document.getElementById('pack-grid').innerHTML = `
+                    <div class="col-span-full text-center py-20 bg-white rounded-[3rem] border border-red-100 shadow-xl">
+                        <i class="fas fa-exclamation-circle text-red-400 text-4xl mb-4"></i>
+                        <p class="text-gray-800 font-bold mb-2">Unable to connect to Artisan Database.</p>
+                        <p class="text-gray-400 text-xs mb-6">Error: ${e.message}</p>
+                        <button onclick="location.reload()" class="bg-brand-dark text-white px-8 py-3 rounded-full text-xs font-black uppercase tracking-widest hover:bg-brand-brown transition-all">Retry Connection</button>
+                    </div>`;
             }
         }
 

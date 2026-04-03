@@ -32,15 +32,21 @@ module.exports = async function handler(req, res) {
         // GET Products
         if (req.method === 'GET' && action === 'products') {
             const { data, error } = await supabase.from('cali_products').select('*').order('created_at', { ascending: false });
-            if (error) throw error;
-            return res.json(data);
+            if (error) {
+                console.error("Supabase Products Error:", error);
+                throw error;
+            }
+            return res.json(data || []);
         }
         
         // GET Locations
         if (req.method === 'GET' && action === 'locations') {
             const { data, error } = await supabase.from('cali_locations').select('*').eq('active', true);
-            if (error) throw error;
-            return res.json(data);
+            if (error) {
+                console.error("Supabase Locations Error:", error);
+                throw error;
+            }
+            return res.json(data || []);
         }
 
         // POST Submit Order (Public)
