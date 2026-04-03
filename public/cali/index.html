@@ -185,15 +185,44 @@
                         <textarea id="notes" class="w-full bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-brand-gold h-20" placeholder="Flavors, dietary needs, or delivery specifics..."></textarea>
                     </div>
 
+                    <div class="grid md:grid-cols-2 gap-6">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-300 mb-2">Flavor</label>
+                            <select id="flavor" required class="w-full bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-brand-gold appearance-none">
+                                <option value="Vanilla">Vanilla</option>
+                                <option value="Caramel">Caramel</option>
+                                <option value="Oreo Supreme">Oreo Supreme</option>
+                                <option value="French Vanilla">French Vanilla</option>
+                                <option value="Mix">Mix (Variety)</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-300 mb-2">Milk Type</label>
+                            <select id="milk" required class="w-full bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-brand-gold appearance-none">
+                                <option value="Regular">Regular (Cow Milk)</option>
+                                <option value="Oat Milk">Oat Milk (+$1.00/bottle)</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-300 mb-2">Payment Method</label>
+                        <div class="bg-white/5 border border-white/10 rounded-2xl p-4 flex items-center justify-center gap-3 text-brand-gold">
+                            <i class="fab fa-stripe text-2xl"></i>
+                            <span class="font-bold text-sm uppercase tracking-widest">Card / Apple Pay / Google Pay</span>
+                        </div>
+                        <input type="hidden" id="payment-method" value="stripe">
+                    </div>
+
                     <div class="bg-white/5 p-6 rounded-2xl border border-white/10">
                         <p class="text-xs text-center text-gray-400 mb-4 uppercase tracking-widest font-bold">Total to Pay</p>
                         <p class="text-4xl font-bold text-center text-brand-gold font-mono" id="order-total">$0.00</p>
                     </div>
 
-                    <button type="submit" id="submit-btn" class="w-full bg-brand-gold text-brand-dark font-bold text-lg py-4 rounded-xl shadow-lg hover:bg-yellow-400 transition-transform active:scale-95">
-                        Place Order via Transfer <i class="fas fa-arrow-right ml-2"></i>
+                    <button type="submit" id="submit-btn" class="w-full bg-brand-gold text-brand-dark font-black text-lg py-4 rounded-xl shadow-lg hover:bg-yellow-400 transition-transform active:scale-95">
+                        Checkout Now <i class="fas fa-credit-card ml-2"></i>
                     </button>
-                    <p class="text-center text-xs text-gray-400 mt-4">After submitting, you'll see transfer instructions.</p>
+                    <p class="text-center text-[10px] text-gray-500 mt-4 uppercase tracking-widest font-bold">Secure Payment via Stripe</p>
                 </form>
             </div>
         </div>
@@ -201,63 +230,42 @@
 
     <!-- Success Modal -->
     <div id="success-modal" class="hidden fixed inset-0 bg-black/90 flex items-center justify-center z-[100] p-4 overflow-y-auto">
-        <div class="bg-white w-full max-w-md p-8 rounded-3xl text-center my-8">
+        <div class="bg-white w-full max-w-md p-8 rounded-3xl text-center my-8 shadow-2xl">
             <div class="w-20 h-20 bg-green-100 text-green-600 rounded-full flex items-center justify-center text-4xl mx-auto mb-6">
                 <i class="fas fa-check"></i>
             </div>
-            <h2 class="text-2xl font-serif font-bold mb-2 text-brand-dark">Order Placed!</h2>
-            <p class="text-gray-600 mb-6 text-sm">To complete your order, please send your transfer and upload the receipt below.</p>
+            <h2 class="text-3xl font-serif font-bold mb-2 text-brand-dark">Payment Confirmed!</h2>
+            <p class="text-gray-600 mb-8 text-sm">Thank you for your order. We are preparing your fresh batch for the Monday drop.</p>
             
-            <div class="bg-gray-50 p-6 rounded-2xl text-left mb-6 space-y-4 font-medium border border-gray-100">
+            <div class="bg-gray-50 p-6 rounded-2xl text-left mb-8 space-y-4 font-medium border border-gray-100">
                 <div class="flex justify-between items-center">
                     <div>
-                        <p class="text-[10px] font-black uppercase text-gray-400 tracking-widest">Total Amount</p>
+                        <p class="text-[10px] font-black uppercase text-gray-400 tracking-widest">Order Amount</p>
                         <p class="text-xl font-bold text-brand-dark font-mono" id="success-amount">$0.00</p>
                     </div>
                     <div class="text-right">
-                        <p class="text-[10px] font-black uppercase text-gray-400 tracking-widest">Reference</p>
-                        <p class="text-sm font-bold text-brand-brown" id="success-ref">#---</p>
-                    </div>
-                </div>
-                <div class="pt-4 border-t border-gray-200">
-                    <p class="text-[10px] font-black uppercase text-gray-400 tracking-widest mb-2">Zelle / Venmo Info</p>
-                    <p class="text-sm font-bold text-brand-dark flex items-center justify-between">
-                        richaromacali@example.com
-                        <button onclick="navigator.clipboard.writeText('richaromacali@example.com'); alert('Email copied!');" class="text-brand-brown hover:text-brand-dark"><i class="fas fa-copy"></i></button>
-                    </p>
-                </div>
-            </div>
-
-            <!-- Receipt Upload Area -->
-            <div id="receipt-area" class="mb-6">
-                <div class="border-2 border-dashed border-gray-200 rounded-2xl p-6 text-center hover:border-brand-brown transition-colors cursor-pointer relative" onclick="document.getElementById('receipt-file').click()">
-                    <input type="file" id="receipt-file" class="hidden" accept="image/*" onchange="uploadReceipt(this)">
-                    <div id="upload-prompt">
-                        <i class="fas fa-cloud-upload-alt text-3xl text-gray-300 mb-2"></i>
-                        <p class="text-xs font-bold text-gray-500 uppercase tracking-widest">Upload Screenshot</p>
-                    </div>
-                    <div id="upload-loading" class="hidden">
-                        <i class="fas fa-spinner fa-spin text-brand-brown text-2xl"></i>
-                        <p class="text-xs font-bold text-brand-brown mt-2">Uploading Proof...</p>
-                    </div>
-                    <div id="upload-success" class="hidden">
-                        <i class="fas fa-check-circle text-green-500 text-2xl"></i>
-                        <p class="text-xs font-bold text-green-600 mt-2">Proof Uploaded!</p>
+                        <p class="text-[10px] font-black uppercase text-gray-400 tracking-widest">Status</p>
+                        <p class="text-sm font-bold text-green-600 uppercase">Paid</p>
                     </div>
                 </div>
             </div>
 
-            <button onclick="window.location.reload()" class="w-full bg-brand-dark text-white font-bold py-4 rounded-xl shadow-lg">Done</button>
+            <button onclick="window.location.href='/cali'" class="w-full bg-brand-dark text-white font-bold py-4 rounded-xl shadow-lg">Back to Home</button>
         </div>
     </div>
 
     <script>
         let allProducts = [];
         let allLocations = [];
-        let currentOrderId = null;
 
         async function init() {
             try {
+                // Check if returning from success
+                const urlParams = new URLSearchParams(window.location.search);
+                if (urlParams.get('success') === 'true') {
+                    document.getElementById('success-modal').classList.remove('hidden');
+                }
+
                 // Load Products
                 const pRes = await fetch('/api/cali?action=products');
                 allProducts = await pRes.json();
@@ -269,9 +277,11 @@
                 allLocations = await lRes.json();
                 populateLocations();
 
-                // Setup listener for total
+                // Setup listeners for total
                 document.getElementById('product').addEventListener('change', updateTotal);
                 document.getElementById('quantity').addEventListener('change', updateTotal);
+                document.getElementById('flavor').addEventListener('change', updateTotal);
+                document.getElementById('milk').addEventListener('change', updateTotal);
             } catch (e) { console.error("Failed to load store data", e); }
         }
 
@@ -322,9 +332,15 @@
         function updateTotal() {
             const prodId = document.getElementById('product').value;
             const qty = parseInt(document.getElementById('quantity').value) || 1;
+            const milk = document.getElementById('milk').value;
             const product = allProducts.find(p => p.id === prodId);
             if (product) {
-                const total = parseFloat(product.price) * qty;
+                let unitPrice = parseFloat(product.price);
+                if (milk === 'Oat Milk') {
+                    const bottles = product.bottles_per_pack || 1;
+                    unitPrice += (1.0 * bottles);
+                }
+                const total = unitPrice * qty;
                 document.getElementById('order-total').innerText = `$${total.toFixed(2)}`;
             }
         }
@@ -332,11 +348,14 @@
         async function initiateOrder() {
             const btn = document.getElementById('submit-btn');
             const originalText = btn.innerHTML;
+            
             btn.disabled = true;
-            btn.innerText = 'Submitting...';
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Initializing Checkout...';
 
             const prodId = document.getElementById('product').value;
             const qty = parseInt(document.getElementById('quantity').value);
+            const milk = document.getElementById('milk').value;
+            const flavor = document.getElementById('flavor').value;
             const product = allProducts.find(p => p.id === prodId);
 
             if (!product || !document.getElementById('location').value) {
@@ -347,75 +366,32 @@
             }
 
             const payload = {
-                customer_name: document.getElementById('name').value,
-                customer_phone: document.getElementById('phone').value,
+                name: document.getElementById('name').value,
+                phone: document.getElementById('phone').value,
                 location_id: document.getElementById('location').value,
                 product_id: prodId,
                 quantity: qty,
-                total_price: parseFloat(product.price) * qty,
+                selections: { flavor, milk },
                 notes: document.getElementById('notes').value
             };
 
             try {
-                const res = await fetch('/api/cali?action=submit_order', {
+                const res = await fetch('/api/checkout', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(payload)
                 });
-                
-                if (res.ok) {
-                    const data = await res.json();
-                    currentOrderId = data.id;
-                    document.getElementById('success-amount').innerText = `$${payload.total_price.toFixed(2)}`;
-                    document.getElementById('success-ref').innerText = `#${currentOrderId.slice(-6).toUpperCase()}`;
-                    document.getElementById('success-modal').classList.remove('hidden');
+                const data = await res.json();
+                if (data.url) {
+                    window.location.href = data.url;
                 } else {
-                    alert("Error submitting order. Please try again.");
+                    throw new Error(data.error || "Stripe session failed");
                 }
             } catch (e) {
                 console.error(e);
-                alert("Connection error.");
-            } finally {
+                alert("Checkout Error: " + e.message);
                 btn.disabled = false;
                 btn.innerHTML = originalText;
-            }
-        }
-
-        async function uploadReceipt(input) {
-            const file = input.files[0];
-            if (!file || !currentOrderId) return;
-
-            document.getElementById('upload-prompt').classList.add('hidden');
-            document.getElementById('upload-loading').classList.remove('hidden');
-
-            try {
-                // Convert to base64
-                const reader = new FileReader();
-                reader.onloadend = async () => {
-                    const base64String = reader.result;
-                    
-                    const res = await fetch('/api/cali?action=update_order&id=' + currentOrderId, {
-                        method: 'PATCH',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ 
-                            imageBase64: base64String, // The backend needs to handle this or use a generic upload
-                            action: 'upload_receipt' 
-                        })
-                    });
-
-                    if (res.ok) {
-                        document.getElementById('upload-loading').classList.add('hidden');
-                        document.getElementById('upload-success').classList.remove('hidden');
-                    } else {
-                        alert("Upload failed. You can still send it via WhatsApp.");
-                        document.getElementById('upload-loading').classList.add('hidden');
-                        document.getElementById('upload-prompt').classList.remove('hidden');
-                    }
-                };
-                reader.readAsDataURL(file);
-            } catch (e) {
-                console.error(e);
-                alert("Error during upload.");
             }
         }
 
