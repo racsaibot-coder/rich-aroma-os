@@ -5,90 +5,74 @@ module.exports = async function handler(req, res) {
     if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
     try {
-        const { name, phone, distributor_id, flavor, milk, quantity, notes } = req.body;
+        const { name, phone, location_id, items, notes } = req.body;
 
-        if (!flavor || !milk || !quantity) {
-            return res.status(400).json({ error: 'Missing required fields' });
+        if (!items || !Array.isArray(items) || items.length === 0) {
+            return res.status(400).json({ error: 'Cart is empty' });
         }
 
-        const isBundle = quantity === '3_bundle';
-        const parsedQty = isBundle ? 1 : parseInt(quantity);
-        const numBottles = isBundle ? 3 : parsedQty;
+        const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://www.richaromacoffee.com';
+        
+        // 1. Prepare Stripe Line Items and Order Notes
+        const lineItems = [];
+        let combinedNotes = `[CALI ORDER] ${notes || ''}\n`;
+        let totalAmount = 0;
 
-        // Fetch all products to match
-        const { data: products } = await supabase.from('cali_products').select('*');
-        let product;
-        if (isBundle) {
-            product = products.find(p => p.name.includes('Bundle'));
-        } else {
-            product = products.find(p => p.name.toLowerCase().includes(flavor.toLowerCase()));
+        for (const item of items) {
+            lineItems.push({
+                price_data: {
+                    currency: 'usd',
+                    product_data: { 
+                        name: `${item.name} (${item.flavor})`,
+                        description: `Milk: ${item.milk}`
+                    },
+                    unit_amount: Math.round(item.unitPrice * 100),
+                },
+                quantity: parseInt(item.qty),
+            });
+            combinedNotes += `- ${item.qty}x ${item.name} (${item.flavor}, ${item.milk})\n`;
+            totalAmount += (item.unitPrice * item.qty);
         }
 
-        if (!product) {
-            return res.status(404).json({ error: 'Product not found in database' });
-        }
-
-        // Calculate Price
-        let basePrice = parseFloat(product.price);
-        let milkSurcharge = milk === 'Oat Milk' ? (isBundle ? 3.00 : 1.00) : 0;
-        let unitPrice = basePrice + milkSurcharge;
-        let total = unitPrice * parsedQty;
-
-        const description = `${isBundle ? 'Bundle of 3 (Mix)' : flavor} with ${milk}`;
-        const fullNotes = `Flavor: ${flavor} | Milk: ${milk} | ${notes || ''}`;
-
-        // Create Order
+        // 2. Create Order in DB
         const { data: order, error: orderErr } = await supabase
             .from('cali_orders')
             .insert({
                 customer_name: name || 'Guest',
                 customer_phone: phone || '',
-                location_id: distributor_id || null,
-                total: total,
-                status: 'pending',
-                notes: fullNotes
+                location_id: location_id,
+                quantity: items.reduce((sum, i) => sum + parseInt(i.qty), 0),
+                total_price: totalAmount,
+                selections: { cart: items },
+                payment_status: 'pending',
+                notes: combinedNotes
             })
             .select()
             .single();
 
-        if (orderErr) throw new Error('Failed to create order record: ' + orderErr.message);
+        if (orderErr) throw new Error('Order creation failed: ' + orderErr.message);
 
-        await supabase.from('cali_order_items').insert({
-            order_id: order.id,
-            product_id: product.id,
-            quantity: parsedQty,
-            price_at_time: unitPrice
-        });
-
-        const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://www.richaromacoffee.com';
-
-        // Check if Stripe is configured
+        // 3. Create Stripe Session
         if (!process.env.STRIPE_SECRET_KEY) {
-            // For now, if no Stripe key, just mark as pending and show success
-            return res.status(200).json({ url: `${baseUrl}/cali?success=true&order=${order.id}&noshripe=true` });
+            return res.status(200).json({ url: `${baseUrl}/cali?success=true&order=${order.id}` });
         }
 
         const session = await stripe.checkout.sessions.create({
             payment_method_types: ['card', 'cashapp'],
-            line_items: [{
-                price_data: {
-                    currency: 'usd',
-                    product_data: { name: description },
-                    unit_amount: Math.round(unitPrice * 100),
-                },
-                quantity: parsedQty,
-            }],
+            line_items: lineItems,
             mode: 'payment',
             success_url: `${baseUrl}/cali?success=true&order=${order.id}`,
             cancel_url: `${baseUrl}/cali?canceled=true`,
-            metadata: { order_id: order.id }
+            metadata: { 
+                order_id: order.id,
+                type: 'cali_distro'
+            }
         });
 
-        await supabase.from('cali_orders').update({ payment_link: session.url }).eq('id', order.id);
-
         res.status(200).json({ url: session.url });
+
     } catch (error) {
-        console.error('Stripe error:', error);
+        console.error('Checkout error:', error);
         res.status(500).json({ error: error.message });
     }
 };
