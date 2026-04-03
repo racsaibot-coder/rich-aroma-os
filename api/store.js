@@ -123,29 +123,31 @@ module.exports = async function handler(req, res) {
             const filteredItems = (rItems.data || []).filter(i => isAdmin || i.available !== false);
 
             const categoryMeta = {
-                Combos: { name: 'Combos', icon: '🔥' },
-                Calientes: { name: 'Calientes', icon: '☕' },
-                Heladas: { name: 'Heladas', icon: '🥤' },
-                Comida: { name: 'Comida', icon: '🥐' }
+                combos: { name: 'Combos', icon: '🔥' },
+                calientes: { name: 'Calientes', icon: '☕' },
+                heladas: { name: 'Heladas', icon: '🥤' },
+                comida: { name: 'Comida', icon: '🥐' },
+                drinks: { name: 'Bebidas', icon: '🥤' },
+                coffee: { name: 'Café', icon: '☕' }
             };
 
             const grouped = {};
             filteredItems.forEach(item => {
-                const cat = item.category || 'Otros';
-                if (!grouped[cat]) grouped[cat] = [];
-                grouped[cat].push({
+                const rawCat = (item.category || 'otros').toLowerCase();
+                if (!grouped[rawCat]) grouped[rawCat] = [];
+                grouped[rawCat].push({
                     id: item.id,
                     name: item.name,
                     price: parseFloat(item.price) || 0,
                     available: item.available,
-                    image_url: item.image_url,
-                    category: cat
+                    image_url: item.image_url || 'https://images.unsplash.com/photo-1510591509098-f4fdc6d0ff04?w=400&q=80',
+                    category: rawCat
                 });
             });
 
             const categories = Object.keys(grouped).map(catId => ({
                 id: catId,
-                name: categoryMeta[catId]?.name || catId,
+                name: categoryMeta[catId]?.name || (catId.charAt(0).toUpperCase() + catId.slice(1)),
                 icon: categoryMeta[catId]?.icon || '📦',
                 items: grouped[catId]
             }));

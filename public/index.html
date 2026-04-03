@@ -154,54 +154,47 @@
     <script>
         // Fetch menu and pick top 3 favorites
         async function loadFavorites() {
+            const container = document.getElementById('favorites-container');
             try {
                 const res = await fetch('/api/menu');
                 const data = await res.json();
                 if (data && data.items && data.items.length > 0) {
-                    // Filter out non-food/drink items if possible, or just shuffle and pick 3
-                    // Real implementation would sort by order count, but for now we randomize 3 high-quality items
-                    const items = data.items.filter(i => i.image_url && i.price > 0 && i.category !== 'Modificadores');
+                    // Pick items that have images and are available
+                    let items = data.items.filter(i => i.image_url && i.image_url.startsWith('http') && i.available !== false);
                     
-                    // Shuffle array
-                    for (let i = items.length - 1; i > 0; i--) {
-                        const j = Math.floor(Math.random() * (i + 1));
-                        [items[i], items[j]] = [items[j], items[i]];
+                    // If not enough with real images, take any available
+                    if (items.length < 3) {
+                        items = data.items.filter(i => i.available !== false);
                     }
                     
+                    // Pick top 3 (Shuffle for variety)
+                    items.sort(() => Math.random() - 0.5);
                     const top3 = items.slice(0, 3);
                     
-                    const container = document.getElementById('favorites-container');
                     let html = '';
-                    
                     top3.forEach(item => {
-                        const emojiMap = {
-                            'coffee': '☕',
-                            'hot_drinks': '☕',
-                            'cold_drinks': '🥤',
-                            'food': '🥐',
-                            'combo': '🔥'
-                        };
-                        const cat = (item.category || '').toLowerCase();
-                        
                         html += `
                         <a href="/order" class="flex gap-4 p-4 rounded-2xl bg-charcoal border border-white/5 hover:border-gold/30 transition-colors group">
-                            <img src="${item.image_url}" alt="${item.name}" class="w-20 h-20 rounded-xl object-cover shrink-0 group-hover:scale-105 transition-transform">
+                            <img src="${item.image_url || 'https://images.unsplash.com/photo-1510591509098-f4fdc6d0ff04?w=400&q=80'}" alt="${item.name}" class="w-20 h-20 rounded-xl object-cover shrink-0 group-hover:scale-105 transition-transform shadow-lg">
                             <div class="flex-1 flex flex-col justify-center">
                                 <div class="flex justify-between items-start mb-1">
-                                    <h3 class="font-bold text-white">${item.name}</h3>
-                                    <span class="text-gold font-mono font-bold">L ${parseFloat(item.price).toFixed(0)}</span>
+                                    <h3 class="font-bold text-white text-sm md:text-base">${item.name}</h3>
+                                    <span class="text-gold font-mono font-bold text-sm">L ${parseFloat(item.price).toFixed(0)}</span>
                                 </div>
-                                <p class="text-xs text-white/50 line-clamp-2">Pídelo ahora en la app móvil para saltarte la fila.</p>
+                                <p class="text-[10px] md:text-xs text-white/50 line-clamp-2 uppercase tracking-widest font-medium">${item.category || 'Destacado'}</p>
                             </div>
                         </a>`;
                     });
                     
                     if (html) {
                         container.innerHTML = html;
+                    } else {
+                        container.innerHTML = '<p class="text-center text-white/20 py-10 italic">Explora nuestro menú completo para ver las opciones del día.</p>';
                     }
                 }
             } catch(e) {
                 console.error('Error loading favorites', e);
+                container.innerHTML = '<p class="text-center text-white/20 py-10 italic">Error al cargar favoritos.</p>';
             }
         }
         
