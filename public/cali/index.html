@@ -117,201 +117,220 @@
         </div>
     </section>
 
-    <!-- The Menu -->
+    <!-- Pack Selection -->
     <section id="menu" class="py-20 bg-brand-cream">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="text-center mb-16">
-                <h2 class="text-3xl md:text-4xl font-serif font-bold text-brand-dark mb-4">Our Bottled Classics</h2>
-                <p class="text-gray-600 max-w-2xl mx-auto">Sold in 4-Packs to keep you fueled all week.</p>
+            <div class="text-center mb-12">
+                <h2 class="text-3xl md:text-4xl font-serif font-bold text-brand-dark mb-4">Choose Your Pack</h2>
+                <p class="text-gray-600 max-w-2xl mx-auto italic">Authentic Honduran Cold Brew, crafted for your workweek.</p>
             </div>
 
-            <div class="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto" id="dynamic-menu">
-                <div class="col-span-2 text-center text-gray-500 italic">Loading menu...</div>
+            <div class="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto" id="pack-grid">
+                <!-- Packs will be loaded here -->
             </div>
         </div>
     </section>
 
-    <!-- Pre-Order Form -->
-    <section id="order" class="py-20 bg-white">
+    <!-- Selection Configuration (Step 2) -->
+    <section id="configure" class="py-20 bg-white hidden">
         <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="bg-brand-dark rounded-3xl p-8 md:p-12 text-white shadow-2xl relative overflow-hidden">
+            <div class="bg-brand-dark rounded-[2.5rem] p-8 md:p-12 text-white shadow-2xl relative overflow-hidden border border-white/5">
                 <div class="absolute top-0 right-0 -mt-10 -mr-10 w-40 h-40 bg-brand-brown rounded-full opacity-20 blur-3xl"></div>
                 
-                <div class="relative z-10 text-center mb-8">
-                    <h2 class="text-3xl font-serif font-bold mb-3">Join the Drop</h2>
-                    <p class="text-gray-300 text-sm">Select your package and location to pre-order.</p>
+                <button onclick="backToStep1()" class="relative z-10 mb-8 flex items-center gap-2 text-white/50 hover:text-white transition-colors uppercase text-[10px] font-black tracking-widest">
+                    <i class="fas fa-arrow-left"></i> Change Pack Size
+                </button>
+
+                <div class="relative z-10 mb-10">
+                    <h2 class="text-3xl font-serif font-bold mb-2" id="selected-pack-name">Individual Bottle</h2>
+                    <div id="discount-badge" class="inline-block bg-brand-gold text-brand-dark text-[10px] font-black px-3 py-1 rounded-full uppercase tracking-widest hidden">Saving 5%</div>
                 </div>
 
-                <form id="order-form" class="relative z-10 space-y-6" onsubmit="event.preventDefault(); initiateOrder();">
+                <form id="order-form" class="relative z-10 space-y-8" onsubmit="event.preventDefault(); initiateOrder();">
                     
+                    <!-- Choice 1: Flavor -->
+                    <div class="space-y-4">
+                        <label class="block text-[10px] font-black uppercase text-white/40 tracking-[0.2em]">Select Your Flavor</label>
+                        <div class="grid grid-cols-2 gap-3" id="flavor-options">
+                            <button type="button" onclick="selectFlavor('Caramel Latte')" class="flavor-btn p-4 rounded-2xl border-2 border-white/10 bg-white/5 text-sm font-bold text-left transition-all hover:border-brand-gold/50">Caramel Latte</button>
+                            <button type="button" onclick="selectFlavor('French Vanilla')" class="flavor-btn p-4 rounded-2xl border-2 border-white/10 bg-white/5 text-sm font-bold text-left transition-all hover:border-brand-gold/50">French Vanilla</button>
+                            <button type="button" onclick="selectFlavor('Oreo Supreme')" class="flavor-btn p-4 rounded-2xl border-2 border-white/10 bg-white/5 text-sm font-bold text-left transition-all hover:border-brand-gold/50">Oreo Supreme</button>
+                            <button type="button" onclick="selectFlavor('Vanilla Latte')" class="flavor-btn p-4 rounded-2xl border-2 border-white/10 bg-white/5 text-sm font-bold text-left transition-all hover:border-brand-gold/50">Vanilla Latte</button>
+                        </div>
+                        <input type="hidden" id="flavor" value="Vanilla Latte" required>
+                    </div>
+
+                    <!-- Choice 2: Milk -->
+                    <div class="space-y-4">
+                        <label class="block text-[10px] font-black uppercase text-white/40 tracking-[0.2em]">Select Milk Type</label>
+                        <div class="grid grid-cols-2 gap-3">
+                            <button type="button" onclick="selectMilk('Regular')" class="milk-btn p-4 rounded-2xl border-2 border-white/10 bg-white/5 text-sm font-bold text-left transition-all border-brand-gold bg-brand-gold/10 text-brand-gold">
+                                <div class="flex justify-between items-center">
+                                    <span>Regular Milk</span>
+                                    <span class="text-[10px] opacity-60">+$0</span>
+                                </div>
+                            </button>
+                            <button type="button" onclick="selectMilk('Oat Milk')" class="milk-btn p-4 rounded-2xl border-2 border-white/10 bg-white/5 text-sm font-bold text-left transition-all">
+                                <div class="flex justify-between items-center">
+                                    <span>Oat Milk</span>
+                                    <span class="text-[10px] text-brand-gold font-black">+$1/bot</span>
+                                </div>
+                            </button>
+                        </div>
+                        <input type="hidden" id="milk" value="Regular" required>
+                    </div>
+
+                    <!-- Quantity and Location -->
                     <div class="grid md:grid-cols-2 gap-6">
-                        <div>
-                            <label class="block text-sm font-medium text-gray-300 mb-2">Drop Location</label>
-                            <select id="location" required class="w-full bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-brand-gold appearance-none">
+                        <div class="space-y-4">
+                            <label class="block text-[10px] font-black uppercase text-white/40 tracking-[0.2em]">Quantity (Packs)</label>
+                            <div class="flex items-center bg-white/5 rounded-2xl border border-white/10 p-1">
+                                <button type="button" onclick="changeQty(-1)" class="w-12 h-12 flex items-center justify-center rounded-xl bg-white/5 text-white active:scale-90 transition-transform"><i class="fas fa-minus"></i></button>
+                                <span id="qty-display" class="flex-1 text-center font-bold text-lg">1</span>
+                                <button type="button" onclick="changeQty(1)" class="w-12 h-12 flex items-center justify-center rounded-xl bg-brand-gold text-brand-dark active:scale-90 transition-transform"><i class="fas fa-plus"></i></button>
+                                <input type="hidden" id="quantity" value="1">
+                            </div>
+                        </div>
+                        <div class="space-y-4">
+                            <label class="block text-[10px] font-black uppercase text-white/40 tracking-[0.2em]">Drop Location</label>
+                            <select id="location" required class="w-full bg-white/5 border border-white/10 rounded-2xl px-4 py-4 text-white focus:outline-none focus:border-brand-gold appearance-none text-sm">
                                 <option value="" disabled selected class="text-gray-800">-- Select office --</option>
                             </select>
                         </div>
-                        <div>
-                            <label class="block text-sm font-medium text-gray-300 mb-2">Package</label>
-                            <select id="product" required class="w-full bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-brand-gold appearance-none">
-                                <option value="" disabled selected class="text-gray-800">-- Choose package --</option>
-                            </select>
-                        </div>
                     </div>
 
+                    <!-- User Info -->
                     <div class="grid md:grid-cols-2 gap-6">
-                        <div>
-                            <label class="block text-sm font-medium text-gray-300 mb-2">Full Name</label>
-                            <input type="text" id="name" required class="w-full bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-brand-gold placeholder-gray-500" placeholder="Jane Doe">
+                        <div class="space-y-4">
+                            <label class="block text-[10px] font-black uppercase text-white/40 tracking-[0.2em]">Your Name</label>
+                            <input type="text" id="name" required class="w-full bg-white/5 border border-white/10 rounded-2xl px-4 py-4 text-white focus:border-brand-gold outline-none placeholder-white/10 text-sm" placeholder="Jane Doe">
                         </div>
-                        <div>
-                            <label class="block text-sm font-medium text-gray-300 mb-2">WhatsApp / Phone</label>
-                            <input type="tel" id="phone" required class="w-full bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-brand-gold placeholder-gray-500" placeholder="(555) 123-4567">
-                        </div>
-                    </div>
-
-                    <div>
-                        <label class="block text-sm font-medium text-gray-300 mb-2">Quantity (Packs)</label>
-                        <select id="quantity" required class="w-full bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-brand-gold appearance-none">
-                            <option value="1">1 Pack</option>
-                            <option value="2">2 Packs</option>
-                            <option value="3">3 Packs</option>
-                            <option value="4">4 Packs</option>
-                        </select>
-                    </div>
-                    
-                    <div>
-                        <label class="block text-sm font-medium text-gray-300 mb-2">Order Notes</label>
-                        <textarea id="notes" class="w-full bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-brand-gold h-20" placeholder="Flavors, dietary needs, or delivery specifics..."></textarea>
-                    </div>
-
-                    <div class="grid md:grid-cols-2 gap-6">
-                        <div>
-                            <label class="block text-sm font-medium text-gray-300 mb-2">Flavor</label>
-                            <select id="flavor" required class="w-full bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-brand-gold appearance-none">
-                                <option value="Vanilla">Vanilla</option>
-                                <option value="Caramel">Caramel</option>
-                                <option value="Oreo Supreme">Oreo Supreme</option>
-                                <option value="French Vanilla">French Vanilla</option>
-                                <option value="Mix">Mix (Variety)</option>
-                            </select>
-                        </div>
-                        <div>
-                            <label class="block text-sm font-medium text-gray-300 mb-2">Milk Type</label>
-                            <select id="milk" required class="w-full bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-brand-gold appearance-none">
-                                <option value="Regular">Regular (Cow Milk)</option>
-                                <option value="Oat Milk">Oat Milk (+$1.00/bottle)</option>
-                            </select>
+                        <div class="space-y-4">
+                            <label class="block text-[10px] font-black uppercase text-white/40 tracking-[0.2em]">WhatsApp</label>
+                            <input type="tel" id="phone" required class="w-full bg-white/5 border border-white/10 rounded-2xl px-4 py-4 text-white focus:border-brand-gold outline-none placeholder-white/10 text-sm" placeholder="(555) 123-4567">
                         </div>
                     </div>
 
-                    <div>
-                        <label class="block text-sm font-medium text-gray-300 mb-2">Payment Method</label>
-                        <div class="bg-white/5 border border-white/10 rounded-2xl p-4 flex items-center justify-center gap-3 text-brand-gold">
-                            <i class="fab fa-stripe text-2xl"></i>
-                            <span class="font-bold text-sm uppercase tracking-widest">Card / Apple Pay / Google Pay</span>
-                        </div>
-                        <input type="hidden" id="payment-method" value="stripe">
+                    <div class="bg-white/5 p-8 rounded-[2rem] border border-white/10 text-center relative overflow-hidden">
+                        <p class="text-[10px] text-white/30 mb-2 uppercase tracking-[0.3em] font-black">Final Price</p>
+                        <p class="text-5xl font-bold text-brand-gold font-mono tracking-tighter" id="order-total">$0.00</p>
+                        <p class="text-[9px] text-white/20 mt-4 uppercase tracking-widest font-black">Secure Checkout with Stripe</p>
                     </div>
 
-                    <div class="bg-white/5 p-6 rounded-2xl border border-white/10">
-                        <p class="text-xs text-center text-gray-400 mb-4 uppercase tracking-widest font-bold">Total to Pay</p>
-                        <p class="text-4xl font-bold text-center text-brand-gold font-mono" id="order-total">$0.00</p>
-                    </div>
-
-                    <button type="submit" id="submit-btn" class="w-full bg-brand-gold text-brand-dark font-black text-lg py-4 rounded-xl shadow-lg hover:bg-yellow-400 transition-transform active:scale-95">
-                        Checkout Now <i class="fas fa-credit-card ml-2"></i>
+                    <button type="submit" id="submit-btn" class="w-full bg-brand-gold text-brand-dark font-black text-xl py-5 rounded-2xl shadow-xl hover:bg-yellow-400 transition-all hover:scale-[1.02] active:scale-95 shadow-brand-gold/20">
+                        PLACE PRE-ORDER <i class="fas fa-arrow-right ml-2"></i>
                     </button>
-                    <p class="text-center text-[10px] text-gray-500 mt-4 uppercase tracking-widest font-bold">Secure Payment via Stripe</p>
                 </form>
             </div>
         </div>
     </section>
 
     <!-- Success Modal -->
-    <div id="success-modal" class="hidden fixed inset-0 bg-black/90 flex items-center justify-center z-[100] p-4 overflow-y-auto">
-        <div class="bg-white w-full max-w-md p-8 rounded-3xl text-center my-8 shadow-2xl">
-            <div class="w-20 h-20 bg-green-100 text-green-600 rounded-full flex items-center justify-center text-4xl mx-auto mb-6">
+    <div id="success-modal" class="hidden fixed inset-0 bg-brand-dark/95 backdrop-blur-xl flex items-center justify-center z-[100] p-4 overflow-y-auto">
+        <div class="bg-white w-full max-w-md p-10 rounded-[3rem] text-center shadow-2xl relative">
+            <div class="w-24 h-24 bg-green-100 text-green-600 rounded-full flex items-center justify-center text-5xl mx-auto mb-8 animate-bounce">
                 <i class="fas fa-check"></i>
             </div>
-            <h2 class="text-3xl font-serif font-bold mb-2 text-brand-dark">Payment Confirmed!</h2>
-            <p class="text-gray-600 mb-8 text-sm">Thank you for your order. We are preparing your fresh batch for the Monday drop.</p>
+            <h2 class="text-3xl font-serif font-bold mb-3 text-brand-dark">Batch Secured!</h2>
+            <p class="text-gray-500 mb-8 text-sm leading-relaxed font-medium">Your pre-order is confirmed. We will brew your lattes this Sunday and drop them at your location Monday morning.</p>
             
-            <div class="bg-gray-50 p-6 rounded-2xl text-left mb-8 space-y-4 font-medium border border-gray-100">
+            <div class="bg-brand-cream p-6 rounded-3xl text-left mb-8 space-y-4 border border-brand-brown/10">
                 <div class="flex justify-between items-center">
                     <div>
-                        <p class="text-[10px] font-black uppercase text-gray-400 tracking-widest">Order Amount</p>
+                        <p class="text-[10px] font-black uppercase text-brand-brown/40 tracking-widest mb-1">Receipt</p>
                         <p class="text-xl font-bold text-brand-dark font-mono" id="success-amount">$0.00</p>
                     </div>
                     <div class="text-right">
-                        <p class="text-[10px] font-black uppercase text-gray-400 tracking-widest">Status</p>
-                        <p class="text-sm font-bold text-green-600 uppercase">Paid</p>
+                        <p class="text-[10px] font-black uppercase text-brand-brown/40 tracking-widest mb-1">Status</p>
+                        <div class="flex items-center gap-2 text-green-600 font-black text-xs">
+                            <span class="w-2 h-2 rounded-full bg-green-500"></span> PAID
+                        </div>
                     </div>
                 </div>
             </div>
 
-            <button onclick="window.location.href='/cali'" class="w-full bg-brand-dark text-white font-bold py-4 rounded-xl shadow-lg">Back to Home</button>
+            <button onclick="window.location.href='/cali'" class="w-full bg-brand-dark text-white font-black py-5 rounded-2xl shadow-lg hover:bg-brand-brown transition-all">Back to Home</button>
         </div>
     </div>
 
     <script>
         let allProducts = [];
         let allLocations = [];
+        let selectedProduct = null;
 
         async function init() {
             try {
-                // Check if returning from success
                 const urlParams = new URLSearchParams(window.location.search);
                 if (urlParams.get('success') === 'true') {
                     document.getElementById('success-modal').classList.remove('hidden');
                 }
 
                 // Load Products
-                const pRes = await fetch('/api/cali?action=products');
+                const pRes = await fetch('/api/cali/products');
                 allProducts = await pRes.json();
-                renderMenu();
-                populateProducts();
+                renderPackGrid();
 
                 // Load Locations
-                const lRes = await fetch('/api/cali?action=locations');
+                const lRes = await fetch('/api/cali/locations');
                 allLocations = await lRes.json();
                 populateLocations();
 
-                // Setup listeners for total
-                document.getElementById('product').addEventListener('change', updateTotal);
-                document.getElementById('quantity').addEventListener('change', updateTotal);
-                document.getElementById('flavor').addEventListener('change', updateTotal);
-                document.getElementById('milk').addEventListener('change', updateTotal);
-            } catch (e) { console.error("Failed to load store data", e); }
+            } catch (e) { console.error("Load failed", e); }
         }
 
-        function renderMenu() {
-            const container = document.getElementById('dynamic-menu');
-            container.innerHTML = allProducts.filter(p => p.active).map(p => `
-                <div class="bg-white rounded-3xl overflow-hidden shadow-sm flex flex-col sm:flex-row hover:shadow-md transition">
-                    <div class="w-full sm:w-2/5 h-48 sm:h-auto bg-gray-100 flex items-center justify-center">
-                        ${p.image_url ? `<img src="${p.image_url}" class="w-full h-full object-cover">` : '<i class="fas fa-coffee text-4xl text-gray-300"></i>'}
+        function renderPackGrid() {
+            const grid = document.getElementById('pack-grid');
+            const sorted = allProducts.filter(p => p.active).sort((a,b) => (a.bottles_per_pack || 0) - (b.bottles_per_pack || 0));
+            
+            grid.innerHTML = sorted.map(p => {
+                const isBundle = p.bottles_per_pack > 1;
+                const savings = p.bottles_per_pack === 3 ? 'SAVE 5%' : p.bottles_per_pack === 5 ? 'SAVE 10%' : '';
+                
+                return `
+                <div class="bg-white rounded-[2.5rem] p-8 border border-gray-100 shadow-sm hover:shadow-2xl transition-all hover:-translate-y-2 flex flex-col group relative overflow-hidden">
+                    ${savings ? `<div class="absolute top-6 right-6 bg-brand-gold text-brand-dark text-[10px] font-black px-3 py-1 rounded-full uppercase tracking-widest">${savings}</div>` : ''}
+                    <div class="w-20 h-20 bg-brand-cream rounded-3xl flex items-center justify-center mb-8 group-hover:bg-brand-gold transition-colors duration-500">
+                        <i class="fas fa-mug-hot text-brand-brown text-3xl group-hover:text-brand-dark"></i>
                     </div>
-                    <div class="p-6 sm:w-3/5">
-                        <div class="flex justify-between items-start mb-2">
-                            <h3 class="text-xl font-bold font-serif text-brand-dark">${p.name}</h3>
-                            <span class="font-bold text-brand-brown">$${parseFloat(p.price).toFixed(2)}</span>
+                    <h3 class="text-2xl font-serif font-bold mb-2 text-brand-dark">${p.name}</h3>
+                    <p class="text-gray-400 text-xs font-bold uppercase tracking-widest mb-6">${p.bottles_per_pack} Bottled Latte${p.bottles_per_pack > 1 ? 's' : ''}</p>
+                    <div class="mt-auto">
+                        <div class="flex items-baseline gap-1 mb-6">
+                            <span class="text-3xl font-black font-mono">$${parseFloat(p.price).toFixed(2)}</span>
+                            <span class="text-gray-400 text-xs font-bold">/pack</span>
                         </div>
-                        <p class="text-gray-500 text-xs uppercase font-bold tracking-widest mb-4">${p.bottles_per_pack}-Pack Bottled Lattes</p>
-                        <a href="#order" onclick="selectProduct('${p.id}')" class="text-xs font-black uppercase tracking-widest text-brand-brown hover:text-brand-dark transition underline underline-offset-4">Select for Order</a>
+                        <button onclick="configurePack('${p.id}')" class="w-full bg-brand-dark text-white font-black py-4 rounded-2xl hover:bg-brand-brown transition-all uppercase tracking-widest text-xs">
+                            Select Pack
+                        </button>
                     </div>
-                </div>
-            `).join('');
+                </div>`;
+            }).join('');
         }
 
-        function populateProducts() {
-            const select = document.getElementById('product');
-            allProducts.filter(p => p.active).forEach(p => {
-                const opt = document.createElement('option');
-                opt.value = p.id;
-                opt.textContent = `${p.name} ($${p.price})`;
-                select.appendChild(opt);
-            });
+        function configurePack(id) {
+            selectedProduct = allProducts.find(p => p.id === id);
+            document.getElementById('selected-pack-name').innerText = selectedProduct.name;
+            
+            const badge = document.getElementById('discount-badge');
+            if (selectedProduct.bottles_per_pack === 3) {
+                badge.innerText = 'SAVE 5% INCLUDED';
+                badge.classList.remove('hidden');
+            } else if (selectedProduct.bottles_per_pack === 5) {
+                badge.innerText = 'SAVE 10% INCLUDED';
+                badge.classList.remove('hidden');
+            } else {
+                badge.classList.add('hidden');
+            }
+
+            document.getElementById('menu').classList.add('hidden');
+            document.getElementById('configure').classList.remove('hidden');
+            updateTotal();
+            window.scrollTo({ top: document.getElementById('configure').offsetTop - 100, behavior: 'smooth' });
+        }
+
+        function backToStep1() {
+            document.getElementById('configure').classList.add('hidden');
+            document.getElementById('menu').classList.remove('hidden');
         }
 
         function populateLocations() {
@@ -324,54 +343,61 @@
             });
         }
 
-        function selectProduct(id) {
-            document.getElementById('product').value = id;
+        function selectFlavor(f) {
+            document.getElementById('flavor').value = f;
+            document.querySelectorAll('.flavor-btn').forEach(btn => {
+                if (btn.innerText === f) btn.classList.add('border-brand-gold', 'bg-brand-gold/10', 'text-brand-gold');
+                else btn.classList.remove('border-brand-gold', 'bg-brand-gold/10', 'text-brand-gold');
+            });
+        }
+
+        function selectMilk(m) {
+            document.getElementById('milk').value = m;
+            document.querySelectorAll('.milk-btn').forEach(btn => {
+                if (btn.innerText.includes(m)) btn.classList.add('border-brand-gold', 'bg-brand-gold/10', 'text-brand-gold');
+                else btn.classList.remove('border-brand-gold', 'bg-brand-gold/10', 'text-brand-gold');
+            });
+            updateTotal();
+        }
+
+        function changeQty(delta) {
+            let q = parseInt(document.getElementById('quantity').value) + delta;
+            if (q < 1) q = 1;
+            document.getElementById('quantity').value = q;
+            document.getElementById('qty-display').innerText = q;
             updateTotal();
         }
 
         function updateTotal() {
-            const prodId = document.getElementById('product').value;
-            const qty = parseInt(document.getElementById('quantity').value) || 1;
+            if (!selectedProduct) return;
+            const qty = parseInt(document.getElementById('quantity').value);
             const milk = document.getElementById('milk').value;
-            const product = allProducts.find(p => p.id === prodId);
-            if (product) {
-                let unitPrice = parseFloat(product.price);
-                if (milk === 'Oat Milk') {
-                    const bottles = product.bottles_per_pack || 1;
-                    unitPrice += (1.0 * bottles);
-                }
-                const total = unitPrice * qty;
-                document.getElementById('order-total').innerText = `$${total.toFixed(2)}`;
+            
+            let unitPrice = parseFloat(selectedProduct.price);
+            if (milk === 'Oat Milk') {
+                unitPrice += (1.0 * selectedProduct.bottles_per_pack);
             }
+            
+            const total = unitPrice * qty;
+            document.getElementById('order-total').innerText = `$${total.toFixed(2)}`;
         }
 
         async function initiateOrder() {
             const btn = document.getElementById('submit-btn');
-            const originalText = btn.innerHTML;
-            
+            const ogText = btn.innerHTML;
             btn.disabled = true;
             btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Initializing Checkout...';
-
-            const prodId = document.getElementById('product').value;
-            const qty = parseInt(document.getElementById('quantity').value);
-            const milk = document.getElementById('milk').value;
-            const flavor = document.getElementById('flavor').value;
-            const product = allProducts.find(p => p.id === prodId);
-
-            if (!product || !document.getElementById('location').value) {
-                alert("Please select a product and location.");
-                btn.disabled = false;
-                btn.innerHTML = originalText;
-                return;
-            }
 
             const payload = {
                 name: document.getElementById('name').value,
                 phone: document.getElementById('phone').value,
                 location_id: document.getElementById('location').value,
-                product_id: prodId,
-                quantity: qty,
-                selections: { flavor, milk },
+                product_id: selectedProduct.id,
+                quantity: document.getElementById('quantity').value,
+                selections: { 
+                    flavor: document.getElementById('flavor').value, 
+                    milk: document.getElementById('milk').value 
+                },
                 notes: document.getElementById('notes').value
             };
 
@@ -382,16 +408,12 @@
                     body: JSON.stringify(payload)
                 });
                 const data = await res.json();
-                if (data.url) {
-                    window.location.href = data.url;
-                } else {
-                    throw new Error(data.error || "Stripe session failed");
-                }
+                if (data.url) window.location.href = data.url;
+                else throw new Error(data.error);
             } catch (e) {
-                console.error(e);
-                alert("Checkout Error: " + e.message);
+                alert("Error: " + e.message);
                 btn.disabled = false;
-                btn.innerHTML = originalText;
+                btn.innerHTML = ogText;
             }
         }
 
