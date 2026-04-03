@@ -421,9 +421,17 @@
 
             try {
                 const res = await fetch(url, { method, headers: getHeaders(), body: JSON.stringify(payload) });
-                if (res.ok) { closeModal('product-modal'); loadProducts(); }
-                else alert("Error saving product");
-            } catch (e) { console.error(e); }
+                if (res.ok) { 
+                    closeModal('product-modal'); 
+                    loadProducts(); 
+                } else {
+                    const err = await res.json();
+                    alert("Server Error: " + (err.error || "Unknown error") + "\nDetail: " + (err.message || "No detail"));
+                }
+            } catch (e) { 
+                console.error(e); 
+                alert("Connection failed: " + e.message);
+            }
             finally { btn.disabled = false; btn.innerText = 'Save Product Changes'; }
         }
 

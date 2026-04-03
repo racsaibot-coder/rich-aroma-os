@@ -5,12 +5,16 @@ const VIP_MONTHLY_RELOAD = 500.00;
 const HONDURAS_TZ = 'America/Tegucigalpa';
 
 function getHondurasDate() {
-    return new Intl.DateTimeFormat('en-CA', { 
-        timeZone: HONDURAS_TZ, 
-        year: 'numeric', 
-        month: '2-digit', 
-        day: '2-digit' 
-    }).format(new Date());
+    try {
+        return new Intl.DateTimeFormat('en-CA', { 
+            timeZone: HONDURAS_TZ, 
+            year: 'numeric', 
+            month: '2-digit', 
+            day: '2-digit' 
+        }).format(new Date());
+    } catch(e) {
+        return new Date().toISOString().split('T')[0];
+    }
 }
 
 async function syncMembershipState(customer) {
@@ -48,7 +52,7 @@ function applyVipBenefits(orderItems, customer, paymentMethod) {
     const isVip = customer.is_vip === true || (Array.isArray(customer.tags) && customer.tags.includes('VIP'));
     const canClaimFreeDrink = isVip && (customer.last_free_drink_date !== today);
 
-    const processedItems = orderItems.map(item => {
+    const processedItems = (orderItems || []).map(item => {
         let finalPrice = parseFloat(item.price) || 0;
         let appliedDiscount = 0;
         if (canClaimFreeDrink && !freeDrinkClaimedThisOrder && item.is_vip_free_eligible) {
@@ -88,72 +92,35 @@ module.exports = async function handler(req, res) {
     try {
         // STORE STATUS
         if (action === 'store_status' && req.method === 'GET') {
-            const { data } = await supabase.from('system_settings').select('value').eq('key', 'store_is_open').single();
+            const { data, error } = await supabase.from('system_settings').select('value').eq('key', 'store_is_open').single();
+            if (error) return res.json({ isOpen: true });
             return res.json({ isOpen: data?.value?.isOpen ?? true });
-        }
-
-        if (action === 'store_status' && req.method === 'PATCH') {
-            const { isOpen } = req.body;
-            const { data, error } = await supabase.from('system_settings').upsert({
-                key: 'store_is_open',
-                value: { isOpen: isOpen === true || isOpen === 'true' }
-            }, { onConflict: 'key' }).select().single();
-            
-            if (error) return res.status(500).json({ error: error.message });
-            return res.json({ success: true, isOpen: data.value.isOpen });
         }
 
         // CUSTOMER LOGIN
         if (action === 'customer_login' && req.method === 'POST') {
             const { phone, pin } = req.body;
             if (!phone || !pin) return res.status(400).json({ error: "Teléfono y PIN requeridos" });
-            
             const cleanPhone = phone.replace(/[^\d+]/g, '');
             const { data: customer, error } = await supabase.from('customers').select('*').eq('phone', cleanPhone).single();
-                
             if (error || !customer) return res.status(404).json({ error: "Usuario no encontrado" });
-            
-            if (customer.pin) {
-                if (customer.pin !== pin) return res.status(401).json({ error: "PIN incorrecto" });
-                const synced = await syncMembershipState(customer);
-                return res.json({ message: "Login successful", customer: synced });
-            } else {
-                const { error: updateError } = await supabase.from('customers').update({ pin: pin }).eq('id', customer.id);
-                if (updateError) return res.status(500).json({ error: "Error al guardar PIN" });
-                customer.pin = pin;
-                const synced = await syncMembershipState(customer);
-                return res.json({ message: "PIN creado exitosamente", customer: synced });
-            }
-        }
-
-        // CUSTOMER PROFILE (SYNC)
-        if (action === 'profile' && req.method === 'GET') {
-            let phone = req.query.phone;
-            if(!phone) return res.status(400).json({error: "Phone required"});
-            if (phone.includes(' ')) phone = phone.replace(/ /g, '+');
-
-            const { data: customer, error } = await supabase.from('customers').select('*').eq('phone', phone).single();
-            if (error || !customer) return res.status(404).json({ error: "Not found" });
-
+            if (customer.pin && customer.pin !== pin) return res.status(401).json({ error: "PIN incorrecto" });
             const synced = await syncMembershipState(customer);
-            
-            // Get recent orders for history
-            const { data: recent } = await supabase.from('orders').select('*').eq('customer_id', synced.id).order('created_at', { ascending: false }).limit(10);
-            
-            return res.json({ ...synced, recent_orders: recent || [] });
+            return res.json({ message: "Login successful", customer: synced });
         }
 
-        // MENU
+        // MENU (Bulletproof version)
         if (action === 'menu' && req.method === 'GET') {
             const isAdmin = req.query.admin === 'true';
             
-            const { data: items } = await supabase.from('menu_items').select('*').order('name');
-            const { data: modGroups } = await supabase.from('modifier_groups').select('*').order('display_order');
-            const { data: modOptions } = await supabase.from('modifier_options').select('*').order('name');
-            const { data: itemModGroups } = await supabase.from('item_modifier_groups').select('*');
+            const [rItems, rModGroups, rModOptions, rItemModGroups] = await Promise.all([
+                supabase.from('menu_items').select('*').order('name'),
+                supabase.from('modifier_groups').select('*').order('display_order'),
+                supabase.from('modifier_options').select('*').order('name'),
+                supabase.from('item_modifier_groups').select('*')
+            ]);
 
-            const rawItems = items || [];
-            const filteredItems = isAdmin ? rawItems : rawItems.filter(i => i.available !== false);
+            const filteredItems = (rItems.data || []).filter(i => isAdmin || i.available !== false);
 
             const categoryMeta = {
                 Combos: { name: 'Combos', icon: '🔥' },
@@ -164,14 +131,15 @@ module.exports = async function handler(req, res) {
 
             const grouped = {};
             filteredItems.forEach(item => {
-                if (!grouped[item.category]) grouped[item.category] = [];
-                grouped[item.category].push({
+                const cat = item.category || 'Otros';
+                if (!grouped[cat]) grouped[cat] = [];
+                grouped[cat].push({
                     id: item.id,
                     name: item.name,
                     price: parseFloat(item.price) || 0,
                     available: item.available,
                     image_url: item.image_url,
-                    category: item.category
+                    category: cat
                 });
             });
 
@@ -182,18 +150,12 @@ module.exports = async function handler(req, res) {
                 items: grouped[catId]
             }));
 
-            const modifiersMap = {};
-            (modOptions || []).forEach(m => {
-                modifiersMap[m.id] = { name: m.name, price: parseFloat(m.price) || 0 };
-            });
-
             return res.json({ 
                 items: filteredItems, 
                 categories,
-                modifiers: modifiersMap,
-                itemModGroups: itemModGroups || [], 
-                modGroups: modGroups || [], 
-                modOptions: modOptions || [], 
+                modGroups: rModGroups.data || [], 
+                modOptions: rModOptions.data || [], 
+                itemModGroups: rItemModGroups.data || [],
                 taxRate: 0.00 
             });
         }
@@ -208,9 +170,8 @@ module.exports = async function handler(req, res) {
                 if (data) customer = await syncMembershipState(data);
             }
 
-            // Fetch Item Metadata for VIP
             const itemIds = (items || []).map(i => i.id);
-            const { data: menuItems } = await supabase.from('menu_items').select('id, is_house_made, is_vip_free_eligible').in('id', itemIds);
+            const { data: menuItems } = await supabase.from('menu_items').select('*').in('id', itemIds);
             
             const itemsWithMeta = (items || []).map(item => {
                 const meta = (menuItems || []).find(m => m.id === item.id);
@@ -225,10 +186,7 @@ module.exports = async function handler(req, res) {
 
             if (customer) {
                 const calculation = applyVipBenefits(itemsWithMeta, customer, paymentMethod);
-                finalOrder.items = calculation.items;
-                finalOrder.total = calculation.total;
-                finalOrder.discount = calculation.items.reduce((s, i) => s + (i.appliedDiscount || 0), 0);
-                
+                finalOrder = calculation;
                 if (calculation.freeDrinkClaimed) {
                     await supabase.from('customers').update({ last_free_drink_date: getHondurasDate() }).eq('id', customer.id);
                 }
@@ -242,7 +200,7 @@ module.exports = async function handler(req, res) {
                 order_number: orderNum,
                 items: finalOrder.items,
                 subtotal: parseFloat(subtotal) || 0,
-                discount: finalOrder.discount,
+                discount: finalOrder.discount || 0,
                 total: finalOrder.total,
                 status: 'pending',
                 payment_method: paymentMethod,
@@ -250,15 +208,12 @@ module.exports = async function handler(req, res) {
                 notes: notes
             };
 
-            // Handle Rico Deduction
             if (paymentMethod === 'rico_balance' && customer) {
                 const balance = parseFloat(customer.rico_balance) || 0;
                 if (balance >= orderData.total) {
                     orderData.status = 'paid';
                     await supabase.from('customers').update({ rico_balance: balance - orderData.total }).eq('id', customer.id);
-                } else {
-                    return res.status(400).json({ error: "Saldo insuficiente" });
-                }
+                } else return res.status(400).json({ error: "Saldo insuficiente" });
             }
 
             const { data, error } = await supabase.from('orders').insert(orderData).select().single();
@@ -270,6 +225,6 @@ module.exports = async function handler(req, res) {
 
     } catch (e) {
         console.error("Store API Error:", e);
-        res.status(500).json({ error: e.message });
+        res.status(500).json({ error: e.message, stack: e.stack });
     }
 };
