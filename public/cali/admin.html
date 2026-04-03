@@ -346,6 +346,12 @@
 
         async function saveProduct() {
             const id = document.getElementById('prod-id').value;
+            const btn = document.getElementById('prod-save-btn');
+            const ogText = btn.innerText;
+            
+            btn.disabled = true;
+            btn.innerText = 'Saving...';
+
             const payload = {
                 name: document.getElementById('prod-name').value,
                 price: parseFloat(document.getElementById('prod-price').value),
@@ -355,14 +361,30 @@
                 active: document.getElementById('prod-active').checked
             };
 
+            if (window.pendingImageBase64) {
+                payload.imageBase64 = window.pendingImageBase64;
+            }
+
             const url = id ? `/api/cali?action=products&id=${id}` : '/api/cali?action=products';
             const method = id ? 'PUT' : 'POST';
 
             try {
                 const res = await fetch(url, { method, headers: getHeaders(), body: JSON.stringify(payload) });
-                if (res.ok) { closeModal('product-modal'); loadProducts(); }
-                else alert("Error saving product");
-            } catch (e) { console.error(e); }
+                if (res.ok) { 
+                    closeModal('product-modal'); 
+                    window.pendingImageBase64 = null;
+                    loadProducts(); 
+                } else {
+                    const err = await res.json();
+                    alert("Error saving product: " + err.error);
+                }
+            } catch (e) { 
+                console.error(e); 
+                alert("Connection error.");
+            } finally {
+                btn.disabled = false;
+                btn.innerText = ogText;
+            }
         }
 
         async function deleteProduct() {
@@ -472,7 +494,15 @@
                             <div class="text-[10px] text-gray-400 font-mono">${o.customer_phone}</div>
                         </td>
                         <td class="px-6 py-4 text-sm font-medium">
-                            <span class="text-gray-400 mr-1">${o.quantity}x</span> ${o.cali_products?.name || 'Unknown'}
+                            <div class="flex items-center gap-2">
+                                <span class="text-gray-400 font-bold">${o.quantity}x</span>
+                                <div>
+                                    <div class="text-brand-dark">${o.cali_products?.name || 'Unknown'}</div>
+                                    <div class="text-[10px] text-gray-400 font-bold uppercase tracking-tight">
+                                        ${o.selections?.flavor || 'N/A'} • ${o.selections?.milk || 'Regular'}
+                                    </div>
+                                </div>
+                            </div>
                         </td>
                         <td class="px-6 py-4 font-mono font-bold text-sm text-brand-dark">
                             $${parseFloat(o.total_price).toFixed(2)}
@@ -551,13 +581,34 @@
         }
 
         // --- UTILS ---
-        function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
+        function closeModal(id) { 
+            document.getElementById(id).classList.add('hidden'); 
+            window.pendingImageBase64 = null;
+        }
         
         async function handleFileUpload(input, targetId) {
             const file = input.files[0];
             if (!file) return;
-            // For now, we'll suggest using a URL, or implement upload-receipt logic
-            alert("Image upload logic will be connected to /api/topup storage bucket.");
+
+            // Feedback
+            const btn = input.nextElementSibling;
+            const ogText = btn.innerHTML;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
+
+            try {
+                const reader = new FileReader();
+                reader.onloadend = () => {
+                    window.pendingImageBase64 = reader.result;
+                    document.getElementById(targetId).value = "Image attached (Click Save to upload)";
+                    btn.innerHTML = '<i class="fas fa-check"></i> Image Ready';
+                    btn.classList.add('text-green-600');
+                };
+                reader.readAsDataURL(file);
+            } catch (e) {
+                console.error(e);
+                alert("Failed to process image.");
+                btn.innerHTML = ogText;
+            }
         }
 
         function logout() {

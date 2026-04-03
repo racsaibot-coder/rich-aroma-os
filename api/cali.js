@@ -57,13 +57,51 @@ module.exports = async function handler(req, res) {
 
         // Manage Products
         if (action === 'products' && req.method === 'POST') {
-            const { data, error } = await supabase.from('cali_products').insert(req.body).select().single();
+            const { imageBase64, ...productData } = req.body;
+            
+            if (imageBase64) {
+                const base64Data = imageBase64.replace(/^data:image\/\w+;base64,/, "");
+                const buffer = Buffer.from(base64Data, 'base64');
+                const mimeType = imageBase64.match(/^data:(image\/\w+);base64,/)?.[1] || 'image/png';
+                const ext = mimeType.split('/')[1] || 'png';
+                const storagePath = `cali_products/PROD_${Date.now()}.${ext}`;
+
+                const { data: uploadData, error: uploadError } = await supabase.storage
+                    .from('menu-images')
+                    .upload(storagePath, buffer, { contentType: mimeType, upsert: true });
+
+                if (!uploadError) {
+                    const { data: { publicUrl } } = supabase.storage.from('menu-images').getPublicUrl(storagePath);
+                    productData.image_url = publicUrl;
+                }
+            }
+
+            const { data, error } = await supabase.from('cali_products').insert(productData).select().single();
             if (error) throw error;
             return res.json(data);
         }
         
         if (action === 'products' && id && req.method === 'PUT') {
-            const { data, error } = await supabase.from('cali_products').update(req.body).eq('id', id).select().single();
+            const { imageBase64, ...updates } = req.body;
+
+            if (imageBase64) {
+                const base64Data = imageBase64.replace(/^data:image\/\w+;base64,/, "");
+                const buffer = Buffer.from(base64Data, 'base64');
+                const mimeType = imageBase64.match(/^data:(image\/\w+);base64,/)?.[1] || 'image/png';
+                const ext = mimeType.split('/')[1] || 'png';
+                const storagePath = `cali_products/PROD_${id}_${Date.now()}.${ext}`;
+
+                const { data: uploadData, error: uploadError } = await supabase.storage
+                    .from('menu-images')
+                    .upload(storagePath, buffer, { contentType: mimeType, upsert: true });
+
+                if (!uploadError) {
+                    const { data: { publicUrl } } = supabase.storage.from('menu-images').getPublicUrl(storagePath);
+                    updates.image_url = publicUrl;
+                }
+            }
+
+            const { data, error } = await supabase.from('cali_products').update(updates).eq('id', id).select().single();
             if (error) throw error;
             return res.json(data);
         }
