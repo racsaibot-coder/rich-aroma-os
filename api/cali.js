@@ -1,6 +1,10 @@
-const { supabase } = require('./lib/supabase');
+const { createClient } = require('@supabase/supabase-js');
 
-module.exports = async function handler(req, res) {
+const supabaseUrl = process.env.SUPABASE_URL || 'https://zcqubacfcettwawcimsy.supabase.co';
+const supabaseKey = process.env.SUPABASE_ANON_KEY || 'sb_publishable_hRVyru_6sektmVGQyJFfwQ_4b2-7MKq';
+const supabase = createClient(supabaseUrl, supabaseKey);
+
+module.exports = async (req, res) => {
     try {
         res.setHeader('Access-Control-Allow-Origin', '*');
         res.setHeader('Access-Control-Allow-Methods', 'GET,POST,PUT,PATCH,DELETE,OPTIONS');
@@ -34,7 +38,6 @@ module.exports = async function handler(req, res) {
 
             const { imageBase64, ...productData } = req.body;
             
-            // Image Upload Logic
             if (imageBase64 && imageBase64.startsWith('data:image')) {
                 try {
                     const base64Data = imageBase64.replace(/^data:image\/\w+;base64,/, "");
@@ -99,6 +102,6 @@ module.exports = async function handler(req, res) {
 
     } catch (e) {
         console.error("Cali API Error:", e);
-        res.status(500).json({ error: e.message });
+        res.status(500).send(e.message);
     }
 };
