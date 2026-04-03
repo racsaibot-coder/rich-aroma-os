@@ -39,7 +39,28 @@
     </style>
 </head>
 <body class="bg-[#fdfbf7] text-gray-800 antialiased min-h-screen pb-20">
-    <div class="max-w-6xl mx-auto p-6 md:p-12">
+
+    <!-- PIN LOGIN VIEW -->
+    <div id="pin-view" class="fixed inset-0 bg-brand-dark flex items-center justify-center z-[1000]">
+        <div class="w-full max-w-xs p-8 text-center space-y-8 animate-fade-in">
+            <div class="w-20 h-20 bg-gold-shimmer rounded-3xl mx-auto flex items-center justify-center shadow-2xl">
+                <i class="fas fa-lock text-brand-dark text-3xl"></i>
+            </div>
+            <div>
+                <h2 class="text-2xl font-serif font-bold text-white mb-2">Admin Access</h2>
+                <p class="text-white/40 text-[10px] font-black uppercase tracking-widest leading-relaxed">Please enter your 4-digit PIN to continue to Cali HQ</p>
+            </div>
+            <div class="relative">
+                <input type="password" id="admin-pin" maxlength="4" placeholder="••••" class="w-full bg-white/5 border-2 border-white/10 rounded-2xl px-6 py-5 text-center text-3xl font-mono tracking-[0.5em] text-gold focus:border-brand-gold outline-none transition-all placeholder:text-white/5">
+            </div>
+            <button onclick="checkPin()" class="w-full bg-brand-gold text-brand-dark font-black py-5 rounded-2xl shadow-xl hover:scale-[1.02] active:scale-95 transition-all text-xs uppercase tracking-widest">
+                Authorize Access
+            </button>
+        </div>
+    </div>
+
+    <!-- MAIN ADMIN DASHBOARD -->
+    <div id="admin-view" class="hidden max-w-6xl mx-auto p-6 md:p-12">
         <!-- Header -->
         <header class="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-12">
             <div>
@@ -558,9 +579,31 @@
             window.pendingImageBase64 = null;
         }
 
-        function logout() { localStorage.removeItem('token'); location.href = '/login.html'; }
+        function checkPin() {
+            const pin = document.getElementById('admin-pin').value;
+            if (pin === '3620') {
+                localStorage.setItem('cali_admin_auth', 'true');
+                document.getElementById('pin-view').classList.add('hidden');
+                document.getElementById('admin-view').classList.remove('hidden');
+                init();
+            } else {
+                alert("Invalid PIN. Access Denied.");
+                document.getElementById('admin-pin').value = '';
+            }
+        }
 
-        window.onload = init;
+        function logout() { 
+            localStorage.removeItem('cali_admin_auth'); 
+            location.reload(); 
+        }
+
+        window.onload = () => {
+            if (localStorage.getItem('cali_admin_auth') === 'true') {
+                document.getElementById('pin-view').classList.add('hidden');
+                document.getElementById('admin-view').classList.remove('hidden');
+                init();
+            }
+        };
     </script>
 </body>
 </html>
