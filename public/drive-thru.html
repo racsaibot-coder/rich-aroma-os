@@ -89,9 +89,14 @@
     <!-- VIEW 2: CART (Overlay) -->
     <div id="view-cart" class="hidden fixed inset-0 z-[70] bg-black flex flex-col animate-in fade-in duration-300">
         <header class="p-6 border-b border-white/5 flex justify-between items-center shrink-0">
-            <div>
-                <h2 class="text-2xl font-black uppercase tracking-tighter">Mi Orden</h2>
-                <p id="cart-item-count" class="text-[10px] text-gold font-bold uppercase tracking-widest">0 Artículos</p>
+            <div class="flex items-center gap-4">
+                <div>
+                    <h2 class="text-2xl font-black uppercase tracking-tighter">Mi Orden</h2>
+                    <p id="cart-item-count" class="text-[10px] text-gold font-bold uppercase tracking-widest">0 Artículos</p>
+                </div>
+                <button onclick="toggleSplitMode()" id="split-toggle-btn" class="text-[10px] font-black uppercase tracking-widest px-3 py-1.5 rounded-full border border-white/10 text-white/40 active:bg-gold active:text-dark transition-all">
+                    Dividir
+                </button>
             </div>
             <button onclick="showView('menu')" class="w-12 h-12 flex items-center justify-center rounded-full bg-white/5 text-white text-2xl"><i class="fas fa-times"></i></button>
         </header>
@@ -220,6 +225,7 @@
     <script>
         // --- LOGIC ---
         let menu = []; let modGroups = []; let modOptions = []; let itemModGroups = []; let cart = [];
+        let isSplitMode = false; let selectedIndices = [];
         let currentEmployee = null; let currentPin = ""; let selectedCategory = "Combos";
         let currentItem = null; let currentQty = 1; let currentMods = {}; let tenderMethod = 'cash';
         let fulfillmentType = 'pickup'; // Default for Drive-thru
@@ -379,6 +385,35 @@
 
         function logout() { localStorage.removeItem('ra_pos_session'); location.reload(); }
 
+        function toggleSplitMode() {
+            if (cart.length === 0) return;
+            isSplitMode = !isSplitMode;
+            selectedIndices = [];
+            const btn = document.getElementById('split-toggle-btn');
+            const mainChargeBtn = document.getElementById('final-charge-btn');
+            
+            if (isSplitMode) {
+                btn.className = "text-[10px] font-black uppercase tracking-widest px-3 py-1.5 rounded-full bg-gold text-dark shadow-lg shadow-gold/20 active:scale-95 transition-all";
+                mainChargeBtn.innerHTML = "COBRAR SELECCIÓN";
+                mainChargeBtn.classList.add('bg-purple-600');
+                mainChargeBtn.classList.remove('bg-blue-600');
+            } else {
+                btn.className = "text-[10px] font-black uppercase tracking-widest px-3 py-1.5 rounded-full border border-white/10 text-white/40 active:bg-gold active:text-dark transition-all";
+                mainChargeBtn.innerText = "TERMINAR";
+                mainChargeBtn.classList.add('bg-blue-600');
+                mainChargeBtn.classList.remove('bg-purple-600');
+            }
+            renderCart();
+        }
+
+        function toggleItemSelection(idx) {
+            if (!isSplitMode) return;
+            const pos = selectedIndices.indexOf(idx);
+            if (pos > -1) selectedIndices.splice(pos, 1);
+            else selectedIndices.push(idx);
+            renderCart();
+        }
+
         function showView(v) {
             document.getElementById('view-menu').classList.toggle('hidden', v !== 'menu');
             document.getElementById('view-cart').classList.toggle('hidden', v !== 'cart');
@@ -495,20 +530,49 @@
 
         function renderCart() {
             const list = document.getElementById('cart-items-list');
-            const total = cart.reduce((s, i) => s + (i.finalPrice * i.qty), 0);
-            document.getElementById('cart-total').innerText = `L. ${total.toFixed(2)}`;
+            
+            if (cart.length === 0) {
+                isSplitMode = false;
+                selectedIndices = [];
+                const btn = document.getElementById('split-toggle-btn');
+                if (btn) btn.className = "text-[10px] font-black uppercase tracking-widest px-3 py-1.5 rounded-full border border-white/10 text-white/40 active:bg-gold active:text-dark transition-all";
+                const mainChargeBtn = document.getElementById('final-charge-btn');
+                if (mainChargeBtn) {
+                    mainChargeBtn.innerText = "TERMINAR";
+                    mainChargeBtn.classList.add('bg-blue-600');
+                    mainChargeBtn.classList.remove('bg-purple-600');
+                }
+            }
+
+            const displayItems = cart;
+            const total = isSplitMode 
+                ? cart.filter((_, i) => selectedIndices.includes(i)).reduce((s, i) => s + (i.finalPrice * i.qty), 0)
+                : cart.reduce((s, i) => s + (i.finalPrice * i.qty), 0);
+                
+            document.getElementById('cart-total').innerText = (isSplitMode ? 'SEL: ' : '') + `L. ${total.toFixed(2)}`;
             document.getElementById('cart-item-count').innerText = `${cart.length} Artículos en Orden`;
-            list.innerHTML = cart.map((item, idx) => `
-                <div class="flex justify-between items-center bg-white/5 p-5 rounded-3xl border border-white/5">
-                    <div>
-                        <div class="font-black text-sm uppercase">${item.qty}x ${item.name}</div>
-                        <div class="text-[9px] text-white/30 font-bold uppercase tracking-widest mt-1">${item.mods.map(m=>m.name).join(', ')}</div>
-                    </div>
-                    <div class="flex flex-col items-end gap-2">
-                        <span class="text-gold font-black text-sm">L. ${(item.finalPrice * item.qty).toFixed(0)}</span>
-                        <button onclick="removeItem(${idx})" class="text-red-500/50 text-sm"><i class="fas fa-trash"></i></button>
-                    </div>
-                </div>`).join('');
+            
+            list.innerHTML = cart.map((item, idx) => {
+                const isSelected = selectedIndices.includes(idx);
+                return `
+                    <div onclick="toggleItemSelection(${idx})" class="flex justify-between items-center bg-white/5 p-5 rounded-3xl border transition-all ${isSelected ? 'border-gold bg-gold/10' : 'border-white/5'}">
+                        <div class="flex items-center gap-4 flex-1">
+                            ${isSplitMode ? `
+                                <div class="w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all ${isSelected ? 'bg-gold border-gold' : 'border-white/20'}">
+                                    ${isSelected ? '<i class="fas fa-check text-xs text-dark"></i>' : ''}
+                                </div>
+                            ` : ''}
+                            <div class="flex-1">
+                                <div class="font-black text-sm uppercase">${item.qty}x ${item.name}</div>
+                                <div class="text-[9px] text-white/30 font-bold uppercase tracking-widest mt-1">${item.mods.map(m=>m.name).join(', ')}</div>
+                            </div>
+                        </div>
+                        <div class="flex flex-col items-end gap-2">
+                            <span class="text-gold font-black text-sm">L. ${(item.finalPrice * item.qty).toFixed(0)}</span>
+                            ${!isSplitMode ? `<button onclick="event.stopPropagation(); removeItem(${idx})" class="text-red-500/50 text-sm"><i class="fas fa-trash"></i></button>` : ''}
+                        </div>
+                    </div>`;
+            }).join('');
         }
 
         function removeItem(i) { cart.splice(i, 1); renderCart(); updateCartSummary(); if(cart.length === 0) { currentOrderId = null; showView('menu'); } }
@@ -533,7 +597,9 @@
         function quickCash(n) { document.getElementById('tender-input').value = n; calcChange(); }
         
         function calcChange() {
-            const total = cart.reduce((s, i) => s + (i.finalPrice * i.qty), 0);
+            const total = isSplitMode 
+                ? cart.filter((_, i) => selectedIndices.includes(i)).reduce((s, i) => s + (i.finalPrice * i.qty), 0)
+                : cart.reduce((s, i) => s + (i.finalPrice * i.qty), 0);
             const received = parseFloat(document.getElementById('tender-input').value) || 0;
             const change = received - total;
             document.getElementById('tender-change').innerText = `L. ${Math.max(0, change).toFixed(0)}`;
@@ -543,28 +609,32 @@
         }
 
         async function submitSale(isPending = false) {
-            const total = cart.reduce((s, i) => s + (i.finalPrice * i.qty), 0);
+            const selectedItems = isSplitMode 
+                ? cart.filter((_, i) => selectedIndices.includes(i))
+                : cart;
+            
+            if (selectedItems.length === 0) return alert("Selecciona productos");
+
+            const total = selectedItems.reduce((s, i) => s + (i.finalPrice * i.qty), 0);
             const subtotal = total;
             const payload = {
-                items: cart, 
+                items: selectedItems, 
                 subtotal,
                 total, 
                 paymentMethod: isPending ? 'cash' : tenderMethod, 
                 customerId: currentCustomerId,
                 fulfillmentType: fulfillmentType,
                 status: isPending ? 'pending' : 'paid',
-                notes: `[MobilePOS] [Cashier: ${currentEmployee?.name || 'Unknown'}]`
+                notes: `[MobilePOS] [Cashier: ${currentEmployee?.name || 'Unknown'}]${isSplitMode ? ' [SPLIT]' : ''}`
             };
 
             const btn = isPending ? null : document.getElementById('final-charge-btn');
             if (btn) { btn.disabled = true; btn.innerText = "PROCESANDO..."; }
 
             try {
-                const url = currentOrderId ? `/api/orders/${currentOrderId}?v=${Date.now()}` : `/api/orders?v=${Date.now()}`;
-                const method = currentOrderId ? 'PATCH' : 'POST';
-
-                const res = await fetch(url, {
-                    method: method,
+                // 1. Process this payment (Always a NEW order for the items paid NOW)
+                const res = await fetch(`/api/orders?v=${Date.now()}`, {
+                    method: 'POST',
                     headers: { 
                         'Content-Type': 'application/json',
                         'Authorization': 'Bearer EMP-admin'
@@ -573,12 +643,52 @@
                 });
 
                 if (res.ok) {
-                    alert(isPending ? "✅ ORDEN ENVIADA A COCINA" : "✅ VENTA COMPLETADA");
+                    // 2. If split from existing tab, update the original tab
+                    if (isSplitMode && currentOrderId) {
+                        const remainingItems = cart.filter((_, i) => !selectedIndices.includes(i));
+                        if (remainingItems.length > 0) {
+                            const remTotal = remainingItems.reduce((s, i) => s + (i.finalPrice * i.qty), 0);
+                            await fetch(`/api/orders/${currentOrderId}`, {
+                                method: 'PATCH',
+                                headers: { 
+                                    'Content-Type': 'application/json',
+                                    'Authorization': 'Bearer EMP-admin'
+                                },
+                                body: JSON.stringify({
+                                    items: remainingItems,
+                                    subtotal: remTotal,
+                                    total: remTotal,
+                                    notes: `[MobilePOS] [REMAINING FROM SPLIT]`
+                                })
+                            });
+                            alert("✅ SELECCIÓN PAGADA. Lo demás sigue en la cuenta.");
+                        } else {
+                            // All items paid
+                            await fetch(`/api/orders/${currentOrderId}`, {
+                                method: 'PATCH',
+                                headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer EMP-admin' },
+                                body: JSON.stringify({ status: 'completed' })
+                            });
+                            alert("✅ CUENTA TOTAL PAGADA");
+                        }
+                    } else if (currentOrderId && !isSplitMode) {
+                        // Regular full checkout of tab
+                        await fetch(`/api/orders/${currentOrderId}`, {
+                            method: 'PATCH',
+                            headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer EMP-admin' },
+                            body: JSON.stringify({ status: 'completed' })
+                        });
+                        alert("✅ VENTA COMPLETADA");
+                    } else {
+                        alert(isPending ? "✅ ORDEN ENVIADA A COCINA" : "✅ VENTA COMPLETADA");
+                    }
+
                     currentOrderId = null;
                     location.reload();
                 } else {
                     const err = await res.json();
                     alert("Error Servidor: " + (err.error || "Error en servidor"));
+                    if (btn) { btn.disabled = false; btn.innerText = "TERMINAR"; }
                 }
             } catch(e) { 
                 console.error("Network Error:", e);

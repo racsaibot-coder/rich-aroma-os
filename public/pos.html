@@ -423,9 +423,16 @@
             </div>
         </div>
 
+        <!-- Cart Items Header -->
+        <div class="px-4 py-2 bg-white border-b border-gray-100 flex justify-between items-center">
+            <h3 class="text-[10px] font-black text-gray-400 uppercase tracking-widest">Productos</h3>
+            <button onclick="toggleSplitMode()" id="split-toggle-btn" class="text-[10px] font-black uppercase tracking-widest px-3 py-1.5 rounded-full border border-gray-200 text-gray-400 hover:bg-gray-50 transition-all">
+                <i class="fas fa-columns mr-1"></i> Dividir
+            </button>
+        </div>
+
         <!-- Cart Items -->
-        <div class="flex-1 overflow-y-auto p-4" id="cart-items">
-            <!-- Cart items go here -->
+        <div class="flex-1 overflow-y-auto p-4" id="cart-items">            <!-- Cart items go here -->
             <div class="text-center text-gray-400 mt-10">El carrito está vacío</div>
         </div>
 
@@ -486,6 +493,8 @@
     let modOptions = [];
     let itemModGroups = [];
     let cart = [];
+    let isSplitMode = false;
+    let selectedIndices = [];
     
     let currentCashier = null;
     let currentShiftId = null;
@@ -1029,29 +1038,83 @@
     }
 
     // --- CART & CHECKOUT ---
+    function toggleSplitMode() {
+        if (cart.length === 0) return;
+        isSplitMode = !isSplitMode;
+        selectedIndices = [];
+        
+        const btn = document.getElementById('split-toggle-btn');
+        const mainChargeBtn = document.getElementById('main-charge-btn');
+        
+        if (isSplitMode) {
+            btn.className = "text-[10px] font-black uppercase tracking-widest px-3 py-1.5 rounded-full bg-purple-600 text-white shadow-lg shadow-purple-600/20 active:scale-95 transition-all";
+            mainChargeBtn.innerHTML = "Cobrar Selección";
+            mainChargeBtn.classList.add('bg-purple-600');
+            mainChargeBtn.classList.remove('bg-blue-600');
+        } else {
+            btn.className = "text-[10px] font-black uppercase tracking-widest px-3 py-1.5 rounded-full border border-gray-200 text-gray-400 hover:bg-gray-50 transition-all";
+            mainChargeBtn.innerText = "CHARGE (Enter)";
+            mainChargeBtn.classList.add('bg-blue-600');
+            mainChargeBtn.classList.remove('bg-purple-600');
+        }
+        renderCart();
+    }
+
+    function toggleItemSelection(idx) {
+        if (!isSplitMode) return;
+        const pos = selectedIndices.indexOf(idx);
+        if (pos > -1) selectedIndices.splice(pos, 1);
+        else selectedIndices.push(idx);
+        renderCart();
+    }
+
     function renderCart() {
         const container = document.getElementById('cart-items');
         if (cart.length === 0) {
+            isSplitMode = false;
+            selectedIndices = [];
+            const btn = document.getElementById('split-toggle-btn');
+            if (btn) btn.className = "text-[10px] font-black uppercase tracking-widest px-3 py-1.5 rounded-full border border-gray-200 text-gray-400 hover:bg-gray-50 transition-all";
+            
             container.innerHTML = '<div class="text-center text-gray-400 mt-10 text-xs italic">Cart Empty</div>';
             document.getElementById('cart-total').innerText = 'L. 0.00';
+            const mainChargeBtn = document.getElementById('main-charge-btn');
+            if (mainChargeBtn) {
+                mainChargeBtn.innerText = "CHARGE (Enter)";
+                mainChargeBtn.classList.add('bg-blue-600');
+                mainChargeBtn.classList.remove('bg-purple-600');
+            }
             return;
         }
 
-        container.innerHTML = cart.map((item, index) => `
-            <div class="flex justify-between items-start mb-3 bg-gray-50 p-3 rounded-xl border border-gray-100">
-                <div class="flex-1">
-                    <div class="font-bold text-sm text-gray-800">${item.qty}x ${item.name}</div>
-                    <div class="text-[10px] text-gray-500">${item.mods.map(m=>m.name).join(', ')}</div>
+        container.innerHTML = cart.map((item, index) => {
+            const isSelected = selectedIndices.includes(index);
+            return `
+                <div onclick="toggleItemSelection(${index})" class="flex justify-between items-start mb-3 p-3 rounded-xl border transition-all ${isSplitMode ? 'cursor-pointer' : ''} ${isSelected ? 'bg-purple-50 border-purple-200 shadow-sm' : 'bg-gray-50 border-gray-100'}">
+                    <div class="flex items-center gap-3 flex-1">
+                        ${isSplitMode ? `
+                            <div class="w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all ${isSelected ? 'bg-purple-600 border-purple-600' : 'border-gray-300'}">
+                                ${isSelected ? '<i class="fas fa-check text-[10px] text-white"></i>' : ''}
+                            </div>
+                        ` : ''}
+                        <div class="flex-1">
+                            <div class="font-bold text-sm text-gray-800">${item.qty}x ${item.name}</div>
+                            <div class="text-[10px] text-gray-500">${(item.mods || []).map(m=>m.name).join(', ')}</div>
+                        </div>
+                    </div>
+                    <div class="flex flex-col items-end gap-1">
+                        <span class="font-mono text-sm font-black">L. ${(parseFloat(item.finalPrice || 0) * item.qty).toFixed(2)}</span>
+                        ${!isSplitMode ? `<button onclick="event.stopPropagation(); removeFromCart(${index})" class="text-red-400 text-[10px] font-bold uppercase">Remove</button>` : ''}
+                    </div>
                 </div>
-                <div class="flex flex-col items-end gap-1">
-                    <span class="font-mono text-sm font-black">L. ${(parseFloat(item.finalPrice || 0) * item.qty).toFixed(2)}</span>
-                    <button onclick="removeFromCart(${index})" class="text-red-400 text-[10px] font-bold uppercase">Remove</button>
-                </div>
-            </div>
-        `).join('');
+            `;
+        }).join('');
 
-        const total = cart.reduce((sum, item) => sum + (parseFloat(item.finalPrice || 0) * item.qty), 0);
-        document.getElementById('cart-total').innerText = `L. ${total.toFixed(2)}`;
+        const displayTotal = isSplitMode 
+            ? cart.filter((_, i) => selectedIndices.includes(i)).reduce((sum, item) => sum + (parseFloat(item.finalPrice || 0) * item.qty), 0)
+            : cart.reduce((sum, item) => sum + (parseFloat(item.finalPrice || 0) * item.qty), 0);
+            
+        document.getElementById('cart-total').innerText = (isSplitMode ? 'Selección: ' : '') + `L. ${displayTotal.toFixed(2)}`;
     }
 
     function removeFromCart(idx) {
@@ -1062,7 +1125,12 @@
 
     function openTenderModal() {
         if (cart.length === 0) return;
-        const total = cart.reduce((sum, item) => sum + (parseFloat(item.finalPrice || 0) * item.qty), 0);
+        if (isSplitMode && selectedIndices.length === 0) return alert("Selecciona los productos que desea cobrar");
+        
+        const total = isSplitMode 
+            ? cart.filter((_, i) => selectedIndices.includes(i)).reduce((sum, item) => sum + (parseFloat(item.finalPrice || 0) * item.qty), 0)
+            : cart.reduce((sum, item) => sum + (parseFloat(item.finalPrice || 0) * item.qty), 0);
+            
         document.getElementById('tender-due').innerText = `L. ${total.toFixed(2)}`;
         document.getElementById('tender-received').value = '';
         document.getElementById('tender-change').innerText = 'L. 0.00';
@@ -1223,17 +1291,23 @@
     }
 
     async function processCobrar() {
-        const total = cart.reduce((sum, item) => sum + (item.finalPrice * item.qty), 0);
+        const selectedItems = isSplitMode 
+            ? cart.filter((_, i) => selectedIndices.includes(i))
+            : cart;
+        
+        const total = selectedItems.reduce((sum, item) => sum + (item.finalPrice * item.qty), 0);
         const subtotal = total;
+        const guestName = document.getElementById('guest-name-input').value.trim();
+        
         const payload = {
-            items: cart,
+            items: selectedItems,
             subtotal,
             total,
             paymentMethod: currentTenderMethod,
             customerId: currentCustomerId,
             fulfillmentType: fulfillmentType,
             status: 'paid',
-            notes: document.getElementById('guest-name-input').value.trim() ? `[CLIENTE: ${document.getElementById('guest-name-input').value.trim()}]` : null
+            notes: guestName ? `[CLIENTE: ${guestName}]${isSplitMode ? ' [SPLIT]' : ''}` : (isSplitMode ? '[SPLIT]' : null)
         };
 
         const confirmBtn = document.getElementById('confirm-tender-btn');
@@ -1241,11 +1315,9 @@
         confirmBtn.innerText = "PROCESANDO...";
 
         try {
-            const url = currentOrderId ? `/api/orders/${currentOrderId}?v=${Date.now()}` : `/api/orders?v=${Date.now()}`;
-            const method = currentOrderId ? 'PATCH' : 'POST';
-
-            const res = await fetch(url, {
-                method: method,
+            // 1. Process the payment (Always a NEW order for the items being paid NOW)
+            const res = await fetch(`/api/orders?v=${Date.now()}`, {
+                method: 'POST',
                 headers: { 
                     'Content-Type': 'application/json',
                     'Authorization': 'Bearer EMP-admin'
@@ -1254,7 +1326,54 @@
             });
 
             if (res.ok) {
-                alert("✅ Venta Completada");
+                // 2. If it was a split from an existing tab, update the original tab
+                if (isSplitMode && currentOrderId) {
+                    const remainingItems = cart.filter((_, i) => !selectedIndices.includes(i));
+                    
+                    if (remainingItems.length > 0) {
+                        // Update original order with remaining items
+                        const remTotal = remainingItems.reduce((sum, item) => sum + (item.finalPrice * item.qty), 0);
+                        await fetch(`/api/orders/${currentOrderId}`, {
+                            method: 'PATCH',
+                            headers: { 
+                                'Content-Type': 'application/json',
+                                'Authorization': 'Bearer EMP-admin'
+                            },
+                            body: JSON.stringify({
+                                items: remainingItems,
+                                subtotal: remTotal,
+                                total: remTotal,
+                                notes: guestName ? `[CLIENTE: ${guestName}] [REMAINING]` : '[REMAINING]'
+                            })
+                        });
+                        alert("✅ Selección Pagada. Los demás productos siguen en la cuenta.");
+                    } else {
+                        // All items paid, complete the original order
+                        await fetch(`/api/orders/${currentOrderId}`, {
+                            method: 'PATCH',
+                            headers: { 
+                                'Content-Type': 'application/json',
+                                'Authorization': 'Bearer EMP-admin'
+                            },
+                            body: JSON.stringify({ status: 'completed' })
+                        });
+                        alert("✅ Cuenta Total Pagada");
+                    }
+                } else if (currentOrderId && !isSplitMode) {
+                    // Regular full checkout of an existing tab
+                    await fetch(`/api/orders/${currentOrderId}`, {
+                        method: 'PATCH',
+                        headers: { 
+                            'Content-Type': 'application/json',
+                            'Authorization': 'Bearer EMP-admin'
+                        },
+                        body: JSON.stringify({ status: 'completed' })
+                    });
+                    alert("✅ Venta Completada");
+                } else {
+                    alert("✅ Venta Completada");
+                }
+
                 clearOrderState();
                 location.reload();
             } else {
