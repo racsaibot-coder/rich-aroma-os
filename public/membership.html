@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <link rel="icon" type="image/png" href="/favicon.png">    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Membresía VIP | Rich Aroma</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'gold': '#C9A66B',
+                        'dark': '#120C09',
+                        'charcoal': '#1E1610'
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap');
+        body { font-family: 'Fredoka', sans-serif; background-color: #120C09; color: white; }
+        .gold-shimmer {
+            background: linear-gradient(135deg, #D4AF37 0%, #F4E2C0 50%, #B08D55 100%);
+            background-size: 200% 200%;
+            animation: shimmer 3s infinite linear;
+        }
+        @keyframes shimmer {
+            0% { background-position: 0% 50%; }
+            100% { background-position: 200% 50%; }
+        }
+        .hide-scrollbar::-webkit-scrollbar { display: none; }
+    </style>
+</head>
+<body class="min-h-screen p-6 flex flex-col items-center justify-center">
+
+    <!-- STEP 1: BENEFITS OVERVIEW -->
+    <div id="step-1" class="max-w-md w-full space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-1000">
+        <div class="text-center space-y-4">
+            <div class="w-20 h-20 gold-shimmer rounded-3xl flex items-center justify-center mx-auto shadow-2xl rotate-3">
+                <i class="fas fa-crown text-3xl text-dark"></i>
+            </div>
+            <h1 class="text-4xl font-bold tracking-tight">The VIP Club</h1>
+            <p class="text-white/40 text-sm uppercase tracking-[0.3em] font-black">Rich Aroma Elite</p>
+        </div>
+
+        <div class="bg-white/5 border border-white/10 rounded-[2.5rem] p-8 space-y-6">
+            <div class="flex items-start gap-5">
+                <div class="w-12 h-12 rounded-2xl bg-gold/10 flex items-center justify-center text-gold shrink-0">
+                    <i class="fas fa-id-card text-xl"></i>
+                </div>
+                <div>
+                    <h3 class="font-bold text-lg">Tarjeta Gold Digital</h3>
+                    <p class="text-white/40 text-sm leading-relaxed">Tu pase exclusivo 3D con QR integrado para check-in rápido.</p>
+                </div>
+            </div>
+            <div class="flex items-start gap-5">
+                <div class="w-12 h-12 rounded-2xl bg-gold/10 flex items-center justify-center text-gold shrink-0">
+                    <i class="fas fa-coffee text-xl"></i>
+                </div>
+                <div>
+                    <h3 class="font-bold text-lg">Café Gratis Diario</h3>
+                    <p class="text-white/40 text-sm leading-relaxed">Un café de la casa cortesía de Rich Aroma todos los días del mes.</p>
+                </div>
+            </div>
+            <div class="flex items-start gap-5">
+                <div class="w-12 h-12 rounded-2xl bg-gold/10 flex items-center justify-center text-gold shrink-0">
+                    <i class="fas fa-percentage text-xl"></i>
+                </div>
+                <div>
+                    <h3 class="font-bold text-lg">Descuento Permanente</h3>
+                    <p class="text-white/40 text-sm leading-relaxed">10% de ahorro en todos los artículos hechos en casa.</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-gold p-8 rounded-[2.5rem] text-dark shadow-2xl space-y-6 relative overflow-hidden">
+            <div class="flex justify-between items-end relative z-10">
+                <div>
+                    <p class="text-[10px] font-black uppercase tracking-widest opacity-60">Suscripción Mensual</p>
+                    <h2 class="text-5xl font-black font-mono tracking-tighter">L 1500</h2>
+                </div>
+                <div class="text-right">
+                    <p class="text-xs font-bold leading-tight">Incluye L 500<br>en Rico Cash</p>
+                </div>
+            </div>
+            <button onclick="goToStep2()" class="w-full bg-dark text-white font-black py-5 rounded-2xl shadow-xl hover:scale-[1.02] active:scale-95 transition-all uppercase tracking-[0.2em] text-xs">
+                Activar Membresía VIP
+            </button>
+        </div>
+        <button onclick="window.location.href='/order'" class="w-full text-white/30 font-black text-[10px] uppercase tracking-widest">
+            <i class="fas fa-arrow-left mr-2"></i> Volver al Menú
+        </button>
+    </div>
+
+    <!-- STEP 2: PAYMENT & TRANSFER -->
+    <div id="step-2" class="hidden max-w-md w-full space-y-8 animate-in fade-in slide-in-from-right-4 duration-500">
+        <div class="text-center">
+            <h2 class="text-2xl font-bold text-white mb-2">Finalizar Activación</h2>
+            <p class="text-white/40 text-sm">Por favor realiza la transferencia por <span class="text-gold font-bold">L. 1,500</span></p>
+        </div>
+
+        <div class="space-y-4">
+            <p class="text-[10px] text-white/40 uppercase tracking-widest text-center font-bold">Cuentas para Transferencia</p>
+            <div class="flex gap-3">
+                <button onclick="copyBankInfo('bac')" class="flex-1 bg-red-600/10 border border-red-600/30 text-red-500 py-4 rounded-2xl font-bold flex flex-col items-center justify-center gap-1 hover:bg-red-600/20 active:scale-95 transition-all">
+                    <span class="text-xs">BAC</span>
+                    <i class="fas fa-copy text-sm"></i>
+                </button>
+                <button onclick="copyBankInfo('banpais')" class="flex-1 bg-blue-600/10 border border-blue-600/30 text-blue-500 py-4 rounded-2xl font-bold flex flex-col items-center justify-center gap-1 hover:bg-blue-600/20 active:scale-95 transition-all">
+                    <span class="text-xs">Banpaís</span>
+                    <i class="fas fa-copy text-sm"></i>
+                </button>
+            </div>
+        </div>
+
+        <div class="bg-white/5 border border-white/10 rounded-[2.5rem] p-8 text-center space-y-6">
+            <h3 class="font-bold text-white flex items-center justify-center gap-3">
+                <i class="fas fa-receipt text-gold"></i> Sube tu Comprobante
+            </h3>
+            <p class="text-white/40 text-xs leading-relaxed">Tu membresía se activará automáticamente en cuanto el cajero valide tu pago.</p>
+            
+            <label class="block">
+                <input type="file" id="receipt-upload" accept="image/*" class="hidden" onchange="handleReceiptUpload(this)">
+                <div id="upload-box" class="w-full py-8 border-2 border-dashed border-white/10 rounded-2xl flex flex-col items-center justify-center gap-3 hover:border-gold/50 transition-all cursor-pointer">
+                    <i class="fas fa-cloud-upload-alt text-3xl text-white/20"></i>
+                    <span id="upload-text" class="text-[10px] font-black uppercase text-white/40">Seleccionar Captura</span>
+                </div>
+            </label>
+
+            <button id="final-btn" onclick="submitRequest()" disabled class="w-full bg-gold/10 border border-gold/30 text-gold py-5 rounded-2xl font-black text-xs uppercase tracking-[0.2em] opacity-50 transition-all">
+                Enviar Solicitud
+            </button>
+        </div>
+
+        <button onclick="backToStep1()" class="w-full text-white/20 font-black text-[10px] uppercase tracking-widest">
+            Cancelar y Volver
+        </button>
+    </div>
+
+    <!-- STEP 3: PENDING APPROVAL -->
+    <div id="step-3" class="hidden max-w-md w-full space-y-10 text-center animate-in zoom-in-95 duration-700">
+        <div class="w-24 h-24 bg-gold/20 text-gold rounded-full flex items-center justify-center text-4xl mx-auto mb-6 animate-pulse">
+            <i class="fas fa-clock"></i>
+        </div>
+        <div class="space-y-4">
+            <h2 class="text-3xl font-bold text-white">Solicitud Recibida</h2>
+            <p class="text-white/50 text-base leading-relaxed">Estamos validando tu comprobante. En unos minutos tu tarjeta VIP aparecerá en tu billetera.</p>
+        </div>
+        <div class="p-6 bg-white/5 border border-white/10 rounded-3xl">
+            <p class="text-gold font-bold text-sm mb-1">¡Gracias por unirte!</p>
+            <p class="text-white/30 text-[10px] uppercase tracking-widest">Rich Aroma Family</p>
+        </div>
+        <button onclick="window.location.href='/order'" class="w-full gold-btn py-5 rounded-2xl font-black text-xs uppercase tracking-[0.2em] shadow-2xl">
+            Volver al Menú
+        </button>
+    </div>
+
+    <script>
+        let currentCustomer = null;
+        let pendingOrderId = null;
+        let receiptBase64 = null;
+
+        async function checkAuth() {
+            const phone = localStorage.getItem('ra_customer_phone');
+            const pin = localStorage.getItem('ra_customer_pin');
+
+            if (!phone) {
+                const goToLogin = confirm("Para activar tu membresía VIP necesitas una cuenta. ¿Quieres iniciar sesión o crear una ahora?");
+                if (goToLogin) window.location.href = '/order?action=login&redirect=membership';
+                else window.location.href = '/order';
+                return false;
+            }
+
+            try {
+                const profileRes = await fetch(`/api/customer/profile?phone=${encodeURIComponent(phone)}&pin=${encodeURIComponent(pin || '')}`);
+                const customer = await profileRes.json();
+                if (!customer || customer.error) {
+                    localStorage.removeItem('ra_customer_phone');
+                    localStorage.removeItem('ra_customer_pin');
+                    window.location.href = '/order?action=login&redirect=membership';
+                    return false;
+                }
+                currentCustomer = customer;
+                return true;
+            } catch (e) { return false; }
+        }
+
+        async function goToStep2() {
+            const authed = await checkAuth();
+            if (!authed) return;
+            document.getElementById('step-1').classList.add('hidden');
+            document.getElementById('step-2').classList.remove('hidden');
+        }
+
+        function backToStep1() {
+            document.getElementById('step-2').classList.add('hidden');
+            document.getElementById('step-1').classList.remove('hidden');
+        }
+
+        function handleReceiptUpload(input) {
+            const file = input.files[0];
+            if (!file) return;
+            
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                receiptBase64 = e.target.result;
+                const uploadBox = document.getElementById('upload-box');
+                uploadBox.classList.remove('border-white/10');
+                uploadBox.classList.add('border-gold');
+                document.getElementById('upload-text').innerText = "✅ Captura Lista";
+                document.getElementById('upload-text').classList.remove('text-white/40');
+                document.getElementById('upload-text').classList.add('text-gold');
+                
+                const btn = document.getElementById('final-btn');
+                btn.disabled = false;
+                btn.classList.remove('opacity-50', 'bg-gold/10');
+                btn.classList.add('bg-gold', 'text-dark');
+            };
+            reader.readAsDataURL(file);
+        }
+
+        async function submitRequest() {
+            const btn = document.getElementById('final-btn');
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Enviando...';
+
+            try {
+                // 1. Create the VIP order
+                const res = await fetch('/api/store?action=membership_request', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        customerId: currentCustomer.id,
+                        name: currentCustomer.name,
+                        phone: currentCustomer.phone
+                    })
+                });
+                const order = await res.json();
+                if (order.error) throw new Error(order.error);
+
+                // 2. Upload receipt
+                const uploadRes = await fetch('/api/upload-receipt', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        orderId: order.id,
+                        imageBase64: receiptBase64,
+                        fileName: `receipt_vip_${currentCustomer.phone}.png`
+                    })
+                });
+
+                if (uploadRes.ok) {
+                    document.getElementById('step-2').classList.add('hidden');
+                    document.getElementById('step-3').classList.remove('hidden');
+                } else {
+                    throw new Error("Error al subir comprobante.");
+                }
+            } catch (err) {
+                alert(err.message);
+                btn.disabled = false;
+                btn.innerHTML = 'Enviar Solicitud';
+            }
+        }
+
+        function copyBankInfo(bank) {
+            const info = bank === 'bac' ? "BAC: 749302111 (Oscar Castillo)" : "Banpais: 21001034567 (Oscar Castillo)";
+            navigator.clipboard.writeText(info).then(() => {
+                alert("Copiado: " + info);
+            });
+        }
+    </script>
+</body>
+</html>

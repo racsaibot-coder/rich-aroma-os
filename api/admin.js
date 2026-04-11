@@ -1,14 +1,34 @@
 // api/admin.js
 const { supabase } = require('./lib/supabase');
 
-export default async function handler(req, res) {
+module.exports = async function handler(req, res) {
     res.setHeader('Access-Control-Allow-Origin', '*');
-    res.setHeader('Access-Control-Allow-Methods', 'GET,POST,DELETE,OPTIONS');
-    res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+    res.setHeader('Access-Control-Allow-Methods', 'GET,POST,PATCH,PUT,DELETE,OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
 
     if (req.method === 'OPTIONS') return res.status(200).end();
 
-    const { action, id } = req.query; // ?action=founders, ?action=verify-founder
+    const { action, id } = req.query;
+
+    // RBAC HELPER: Verify Admin
+    const verifyAdmin = async (token) => {
+        if (!token) return false;
+        const pin = token.replace('Bearer ', '');
+        const { data } = await supabase.from('employees').select('role').eq('pin', pin).single();
+        return data?.role === 'admin';
+    };
+
+    // STAFF LOGIN
+    if (action === 'staff_login' && req.method === 'POST') {
+        const { pin } = req.body;
+        const { data, error } = await supabase.from('employees').select('*').eq('pin', pin).eq('active', true).single();
+        if (error || !data) return res.status(401).json({ error: "Invalid PIN or inactive account" });
+        return res.json({ success: true, employee: data });
+    }
+
+    // AUTH CHECK FOR SENSITIVE ACTIONS
+    const authHeader = req.headers.authorization;
+    const isAdmin = await verifyAdmin(authHeader);
 
     // SECURE ADMIN ENDPOINTS
 
@@ -19,6 +39,7 @@ export default async function handler(req, res) {
     }
 
     if (action === 'menu' && req.method === 'POST') {
+        if (!isAdmin) return res.status(403).json({ error: "Admin access required" });
         const { name, category, price, available, image_url, modifier_groups } = req.body;
         const id = category.toLowerCase() + '_' + name.toLowerCase().replace(/[^a-z0-9]/g, '_');
         const { data, error } = await supabase.from('menu_items')
@@ -43,7 +64,7 @@ export default async function handler(req, res) {
             
         if (error) return res.status(500).json({ error: error.message });
         
-        if (modifier_groups) {
+        if (modifier_groups && isAdmin) { // Only admin can change mod groups
             await supabase.from('item_modifier_groups').delete().eq('item_id', itemId);
             if (modifier_groups.length > 0) {
                 const inserts = modifier_groups.map(groupId => ({
@@ -58,6 +79,7 @@ export default async function handler(req, res) {
     }
 
     if (action === 'menu_update' && req.method === 'DELETE') {
+        if (!isAdmin) return res.status(403).json({ error: "Admin access required" });
         const itemId = req.query.id;
         const { error } = await supabase.from('menu_items')
             .delete()
@@ -76,6 +98,7 @@ export default async function handler(req, res) {
     }
 
     if (action === 'menu_item_modifiers' && req.method === 'POST') {
+        if (!isAdmin) return res.status(403).json({ error: "Admin access required" });
         const { id } = req.query;
         const { group_ids } = req.body;
         
@@ -97,16 +120,29 @@ export default async function handler(req, res) {
     }
 
     if (action === 'modifier_option_update' && req.method === 'PATCH') {
-        const { id, price_adjustment } = req.body;
+        const optionId = req.query.id || req.body.id;
+        if (!optionId) return res.status(400).json({ error: "Missing modifier option ID" });
+
+        const { name, price_adjustment, is_default } = req.body;
+        const updates = {};
+        if (name !== undefined) updates.name = name;
+        if (price_adjustment !== undefined) updates.price_adjustment = price_adjustment;
+        if (is_default !== undefined) updates.is_default = is_default;
+
         const { data, error } = await supabase.from('modifier_options')
-            .update({ price_adjustment })
-            .eq('id', id)
+            .update(updates)
+            .eq('id', optionId)
             .select().single();
-        if (error) return res.status(500).json({ error: error.message });
+            
+        if (error) {
+            console.error("Update Error:", error);
+            return res.status(500).json({ error: error.message });
+        }
         return res.json(data);
     }
     
     if (action === 'modifiers_group_create' && req.method === 'POST') {
+        if (!isAdmin) return res.status(403).json({ error: "Admin access required" });
         const { name, max_selections, required } = req.body;
         const { data, error } = await supabase.from('modifier_groups').insert({ name, max_selections, required }).select().single();
         if (error) return res.status(500).json({ error: error.message });
@@ -114,6 +150,7 @@ export default async function handler(req, res) {
     }
     
     if (action === 'modifiers_option_create' && req.method === 'POST') {
+        if (!isAdmin) return res.status(403).json({ error: "Admin access required" });
         const { group_id, name, price_adjustment, is_default } = req.body;
         const { data, error } = await supabase.from('modifier_options').insert({ group_id, name, price_adjustment, is_default }).select().single();
         if (error) return res.status(500).json({ error: error.message });
@@ -122,6 +159,7 @@ export default async function handler(req, res) {
 
     
     if (action === 'modifier_group_delete' && req.method === 'DELETE') {
+        if (!isAdmin) return res.status(403).json({ error: "Admin access required" });
         const { id } = req.query;
         // This will cascade delete options because of ON DELETE CASCADE
         const { error } = await supabase.from('modifier_groups').delete().eq('id', id);
@@ -130,6 +168,7 @@ export default async function handler(req, res) {
     }
 
     if (action === 'modifier_option_delete' && req.method === 'DELETE') {
+        if (!isAdmin) return res.status(403).json({ error: "Admin access required" });
         const { id } = req.query;
         const { error } = await supabase.from('modifier_options').delete().eq('id', id);
         if (error) return res.status(500).json({ error: error.message });
@@ -137,6 +176,7 @@ export default async function handler(req, res) {
     }
 
     if (action === 'kpi' && req.method === 'GET') {
+        if (!isAdmin) return res.status(403).json({ error: "Admin access required" });
         // Fetch today's orders
         const today = new Date();
         today.setHours(0,0,0,0);
@@ -221,6 +261,7 @@ export default async function handler(req, res) {
 
     // ADD FOUNDER
     if (action === 'founders' && req.method === 'POST') {
+        if (!isAdmin) return res.status(403).json({ error: "Admin access required" });
         const { name, phone, ref, status } = req.body;
         const { count } = await supabase.from('founders').select('*', { count: 'exact', head: true });
         const ticket = 'RA-F' + ((count || 0) + 1).toString().padStart(3, '0');
@@ -233,6 +274,7 @@ export default async function handler(req, res) {
 
     // DELETE FOUNDER
     if (action === 'founders' && req.method === 'DELETE' && id) {
+        if (!isAdmin) return res.status(403).json({ error: "Admin access required" });
         const { error } = await supabase.from('founders').delete().eq('id', id);
         if (error) return res.status(500).json({ error: error.message });
         return res.json({ success: true });
@@ -240,6 +282,7 @@ export default async function handler(req, res) {
 
     // VERIFY FOUNDER
     if (action === 'verify-founder' && req.method === 'POST') {
+        if (!isAdmin) return res.status(403).json({ error: "Admin access required" });
         const { id } = req.body;
         const { data: founder } = await supabase.from('founders').update({ status: 'confirmed', confirmed_at: new Date().toISOString() }).eq('id', id).select().single();
         
@@ -260,11 +303,13 @@ export default async function handler(req, res) {
     
     // EMPLOYEES
     if (action === 'employees' && req.method === 'GET') {
+        if (!isAdmin) return res.status(403).json({ error: "Admin access required" });
         const { data } = await supabase.from('employees').select('*').order('name');
         return res.json({ employees: data || [] });
     }
 
     if (action === 'employees' && req.method === 'POST') {
+        if (!isAdmin) return res.status(403).json({ error: "Admin access required" });
         const emp = {
             id: 'emp_' + Date.now() + Math.random().toString(36).substr(2, 5),
             name: req.body.name,
@@ -280,6 +325,7 @@ export default async function handler(req, res) {
     }
 
     if (action === 'employee_update' && (req.method === 'PUT' || req.method === 'PATCH')) {
+        if (!isAdmin) return res.status(403).json({ error: "Admin access required" });
         const { data, error } = await supabase.from('employees')
             .update(req.body)
             .eq('id', req.query.id)
@@ -290,6 +336,7 @@ export default async function handler(req, res) {
 
     // LEADS
     if (action === 'leads' && req.method === 'GET') {
+        if (!isAdmin) return res.status(403).json({ error: "Admin access required" });
         const { data: customers } = await supabase.from('customers').select('*').order('created_at', { ascending: false });
         
         let submissions = [];
@@ -315,6 +362,42 @@ export default async function handler(req, res) {
         });
         
         return res.json(leads);
+    }
+
+    if (action === 'inventory' && req.method === 'GET') {
+        const { data, error } = await supabase.from('inventory').select('*').order('name');
+        if (error) return res.status(500).json({ error: error.message });
+        return res.json(data);
+    }
+
+    if (action === 'inventory_update' && req.method === 'POST') {
+        const { id, current_stock, min_stock, unit, name } = req.body;
+        const { data, error } = await supabase.from('inventory').upsert({ id, current_stock, min_stock, unit, name }).select().single();
+        if (error) return res.status(500).json({ error: error.message });
+        return res.json(data);
+    }
+
+    if (action === 'menu_item_ingredients' && req.method === 'GET') {
+        const { id } = req.query;
+        const { data, error } = await supabase.from('menu_item_ingredients').select('*, inventory(name, unit)').eq('menu_item_id', id);
+        if (error) return res.status(500).json({ error: error.message });
+        return res.json(data);
+    }
+
+    if (action === 'menu_item_ingredient_add' && req.method === 'POST') {
+        if (!isAdmin) return res.status(403).json({ error: "Admin access required" });
+        const { menu_item_id, inventory_item_id, quantity, unit } = req.body;
+        const { data, error } = await supabase.from('menu_item_ingredients').upsert({ menu_item_id, inventory_item_id, quantity, unit }).select().single();
+        if (error) return res.status(500).json({ error: error.message });
+        return res.json(data);
+    }
+
+    if (action === 'menu_item_ingredient_delete' && req.method === 'DELETE') {
+        if (!isAdmin) return res.status(403).json({ error: "Admin access required" });
+        const { id } = req.query;
+        const { error } = await supabase.from('menu_item_ingredients').delete().eq('id', id);
+        if (error) return res.status(500).json({ error: error.message });
+        return res.json({ success: true });
     }
 
     res.status(404).json({ error: 'Action not found' });

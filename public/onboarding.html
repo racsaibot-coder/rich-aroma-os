@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SaaS Onboarding | Rich Aroma OS</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap');
+        body { font-family: 'Inter', sans-serif; background-color: #F9FAFB; }
+        .step-active { color: #2563EB; border-bottom: 2px solid #2563EB; }
+    </style>
+</head>
+<body class="p-4 md:p-12">
+    <div class="max-w-5xl mx-auto">
+        <header class="mb-12 flex justify-between items-center">
+            <div>
+                <h1 class="text-3xl font-extrabold text-gray-900 tracking-tight">Restaurant Launchpad</h1>
+                <p class="text-gray-500">Configure your new restaurant in minutes.</p>
+            </div>
+            <button onclick="window.location.href='/admin'" class="text-sm font-bold text-gray-400 hover:text-gray-900">
+                <i class="fas fa-times mr-2"></i> Exit
+            </button>
+        </header>
+
+        <!-- Stepper -->
+        <div class="flex gap-8 mb-12 border-b border-gray-200">
+            <button id="step-btn-1" class="pb-4 font-bold step-active">1. Brand</button>
+            <button id="step-btn-2" class="pb-4 font-bold text-gray-400">2. Menu & Modifiers</button>
+            <button id="step-btn-3" class="pb-4 font-bold text-gray-400">3. Inventory & Recipes</button>
+        </div>
+
+        <!-- STEP 1: BRAND -->
+        <div id="step-1" class="space-y-8 bg-white p-8 rounded-3xl shadow-sm border border-gray-100">
+            <h2 class="text-2xl font-bold">Brand Identity</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-xs font-black uppercase text-gray-400 mb-1">Restaurant Name</label>
+                        <input type="text" id="brand-name" placeholder="e.g. Cali Coffee" class="w-full border rounded-xl p-4 text-lg outline-none focus:border-blue-500 bg-gray-50">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-black uppercase text-gray-400 mb-1">Brand Color</label>
+                        <input type="color" id="brand-color" value="#C9A66B" class="w-full h-12 rounded-xl cursor-pointer">
+                    </div>
+                </div>
+                <div class="space-y-4">
+                    <label class="block text-xs font-black uppercase text-gray-400 mb-1">Logo URL</label>
+                    <input type="text" id="brand-logo" placeholder="https://..." class="w-full border rounded-xl p-4 text-lg outline-none focus:border-blue-500 bg-gray-50">
+                    <p class="text-xs text-gray-400 italic">This logo will appear on the storefront and receipts.</p>
+                </div>
+            </div>
+            <div class="flex justify-end pt-8">
+                <button onclick="goToStep(2)" class="bg-blue-600 text-white px-8 py-4 rounded-2xl font-bold hover:bg-blue-700 transition shadow-lg shadow-blue-600/20">
+                    Next: Build Menu <i class="fas fa-arrow-right ml-2"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- STEP 2: MENU -->
+        <div id="step-2" class="hidden space-y-8 bg-white p-8 rounded-3xl shadow-sm border border-gray-100">
+            <div class="flex justify-between items-center">
+                <h2 class="text-2xl font-bold">Menu Builder</h2>
+                <button onclick="addMenuRow()" class="bg-gray-100 hover:bg-gray-200 text-gray-900 px-4 py-2 rounded-xl font-bold text-sm">
+                    <i class="fas fa-plus mr-2"></i> Add Item
+                </button>
+            </div>
+            
+            <div class="overflow-x-auto">
+                <table class="w-full">
+                    <thead>
+                        <tr class="text-left text-xs font-black uppercase text-gray-400">
+                            <th class="pb-4 pr-4">Item Name</th>
+                            <th class="pb-4 pr-4">Category</th>
+                            <th class="pb-4 pr-4">Price (L)</th>
+                            <th class="pb-4 pr-4">Image URL</th>
+                            <th class="pb-4">Modifiers</th>
+                        </tr>
+                    </thead>
+                    <tbody id="menu-rows" class="space-y-2">
+                        <!-- Initial Row -->
+                        <tr class="menu-row">
+                            <td class="pr-4 pb-2"><input type="text" class="item-name w-full border rounded-lg p-2 text-sm" placeholder="e.g. Latte"></td>
+                            <td class="pr-4 pb-2">
+                                <select class="item-cat border rounded-lg p-2 text-sm w-full">
+                                    <option value="coffee">Coffee</option>
+                                    <option value="drinks">Drinks</option>
+                                    <option value="food">Food</option>
+                                </select>
+                            </td>
+                            <td class="pr-4 pb-2"><input type="number" class="item-price w-full border rounded-lg p-2 text-sm" placeholder="0.00"></td>
+                            <td class="pr-4 pb-2"><input type="text" class="item-img w-full border rounded-lg p-2 text-sm" placeholder="https://..."></td>
+                            <td class="pb-2"><input type="text" class="item-mods w-full border rounded-lg p-2 text-sm" placeholder="Milk, Size"></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="flex justify-between pt-8 border-t">
+                <button onclick="goToStep(1)" class="text-gray-400 font-bold px-8 py-4">Back</button>
+                <button onclick="goToStep(3)" class="bg-blue-600 text-white px-8 py-4 rounded-2xl font-bold hover:bg-blue-700 transition shadow-lg shadow-blue-600/20">
+                    Next: Setup Inventory <i class="fas fa-arrow-right ml-2"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- STEP 3: INVENTORY -->
+        <div id="step-3" class="hidden space-y-8 bg-white p-8 rounded-3xl shadow-sm border border-gray-100">
+            <h2 class="text-2xl font-bold">Inventory & Recipe Logic</h2>
+            <p class="text-gray-500">List your raw ingredients and we'll help you tie them to your menu.</p>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div class="space-y-4">
+                    <h3 class="text-sm font-black uppercase text-gray-400">Common Ingredients</h3>
+                    <div id="ingredient-pills" class="flex flex-wrap gap-2">
+                        <button onclick="addIngredient('Coffee Beans', 'g')" class="px-3 py-1 bg-gray-100 rounded-full text-xs font-bold hover:bg-blue-100 hover:text-blue-600 transition">☕ Coffee Beans (g)</button>
+                        <button onclick="addIngredient('Whole Milk', 'ml')" class="px-3 py-1 bg-gray-100 rounded-full text-xs font-bold hover:bg-blue-100 hover:text-blue-600 transition">🥛 Whole Milk (ml)</button>
+                        <button onclick="addIngredient('Sugar', 'g')" class="px-3 py-1 bg-gray-100 rounded-full text-xs font-bold hover:bg-blue-100 hover:text-blue-600 transition">🍬 Sugar (g)</button>
+                        <button onclick="addIngredient('Cups', 'unit')" class="px-3 py-1 bg-gray-100 rounded-full text-xs font-bold hover:bg-blue-100 hover:text-blue-600 transition">🥤 Cups (unit)</button>
+                    </div>
+                </div>
+                
+                <div class="space-y-4">
+                    <h3 class="text-sm font-black uppercase text-gray-400">Your Inventory List</h3>
+                    <div id="my-inventory" class="space-y-2">
+                        <!-- Injected via JS -->
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex justify-between pt-8 border-t">
+                <button onclick="goToStep(2)" class="text-gray-400 font-bold px-8 py-4">Back</button>
+                <button onclick="finishOnboarding()" class="bg-green-600 text-white px-12 py-4 rounded-2xl font-bold hover:bg-green-700 transition shadow-lg shadow-green-600/20">
+                    Launch Restaurant <i class="fas fa-rocket ml-2"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentStep = 1;
+        const ingredients = [];
+
+        function goToStep(s) {
+            document.getElementById(`step-${currentStep}`).classList.add('hidden');
+            document.getElementById(`step-btn-${currentStep}`).className = "pb-4 font-bold text-gray-400";
+            
+            currentStep = s;
+            
+            document.getElementById(`step-${currentStep}`).classList.remove('hidden');
+            document.getElementById(`step-btn-${currentStep}`).className = "pb-4 font-bold step-active";
+        }
+
+        function addMenuRow() {
+            const tbody = document.getElementById('menu-rows');
+            const tr = document.createElement('tr');
+            tr.className = "menu-row";
+            tr.innerHTML = `
+                <td class="pr-4 pb-2"><input type="text" class="item-name w-full border rounded-lg p-2 text-sm" placeholder="e.g. Latte"></td>
+                <td class="pr-4 pb-2">
+                    <select class="item-cat border rounded-lg p-2 text-sm w-full">
+                        <option value="coffee">Coffee</option>
+                        <option value="drinks">Drinks</option>
+                        <option value="food">Food</option>
+                    </select>
+                </td>
+                <td class="pr-4 pb-2"><input type="number" class="item-price w-full border rounded-lg p-2 text-sm" placeholder="0.00"></td>
+                <td class="pb-2"><input type="text" class="item-mods w-full border rounded-lg p-2 text-sm" placeholder="Milk Type, Size"></td>
+            `;
+            tbody.appendChild(tr);
+        }
+
+        function addIngredient(name, unit) {
+            if (ingredients.some(i => i.name === name)) return;
+            ingredients.push({ name, unit });
+            renderIngredients();
+        }
+
+        function renderIngredients() {
+            const container = document.getElementById('my-inventory');
+            container.innerHTML = ingredients.map((ing, idx) => `
+                <div class="flex justify-between items-center bg-gray-50 p-3 rounded-xl border border-gray-100">
+                    <div class="flex items-center gap-3">
+                        <span class="text-sm font-bold text-gray-700">${ing.name}</span>
+                        <span class="text-[10px] font-black uppercase text-gray-400 bg-white px-2 py-0.5 rounded border">${ing.unit}</span>
+                    </div>
+                    <button onclick="removeIngredient(${idx})" class="text-gray-300 hover:text-red-500"><i class="fas fa-times"></i></button>
+                </div>
+            `).join('');
+        }
+
+        function removeIngredient(idx) {
+            ingredients.splice(idx, 1);
+            renderIngredients();
+        }
+
+        async function finishOnboarding() {
+            // This would call a series of API endpoints to:
+            // 1. Create the tenant/restaurant
+            // 2. Insert menu items
+            // 3. Create modifier groups
+            // 4. Create inventory items
+            alert("Creating restaurant... This would be the final sync step.");
+            window.location.href = '/admin';
+        }
+    </script>
+</body>
+</html>

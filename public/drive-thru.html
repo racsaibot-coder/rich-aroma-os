@@ -1,0 +1,591 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <link rel="icon" type="image/png" href="/favicon.png">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Rich Aroma | Drive-Thru POS</title>
+    <link rel="manifest" href="/pos-manifest.json">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link rel="apple-touch-icon" href="/favicon.png">
+    <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        gold: '#C9A66B',
+                        dark: '#120C09',
+                        charcoal: '#1E1610',
+                        success: '#10B981',
+                        danger: '#EF4444',
+                        warning: '#F59E0B'
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap');
+        body { font-family: 'Inter', sans-serif; background-color: #120C09; color: white; -webkit-tap-highlight-color: transparent; overflow-x: hidden; }
+        .hide-scrollbar::-webkit-scrollbar { display: none; }
+        .gold-glow { box-shadow: 0 0 20px rgba(201, 166, 107, 0.2); }
+        input[type="number"]::-webkit-inner-spin-button, input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+        .animate-pulse-slow { animation: pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: .5; } }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col">
+
+    <!-- MOBILE HEADER -->
+    <header class="bg-dark/95 backdrop-blur-md p-4 sticky top-0 z-[60] flex justify-between items-center border-b border-white/5 shadow-2xl shrink-0">
+        <div class="flex items-center gap-3">
+            <img src="/rico-logo.png" class="w-10 h-10 rounded-xl object-cover border border-white/10 shadow-lg">
+            <div>
+                <h1 class="text-sm font-black tracking-widest uppercase text-white/90">Rich Aroma Mobile</h1>
+                <p id="cashier-name" class="text-[9px] text-gold font-bold uppercase tracking-widest">Register Locked</p>
+            </div>
+        </div>
+        <div class="flex items-center gap-2">
+            <button onclick="startScanner()" class="w-10 h-10 flex items-center justify-center bg-blue-600 rounded-xl text-white shadow-lg shadow-blue-900/40"><i class="fas fa-qrcode"></i></button>
+            <button onclick="logout()" class="w-10 h-10 flex items-center justify-center bg-white/5 rounded-xl text-white/20"><i class="fas fa-sign-out-alt"></i></button>
+        </div>
+    </header>
+
+    <!-- VIEW 1: MENU -->
+    <main id="view-menu" class="flex-1 flex flex-col">
+        <!-- Category Toggles -->
+        <div class="flex gap-2 p-4 overflow-x-auto hide-scrollbar sticky top-[73px] bg-dark/90 backdrop-blur-md z-40 border-b border-white/5">
+            <button onclick="filterCategory('Combos', this)" class="cat-btn shrink-0 bg-gold text-dark px-6 py-2.5 rounded-full font-black text-[10px] uppercase tracking-widest transition-all">🔥 Combos</button>
+            <button onclick="filterCategory('Calientes', this)" class="cat-btn shrink-0 bg-white/5 text-white/40 px-6 py-2.5 rounded-full font-black text-[10px] uppercase tracking-widest transition-all">☕ Café</button>
+            <button onclick="filterCategory('Heladas', this)" class="cat-btn shrink-0 bg-white/5 text-white/40 px-6 py-2.5 rounded-full font-black text-[10px] uppercase tracking-widest transition-all">🥤 Heladas</button>
+            <button onclick="filterCategory('Comida', this)" class="cat-btn shrink-0 bg-white/5 text-white/40 px-6 py-2.5 rounded-full font-black text-[10px] uppercase tracking-widest transition-all">🥐 Comida</button>
+        </div>
+
+        <!-- Menu Grid -->
+        <div class="p-4 grid grid-cols-2 gap-4 pb-32" id="menu-grid">
+            <!-- Loading State -->
+            <div class="col-span-2 py-20 text-center space-y-4">
+                <i class="fas fa-spinner fa-spin text-3xl text-gold/20"></i>
+                <p class="text-xs text-white/20 uppercase tracking-widest font-black">Cargando Menú...</p>
+            </div>
+        </div>
+    </main>
+
+    <!-- FLOATING CART BUTTON -->
+    <div id="floating-cart" class="fixed bottom-8 left-1/2 -translate-x-1/2 z-50 w-full px-6 max-w-sm transition-all duration-500 opacity-0 translate-y-20">
+        <button onclick="showView('cart')" class="w-full bg-gold text-dark py-5 rounded-[2.5rem] font-black text-xl shadow-2xl flex justify-between px-10 items-center gold-glow">
+            <div class="flex items-center gap-3">
+                <i class="fas fa-shopping-bag"></i>
+                <span id="float-cart-count">0</span>
+            </div>
+            <span id="float-cart-total">L. 0</span>
+        </button>
+    </div>
+
+    <!-- VIEW 2: CART (Overlay) -->
+    <div id="view-cart" class="hidden fixed inset-0 z-[70] bg-black flex flex-col animate-in fade-in duration-300">
+        <header class="p-6 border-b border-white/5 flex justify-between items-center shrink-0">
+            <div>
+                <h2 class="text-2xl font-black uppercase tracking-tighter">Mi Orden</h2>
+                <p id="cart-item-count" class="text-[10px] text-gold font-bold uppercase tracking-widest">0 Artículos</p>
+            </div>
+            <button onclick="showView('menu')" class="w-12 h-12 flex items-center justify-center rounded-full bg-white/5 text-white text-2xl"><i class="fas fa-times"></i></button>
+        </header>
+        <div class="flex-1 overflow-y-auto p-6 space-y-4" id="cart-items-list"></div>
+        <div class="p-8 bg-black/40 border-t border-white/5 space-y-6">
+            <!-- Fulfillment Type Selector -->
+            <div class="grid grid-cols-2 gap-3 mb-4">
+                <button onclick="setFulfillment('pickup')" id="btn-fulfill-pickup" class="py-3 rounded-2xl font-black text-[10px] uppercase tracking-widest border-2 transition-all border-gold bg-gold text-dark">🛍️ Llevar</button>
+                <button onclick="setFulfillment('dinein')" id="btn-fulfill-dinein" class="py-3 rounded-2xl font-black text-[10px] uppercase tracking-widest border-2 transition-all border-white/10 text-white/40">🍽️ Aquí</button>
+            </div>
+
+            <div class="flex justify-between items-end">
+                <div>
+                    <p class="text-white/30 text-[10px] font-black uppercase tracking-widest mb-1">Total a Pagar</p>
+                    <span id="cart-total" class="text-5xl font-black text-gold tracking-tighter">L. 0.00</span>
+                </div>
+                <button onclick="clearCart()" class="text-red-500 font-bold text-[10px] uppercase tracking-widest border border-red-500/20 px-4 py-2 rounded-xl">Vaciar</button>
+            </div>
+            <div class="flex gap-3">
+                <button onclick="submitSale(true)" class="flex-1 bg-white/5 border border-white/10 text-white py-5 rounded-[2rem] font-black text-xs uppercase tracking-widest active:scale-95 transition-all">Enviar a Cocina</button>
+                <button onclick="openTender()" class="flex-[2] bg-green-600 text-white py-6 rounded-[2rem] font-black text-2xl shadow-xl active:scale-95 transition-all">COBRAR</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODIFIER MODAL -->
+    <div id="mod-modal" class="hidden fixed inset-0 z-[100] bg-black flex flex-col animate-in slide-in-from-bottom duration-300">
+        <header class="p-6 border-b border-white/5 flex justify-between items-center shrink-0">
+            <div>
+                <h2 id="mod-name" class="text-2xl font-black tracking-tight">Item</h2>
+                <p id="mod-base-price" class="text-gold font-bold text-sm">L. 0.00</p>
+            </div>
+            <button onclick="closeMod()" class="w-12 h-12 bg-white/5 rounded-full flex items-center justify-center text-xl text-white/40"><i class="fas fa-times"></i></button>
+        </header>
+        <div class="flex-1 overflow-y-auto p-6 space-y-10" id="mod-container"></div>
+        <footer class="p-6 bg-black border-t border-white/5 space-y-6">
+            <div class="flex items-center justify-between bg-white/5 p-4 rounded-2xl border border-white/5">
+                <span class="text-[10px] font-black text-white/30 tracking-widest">CANTIDAD</span>
+                <div class="flex items-center gap-8">
+                    <button onclick="changeQty(-1)" class="w-12 h-12 bg-white/5 rounded-full flex items-center justify-center text-xl"><i class="fas fa-minus"></i></button>
+                    <span id="mod-qty" class="text-3xl font-black text-gold">1</span>
+                    <button onclick="changeQty(1)" class="w-12 h-12 bg-gold rounded-full flex items-center justify-center text-xl text-dark"><i class="fas fa-plus"></i></button>
+                </div>
+            </div>
+            <button onclick="addToCart()" id="mod-add-btn" class="w-full bg-blue-600 text-white py-6 rounded-3xl font-black text-xl shadow-xl flex justify-between px-10 items-center">
+                <span>Agregar</span>
+                <span id="mod-total-price">L. 0</span>
+            </button>
+        </footer>
+    </div>
+
+    <!-- TENDER MODAL -->
+    <div id="tender-modal" class="hidden fixed inset-0 z-[110] bg-black flex flex-col p-8 overflow-y-auto animate-in fade-in duration-300">
+        <h2 class="text-4xl font-black text-center mb-12 tracking-tighter uppercase">Finalizar</h2>
+        <div class="bg-white/5 border border-white/10 p-10 rounded-[3rem] text-center mb-10">
+            <p class="text-white/30 font-black text-xs uppercase tracking-widest mb-2">Total Orden</p>
+            <h3 class="text-7xl font-black text-gold tracking-tighter" id="tender-due">L. 0</h3>
+        </div>
+        <div class="grid grid-cols-2 gap-4 mb-10">
+            <button onclick="setTender('cash')" id="btn-tender-cash" class="py-12 bg-green-600 text-white rounded-[2.5rem] font-black text-lg flex flex-col items-center gap-4 shadow-xl active:scale-95 transition-all"><i class="fas fa-money-bill-wave text-4xl"></i> Efectivo</button>
+            <button onclick="setTender('transfer')" id="btn-tender-transfer" class="py-12 bg-blue-600 text-white rounded-[2.5rem] font-black text-lg flex flex-col items-center gap-4 shadow-xl active:scale-95 transition-all"><i class="fas fa-exchange-alt text-4xl"></i> Transf</button>
+        </div>
+        <div id="cash-panel" class="hidden space-y-6">
+            <div class="grid grid-cols-3 gap-3 mb-2">
+                <button onclick="quickCash(100)" class="py-4 bg-white/10 rounded-2xl font-black text-lg border border-white/5 active:bg-gold active:text-dark">L. 100</button>
+                <button onclick="quickCash(200)" class="py-4 bg-white/10 rounded-2xl font-black text-lg border border-white/5 active:bg-gold active:text-dark">L. 200</button>
+                <button onclick="quickCash(500)" class="py-4 bg-white/10 rounded-2xl font-black text-lg border border-white/5 active:bg-gold active:text-dark">L. 500</button>
+            </div>
+            <div class="bg-white rounded-[2.5rem] p-8 flex justify-between items-center shadow-2xl">
+                <span class="text-gray-400 font-black text-xs uppercase tracking-widest">Recibido</span>
+                <input type="number" id="tender-input" oninput="calcChange()" class="w-1/2 text-right text-5xl font-black text-black outline-none bg-transparent" placeholder="0">
+            </div>
+            <div class="text-center">
+                <p class="text-white/30 font-black text-[10px] uppercase tracking-widest mb-1">Cambio</p>
+                <h4 class="text-6xl font-black text-green-400 tracking-tighter" id="tender-change">L. 0</h4>
+            </div>
+        </div>
+        <div class="mt-auto pt-12 flex gap-4">
+            <button onclick="document.getElementById('tender-modal').classList.add('hidden')" class="flex-1 py-6 text-white/20 font-black text-xs uppercase tracking-widest">Cerrar</button>
+            <button onclick="submitSale()" id="final-charge-btn" class="flex-[2] bg-blue-600 text-white py-6 rounded-[2rem] font-black text-2xl shadow-2xl active:scale-95 transition-all">TERMINAR</button>
+        </div>
+    </div>
+
+    <!-- LOGIN MODAL -->
+    <div id="login-modal" class="hidden fixed inset-0 z-[200] bg-dark flex flex-col items-center justify-center p-8 backdrop-blur-3xl">
+        <div class="max-w-xs w-full space-y-10 text-center" id="login-box">
+            <div class="w-24 h-24 bg-gold/10 text-gold rounded-[2.5rem] flex items-center justify-center mx-auto shadow-2xl rotate-3 border border-gold/20"><i class="fas fa-lock text-4xl"></i></div>
+            <h2 class="text-4xl font-black tracking-tighter uppercase text-white">Rich Aroma Mobile</h2>
+            <div class="flex justify-center gap-4" id="pin-dots">
+                <div class="w-4 h-4 rounded-full border-2 border-white/20"></div>
+                <div class="w-4 h-4 rounded-full border-2 border-white/20"></div>
+                <div class="w-4 h-4 rounded-full border-2 border-white/20"></div>
+                <div class="w-4 h-4 rounded-full border-2 border-white/20"></div>
+            </div>
+            <div class="grid grid-cols-3 gap-4">
+                <script>
+                    const keys = ['1','2','3','4','5','6','7','8','9','C','0','<'];
+                    document.write(keys.map(k => {
+                        if(k==='C') return `<button onclick="clearPin()" class="w-20 h-20 bg-red-500/10 text-red-500 rounded-2xl text-xl font-black active:scale-90 transition-all"><i class="fas fa-times"></i></button>`;
+                        if(k==='<') return `<button onclick="del()" class="w-20 h-20 bg-white/5 rounded-2xl text-xl font-black border border-white/5 active:scale-90 transition-all"><i class="fas fa-backspace"></i></button>`;
+                        return `<button onclick="press('${k}')" class="w-20 h-20 bg-white/5 rounded-2xl text-2xl font-black border border-white/5 active:scale-90 transition-all">${k}</button>`;
+                    }).join(''));
+                </script>
+            </div>
+        </div>
+    </div>
+
+    <!-- SCANNER MODAL -->
+    <div id="scanner-modal" class="hidden fixed inset-0 z-[300] bg-black flex flex-col">
+        <header class="p-6 flex justify-between items-center bg-black/50 backdrop-blur-md shrink-0">
+            <h2 class="text-xl font-black text-white uppercase tracking-widest">Scanner</h2>
+            <button onclick="stopScanner()" class="w-12 h-12 flex items-center justify-center rounded-full bg-white/10 text-white text-2xl"><i class="fas fa-times"></i></button>
+        </header>
+        <div class="flex-1 relative">
+            <div id="reader" class="w-full h-full"></div>
+            <!-- Focus frame overlay -->
+            <div class="absolute inset-0 border-[40px] border-black/60 pointer-events-none flex items-center justify-center">
+                <div class="w-64 h-64 border-2 border-gold rounded-3xl shadow-[0_0_50px_rgba(201,166,107,0.3)]"></div>
+            </div>
+        </div>
+        <div class="p-8 text-center bg-black">
+            <p class="text-white/40 text-[10px] font-black uppercase tracking-[0.2em]">Escanea Tarjeta VIP o Código de Orden</p>
+        </div>
+    </div>
+
+    <script>
+        // --- LOGIC ---
+        let menu = []; let modGroups = []; let modOptions = []; let itemModGroups = []; let cart = [];
+        let currentEmployee = null; let currentPin = ""; let selectedCategory = "Combos";
+        let currentItem = null; let currentQty = 1; let currentMods = {}; let tenderMethod = 'cash';
+        let fulfillmentType = 'pickup'; // Default for Drive-thru
+        let currentOrderId = null; // Track if we are editing an existing order (from QR)
+        
+        let html5QrCode = null;
+
+        function startScanner() {
+            document.getElementById('scanner-modal').classList.remove('hidden');
+            html5QrCode = new Html5Qrcode("reader");
+            const config = { fps: 10, qrbox: { width: 250, height: 250 } };
+            
+            html5QrCode.start({ facingMode: "environment" }, config, onScanSuccess);
+        }
+
+        async function stopScanner() {
+            if (html5QrCode) {
+                await html5QrCode.stop();
+                html5QrCode = null;
+            }
+            document.getElementById('scanner-modal').classList.add('hidden');
+        }
+
+        function onScanSuccess(decodedText) {
+            console.log("Scan Match:", decodedText);
+            stopScanner();
+            
+            // 1. Check for Order QR (richaroma:order:ID)
+            if (decodedText.startsWith('richaroma:order:')) {
+                const orderId = decodedText.replace('richaroma:order:', '');
+                lookupOrder(orderId);
+                return;
+            }
+
+            // 2. Check for Customer URL (https://.../staff?phone=...)
+            if (decodedText.includes('phone=')) {
+                const url = new URL(decodedText);
+                const phone = url.searchParams.get('phone');
+                if (phone) {
+                    document.getElementById('tender-input').value = phone; // Temporary use if needed
+                    lookupCustomerByPhone(phone);
+                }
+                return;
+            }
+
+            // 3. Fallback: Treat as raw phone number
+            const rawPhone = decodedText.replace(/\D/g, '');
+            if (rawPhone.length >= 8) {
+                lookupCustomerByPhone(rawPhone);
+            }
+        }
+
+        async function lookupOrder(id) {
+            try {
+                const res = await fetch('/api/orders', { headers: { 'Authorization': 'Bearer EMP-admin' } });
+                const data = await res.json();
+                const order = data.orders.find(o => o.id === id || o.order_number.toString() === id);
+                if (order) {
+                    currentOrderId = order.id; // Store ID to update later
+                    // Populate cart with order items
+                    cart = order.items.map(i => ({
+                        ...i,
+                        qty: i.qty || i.quantity || 1,
+                        finalPrice: i.price,
+                        mods: i.mods || []
+                    }));
+                    
+                    // Identify customer if possible
+                    if (order.customer_id) {
+                        const cres = await fetch(`/api/customer/profile?id=${order.customer_id}`, { headers: { 'Authorization': 'Bearer EMP-admin' } });
+                        const cdata = await cres.json();
+                        if (!cdata.error) currentCustomerId = cdata.id;
+                    }
+
+                    showView('cart');
+                    alert(`✅ Orden #${order.order_number} Cargada`);
+                } else {
+                    alert("❌ Orden no encontrada");
+                }
+            } catch(e) { alert("Error buscando orden"); }
+        }
+
+        async function lookupCustomerByPhone(phone) {
+            try {
+                const res = await fetch(`/api/customers/phone/${phone}`, { headers: { 'Authorization': 'Bearer EMP-admin' } });
+                const data = await res.json();
+                if (res.ok) {
+                    currentCustomerId = data.id;
+                    alert(`👑 Cliente: ${data.name}\nBalance: L. ${data.rico_balance}`);
+                } else {
+                    alert("Cliente no encontrado");
+                }
+            } catch(e) { console.error(e); }
+        }
+
+        function setFulfillment(type) {
+            fulfillmentType = type;
+            document.getElementById('btn-fulfill-pickup').className = type === 'pickup' 
+                ? 'py-3 rounded-2xl font-black text-[10px] uppercase tracking-widest border-2 transition-all border-gold bg-gold text-dark'
+                : 'py-3 rounded-2xl font-black text-[10px] uppercase tracking-widest border-2 transition-all border-white/10 text-white/40';
+            document.getElementById('btn-fulfill-dinein').className = type === 'dinein'
+                ? 'py-3 rounded-2xl font-black text-[10px] uppercase tracking-widest border-2 transition-all border-gold bg-gold text-dark'
+                : 'py-3 rounded-2xl font-black text-[10px] uppercase tracking-widest border-2 transition-all border-white/10 text-white/40';
+        }
+
+        window.onload = async () => { await fetchMenu(); checkSession(); };
+
+        async function fetchMenu() {
+            try {
+                const res = await fetch('/api/menu?admin=true', { headers: { 'Authorization': 'Bearer EMP-admin' } });
+                const data = await res.json();
+                menu = (data.items || []).map(i => ({
+                    id: i.id, name: i.name, price: parseFloat(i.price), category: i.category || 'otros', available: i.available !== false,
+                    image: i.image_url || "https://images.unsplash.com/photo-1510591509098-f4fdc6d0ff04?w=400&q=80"
+                }));
+                modGroups = data.modGroups || [];
+                modOptions = data.modOptions || [];
+                itemModGroups = data.itemModGroups || [];
+                renderMenu();
+            } catch(e) { console.error(e); alert("Error de red cargando menú"); }
+        }
+
+        function checkSession() {
+            const saved = localStorage.getItem('ra_pos_session');
+            if (saved) { 
+                currentEmployee = JSON.parse(saved); 
+                document.getElementById('login-modal').classList.add('hidden'); 
+                document.getElementById('cashier-name').innerText = currentEmployee.name; 
+            } else {
+                document.getElementById('login-modal').classList.remove('hidden');
+            }
+        }
+
+        function press(n) { if(currentPin.length < 4) { currentPin += n; updateDots(); if(currentPin.length === 4) doLogin(); } }
+        function del() { currentPin = currentPin.slice(0,-1); updateDots(); }
+        function clearPin() { currentPin = ""; updateDots(); }
+        function updateDots() { 
+            const dots = document.getElementById('pin-dots').children;
+            for(let i=0; i<4; i++) dots[i].className = `w-4 h-4 rounded-full border-2 ${i < currentPin.length ? 'bg-gold border-gold' : 'border-white/20'}`;
+        }
+
+        async function doLogin() {
+            try {
+                const res = await fetch('/api/admin?action=staff_login', {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ pin: currentPin })
+                });
+                const data = await res.json();
+                if (res.ok) {
+                    currentEmployee = data.employee;
+                    localStorage.setItem('ra_pos_session', JSON.stringify(currentEmployee));
+                    document.getElementById('login-modal').classList.add('hidden');
+                    document.getElementById('cashier-name').innerText = currentEmployee.name;
+                } else { alert(data.error || "PIN Inválido"); clearPin(); }
+            } catch(e) { alert("Error de red"); clearPin(); }
+        }
+
+        function logout() { localStorage.removeItem('ra_pos_session'); location.reload(); }
+
+        function showView(v) {
+            document.getElementById('view-menu').classList.toggle('hidden', v !== 'menu');
+            document.getElementById('view-cart').classList.toggle('hidden', v !== 'cart');
+            if (v === 'cart') renderCart();
+        }
+
+        function renderMenu() {
+            const grid = document.getElementById('menu-grid');
+            const search = selectedCategory.toLowerCase();
+            const filtered = menu.filter(i => {
+                const cat = (i.category || '').toLowerCase();
+                const name = (i.name || '').toLowerCase();
+                if (search === 'combos') return i.id.startsWith('combo_') || name.includes('combo');
+                if (search === 'calientes') return cat.includes('hot') || cat.includes('coffee') || cat.includes('caliente');
+                if (search === 'heladas') return cat.includes('cold') || cat.includes('drink') || cat.includes('helada') || cat.includes('frappe');
+                if (search === 'comida') return (cat.includes('food') || cat.includes('comida')) && !name.includes('combo');
+                return cat.includes(search);
+            });
+            grid.innerHTML = filtered.map(i => `
+                <div onclick="openMod('${i.id}')" class="bg-white/5 border border-white/5 rounded-3xl overflow-hidden active:scale-95 transition-all flex flex-col h-44 relative ${i.available ? '' : 'opacity-40 grayscale'}">
+                    <img src="${i.image}" class="h-28 w-full object-cover opacity-60">
+                    <div class="p-3 flex-1 flex flex-col justify-center">
+                        <span class="text-[10px] font-black text-white/90 uppercase line-clamp-2">${i.name}</span>
+                        <span class="text-gold font-bold text-[10px]">L. ${i.price.toFixed(0)}</span>
+                    </div>
+                    ${!i.available ? '<div class="absolute inset-0 flex items-center justify-center bg-black/60 font-black text-[10px] uppercase tracking-widest">Agotado</div>' : ''}
+                </div>
+            `).join('');
+        }
+
+        function filterCategory(cat, btn) {
+            selectedCategory = cat;
+            document.querySelectorAll('.cat-btn').forEach(b => b.className = "cat-btn shrink-0 bg-white/5 text-white/40 px-6 py-2.5 rounded-full font-black text-[10px] uppercase tracking-widest transition-all");
+            btn.className = "cat-btn shrink-0 bg-gold text-dark px-6 py-2.5 rounded-full font-black text-[10px] uppercase tracking-widest shadow-md";
+            renderMenu();
+        }
+
+        function openMod(id) {
+            currentItem = menu.find(i => i.id === id); if (!currentItem || !currentItem.available) return;
+            currentQty = 1; currentMods = {};
+            const groupIds = itemModGroups.filter(img => img.item_id === id).map(img => img.group_id);
+            groupIds.forEach(gid => {
+                const group = modGroups.find(g => g.id === gid);
+                if (!group) return;
+                const def = modOptions.filter(o => o.group_id === gid && o.is_default);
+                if (def.length > 0) currentMods[gid] = def.map(d => d.id);
+            });
+            document.getElementById('mod-name').innerText = currentItem.name;
+            document.getElementById('mod-base-price').innerText = `L. ${currentItem.price.toFixed(2)}`;
+            document.getElementById('mod-qty').innerText = "1";
+            document.getElementById('mod-modal').classList.remove('hidden');
+            renderMods(); updateModTotal();
+        }
+
+        function closeMod() { document.getElementById('mod-modal').classList.add('hidden'); }
+
+        function renderMods() {
+            const container = document.getElementById('mod-container');
+            const groupIds = itemModGroups.filter(img => img.item_id === currentItem.id).map(img => img.group_id);
+            container.innerHTML = groupIds.map(gid => {
+                const group = modGroups.find(g => g.id === gid); if (!group) return '';
+                const options = modOptions.filter(o => o.group_id === gid);
+                const selected = currentMods[gid] || [];
+                return `
+                    <div>
+                        <div class="flex justify-between items-center mb-4">
+                            <h3 class="text-white/40 font-black text-[10px] tracking-widest uppercase">${group.name}</h3>
+                            ${group.required ? '<span class="text-[8px] font-black bg-red-500/20 text-red-500 px-2 py-0.5 rounded-full">REQUIRED</span>' : ''}
+                        </div>
+                        <div class="grid grid-cols-2 gap-3">
+                            ${options.map(o => {
+                                const isSel = selected.includes(o.id);
+                                return `<button onclick="toggleMod('${gid}', '${o.id}', ${group.max_selections})" class="p-4 rounded-2xl border-2 transition-all flex flex-col items-start gap-1 ${isSel ? 'border-gold bg-gold text-dark' : 'border-white/5 bg-white/5 text-white/60'}">
+                                    <span class="text-xs font-black leading-tight">${o.name}</span>
+                                    ${o.price_adjustment > 0 ? `<span class="text-[9px] font-bold ${isSel ? 'text-dark/60' : 'text-gold'}">+L. ${o.price_adjustment}</span>` : ''}
+                                </button>`;
+                            }).join('')}
+                        </div>
+                    </div>`;
+            }).join('');
+        }
+
+        function toggleMod(gid, oid, max) {
+            let selected = currentMods[gid] || [];
+            if (selected.includes(oid)) { selected = selected.filter(id => id !== oid); }
+            else { if (max === 1) selected = [oid]; else if (selected.length < max) selected.push(oid); }
+            currentMods[gid] = selected; renderMods(); updateModTotal();
+        }
+
+        function changeQty(n) { currentQty = Math.max(1, currentQty + n); document.getElementById('mod-qty').innerText = currentQty; updateModTotal(); }
+
+        function updateModTotal() {
+            let total = currentItem.price;
+            for (const gid in currentMods) currentMods[gid].forEach(oid => { const opt = modOptions.find(o => o.id === oid); if (opt) total += opt.price_adjustment; });
+            document.getElementById('mod-total-price').innerText = `L. ${(total * currentQty).toFixed(0)}`;
+        }
+
+        function addToCart() {
+            const finalPrice = parseFloat(document.getElementById('mod-total-price').innerText.replace('L. ', '')) / currentQty;
+            const mods = [];
+            for (const gid in currentMods) currentMods[gid].forEach(oid => { const opt = modOptions.find(o => o.id === oid); if (opt) mods.push({ name: opt.name }); });
+            cart.push({ ...currentItem, qty: currentQty, finalPrice, mods });
+            updateCartSummary(); closeMod();
+        }
+
+        function updateCartSummary() {
+            const count = cart.reduce((s, i) => s + i.qty, 0);
+            const total = cart.reduce((s, i) => s + (i.finalPrice * i.qty), 0);
+            document.getElementById('float-cart-count').innerText = count;
+            document.getElementById('float-cart-total').innerText = `L. ${total.toFixed(0)}`;
+            const floating = document.getElementById('floating-cart');
+            if (count > 0) floating.classList.remove('opacity-0', 'translate-y-20'); else floating.classList.add('opacity-0', 'translate-y-20');
+        }
+
+        function renderCart() {
+            const list = document.getElementById('cart-items-list');
+            const total = cart.reduce((s, i) => s + (i.finalPrice * i.qty), 0);
+            document.getElementById('cart-total').innerText = `L. ${total.toFixed(2)}`;
+            document.getElementById('cart-item-count').innerText = `${cart.length} Artículos en Orden`;
+            list.innerHTML = cart.map((item, idx) => `
+                <div class="flex justify-between items-center bg-white/5 p-5 rounded-3xl border border-white/5">
+                    <div>
+                        <div class="font-black text-sm uppercase">${item.qty}x ${item.name}</div>
+                        <div class="text-[9px] text-white/30 font-bold uppercase tracking-widest mt-1">${item.mods.map(m=>m.name).join(', ')}</div>
+                    </div>
+                    <div class="flex flex-col items-end gap-2">
+                        <span class="text-gold font-black text-sm">L. ${(item.finalPrice * item.qty).toFixed(0)}</span>
+                        <button onclick="removeItem(${idx})" class="text-red-500/50 text-sm"><i class="fas fa-trash"></i></button>
+                    </div>
+                </div>`).join('');
+        }
+
+        function removeItem(i) { cart.splice(i, 1); renderCart(); updateCartSummary(); if(cart.length === 0) { currentOrderId = null; showView('menu'); } }
+        function clearCart() { cart = []; currentOrderId = null; renderCart(); updateCartSummary(); showView('menu'); }
+
+        function openTender() {
+            const total = cart.reduce((s, i) => s + (i.finalPrice * i.qty), 0);
+            document.getElementById('tender-due').innerText = `L. ${total.toFixed(0)}`;
+            document.getElementById('tender-input').value = "";
+            document.getElementById('tender-change').innerText = "L. 0";
+            setTender('cash'); document.getElementById('tender-modal').classList.remove('hidden');
+        }
+
+        function setTender(m) {
+            tenderMethod = m;
+            document.getElementById('btn-tender-cash').className = m === 'cash' ? 'py-12 bg-green-600 text-white rounded-[2.5rem] font-black text-lg flex flex-col items-center gap-4 shadow-xl' : 'py-12 bg-white/5 text-white/20 rounded-[2.5rem] font-black text-lg flex flex-col items-center gap-4';
+            document.getElementById('btn-tender-transfer').className = m === 'transfer' ? 'py-12 bg-blue-600 text-white rounded-[2.5rem] font-black text-lg flex flex-col items-center gap-4 shadow-xl' : 'py-12 bg-white/5 text-white/20 rounded-[2.5rem] font-black text-lg flex flex-col items-center gap-4';
+            document.getElementById('cash-panel').classList.toggle('hidden', m !== 'cash');
+            calcChange();
+        }
+
+        function quickCash(n) { document.getElementById('tender-input').value = n; calcChange(); }
+        
+        function calcChange() {
+            const total = cart.reduce((s, i) => s + (i.finalPrice * i.qty), 0);
+            const received = parseFloat(document.getElementById('tender-input').value) || 0;
+            const change = received - total;
+            document.getElementById('tender-change').innerText = `L. ${Math.max(0, change).toFixed(0)}`;
+            const btn = document.getElementById('final-charge-btn');
+            btn.disabled = (tenderMethod === 'cash' && received < total);
+            btn.className = (tenderMethod === 'cash' && received < total) ? 'flex-[2] bg-white/10 text-white/20 py-6 rounded-[2rem] font-black text-2xl' : 'flex-[2] bg-white text-dark py-6 rounded-[2rem] font-black text-2xl shadow-2xl';
+        }
+
+        async function submitSale(isPending = false) {
+            const total = cart.reduce((s, i) => s + (i.finalPrice * i.qty), 0);
+            const subtotal = total;
+            const payload = {
+                items: cart, 
+                subtotal,
+                total, 
+                paymentMethod: isPending ? 'cash' : tenderMethod, 
+                customerId: currentCustomerId,
+                fulfillmentType: fulfillmentType,
+                status: isPending ? 'pending' : 'paid',
+                notes: `[MobilePOS] [Cashier: ${currentEmployee?.name || 'Unknown'}]`
+            };
+
+            const btn = isPending ? null : document.getElementById('final-charge-btn');
+            if (btn) { btn.disabled = true; btn.innerText = "PROCESANDO..."; }
+
+            try {
+                const url = currentOrderId ? `/api/orders/${currentOrderId}?v=${Date.now()}` : `/api/orders?v=${Date.now()}`;
+                const method = currentOrderId ? 'PATCH' : 'POST';
+
+                const res = await fetch(url, {
+                    method: method,
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer EMP-admin'
+                    },
+                    body: JSON.stringify(payload)
+                });
+
+                if (res.ok) {
+                    alert(isPending ? "✅ ORDEN ENVIADA A COCINA" : "✅ VENTA COMPLETADA");
+                    currentOrderId = null;
+                    location.reload();
+                } else {
+                    const err = await res.json();
+                    alert("Error Servidor: " + (err.error || "Error en servidor"));
+                }
+            } catch(e) { 
+                console.error("Network Error:", e);
+                alert("Error de Conexión: " + e.message); 
+                if (btn) { btn.disabled = false; btn.innerText = "REINTENTAR"; }
+            }
+        }
+    </script>
+</body>
+</html>

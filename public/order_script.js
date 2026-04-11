@@ -774,6 +774,10 @@
             document.getElementById('addon-box').classList.add('hidden');
             document.getElementById('new-order-btn').classList.remove('hidden');
             
+            // Set initial state silently
+            if(activeOrder.status === 'preparing') setStep('prep', true);
+            if(activeOrder.status === 'completed' || activeOrder.status === 'ready') setStep('ready', true);
+
             // Start live polling for status
             clearInterval(statusPollingTimer);
             statusPollingTimer = setInterval(async () => {
@@ -820,21 +824,23 @@
         const readyChime = new Audio('https://assets.mixkit.co/active_storage/sfx/2013/2013-preview.mp3'); // happy chime
         let currentStepState = 'pending';
 
-        function setStep(step) {
+        function setStep(step, silent = false) {
             if(step === 'prep') {
-                if (currentStepState !== 'prep') {
+                if (currentStepState !== 'prep' && !silent) {
                     prepChime.play().catch(e=>console.log(e));
-                    currentStepState = 'prep';
                 }
+                currentStepState = 'prep';
+                
                 document.getElementById('step-prep-icon').classList.replace('bg-white/10', 'bg-gold');
                 document.getElementById('step-prep-icon').classList.replace('text-white/50', 'text-dark');
                 document.getElementById('step-prep-text').classList.replace('text-white/50', 'text-white');
             }
             if(step === 'ready') {
-                if (currentStepState !== 'ready') {
+                if (currentStepState !== 'ready' && !silent) {
                     readyChime.play().catch(e=>console.log(e));
-                    currentStepState = 'ready';
                 }
+                currentStepState = 'ready';
+                
                 document.getElementById('step-ready-icon').classList.replace('bg-white/10', 'bg-gold');
                 document.getElementById('step-ready-icon').classList.replace('text-white/50', 'text-dark');
                 document.getElementById('step-ready-text').classList.replace('text-white/50', 'text-white');

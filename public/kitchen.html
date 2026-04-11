@@ -1,575 +1,235 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="es">
 <head>
-    <link rel="icon" type="image/png" href="/favicon.png">    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Kitchen Display</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="icon" type="image/png" href="/favicon.png">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Rich Aroma | Kitchen Mobile</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        gold: '#C9A66B',
+                        dark: '#120C09',
+                        charcoal: '#1E1610',
+                        success: '#10B981',
+                        danger: '#EF4444',
+                        warning: '#F59E0B'
+                    }
+                }
+            }
+        }
+    </script>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
-            font-family: 'Inter', -apple-system, sans-serif;
-            background: #0a0a0a;
-            color: #fff;
-            min-height: 100vh;
-        }
-
-        .header {
-            background: #111;
-            padding: 16px 24px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            border-bottom: 1px solid #222;
-            position: sticky;
-            top: 0;
-            z-index: 100;
-        }
-
-        .logo {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
-
-        .logo-icon {
-            width: 40px;
-            height: 40px;
-            background: linear-gradient(135deg, #C9A66B, #8B6914);
-            border-radius: 10px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1.2rem;
-        }
-
-        .logo-text {
-            font-weight: 600;
-            font-size: 1.1rem;
-        }
-
-        .header-right {
-            display: flex;
-            align-items: center;
-            gap: 20px;
-        }
-
-        .live-dot {
-            width: 8px;
-            height: 8px;
-            background: #22c55e;
-            border-radius: 50%;
-            animation: pulse 2s infinite;
-        }
-
-        @keyframes pulse {
-            0%, 100% { opacity: 1; transform: scale(1); }
-            50% { opacity: 0.5; transform: scale(1.2); }
-        }
-
-        .clock {
-            font-variant-numeric: tabular-nums;
-            color: #888;
-            font-size: 0.95rem;
-        }
-
-        .stats {
-            display: flex;
-            gap: 24px;
-            padding: 16px 24px;
-            background: #0f0f0f;
-            border-bottom: 1px solid #1a1a1a;
-        }
-
-        .stat {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .stat-value {
-            font-size: 1.5rem;
-            font-weight: 700;
-            color: #C9A66B;
-        }
-
-        .stat-label {
-            font-size: 0.75rem;
-            color: #666;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-
-        .columns {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 1px;
-            background: #1a1a1a;
-            min-height: calc(100vh - 130px);
-        }
-
-        .column {
-            background: #0a0a0a;
-            display: flex;
-            flex-direction: column;
-        }
-
-        .column-header {
-            padding: 16px 20px;
-            background: #111;
-            border-bottom: 1px solid #222;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-        }
-
-        .column-title {
-            font-weight: 600;
-            font-size: 0.9rem;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .column-title .icon {
-            font-size: 1.1rem;
-        }
-
-        .column-count {
-            background: #222;
-            padding: 4px 10px;
-            border-radius: 12px;
-            font-size: 0.8rem;
-            font-weight: 600;
-        }
-
-        .column.new .column-count { background: #7c3aed; }
-        .column.prep .column-count { background: #C9A66B; color: #000; }
-        .column.ready .column-count { background: #22c55e; color: #000; }
-
-        .orders {
-            flex: 1;
-            padding: 16px;
-            overflow-y: auto;
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-        }
-
-        .order {
-            background: #151515;
-            border-radius: 16px;
-            overflow: hidden;
-            border: 1px solid #222;
-            transition: all 0.2s;
-        }
-
-        .order:hover {
-            border-color: #333;
-        }
-
-        .order-header {
-            padding: 16px;
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-start;
-            border-bottom: 1px solid #222;
-        }
-
-        .order-number {
-            font-size: 1.8rem;
-            font-weight: 700;
-            color: #C9A66B;
-            line-height: 1;
-        }
-
-        .order-time {
-            font-size: 0.8rem;
-            color: #666;
-            margin-top: 4px;
-        }
-
-        .order-timer {
-            font-size: 1.1rem;
-            font-weight: 600;
-            padding: 6px 12px;
-            border-radius: 8px;
-            background: #1a1a1a;
-            font-variant-numeric: tabular-nums;
-        }
-
-        .order-timer.warning { background: #854d0e; color: #fbbf24; }
-        .order-timer.danger { background: #7f1d1d; color: #fca5a5; }
-
-        .order-items {
-            padding: 16px;
-        }
-
-        .item {
-            display: flex;
-            align-items: flex-start;
-            gap: 12px;
-            padding: 8px 0;
-        }
-
-        .item + .item {
-            border-top: 1px solid #1a1a1a;
-            padding-top: 12px;
-        }
-
-        .item-qty {
-            background: #C9A66B;
-            color: #000;
-            font-weight: 700;
-            min-width: 28px;
-            height: 28px;
-            border-radius: 8px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 0.9rem;
-        }
-
-        .item-details {
-            flex: 1;
-        }
-
-        .item-name {
-            font-weight: 600;
-            font-size: 1rem;
-        }
-
-        .item-mods {
-            font-size: 0.85rem;
-            color: #888;
-            margin-top: 2px;
-        }
-
-        .order-action {
-            padding: 16px;
-            border-top: 1px solid #222;
-        }
-
-        .action-btn {
-            width: 100%;
-            padding: 16px;
-            border: none;
-            border-radius: 12px;
-            font-size: 1rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.15s;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-        }
-
-        .action-btn:active {
-            transform: scale(0.98);
-        }
-
-        .btn-start {
-            background: #7c3aed;
-            color: #fff;
-        }
-
-        .btn-start:hover { background: #6d28d9; }
-
-        .btn-ready {
-            background: linear-gradient(135deg, #C9A66B, #a8894f);
-            color: #000;
-        }
-
-        .btn-ready:hover { background: linear-gradient(135deg, #d4b57a, #C9A66B); }
-
-        .btn-done {
-            background: #22c55e;
-            color: #000;
-        }
-
-        .btn-done:hover { background: #16a34a; }
-
-        .empty {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            color: #444;
-            gap: 8px;
-        }
-
-        .empty-icon {
-            font-size: 2.5rem;
-            opacity: 0.5;
-        }
-
-        .empty-text {
-            font-size: 0.9rem;
-        }
-
-        .notification {
-            position: fixed;
-            top: 80px;
-            right: 24px;
-            background: #7c3aed;
-            color: #fff;
-            padding: 16px 24px;
-            border-radius: 12px;
-            font-weight: 600;
-            display: none;
-            animation: slideIn 0.3s ease-out;
-            box-shadow: 0 10px 40px rgba(124, 58, 237, 0.3);
-        }
-
-        .notification.show { display: flex; align-items: center; gap: 10px; }
-
-        @keyframes slideIn {
-            from { transform: translateX(100%); opacity: 0; }
-            to { transform: translateX(0); opacity: 1; }
-        }
-
-        /* Mobile */
-        @media (max-width: 900px) {
-            .columns {
-                grid-template-columns: 1fr;
-            }
-            .column {
-                min-height: auto;
-            }
-            .orders {
-                max-height: 50vh;
-            }
-        }
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap');
+        body { font-family: 'Inter', sans-serif; background-color: #120C09; color: white; -webkit-tap-highlight-color: transparent; }
+        .hide-scrollbar::-webkit-scrollbar { display: none; }
+        .order-card { transition: transform 0.2s active:scale-95; }
+        .status-badge { font-size: 9px; font-weight: 900; letter-spacing: 0.1em; }
+        header { pointer-events: auto !important; }
+        button { pointer-events: auto !important; position: relative; z-index: 70; }
     </style>
 </head>
-<body>
-    <div class="header">
-        <div class="logo">
-            <div class="logo-icon">🍳</div>
-            <div class="logo-text">Kitchen Display</div>
-        </div>
-        <div class="header-right">
-            <div class="live-dot"></div>
-            <div class="clock" id="clock">--:--:--</div>
-        </div>
-    </div>
+<body class="min-h-screen flex flex-col">
 
-    <div class="stats">
-        <div class="stat">
-            <div class="stat-value" id="totalOrders">0</div>
-            <div class="stat-label">Active</div>
+    <!-- MOBILE KDS HEADER -->
+    <header class="bg-dark/95 backdrop-blur-md p-4 sticky top-0 z-[60] flex justify-between items-center border-b border-white/5 shadow-2xl shrink-0">
+        <div class="flex items-center gap-3">
+            <div class="w-10 h-10 bg-gold/20 rounded-xl flex items-center justify-center text-gold border border-gold/30">
+                <i class="fas fa-fire-alt"></i>
+            </div>
+            <div>
+                <h1 class="text-sm font-black tracking-widest uppercase text-white/90">Kitchen Mobile</h1>
+                <p id="sync-status" class="text-[8px] text-white/30 font-bold uppercase tracking-widest">Iniciando...</p>
+            </div>
         </div>
-        <div class="stat">
-            <div class="stat-value" id="avgTime">0:00</div>
-            <div class="stat-label">Avg Time</div>
+        
+        <!-- Mode Toggle -->
+        <div class="flex bg-white/5 rounded-full p-1 border border-white/10 relative z-[70]">
+            <button onclick="setMode('drinks')" id="btn-drinks" class="px-4 py-1.5 rounded-full text-[9px] font-black uppercase transition-all bg-gold text-dark pointer-events-auto">Barista</button>
+            <button onclick="setMode('food')" id="btn-food" class="px-4 py-1.5 rounded-full text-[9px] font-black uppercase transition-all text-white/40 pointer-events-auto">Cocina</button>
         </div>
-        <div class="stat">
-            <div class="stat-value" id="completed">0</div>
-            <div class="stat-label">Done Today</div>
-        </div>
-    </div>
+    </header>
 
-    <div class="columns">
-        <div class="column new">
-            <div class="column-header">
-                <div class="column-title"><span class="icon">📥</span> New Orders</div>
-                <div class="column-count" id="newCount">0</div>
-            </div>
-            <div class="orders" id="newOrders"></div>
+    <!-- LIVE ORDERS LIST -->
+    <main class="flex-1 p-4 space-y-4 pb-20" id="kds-container">
+        <div class="py-20 text-center space-y-4 opacity-20">
+            <i class="fas fa-circle-notch fa-spin text-3xl"></i>
+            <p class="text-[10px] font-black uppercase tracking-widest">Esperando Órdenes...</p>
         </div>
-        <div class="column prep">
-            <div class="column-header">
-                <div class="column-title"><span class="icon">👨‍🍳</span> Preparing</div>
-                <div class="column-count" id="prepCount">0</div>
-            </div>
-            <div class="orders" id="prepOrders"></div>
-        </div>
-        <div class="column ready">
-            <div class="column-header">
-                <div class="column-title"><span class="icon">✅</span> Ready</div>
-                <div class="column-count" id="readyCount">0</div>
-            </div>
-            <div class="orders" id="readyOrders"></div>
-        </div>
-    </div>
-
-    <div class="notification" id="notification">
-        <span>🔔</span> New Order!
-    </div>
+    </main>
 
     <script>
         let orders = [];
-        let completedToday = 0;
-        let totalCompletionTime = 0;
+        let currentMode = 'drinks'; 
 
-        function load() {
-            const stored = localStorage.getItem('rich-aroma-orders');
-            if (stored) {
-                orders = JSON.parse(stored);
-            }
-            render();
-        }
+        window.onload = () => {
+            fetchOrders();
+            setInterval(fetchOrders, 5000);
+        };
 
-        function save() {
-            localStorage.setItem('rich-aroma-orders', JSON.stringify(orders));
-        }
-
-        // Listen for new orders
-        window.addEventListener('storage', (e) => {
-            if (e.key === 'rich-aroma-orders') {
-                const prev = orders.length;
-                orders = JSON.parse(e.newValue || '[]');
-                if (orders.length > prev) showNotification();
-                render();
-            }
-        });
-
-        // Poll for updates (same-tab fallback)
-        setInterval(() => {
-            const stored = localStorage.getItem('rich-aroma-orders');
-            if (stored) {
-                const parsed = JSON.parse(stored);
-                if (JSON.stringify(parsed) !== JSON.stringify(orders)) {
-                    const hadMore = parsed.length > orders.length;
-                    orders = parsed;
-                    if (hadMore) showNotification();
-                    render();
-                }
-            }
-        }, 500);
-
-        function showNotification() {
-            const n = document.getElementById('notification');
-            n.classList.add('show');
-            setTimeout(() => n.classList.remove('show'), 3000);
-        }
-
-        function render() {
-            const newOrders = orders.filter(o => o.status === 'new');
-            const prepOrders = orders.filter(o => o.status === 'preparing');
-            const readyOrders = orders.filter(o => o.status === 'ready');
-
-            document.getElementById('newOrders').innerHTML = newOrders.length ? 
-                newOrders.map(o => renderOrder(o, 'start')).join('') : 
-                '<div class="empty"><div class="empty-icon">📭</div><div class="empty-text">No new orders</div></div>';
-
-            document.getElementById('prepOrders').innerHTML = prepOrders.length ? 
-                prepOrders.map(o => renderOrder(o, 'ready')).join('') : 
-                '<div class="empty"><div class="empty-icon">👨‍🍳</div><div class="empty-text">Nothing cooking</div></div>';
-
-            document.getElementById('readyOrders').innerHTML = readyOrders.length ? 
-                readyOrders.map(o => renderOrder(o, 'done')).join('') : 
-                '<div class="empty"><div class="empty-icon">✨</div><div class="empty-text">All picked up</div></div>';
-
-            // Counts
-            document.getElementById('newCount').textContent = newOrders.length;
-            document.getElementById('prepCount').textContent = prepOrders.length;
-            document.getElementById('readyCount').textContent = readyOrders.length;
-            document.getElementById('totalOrders').textContent = newOrders.length + prepOrders.length + readyOrders.length;
-            document.getElementById('completed').textContent = completedToday;
-
-            if (completedToday > 0) {
-                const avg = Math.floor(totalCompletionTime / completedToday);
-                const m = Math.floor(avg / 60);
-                const s = avg % 60;
-                document.getElementById('avgTime').textContent = `${m}:${s.toString().padStart(2, '0')}`;
+        async function fetchOrders() {
+            try {
+                const res = await fetch('/api/orders');
+                const data = await res.json();
+                orders = data.orders || [];
+                renderKDS();
+                document.getElementById('sync-status').innerText = 'Sync: ' + new Date().toLocaleTimeString();
+            } catch (e) {
+                console.error("KDS Fetch Error:", e);
+                document.getElementById('sync-status').innerText = 'Error Sync';
             }
         }
 
-        function renderOrder(order, action) {
-            const elapsed = Math.floor((Date.now() - order.createdAt) / 1000);
-            const m = Math.floor(elapsed / 60);
-            const s = elapsed % 60;
-            const timerClass = elapsed > 300 ? 'danger' : elapsed > 180 ? 'warning' : '';
+        function setMode(mode) {
+            currentMode = mode;
+            const btnDrinks = document.getElementById('btn-drinks');
+            const btnFood = document.getElementById('btn-food');
+            if (mode === 'drinks') {
+                btnDrinks.className = "px-4 py-1.5 rounded-full text-[9px] font-black uppercase transition-all bg-gold text-dark";
+                btnFood.className = "px-4 py-1.5 rounded-full text-[9px] font-black uppercase transition-all text-white/40";
+            } else {
+                btnDrinks.className = "px-4 py-1.5 rounded-full text-[9px] font-black uppercase transition-all text-white/40";
+                btnFood.className = "px-4 py-1.5 rounded-full text-[9px] font-black uppercase transition-all bg-gold text-dark";
+            }
+            renderKDS();
+        }
+
+        function isDrink(item) {
+            if (!item) return false;
+            const name = (item.name || '').toLowerCase();
+            const id = (item.id || '').toLowerCase();
+            if (id === 'vip_membership' || name.includes('membresía')) return false;
+            return id.startsWith('hot_') || id.startsWith('cold_') || id.startsWith('frappe_') || 
+                   name.includes('latte') || name.includes('brew') || name.includes('capp') || 
+                   name.includes('tea') || name.includes('te ') || name.includes('icee') || 
+                   name.includes('espresso') || name.includes('mocha') || name.includes('matcha') || 
+                   name.includes('frappe') || name.includes('macchiato') || name.includes('jugo') || 
+                   name.includes('licuado') || name.includes('granita') || name.includes('smoothie') || 
+                   name.includes('caliente') || name.includes('helada') || name.includes('americano') ||
+                   name.includes('chocolate') || name.includes('cafe') || name.includes('café') ||
+                   name.includes('combo');
+        }
+
+        function isFood(item) {
+            if (!item) return false;
+            const name = (item.name || '').toLowerCase();
+            const id = (item.id || '').toLowerCase();
+            if (id === 'vip_membership' || name.includes('membresía')) return false;
+            return id.startsWith('food_') || name.includes('baleada') || name.includes('sandwich') || 
+                   name.includes('crepa') || name.includes('bowl') || name.includes('toast') || 
+                   name.includes('melt') || name.includes('fries') || name.includes('papas') || 
+                   name.includes('burger') || name.includes('hamburguesa') || name.includes('combo');
+        }
+
+        function renderKDS() {
+            const container = document.getElementById('kds-container');
             
-            const time = new Date(order.createdAt).toLocaleTimeString('en-US', { 
-                hour: 'numeric', 
-                minute: '2-digit'
+            const activeOrders = orders.filter(o => {
+                if (['completed', 'cancelled', 'ready'].includes(o.status)) return false;
+                if (currentMode === 'drinks' && o.status === 'drinks_ready') return false;
+                if (currentMode === 'food' && o.status === 'food_ready') return false;
+
+                const items = o.items || [];
+                return items.some(i => currentMode === 'drinks' ? isDrink(i) : isFood(i));
             });
 
-            const btnClass = action === 'start' ? 'btn-start' : action === 'ready' ? 'btn-ready' : 'btn-done';
-            const btnText = action === 'start' ? '▶ Start Making' : action === 'ready' ? '✓ Mark Ready' : '↑ Complete';
-            const btnAction = action === 'start' ? 'startOrder' : action === 'ready' ? 'readyOrder' : 'completeOrder';
+            if (activeOrders.length === 0) {
+                container.innerHTML = '<div class="py-20 text-center opacity-20"><p class="text-[10px] font-black uppercase tracking-widest">Sin órdenes pendientes</p></div>';
+                return;
+            }
 
-            return `
-                <div class="order">
-                    <div class="order-header">
-                        <div>
-                            <div class="order-number">#${order.id}</div>
-                            <div class="order-time">${time}</div>
-                        </div>
-                        <div class="order-timer ${timerClass}">${m}:${s.toString().padStart(2, '0')}</div>
-                    </div>
-                    <div class="order-items">
-                        ${order.items.map(item => `
-                            <div class="item">
-                                <div class="item-qty">${item.qty || 1}</div>
-                                <div class="item-details">
-                                    <div class="item-name">${item.name}</div>
-                                    ${item.mods ? `<div class="item-mods">${item.mods}</div>` : ''}
+            container.innerHTML = activeOrders.map(o => {
+                const items = (o.items || []).filter(i => currentMode === 'drinks' ? isDrink(i) : isFood(i));
+                const isPrep = o.status === 'preparing';
+                const orderNum = o.order_number ? o.order_number.toString().padStart(2, '0') : '---';
+                const custName = o.customers?.name || 'Invitado';
+                const status = o.status || 'pending';
+                
+                let typeText = '🍽️ AQUÍ';
+                if (o.notes && o.notes.includes('[TYPE: pickup]')) typeText = '🛍️ LLEVAR';
+                if (o.notes && o.notes.includes('[TYPE: delivery]')) typeText = '🚗 DELIVERY';
+
+                return `
+                    <div class="bg-white/5 border border-white/10 rounded-[2rem] p-6 space-y-4 shadow-xl order-card ${isPrep ? 'border-orange-500/30 bg-orange-500/5' : ''}">
+                        <div class="flex justify-between items-start gap-4">
+                            <div class="flex items-start gap-3 overflow-hidden">
+                                <span class="bg-gold text-dark px-3 py-2 rounded-xl font-black text-lg shadow-lg shadow-gold/20 shrink-0">#${orderNum}</span>
+                                <div class="overflow-hidden">
+                                    <h2 class="font-black text-sm uppercase truncate tracking-tight text-white/90">${custName}</h2>
+                                    <span class="bg-white/5 text-gold border border-white/5 px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-widest mt-1.5 inline-block">${typeText}</span>
                                 </div>
                             </div>
-                        `).join('')}
+                            <div class="text-right shrink-0">
+                                <p class="text-[10px] font-black text-white/30">${new Date(o.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</p>
+                                <span class="status-badge ${isPrep ? 'text-orange-500' : 'text-blue-500'} animate-pulse uppercase">${status}</span>
+                            </div>
+                        </div>
+
+                        <div class="space-y-3 py-2">
+                            ${items.map(i => `
+                                <div class="flex gap-3">
+                                    <span class="font-black text-gold text-sm">${i.qty || i.quantity || 1}x</span>
+                                    <div>
+                                        <p class="font-bold text-sm uppercase leading-tight">${i.name}</p>
+                                        <p class="text-[10px] text-white/40 mt-1 font-medium">${(i.mods || []).map(m => m.name).join(', ')}</p>
+                                    </div>
+                                </div>
+                            `).join('')}
+                        </div>
+
+                        <div class="pt-2">
+                            ${!isPrep ? 
+                                `<button onclick="updateStatus('${o.id}', 'preparing')" class="w-full bg-blue-600 text-white py-4 rounded-2xl font-black text-xs uppercase tracking-widest shadow-lg shadow-blue-900/20 active:scale-95 transition-all">Empezar</button>` :
+                                `<button onclick="completeOrder('${o.id}')" class="w-full bg-success text-dark py-4 rounded-2xl font-black text-xs uppercase tracking-widest shadow-lg shadow-green-900/20 active:scale-95 transition-all">Listo</button>`
+                            }
+                        </div>
                     </div>
-                    <div class="order-action">
-                        <button class="action-btn ${btnClass}" onclick="${btnAction}('${order.id}')">${btnText}</button>
-                    </div>
-                </div>
-            `;
+                `;
+            }).join('');
         }
 
-        function startOrder(id) {
+        async function completeOrder(id) {
             const order = orders.find(o => o.id === id);
-            if (order && order.status === 'new') {
-                order.status = 'preparing';
-                order.startedAt = Date.now();
-                save();
-                render();
+            if (!order) return;
+
+            let hasDrinks = (order.items || []).some(i => isDrink(i));
+            let hasFood = (order.items || []).some(i => isFood(i));
+
+            let newStatus = 'ready'; // Default
+
+            if (hasDrinks && hasFood) {
+                if (currentMode === 'drinks') {
+                    newStatus = (order.status === 'food_ready') ? 'ready' : 'drinks_ready';
+                } else if (currentMode === 'food') {
+                    newStatus = (order.status === 'drinks_ready') ? 'ready' : 'food_ready';
+                }
+            }
+
+            await updateStatus(id, newStatus);
+        }
+
+        async function updateStatus(id, status) {
+            try {
+                const res = await fetch('/api/orders/' + id, {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ status })
+                });
+                if (res.ok) {
+                    await fetchOrders();
+                } else {
+                    const err = await res.json();
+                    alert("Error: " + (err.error || "No se pudo actualizar"));
+                }
+            } catch (e) { 
+                console.error("KDS Update Error:", e);
+                alert("Error de conexión al actualizar");
             }
         }
-
-        function readyOrder(id) {
-            const order = orders.find(o => o.id === id);
-            if (order && order.status === 'preparing') {
-                order.status = 'ready';
-                order.readyAt = Date.now();
-                save();
-                render();
-            }
-        }
-
-        function completeOrder(id) {
-            const order = orders.find(o => o.id === id);
-            if (order && order.status === 'ready') {
-                order.status = 'completed';
-                order.completedAt = Date.now();
-                completedToday++;
-                totalCompletionTime += Math.floor((Date.now() - order.createdAt) / 1000);
-                save();
-                render();
-            }
-        }
-
-        // Clock
-        function updateClock() {
-            document.getElementById('clock').textContent = new Date().toLocaleTimeString('en-US', {
-                hour: '2-digit', minute: '2-digit', second: '2-digit'
-            });
-        }
-        updateClock();
-        setInterval(updateClock, 1000);
-
-        // Timer updates
-        setInterval(render, 1000);
-
-        load();
     </script>
 </body>
 </html>

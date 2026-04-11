@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Staff Lookup | Rich Aroma</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        gold: '#C9A66B',
+                        dark: '#120C09',
+                        charcoal: '#1E1610'
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap');
+        body { font-family: 'Fredoka', sans-serif; background-color: #120C09; color: white; }
+    </style>
+</head>
+<body class="min-h-screen p-6 flex flex-col items-center justify-center">
+
+    <div id="loading" class="text-center space-y-4">
+        <div class="w-12 h-12 border-4 border-gold border-t-transparent rounded-full animate-spin mx-auto"></div>
+        <p class="text-gold/60 text-xs font-black uppercase tracking-widest">Buscando Cliente...</p>
+    </div>
+
+    <div id="staff-view" class="hidden max-w-md w-full space-y-8 animate-in fade-in zoom-in-95 duration-500">
+        <!-- Identity Header -->
+        <div class="bg-white/5 border border-white/10 rounded-[2.5rem] p-8 text-center relative overflow-hidden">
+            <div id="vip-indicator" class="hidden absolute top-4 right-4 bg-gold text-dark text-[8px] font-black px-2 py-1 rounded-full uppercase tracking-widest shadow-lg">VIP</div>
+            <div class="w-20 h-20 bg-gold/10 rounded-full flex items-center justify-center text-3xl text-gold mx-auto mb-4 border border-gold/20">
+                <i class="fas fa-user"></i>
+            </div>
+            <h2 id="cust-name" class="text-3xl font-bold tracking-tight">---</h2>
+            <p id="cust-phone" class="text-white/40 font-mono text-sm tracking-widest mt-1">---</p>
+        </div>
+
+        <!-- Financial & Status Grid -->
+        <div class="grid grid-cols-2 gap-4">
+            <div class="bg-charcoal rounded-[2rem] p-6 border border-white/5 space-y-1">
+                <p class="text-[9px] font-black uppercase text-white/30 tracking-widest">Rico Cash</p>
+                <p id="cust-balance" class="text-2xl font-black font-mono text-gold">L 0.00</p>
+            </div>
+            <div class="bg-charcoal rounded-[2rem] p-6 border border-white/5 space-y-1">
+                <p class="text-[9px] font-black uppercase text-white/30 tracking-widest">Rico Points</p>
+                <p id="cust-points" class="text-2xl font-black font-mono text-white">0</p>
+            </div>
+        </div>
+
+        <!-- Benefits Control -->
+        <div class="bg-white/5 border border-white/10 rounded-[2.5rem] p-8 space-y-6">
+            <h3 class="text-center text-[10px] font-black uppercase tracking-[0.3em] text-white/30 mb-2">Validación de Beneficios</h3>
+            
+            <div class="flex items-center justify-between p-4 bg-dark/50 rounded-2xl border border-white/5">
+                <div class="flex items-center gap-4">
+                    <div class="w-10 h-10 rounded-xl bg-gold/10 flex items-center justify-center text-gold">
+                        <i class="fas fa-coffee"></i>
+                    </div>
+                    <div>
+                        <p class="text-sm font-bold">Café Gratis Diario</p>
+                        <p id="free-coffee-status" class="text-[10px] uppercase font-black tracking-widest">---</p>
+                    </div>
+                </div>
+                <div id="coffee-check" class="w-6 h-6 rounded-full flex items-center justify-center">
+                    <i class="fas fa-circle text-[10px]"></i>
+                </div>
+            </div>
+
+            <div class="flex items-center justify-between p-4 bg-dark/50 rounded-2xl border border-white/5 opacity-50">
+                <div class="flex items-center gap-4">
+                    <div class="w-10 h-10 rounded-xl bg-blue-500/10 flex items-center justify-center text-blue-400">
+                        <i class="fas fa-percent"></i>
+                    </div>
+                    <div>
+                        <p class="text-sm font-bold">10% Descuento VIP</p>
+                        <p class="text-[10px] uppercase font-black tracking-widest text-blue-400/60">Automático en Rico Cash</p>
+                    </div>
+                </div>
+                <i class="fas fa-check-circle text-blue-400"></i>
+            </div>
+        </div>
+
+        <button onclick="window.close()" class="w-full text-white/20 font-black text-[10px] uppercase tracking-widest hover:text-white transition-colors">
+            Cerrar Ventana
+        </button>
+    </div>
+
+    <div id="error-view" class="hidden text-center space-y-6 max-w-xs animate-in fade-in duration-500">
+        <i class="fas fa-exclamation-triangle text-red-500 text-4xl"></i>
+        <div>
+            <h3 class="font-bold text-lg">Error de Búsqueda</h3>
+            <p id="error-msg" class="text-white/40 text-sm mt-2">No pudimos encontrar los datos del cliente.</p>
+        </div>
+        <button onclick="window.close()" class="gold-btn px-8 py-3 rounded-full font-black text-[10px] uppercase tracking-widest shadow-xl">Cerrar</button>
+    </div>
+
+    <script>
+        async function init() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const phone = urlParams.get('phone');
+
+            if (!phone) {
+                showError("No se proporcionó número de teléfono.");
+                return;
+            }
+
+            try {
+                // Staff lookup doesn't require PIN (limited data view)
+                // We'll use a special public flag for staff lookup in the API if needed
+                const res = await fetch(`/api/customer/profile?phone=${encodeURIComponent(phone)}&staff=true`);
+                const data = await res.json();
+
+                if (!res.ok) throw new Error(data.error || "Error");
+
+                renderProfile(data);
+            } catch (e) {
+                showError(e.message);
+            }
+        }
+
+        function renderProfile(customer) {
+            document.getElementById('loading').classList.add('hidden');
+            document.getElementById('staff-view').classList.remove('hidden');
+
+            document.getElementById('cust-name').innerText = customer.name;
+            document.getElementById('cust-phone').innerText = customer.phone;
+            document.getElementById('cust-balance').innerText = `L ${parseFloat(customer.rico_balance || 0).toFixed(2)}`;
+            document.getElementById('cust-points').innerText = customer.points || 0;
+
+            const isVip = customer.is_vip === true || (Array.isArray(customer.tags) && customer.tags.includes('VIP'));
+            if (isVip) document.getElementById('vip-indicator').classList.remove('hidden');
+
+            // Free Coffee Logic
+            const today = new Date().toISOString().split('T')[0]; // Simple TZ match
+            const claimed = customer.last_free_drink_date === today;
+            const coffeeStatus = document.getElementById('free-coffee-status');
+            const coffeeCheck = document.getElementById('coffee-check');
+
+            if (!isVip) {
+                coffeeStatus.innerText = "No Miembro VIP";
+                coffeeStatus.className = "text-[10px] uppercase font-black tracking-widest text-white/20";
+                coffeeCheck.innerHTML = '<i class="fas fa-times-circle text-white/10"></i>';
+            } else if (claimed) {
+                coffeeStatus.innerText = "Ya Reclamado Hoy";
+                coffeeStatus.className = "text-[10px] uppercase font-black tracking-widest text-red-400";
+                coffeeCheck.innerHTML = '<i class="fas fa-minus-circle text-red-400"></i>';
+            } else {
+                coffeeStatus.innerText = "Disponible";
+                coffeeStatus.className = "text-[10px] uppercase font-black tracking-widest text-green-400";
+                coffeeCheck.innerHTML = '<i class="fas fa-check-circle text-green-400 animate-pulse"></i>';
+            }
+        }
+
+        function showError(msg) {
+            document.getElementById('loading').classList.add('hidden');
+            document.getElementById('error-view').classList.remove('hidden');
+            document.getElementById('error-msg').innerText = msg;
+        }
+
+        window.onload = init;
+    </script>
+</body>
+</html>

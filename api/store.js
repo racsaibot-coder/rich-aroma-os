@@ -80,14 +80,119 @@ function applyVipBenefits(orderItems, customer, paymentMethod) {
     };
 }
 
+async function deductInventory(order, supabase) {
+    try {
+        const orderItems = order.items || [];
+        const deductions = {}; // inventory_item_id -> total_quantity
+
+        for (const item of orderItems) {
+            const qty = item.quantity || item.qty || 1;
+            
+            // 1. Fetch Item Ingredients
+            const { data: itemIngredients } = await supabase
+                .from('menu_item_ingredients')
+                .select('inventory_item_id, quantity')
+                .eq('menu_item_id', item.id);
+            
+            if (itemIngredients) {
+                for (const ing of itemIngredients) {
+                    const id = ing.inventory_item_id;
+                    deductions[id] = (deductions[id] || 0) + (parseFloat(ing.quantity) * qty);
+                }
+            }
+
+            // 2. Fetch Modifier Ingredients
+            const selectedMods = item.modifiers || {}; // group_id -> [opt_ids] or opt_id
+            const modIds = [];
+            for (const gid in selectedMods) {
+                const val = selectedMods[gid];
+                if (Array.isArray(val)) modIds.push(...val);
+                else if (val) modIds.push(val);
+            }
+
+            if (modIds.length > 0) {
+                const { data: modIngredients } = await supabase
+                    .from('modifier_ingredients')
+                    .select('inventory_item_id, quantity')
+                    .in('modifier_id', modIds);
+                
+                if (modIngredients) {
+                    for (const ing of modIngredients) {
+                        const id = ing.inventory_item_id;
+                        deductions[id] = (deductions[id] || 0) + (parseFloat(ing.quantity) * qty);
+                    }
+                }
+            }
+        }
+
+        // 3. Execute Deductions
+        for (const invId in deductions) {
+            const amount = deductions[invId];
+            await supabase.rpc('decrement_inventory', { item_id: invId, amount: amount });
+        }
+        
+        console.log(`[Inventory] Deducted for order #${order.order_number}`);
+    } catch (e) {
+        console.error("[Inventory Error]", e);
+    }
+}
+
+async function activateVip(id, supabase) {
+    const { data: customer } = await supabase.from('customers').select('*').eq('id', id).single();
+    if (!customer) return;
+
+    let newTags = Array.isArray(customer.tags) ? customer.tags : [];
+    if (!newTags.includes('VIP')) newTags.push('VIP');
+
+    const nextRenewal = new Date();
+    nextRenewal.setDate(nextRenewal.getDate() + 30);
+
+    await supabase
+        .from('customers')
+        .update({
+            is_vip: true,
+            rico_balance: (parseFloat(customer.rico_balance) || 0) + 500,
+            tier: 'Gold',
+            next_renewal_date: nextRenewal.toISOString().split('T')[0],
+            tags: newTags
+        })
+        .eq('id', id);
+
+    await supabase.from('balance_history').insert({
+        customer_id: id,
+        type: 'vip_activation',
+        amount: 500,
+        notes: 'VIP Membership Activation Credits'
+    });
+}
+
+function isDrink(item) {
+    const id = (item.id || '').toLowerCase();
+    const name = (item.name || '').toLowerCase();
+    const cat = (item.category || '').toLowerCase();
+    return id.startsWith('hot_') || id.startsWith('cold_') || id.startsWith('frappe_') || 
+           name.includes('combo') || name.includes('latte') || name.includes('caf') || 
+           name.includes('jugo') || name.includes('frappe') || name.includes('tés') ||
+           cat.includes('coffee') || cat.includes('drinks') || cat.includes('heladas');
+}
+
+function isFood(item) {
+    const id = (item.id || '').toLowerCase();
+    const name = (item.name || '').toLowerCase();
+    const cat = (item.category || '').toLowerCase();
+    return id.startsWith('food_') || name.includes('baleada') || name.includes('sandwich') || 
+           name.includes('combo') || name.includes('crepa') || name.includes('toast') ||
+           cat.includes('food') || cat.includes('comida');
+}
+
 module.exports = async function handler(req, res) {
     res.setHeader('Access-Control-Allow-Origin', '*');
-    res.setHeader('Access-Control-Allow-Methods', 'GET,POST,PATCH,OPTIONS');
+    res.setHeader('Access-Control-Allow-Methods', 'GET,POST,PATCH,PUT,DELETE,OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
 
     if (req.method === 'OPTIONS') return res.status(200).end();
 
-    const { action } = req.query; 
+    const { action, id } = req.query; 
 
     try {
         // STORE STATUS
@@ -115,11 +220,12 @@ module.exports = async function handler(req, res) {
             
             const [rItems, rModGroups, rModOptions, rItemModGroups] = await Promise.all([
                 supabase.from('menu_items').select('*').order('name'),
-                supabase.from('modifier_groups').select('*').order('display_order'),
+                supabase.from('modifier_groups').select('*'),
                 supabase.from('modifier_options').select('*').order('name'),
                 supabase.from('item_modifier_groups').select('*')
             ]);
 
+            if (rItems.error) console.error("Items Error:", rItems.error);
             const filteredItems = (rItems.data || []).filter(i => isAdmin || i.available !== false);
 
             const categoryMeta = {
@@ -148,7 +254,6 @@ module.exports = async function handler(req, res) {
             const categories = Object.keys(grouped).map(catId => ({
                 id: catId,
                 name: categoryMeta[catId]?.name || (catId.charAt(0).toUpperCase() + catId.slice(1)),
-                icon: categoryMeta[catId]?.icon || '📦',
                 items: grouped[catId]
             }));
 
@@ -162,9 +267,33 @@ module.exports = async function handler(req, res) {
             });
         }
 
-        // ORDERS
+        // ORDERS GET
+        if (action === 'orders' && req.method === 'GET') {
+            const timeLimit = new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString();
+            const { data, error } = await supabase
+                .from('orders')
+                .select('*, customers(name, phone)')
+                .gte('created_at', timeLimit)
+                .in('status', ['pending', 'paid', 'preparing', 'ready', 'completed', 'drinks_ready', 'food_ready', 'cancelled'])
+                .order('created_at', { ascending: false });
+            if (error) throw error;
+
+            // Parse fulfillment_type from notes tag [TYPE:...]
+            const enhancedOrders = (data || []).map(o => {
+                let type = 'dinein'; // Default
+                if (o.notes && o.notes.includes('[TYPE:')) {
+                    const match = o.notes.match(/\[TYPE:\s*([^\]]+)\]/);
+                    if (match) type = match[1].trim();
+                }
+                return { ...o, fulfillment_type: type };
+            });
+
+            return res.json({ orders: enhancedOrders });
+        }
+
+        // ORDERS POST
         if (action === 'orders' && req.method === 'POST') {
-            const { items, subtotal, total, customerId, paymentMethod, notes } = req.body;
+            const { items, subtotal, total, customerId, paymentMethod, notes, fulfillmentType, status } = req.body;
             
             let customer = null;
             if (customerId) {
@@ -194,20 +323,34 @@ module.exports = async function handler(req, res) {
                 }
             }
 
-            const { data: maxOrder } = await supabase.from('orders').select('order_number').order('order_number', { ascending: false }).limit(1);
+            // Daily Resetting Order Number Logic
+            const todayStart = getHondurasDate() + 'T00:00:00.000Z';
+            const { data: maxOrder } = await supabase
+                .from('orders')
+                .select('order_number')
+                .gte('created_at', todayStart)
+                .order('order_number', { ascending: false })
+                .limit(1);
+            
             const orderNum = (maxOrder?.[0]?.order_number || 0) + 1;
 
+            // Inject fulfillment type into notes since column is missing
+            let finalNotes = notes || '';
+            if (fulfillmentType) {
+                finalNotes += ` [TYPE: ${fulfillmentType}]`;
+            }
+
             const orderData = {
-                id: `ORD-${Date.now()}`,
+                id: `ORD-${getHondurasDate()}-${Date.now().toString().slice(-4)}`,
                 order_number: orderNum,
                 items: finalOrder.items,
                 subtotal: parseFloat(subtotal) || 0,
                 discount: finalOrder.discount || 0,
                 total: finalOrder.total,
-                status: 'pending',
+                status: status || 'pending',
                 payment_method: paymentMethod,
                 customer_id: customerId,
-                notes: notes
+                notes: finalNotes
             };
 
             if (paymentMethod === 'rico_balance' && customer) {
@@ -223,10 +366,69 @@ module.exports = async function handler(req, res) {
             return res.json(data);
         }
 
+        // ORDER UPDATE
+        if (action === 'order_update' && req.method === 'PATCH') {
+            const { items, subtotal, total, customerId, paymentMethod, notes, fulfillmentType, status } = req.body;
+            
+            const updates = {};
+            if (items !== undefined) updates.items = items;
+            if (subtotal !== undefined) updates.subtotal = subtotal;
+            if (total !== undefined) updates.total = total;
+            if (status !== undefined) updates.status = status;
+            if (paymentMethod !== undefined) updates.payment_method = paymentMethod;
+            if (customerId !== undefined) updates.customer_id = customerId;
+            
+            if (notes !== undefined || fulfillmentType !== undefined) {
+                let finalNotes = notes || '';
+                if (fulfillmentType) finalNotes += ` [TYPE: ${fulfillmentType}]`;
+                updates.notes = finalNotes;
+            }
+
+            const { data: order, error } = await supabase.from('orders').update(updates).eq('id', id).select().single();
+            if (error) throw error;
+            
+            // Check if we should automatically set to 'ready'
+            if (status === 'drinks_ready' || status === 'food_ready') {
+                const itemsList = order.items || [];
+                const hasD = itemsList.some(i => isDrink(i));
+                const hasF = itemsList.some(i => isFood(i));
+                
+                let autoReady = false;
+                if (order.status === 'drinks_ready' && !hasF) autoReady = true;
+                if (order.status === 'food_ready' && !hasD) autoReady = true;
+                
+                if (autoReady) {
+                    const { data: updated } = await supabase.from('orders').update({ status: 'ready' }).eq('id', id).select().single();
+                    return res.json(updated);
+                }
+            }
+
+            const isPaidOrDone = ['paid', 'ready', 'completed'].includes(order.status);
+            
+            if (isPaidOrDone) {
+                // 1. VIP Activation
+                if (order.customer_id) {
+                    const hasMembership = order.items && order.items.some(i => i.id === 'vip_membership');
+                    if (hasMembership) await activateVip(order.customer_id, supabase);
+                }
+                // 2. Inventory Deduction
+                await deductInventory(order, supabase);
+            }
+            return res.json(order);
+        }
+
+        if (action === 'membership_request' && req.method === 'POST') {
+            const { customerId, name, phone } = req.body;
+            const orderData = { id: `VIP-${Date.now()}`, order_number: 9999, items: [{ id: 'vip_membership', name: 'Membresía VIP (Mensual)', price: 1500, qty: 1 }], subtotal: 1500, total: 1500, status: 'pending', payment_method: 'transfer', customer_id: customerId, notes: `Solicitud de Membresía VIP para ${name} (${phone})` };
+            const { data, error } = await supabase.from('orders').insert(orderData).select().single();
+            if (error) throw error;
+            return res.json(data);
+        }
+
         return res.status(404).json({ error: 'Action not found' });
 
     } catch (e) {
         console.error("Store API Error:", e);
-        res.status(500).json({ error: e.message, stack: e.stack });
+        res.status(500).json({ error: e.message });
     }
 };

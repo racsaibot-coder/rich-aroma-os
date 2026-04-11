@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+    <link rel="icon" type="image/png" href="/favicon.png">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Rich Aroma | Cali Bottled Distro</title>
@@ -64,7 +65,9 @@
         </div>
         <div class="relative z-10">
             <div class="inline-block px-4 py-1.5 rounded-full bg-brand-brown/5 border border-brand-brown/10 mb-6">
-                <span class="text-brand-brown font-black tracking-[0.3em] uppercase text-[9px]">California Batch No. 04</span>
+                <span class="text-brand-brown font-black tracking-[0.1em] uppercase text-[10px] flex items-center gap-2">
+                    <span>🇭🇳</span> From Honduras to California <span>🇺🇸</span>
+                </span>
             </div>
             <h1 class="text-5xl md:text-7xl font-serif font-bold mb-6 tracking-tighter">Small Batch Lattes.</h1>
             <p class="text-gray-500 max-w-xl mx-auto font-medium text-lg italic leading-relaxed">Artisan coffee crafted in Honduras, bottled fresh in California for your Monday morning.</p>
@@ -102,6 +105,53 @@
                 <!-- Fallback Loading State -->
                 <div class="col-span-full text-center py-20 text-gray-400 italic">Connecting to artisan database...</div>
             </div>
+
+            <!-- New: Subscription Callout -->
+            <div class="bg-brand-dark rounded-[3rem] p-8 md:p-12 text-white relative overflow-hidden shadow-2xl border border-white/5">
+                <div class="absolute top-0 right-0 w-64 h-64 bg-brand-gold opacity-10 blur-3xl rounded-full -mr-20 -mt-20"></div>
+                <div class="relative z-10 grid md:grid-cols-2 gap-12 items-center">
+                    <div>
+                        <div class="inline-block px-4 py-1.5 rounded-full bg-brand-gold text-brand-dark font-black tracking-widest uppercase text-[9px] mb-6">Introducing</div>
+                        <h2 class="text-4xl md:text-5xl font-serif font-bold mb-6">The Monday Club.</h2>
+                        <p class="text-white/60 text-lg leading-relaxed mb-8">Never forget to order again. Get your favorite artisan lattes delivered every Monday morning automatically and <span class="text-brand-gold font-bold">SAVE 10% on every batch.</span></p>
+                        <div class="flex items-center gap-6">
+                            <div class="flex flex-col">
+                                <span class="text-2xl font-black text-white font-mono">10% OFF</span>
+                                <span class="text-[8px] font-black uppercase tracking-widest text-white/30">Weekly Discount</span>
+                            </div>
+                            <div class="w-px h-10 bg-white/10"></div>
+                            <div class="flex flex-col">
+                                <span class="text-2xl font-black text-white font-mono">FREE</span>
+                                <span class="text-[8px] font-black uppercase tracking-widest text-white/30">Monday Delivery</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="bg-white/5 border border-white/10 rounded-[2.5rem] p-8 space-y-6">
+                        <div class="flex items-start gap-4">
+                            <div class="w-10 h-10 rounded-2xl bg-brand-gold/20 flex items-center justify-center text-brand-gold shrink-0">
+                                <i class="fas fa-check"></i>
+                            </div>
+                            <p class="text-sm text-white/80 leading-relaxed font-medium">Customize your flavors once, we handle the rest.</p>
+                        </div>
+                        <div class="flex items-start gap-4">
+                            <div class="w-10 h-10 rounded-2xl bg-brand-gold/20 flex items-center justify-center text-brand-gold shrink-0">
+                                <i class="fas fa-calendar-check"></i>
+                            </div>
+                            <p class="text-sm text-white/80 leading-relaxed font-medium">Automatically billed every Thursday night.</p>
+                        </div>
+                        <div class="flex items-start gap-4">
+                            <div class="w-10 h-10 rounded-2xl bg-brand-gold/20 flex items-center justify-center text-brand-gold shrink-0">
+                                <i class="fas fa-undo"></i>
+                            </div>
+                            <p class="text-sm text-white/80 leading-relaxed font-medium">Pause or cancel anytime via your link.</p>
+                        </div>
+                        <div class="pt-4">
+                            <p class="text-[9px] font-black uppercase text-white/30 tracking-[0.2em] mb-2 text-center">Ready to join?</p>
+                            <p class="text-xs text-center text-brand-gold italic">Select "The Monday Club" at checkout in step 3.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </section>
 
         <!-- STEP 2: Configuration (Appears below when pack selected) -->
@@ -118,26 +168,17 @@
                     <!-- Left: Customizer -->
                     <div class="space-y-10">
                         <div>
-                            <h3 id="conf-pack-name" class="text-3xl font-serif font-bold mb-2">1 Bottle</h3>
-                            <p class="text-brand-brown font-bold text-sm tracking-widest uppercase" id="conf-pack-desc">Individual Artisan Latte</p>
-                        </div>
-
-                        <div class="space-y-4">
-                            <label class="block text-[10px] font-black uppercase text-gray-400 tracking-[0.2em]">Primary Flavor</label>
-                            <div class="grid grid-cols-2 gap-2" id="flavor-options">
-                                <button onclick="selectFlavor('Caramel Latte')" class="flavor-btn p-4 rounded-2xl border-2 border-gray-100 bg-gray-50 text-xs font-bold text-left transition-all hover:border-brand-gold/50">Caramel Latte</button>
-                                <button onclick="selectFlavor('French Vanilla')" class="flavor-btn p-4 rounded-2xl border-2 border-gray-100 bg-gray-50 text-xs font-bold text-left transition-all hover:border-brand-gold/50">French Vanilla</button>
-                                <button onclick="selectFlavor('Oreo Supreme')" class="flavor-btn p-4 rounded-2xl border-2 border-gray-100 bg-gray-50 text-xs font-bold text-left transition-all hover:border-brand-gold/50">Oreo Supreme</button>
-                                <button onclick="selectFlavor('Vanilla Latte')" class="flavor-btn p-4 rounded-2xl border-2 border-brand-gold bg-brand-gold/5 text-brand-gold text-xs font-bold text-left transition-all">Vanilla Latte</button>
+                            <div class="flex justify-between items-start">
+                                <div>
+                                    <h3 id="conf-pack-name" class="text-3xl font-serif font-bold mb-2">1 Bottle</h3>
+                                    <p class="text-brand-brown font-bold text-sm tracking-widest uppercase" id="conf-pack-desc">Individual Artisan Latte</p>
+                                </div>
+                                <button id="set-all-btn" onclick="setAllSame()" class="hidden text-[8px] font-black uppercase tracking-widest bg-brand-gold/10 text-brand-brown px-3 py-1.5 rounded-full border border-brand-gold/20 hover:bg-brand-gold/20 transition-all">Match all bottles</button>
                             </div>
                         </div>
 
-                        <div class="space-y-4">
-                            <label class="block text-[10px] font-black uppercase text-gray-400 tracking-[0.2em]">Milk Choice</label>
-                            <div class="grid grid-cols-2 gap-2">
-                                <button onclick="selectMilk('Regular')" class="milk-btn p-4 rounded-2xl border-2 border-brand-gold bg-brand-gold/5 text-brand-gold text-xs font-bold text-left transition-all">Regular Milk</button>
-                                <button onclick="selectMilk('Oat Milk')" class="milk-btn p-4 rounded-2xl border-2 border-gray-100 bg-gray-50 text-xs font-bold text-left transition-all hover:border-brand-gold/50">Oat Milk (+$1/bot)</button>
-                            </div>
+                        <div id="bottle-config-container" class="space-y-12 max-h-[500px] overflow-y-auto pr-4 no-scrollbar">
+                            <!-- Dynamic bottle rows will be injected here -->
                         </div>
                     </div>
 
@@ -182,29 +223,53 @@
                 <!-- Final Checkout Panel -->
                 <div class="space-y-8">
                     <div class="bg-brand-dark rounded-[3rem] p-8 text-white shadow-2xl relative overflow-hidden border border-white/5 selection-glow">
-                        <div class="relative z-10 space-y-8">
-                            <h3 class="text-xl font-serif font-bold mb-6 flex items-center gap-3">
+                        <div class="relative z-10 space-y-6">
+                            <h3 class="text-lg font-serif font-bold flex items-center gap-3">
                                 <i class="fas fa-lock text-brand-gold text-xs"></i> Checkout
                             </h3>
                             
-                            <div class="space-y-4">
-                                <label class="block text-[10px] font-black uppercase text-white/30 tracking-widest ml-1">Drop Details</label>
-                                <input type="text" id="cust-name" placeholder="Full Name" class="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-4 text-white text-sm focus:border-brand-gold outline-none transition-colors">
-                                <input type="tel" id="cust-phone" placeholder="Phone Number" class="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-4 text-white text-sm focus:border-brand-gold outline-none transition-colors">
+                            <div class="space-y-3">
+                                <label class="block text-[9px] font-black uppercase text-white/30 tracking-widest ml-1">Drop Details</label>
+                                <input type="text" id="cust-name" placeholder="Full Name" class="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-3 text-white text-sm focus:border-brand-gold outline-none transition-colors">
+                                <input type="email" id="cust-email" placeholder="Email Address" class="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-3 text-white text-sm focus:border-brand-gold outline-none transition-colors">
+                                <input type="tel" id="cust-phone" placeholder="Phone Number" class="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-3 text-white text-sm focus:border-brand-gold outline-none transition-colors">
                                 <div class="relative">
-                                    <select id="cust-location" class="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-4 text-white text-sm focus:border-brand-gold outline-none appearance-none cursor-pointer">
-                                        <option value="" disabled selected class="text-gray-800">-- Select Drop Location --</option>
+                                    <select id="cust-location" class="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-3 text-white text-sm focus:border-brand-gold outline-none appearance-none cursor-pointer">
+                                        <option value="" disabled selected class="text-gray-800">-- Select Drop --</option>
                                     </select>
                                     <i class="fas fa-chevron-down absolute right-5 top-1/2 -translate-y-1/2 text-white/20 pointer-events-none"></i>
                                 </div>
                             </div>
 
-                            <div class="pt-8 border-t border-white/5 text-center">
-                                <p class="text-[10px] font-black uppercase text-white/20 tracking-[0.3em] mb-3">Order Total</p>
-                                <p class="text-6xl font-black font-mono text-brand-gold tracking-tighter" id="cart-total-display">$0.00</p>
+                            <div class="space-y-3">
+                                <label class="block text-[9px] font-black uppercase text-white/30 tracking-widest ml-1">Delivery Frequency</label>
+                                <div class="grid grid-cols-2 gap-2 bg-white/5 p-1 rounded-2xl border border-white/10">
+                                    <button onclick="setSubscription(false)" id="freq-once" class="py-2.5 rounded-xl text-[8px] font-black uppercase tracking-widest transition-all bg-white/10 text-white shadow-lg">One-time</button>
+                                    <button onclick="setSubscription(true)" id="freq-sub" class="py-2.5 rounded-xl text-[8px] font-black uppercase tracking-widest transition-all text-white/40 hover:bg-white/5">Weekly</button>
+                                </div>
+                                <div id="sub-benefit" class="hidden text-[8px] font-bold text-brand-gold ml-1 italic">
+                                    <i class="fas fa-gift mr-1"></i> Weekly • 10% OFF
+                                </div>
                             </div>
 
-                            <button onclick="checkout()" id="checkout-btn" class="w-full gold-shimmer text-brand-dark font-black py-6 rounded-2xl shadow-2xl hover:scale-[1.02] active:scale-95 transition-all uppercase tracking-[0.2em] text-xs">
+                            <div class="space-y-3">
+                                <label class="block text-[9px] font-black uppercase text-white/30 tracking-widest ml-1">Promo & Discount</label>
+                                <div class="flex gap-2">
+                                    <input type="text" id="promo-code" placeholder="Code" class="flex-1 min-w-0 bg-white/5 border border-white/10 rounded-2xl px-4 py-3 text-white text-sm focus:border-brand-gold outline-none transition-colors uppercase font-mono">
+                                    <button onclick="applyPromo()" id="apply-promo-btn" class="bg-white/10 text-white px-5 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-white/20 transition-all shrink-0 min-w-[80px]">Apply</button>
+                                </div>
+                                <div id="promo-msg" class="hidden text-[8px] font-bold uppercase tracking-widest text-brand-gold ml-1 animate-pulse">
+                                    <i class="fas fa-check-circle mr-1"></i> 5% OFF Applied
+                                </div>
+                            </div>
+
+                            <div class="pt-6 border-t border-white/5 text-center">
+                                <p class="text-[9px] font-black uppercase text-white/20 tracking-[0.3em] mb-2">Total Amount</p>
+                                <p class="text-5xl font-black font-mono text-brand-gold tracking-tighter" id="cart-total-display">$0.00</p>
+                                <div id="discount-display" class="hidden text-[10px] font-bold text-white/40 mt-1 line-through"></div>
+                            </div>
+
+                            <button onclick="checkout()" id="checkout-btn" class="w-full gold-shimmer text-brand-dark font-black py-5 rounded-2xl shadow-2xl hover:scale-[1.02] active:scale-95 transition-all uppercase tracking-[0.2em] text-xs">
                                 Confirm & Pay <i class="fas fa-arrow-right ml-2"></i>
                             </button>
                             <div class="flex items-center justify-center gap-4 opacity-30 grayscale">
@@ -233,13 +298,64 @@
     </div>
 
     <script>
-        let allProducts = [];
-        let allLocations = [];
         let selectedProduct = null;
-        let selectedFlavor = 'Vanilla Latte';
-        let selectedMilk = 'Regular';
+        let bottleSelections = [];
         let currentQty = 1;
         let cart = [];
+        let currentDiscount = 0;
+        let validatedPromo = null;
+        let isSubscription = false;
+
+        function setSubscription(val) {
+            isSubscription = val;
+            const btnOnce = document.getElementById('freq-once');
+            const btnSub = document.getElementById('freq-sub');
+            const benefit = document.getElementById('sub-benefit');
+            
+            if (val) {
+                btnOnce.className = "py-3 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all text-white/40 hover:bg-white/5";
+                btnSub.className = "py-3 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all bg-white/10 text-white shadow-lg";
+                benefit.classList.remove('hidden');
+                currentDiscount = 10;
+                document.getElementById('promo-code').disabled = true;
+                document.getElementById('promo-code').placeholder = "Subscription active (10% OFF)";
+            } else {
+                btnOnce.className = "py-3 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all bg-white/10 text-white shadow-lg";
+                btnSub.className = "py-3 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all text-white/40 hover:bg-white/5";
+                benefit.classList.add('hidden');
+                currentDiscount = validatedPromo ? 5 : 0;
+                document.getElementById('promo-code').disabled = false;
+                document.getElementById('promo-code').placeholder = "Discount Code";
+            }
+            updateCartUI();
+        }
+
+        async function applyPromo() {
+            const code = document.getElementById('promo-code').value.trim();
+            if (!code) return;
+            const btn = document.getElementById('apply-promo-btn');
+            btn.disabled = true;
+            btn.innerText = "...";
+
+            try {
+                const res = await fetch(`/api/cali?action=validate_promo&code=${code}`);
+                if (res.ok) {
+                    const data = await res.json();
+                    currentDiscount = data.discount_percent;
+                    validatedPromo = code.toUpperCase();
+                    document.getElementById('promo-msg').classList.remove('hidden');
+                    document.getElementById('promo-msg').innerText = `✨ Applied: ${data.discount_percent}% OFF (${data.seller_name})`;
+                    updateCartUI();
+                } else {
+                    alert("Invalid or inactive promo code.");
+                    currentDiscount = 0;
+                    validatedPromo = null;
+                    document.getElementById('promo-msg').classList.add('hidden');
+                    updateCartUI();
+                }
+            } catch (e) { console.error(e); }
+            finally { btn.disabled = false; btn.innerText = "Apply"; }
+        }
 
         async function init() {
             try {
@@ -272,13 +388,6 @@
             } catch (e) { 
                 console.error("Cali Store Init Error:", e);
                 let detail = e.message;
-                try {
-                    // Try to parse JSON from error if it was a server 500 with JSON body
-                    if (e.message.includes('Server error')) {
-                        // This part is tricky as e.message might just be the throw from above
-                    }
-                } catch(err) {}
-
                 document.getElementById('pack-grid').innerHTML = `
                     <div class="col-span-full text-center py-20 bg-white rounded-[3rem] border border-red-100 shadow-xl">
                         <i class="fas fa-exclamation-circle text-red-400 text-4xl mb-4"></i>
@@ -305,8 +414,8 @@
                 return `
                 <div class="bg-white rounded-[3rem] p-10 border border-gray-100 shadow-sm hover:shadow-2xl transition-all hover:-translate-y-2 flex flex-col group relative overflow-hidden cursor-pointer" onclick="openStep2('${p.id}')">
                     ${savings ? `<div class="absolute top-6 right-6 bg-brand-gold text-brand-dark text-[10px] font-black px-3 py-1 rounded-full uppercase tracking-widest">${savings}</div>` : ''}
-                    <div class="w-20 h-20 bg-brand-cream rounded-3xl flex items-center justify-center mb-8 group-hover:bg-brand-gold transition-colors duration-500 shadow-inner">
-                        <i class="fas ${icon} text-brand-brown text-3xl group-hover:text-brand-dark"></i>
+                    <div class="w-20 h-20 bg-brand-cream rounded-3xl flex items-center justify-center mb-8 group-hover:bg-brand-gold transition-colors duration-500 shadow-inner overflow-hidden">
+                        ${p.image_url ? `<img src="${p.image_url}" class="w-full h-full object-cover">` : `<i class="fas ${icon} text-brand-brown text-3xl group-hover:text-brand-dark"></i>`}
                     </div>
                     <h3 class="text-3xl font-serif font-bold mb-2 text-brand-dark">${p.name}</h3>
                     <p class="text-gray-400 text-[10px] font-black uppercase tracking-widest mb-10">${p.bottles_per_pack} Premium Bottled Latte${p.bottles_per_pack > 1 ? 's' : ''}</p>
@@ -328,6 +437,23 @@
             document.getElementById('conf-pack-name').innerText = selectedProduct.name;
             document.getElementById('conf-pack-desc').innerText = `${selectedProduct.bottles_per_pack} x Premium Cold Brew Lattes`;
             
+            // Determine default flavor based on product name
+            const flavorOptions = ['Caramel Latte', 'French Vanilla', 'Oreo Supreme', 'Vanilla Latte'];
+            let defaultFlavor = 'Vanilla Latte';
+            if (flavorOptions.includes(selectedProduct.name)) {
+                defaultFlavor = selectedProduct.name;
+            }
+
+            // Initialize bottle selections
+            const numBottles = selectedProduct.bottles_per_pack || 1;
+            bottleSelections = [];
+            for(let i=0; i<numBottles; i++) {
+                bottleSelections.push({ flavor: defaultFlavor, milk: 'Regular' });
+            }
+
+            renderBottleConfigs();
+            
+            document.getElementById('set-all-btn').classList.toggle('hidden', numBottles <= 1);
             document.getElementById('step-2').classList.remove('hidden');
             currentQty = 1;
             document.getElementById('qty-display').innerText = currentQty;
@@ -336,20 +462,55 @@
             scrollToElement('step-2');
         }
 
-        function selectFlavor(f) {
-            selectedFlavor = f;
-            document.querySelectorAll('.flavor-btn').forEach(btn => {
-                if (btn.innerText === f) btn.className = "flavor-btn p-4 rounded-2xl border-2 border-brand-gold bg-brand-gold/5 text-brand-gold text-xs font-bold text-left transition-all";
-                else btn.className = "flavor-btn p-4 rounded-2xl border-2 border-gray-100 bg-gray-50 text-xs font-bold text-left transition-all hover:border-brand-gold/50";
-            });
+        function renderBottleConfigs() {
+            const container = document.getElementById('bottle-config-container');
+            const numBottles = bottleSelections.length;
+            
+            container.innerHTML = bottleSelections.map((sel, idx) => `
+                <div class="space-y-6 pb-8 ${idx < numBottles - 1 ? 'border-b border-gray-100' : ''}">
+                    <div class="flex items-center gap-3">
+                        <span class="text-[10px] font-black bg-brand-brown/10 text-brand-brown w-5 h-5 rounded-full flex items-center justify-center">${idx + 1}</span>
+                        <h4 class="text-xs font-black uppercase tracking-widest text-gray-400">${numBottles > 1 ? `Bottle ${idx + 1} Selection` : 'Customize Your Bottle'}</h4>
+                    </div>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                        <div class="space-y-3">
+                            <label class="block text-[8px] font-black uppercase text-gray-300 tracking-[0.2em] ml-1">Flavor Choice</label>
+                            <div class="grid grid-cols-2 gap-2">
+                                ${['Caramel Latte', 'French Vanilla', 'Oreo Supreme', 'Vanilla Latte'].map(f => `
+                                    <button onclick="selectBottleFlavor(${idx}, '${f}')" class="p-4 rounded-2xl border-2 text-[10px] font-bold text-left transition-all ${sel.flavor === f ? 'border-brand-gold bg-brand-gold/5 text-brand-gold' : 'border-gray-100 bg-gray-50 text-gray-400 hover:border-brand-gold/50'}">${f}</button>
+                                `).join('')}
+                            </div>
+                        </div>
+
+                        <div class="space-y-3">
+                            <label class="block text-[8px] font-black uppercase text-gray-300 tracking-[0.2em] ml-1">Milk Alternative</label>
+                            <div class="grid grid-cols-2 gap-2">
+                                ${['Regular', 'Oat Milk'].map(m => `
+                                    <button onclick="selectBottleMilk(${idx}, '${m}')" class="p-4 rounded-2xl border-2 text-[10px] font-bold text-left transition-all ${sel.milk === m ? 'border-brand-gold bg-brand-gold/5 text-brand-gold' : 'border-gray-100 bg-gray-50 text-gray-400 hover:border-brand-gold/50'}">${m}${m === 'Oat Milk' ? ' (+$1)' : ''}</button>
+                                `).join('')}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
         }
 
-        function selectMilk(m) {
-            selectedMilk = m;
-            document.querySelectorAll('.milk-btn').forEach(btn => {
-                if (btn.innerText.includes(m)) btn.className = "milk-btn p-4 rounded-2xl border-2 border-brand-gold bg-brand-gold/5 text-brand-gold text-xs font-bold text-left transition-all";
-                else btn.className = "milk-btn p-4 rounded-2xl border-2 border-gray-100 bg-gray-50 text-xs font-bold text-left transition-all hover:border-brand-gold/50";
-            });
+        function selectBottleFlavor(idx, f) {
+            bottleSelections[idx].flavor = f;
+            renderBottleConfigs();
+        }
+
+        function selectBottleMilk(idx, m) {
+            bottleSelections[idx].milk = m;
+            renderBottleConfigs();
+            updateItemTotal();
+        }
+
+        function setAllSame() {
+            const first = bottleSelections[0];
+            bottleSelections = bottleSelections.map(() => ({ ...first }));
+            renderBottleConfigs();
             updateItemTotal();
         }
 
@@ -361,20 +522,21 @@
         }
 
         function updateItemTotal() {
-            let price = parseFloat(selectedProduct.price);
-            if (selectedMilk === 'Oat Milk') price += (1.0 * selectedProduct.bottles_per_pack);
-            document.getElementById('item-total').innerText = `$${(price * currentQty).toFixed(2)}`;
+            let basePrice = parseFloat(selectedProduct.price);
+            let oatMilkSurcharge = bottleSelections.reduce((sum, sel) => sum + (sel.milk === 'Oat Milk' ? 1.0 : 0), 0);
+            let unitPrice = basePrice + oatMilkSurcharge;
+            document.getElementById('item-total').innerText = `$${(unitPrice * currentQty).toFixed(2)}`;
         }
 
         function addToCart() {
-            let unitPrice = parseFloat(selectedProduct.price);
-            if (selectedMilk === 'Oat Milk') unitPrice += (1.0 * selectedProduct.bottles_per_pack);
+            let basePrice = parseFloat(selectedProduct.price);
+            let oatMilkSurcharge = bottleSelections.reduce((sum, sel) => sum + (sel.milk === 'Oat Milk' ? 1.0 : 0), 0);
+            let unitPrice = basePrice + oatMilkSurcharge;
 
             cart.push({
                 product_id: selectedProduct.id,
                 name: selectedProduct.name,
-                flavor: selectedFlavor,
-                milk: selectedMilk,
+                selections: JSON.parse(JSON.stringify(bottleSelections)),
                 qty: currentQty,
                 unitPrice: unitPrice,
                 total: unitPrice * currentQty,
@@ -401,7 +563,15 @@
             indicator.classList.remove('hidden');
             count.innerText = cart.length;
 
-            list.innerHTML = cart.map((item, index) => `
+            list.innerHTML = cart.map((item, index) => {
+                let details = "";
+                if (item.selections && item.selections.length > 1) {
+                    details = item.selections.map((s, i) => `<span class="block opacity-60 text-[8px] mt-1">#${i+1}: ${s.flavor} • ${s.milk}</span>`).join('');
+                } else if (item.selections && item.selections.length === 1) {
+                    details = `<span class="block opacity-60 text-[8px] mt-1">${item.selections[0].flavor} • ${item.selections[0].milk}</span>`;
+                }
+
+                return `
                 <div class="bg-white p-8 rounded-[2.5rem] border border-gray-100 shadow-sm flex justify-between items-center group transition-all hover:shadow-lg">
                     <div class="flex items-center gap-8">
                         <div class="w-16 h-16 bg-brand-cream rounded-3xl flex items-center justify-center text-brand-brown shadow-inner">
@@ -409,18 +579,26 @@
                         </div>
                         <div>
                             <h4 class="font-bold text-xl text-brand-dark">${item.qty}x ${item.name}</h4>
-                            <p class="text-[10px] font-black text-brand-brown uppercase tracking-[0.2em] mt-1">${item.flavor} • ${item.milk}</p>
+                            <div class="text-[10px] font-black text-brand-brown uppercase tracking-[0.2em]">${details}</div>
                         </div>
                     </div>
                     <div class="flex items-center gap-8">
                         <span class="font-black font-mono text-2xl tracking-tighter">$${item.total.toFixed(2)}</span>
                         <button onclick="removeItem(${index})" class="w-10 h-10 rounded-full bg-red-50 text-red-400 hover:bg-red-500 hover:text-white transition-all flex items-center justify-center"><i class="fas fa-trash-alt text-xs"></i></button>
                     </div>
-                </div>
-            `).join('');
+                </div>`;
+            }).join('');
 
-            const total = cart.reduce((sum, i) => sum + i.total, 0);
-            document.getElementById('cart-total-display').innerText = `$${total.toFixed(2)}`;
+            const subtotal = cart.reduce((sum, i) => sum + i.total, 0);
+            let finalTotal = subtotal;
+            if (currentDiscount > 0) {
+                finalTotal = subtotal * (1 - (currentDiscount / 100));
+                document.getElementById('discount-display').classList.remove('hidden');
+                document.getElementById('discount-display').innerText = `Original: $${subtotal.toFixed(2)}`;
+            } else {
+                document.getElementById('discount-display').classList.add('hidden');
+            }
+            document.getElementById('cart-total-display').innerText = `$${finalTotal.toFixed(2)}`;
         }
 
         function removeItem(idx) {
@@ -447,11 +625,12 @@
 
         async function checkout() {
             const name = document.getElementById('cust-name').value;
+            const email = document.getElementById('cust-email').value;
             const phone = document.getElementById('cust-phone').value;
             const loc = document.getElementById('cust-location').value;
             const btn = document.getElementById('checkout-btn');
 
-            if (!name || !phone || !loc) return alert("Please fill in all details.");
+            if (!name || !email || !phone || !loc) return alert("Please fill in all details.");
             if (cart.length === 0) return;
 
             btn.disabled = true;
@@ -461,7 +640,15 @@
                 const res = await fetch('/api/checkout', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ name, phone, location_id: loc, items: cart })
+                    body: JSON.stringify({ 
+                        name, 
+                        email,
+                        phone, 
+                        location_id: loc, 
+                        items: cart, 
+                        promo_code: validatedPromo,
+                        is_subscription: isSubscription 
+                    })
                 });
                 const data = await res.json();
                 if (data.url) window.location.href = data.url;

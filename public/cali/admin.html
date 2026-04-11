@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+    <link rel="icon" type="image/png" href="/favicon.png">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Cali Distro HQ | Admin</title>
@@ -92,8 +93,11 @@
         <!-- Main Navigation Tabs -->
         <div class="flex gap-8 border-b border-gray-200 mb-12 overflow-x-auto no-scrollbar">
             <button onclick="showTab('orders')" id="tab-orders" class="tab-btn active pb-4 font-black text-[10px] uppercase tracking-[0.2em] whitespace-nowrap">Orders & Fulfillment</button>
+            <button onclick="showTab('prep')" id="tab-prep" class="tab-btn pb-4 font-black text-[10px] uppercase tracking-[0.2em] whitespace-nowrap">Prep & Yield</button>
+            <button onclick="showTab('subscriptions')" id="tab-subscriptions" class="tab-btn pb-4 font-black text-[10px] uppercase tracking-[0.2em] whitespace-nowrap">The Monday Club</button>
             <button onclick="showTab('products')" id="tab-products" class="tab-btn pb-4 font-black text-[10px] uppercase tracking-[0.2em] whitespace-nowrap">Store Catalog</button>
             <button onclick="showTab('locations')" id="tab-locations" class="tab-btn pb-4 font-black text-[10px] uppercase tracking-[0.2em] whitespace-nowrap">Drop Locations</button>
+            <button onclick="showTab('sellers')" id="tab-sellers" class="tab-btn pb-4 font-black text-[10px] uppercase tracking-[0.2em] whitespace-nowrap">Sellers & Affiliates</button>
         </div>
 
         <!-- Orders View -->
@@ -122,6 +126,106 @@
                             <tr><td colspan="6" class="px-8 py-20 text-center text-gray-400 italic text-sm">Loading orders...</td></tr>
                         </tbody>
                     </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Monday Club View -->
+        <div id="view-subscriptions" class="hidden space-y-12 animate-fade-in">
+            <div class="grid md:grid-cols-2 gap-8">
+                <div class="bg-brand-dark rounded-[3rem] p-10 text-white shadow-2xl">
+                    <h3 class="text-xl font-serif font-bold mb-6">Subscription Revenue</h3>
+                    <div id="sub-summary" class="grid grid-cols-2 gap-4">
+                        <!-- Revenue summary -->
+                    </div>
+                </div>
+                <div class="bg-white rounded-[3rem] p-10 border border-gray-100 shadow-sm flex flex-col justify-center text-center">
+                    <i class="fas fa-calendar-alt text-brand-gold text-3xl mb-4"></i>
+                    <h3 class="text-xl font-serif font-bold">Billing Day: Thursdays</h3>
+                    <p class="text-xs text-gray-400 mt-2">Automatic orders are created every Friday morning after successful payment.</p>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-[3rem] shadow-sm border border-gray-100 overflow-hidden">
+                <table class="w-full text-left border-collapse">
+                    <thead class="bg-gray-50/50 text-[9px] font-black uppercase tracking-[0.15em] text-gray-400 border-b border-gray-100">
+                        <tr>
+                            <th class="px-8 py-5">Member</th>
+                            <th class="px-8 py-5">Plan</th>
+                            <th class="px-8 py-5">Drop Point</th>
+                            <th class="px-8 py-5">Status</th>
+                            <th class="px-8 py-5 text-right">Weekly Total</th>
+                        </tr>
+                    </thead>
+                    <tbody id="subscriptions-tbody" class="divide-y divide-gray-50">
+                        <!-- Subscription rows -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Prep & Yield View -->
+        <div id="view-prep" class="hidden space-y-12 animate-fade-in">
+            <div class="grid md:grid-cols-2 gap-8">
+                <!-- Recipe Summary Card -->
+                <div class="bg-brand-dark rounded-[3rem] p-10 text-white shadow-2xl relative overflow-hidden">
+                    <div class="relative z-10">
+                        <div class="flex items-center gap-4 mb-8">
+                            <div class="w-12 h-12 rounded-2xl bg-white/10 flex items-center justify-center text-brand-gold">
+                                <i class="fas fa-blender text-xl"></i>
+                            </div>
+                            <h2 class="text-2xl font-serif font-bold">Total Prep Required</h2>
+                        </div>
+                        <div class="grid grid-cols-2 gap-8" id="prep-summary-grid">
+                            <!-- Yield numbers injected here -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Production Status Card -->
+                <div class="bg-white rounded-[3rem] p-10 border border-gray-100 shadow-sm">
+                    <h3 class="text-xl font-serif font-bold mb-6">Fulfillment Progress</h3>
+                    <div class="space-y-6" id="fulfillment-progress">
+                        <!-- Progress bars injected here -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Ingredient List Section -->
+            <div class="bg-brand-cream/50 rounded-[3rem] p-10 border border-brand-brown/10 shadow-inner">
+                <div class="flex items-center gap-4 mb-10">
+                    <div class="w-12 h-12 rounded-2xl bg-brand-brown/10 flex items-center justify-center text-brand-brown">
+                        <i class="fas fa-shopping-basket text-xl"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-xl font-serif font-bold">Ingredient Shopping List</h3>
+                        <p class="text-[9px] font-black text-brand-brown/60 uppercase tracking-widest">Calculated for confirmed orders only</p>
+                    </div>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6" id="ingredient-list">
+                    <!-- Ingredients will be injected here -->
+                </div>
+            </div>
+
+            <!-- Detailed Manifest -->
+            <div class="space-y-6">
+                <h3 class="text-xl font-serif font-bold">Detailed Production Manifest</h3>
+                <div class="bg-white rounded-[3rem] shadow-sm border border-gray-100 overflow-hidden">
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse">
+                            <thead class="bg-gray-50/50 text-[9px] font-black uppercase tracking-[0.15em] text-gray-400 border-b border-gray-100">
+                                <tr>
+                                    <th class="px-8 py-5">Product SKU</th>
+                                    <th class="px-8 py-5">Flavor & Milk Details</th>
+                                    <th class="px-8 py-5 text-center">Qty</th>
+                                    <th class="px-8 py-5">Drop Point</th>
+                                </tr>
+                            </thead>
+                            <tbody id="prep-manifest-tbody" class="divide-y divide-gray-50">
+                                <!-- Manifest rows injected here -->
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
         </div>
@@ -186,9 +290,10 @@
                     <label class="block text-[9px] font-black uppercase tracking-[0.2em] text-gray-400 mb-2 ml-1">Product Imagery</label>
                     <div class="relative group cursor-pointer" onclick="document.getElementById('prod-file').click()">
                         <input type="file" id="prod-file" class="hidden" accept="image/*" onchange="handleFileUpload(this, 'prod-image')">
-                        <div class="w-full h-32 bg-gray-50 border-2 border-dashed border-gray-200 rounded-2xl flex flex-col items-center justify-center group-hover:border-brand-brown transition-all">
+                        <div id="image-preview-area" class="w-full h-32 bg-gray-50 border-2 border-dashed border-gray-200 rounded-2xl flex flex-col items-center justify-center group-hover:border-brand-brown transition-all overflow-hidden relative">
                             <i class="fas fa-camera text-2xl text-gray-300 mb-2"></i>
                             <span class="text-[10px] font-black uppercase tracking-widest text-gray-400" id="upload-status-text">Click to upload photo</span>
+                            <img id="modal-image-preview" src="" class="hidden absolute inset-0 w-full h-full object-cover">
                         </div>
                         <input type="hidden" id="prod-image">
                     </div>
@@ -210,8 +315,46 @@
         </div>
     </div>
 
-    <!-- Fulfillment Modal -->
-    <div id="order-modal" class="hidden fixed inset-0 bg-brand-dark/80 backdrop-blur-sm flex items-center justify-center z-[100] p-4">
+    <!-- Sellers View -->
+    <div id="view-sellers" class="hidden space-y-12 animate-fade-in">
+        <div class="grid md:grid-cols-2 gap-8">
+            <div class="bg-brand-dark rounded-[3rem] p-10 text-white shadow-2xl relative overflow-hidden">
+                <h3 class="text-xl font-serif font-bold mb-6">Commission Overview</h3>
+                <div id="seller-summary" class="space-y-4">
+                    <!-- Summary data -->
+                </div>
+            </div>
+            <div class="bg-white rounded-[3rem] p-10 border border-gray-100 shadow-sm">
+                <h3 class="text-xl font-serif font-bold mb-6 flex justify-between items-center">
+                    Add New Seller
+                </h3>
+                <div class="space-y-4">
+                    <input type="text" id="seller-name" placeholder="Seller Name" class="w-full bg-gray-50 border border-gray-100 rounded-2xl px-5 py-4 text-sm outline-none focus:border-brand-brown">
+                    <input type="tel" id="seller-phone" placeholder="Phone Number" class="w-full bg-gray-50 border border-gray-100 rounded-2xl px-5 py-4 text-sm outline-none focus:border-brand-brown">
+                    <input type="text" id="seller-code" placeholder="Promo Code (e.g. MARCO)" class="w-full bg-gray-50 border border-gray-100 rounded-2xl px-5 py-4 text-sm font-mono outline-none focus:border-brand-brown">
+                    <button onclick="addSeller()" class="w-full bg-brand-dark text-white py-4 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-brand-brown transition-all">Enable Seller Account</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white rounded-[3rem] shadow-sm border border-gray-100 overflow-hidden">
+            <table class="w-full text-left border-collapse">
+                <thead class="bg-gray-50/50 text-[9px] font-black uppercase tracking-[0.15em] text-gray-400 border-b border-gray-100">
+                    <tr>
+                        <th class="px-8 py-5">Seller Name</th>
+                        <th class="px-8 py-5">Referral Code</th>
+                        <th class="px-8 py-5 text-center">Bottles Sold</th>
+                        <th class="px-8 py-5 text-right">Commission Due</th>
+                    </tr>
+                </thead>
+                <tbody id="sellers-tbody" class="divide-y divide-gray-50">
+                    <!-- Seller rows injected here -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Fulfillment Modal -->    <div id="order-modal" class="hidden fixed inset-0 bg-brand-dark/80 backdrop-blur-sm flex items-center justify-center z-[100] p-4">
         <div class="bg-white w-full max-w-lg p-10 rounded-[3rem] shadow-2xl relative border border-white/10">
             <button onclick="closeModal('order-modal')" class="absolute top-8 right-8 w-10 h-10 rounded-full bg-gray-100 text-gray-400 hover:text-gray-600 flex items-center justify-center transition-colors"><i class="fas fa-times"></i></button>
             <h2 class="text-2xl font-serif font-bold mb-2">Update Order</h2>
@@ -228,7 +371,7 @@
                         </button>
                         <button onclick="updateOrderStatus('rejected')" class="py-4 px-4 rounded-2xl border-2 border-red-50 text-red-600 font-black text-[10px] uppercase tracking-widest hover:bg-red-50 transition flex flex-col items-center gap-2">
                             <i class="fas fa-times-circle text-lg"></i>
-                            Reject Order
+                            Reject & Refund
                         </button>
                     </div>
                 </div>
@@ -260,9 +403,14 @@
                     <label class="block text-[9px] font-black uppercase tracking-[0.2em] text-gray-400 mb-2 ml-1">City / Neighborhood</label>
                     <input type="text" id="loc-city" placeholder="Anaheim, CA" class="w-full bg-gray-50 border border-gray-100 rounded-2xl px-5 py-4 text-sm outline-none focus:border-brand-brown shadow-inner">
                 </div>
-                <div class="flex items-center gap-3 p-2">
-                    <input type="checkbox" id="loc-active" checked class="w-5 h-5 rounded-lg border-gray-300 text-brand-brown focus:ring-brand-brown">
-                    <span class="text-xs font-black uppercase tracking-widest text-gray-600">Active Drop Point</span>
+                <div class="flex items-center justify-between p-2">
+                    <div class="flex items-center gap-3">
+                        <input type="checkbox" id="loc-active" checked class="w-5 h-5 rounded-lg border-gray-300 text-brand-brown focus:ring-brand-brown">
+                        <span class="text-xs font-black uppercase tracking-widest text-gray-600">Active Drop Point</span>
+                    </div>
+                    <button onclick="deleteLocation()" id="loc-delete-btn" class="hidden text-red-400 font-black text-[9px] uppercase tracking-widest hover:text-red-600 transition-colors">
+                        <i class="fas fa-trash-alt mr-1"></i> Remove Point
+                    </button>
                 </div>
             </div>
 
@@ -281,12 +429,152 @@
         let products = [];
         let locations = [];
         let orders = [];
+        let sellers = [];
 
         async function init() {
             console.log("Artisan Admin Initializing...");
             await loadProducts();
             await loadLocations();
             await loadOrders();
+            await loadSellers();
+            await loadSubscriptions();
+        }
+
+        async function loadSubscriptions() {
+            try {
+                const res = await fetch('/api/cali?action=subscriptions', { headers: getHeaders() });
+                subscriptions = await res.json();
+                renderSubscriptions();
+                renderPrepView(); // Re-render prep with sub data
+            } catch (e) { console.error(e); }
+        }
+
+        function renderSubscriptions() {
+            const tbody = document.getElementById('subscriptions-tbody');
+            if (!subscriptions || subscriptions.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" class="px-8 py-20 text-center text-gray-400 italic text-sm">No Monday Club members yet.</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = subscriptions.map(s => `
+                <tr class="hover:bg-gray-50/50 transition-colors group text-sm">
+                    <td class="px-8 py-6">
+                        <div class="font-bold text-gray-800">${s.customer_name}</div>
+                        <div class="text-[10px] font-mono text-gray-400 uppercase tracking-tighter">${s.customer_phone}</div>
+                    </td>
+                    <td class="px-8 py-6">
+                        <div class="text-[10px] font-bold text-brand-brown uppercase">
+                            ${s.selections?.cart?.map(i => `${i.qty}x ${i.name}`).join(', ')}
+                        </div>
+                    </td>
+                    <td class="px-8 py-6">
+                        <div class="text-[10px] font-bold text-gray-700">${s.cali_locations?.name || 'Drop Point'}</div>
+                    </td>
+                    <td class="px-8 py-6">
+                        <span class="px-3 py-1 rounded-full text-[8px] font-black uppercase tracking-[0.1em] border bg-green-50 text-green-600">
+                            ${s.status}
+                        </span>
+                    </td>
+                    <td class="px-8 py-6 text-right">
+                        <span class="font-black font-mono text-gray-800">$${parseFloat(s.total).toFixed(2)}/wk</span>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        async function loadSellers() {
+            try {
+                const res = await fetch('/api/cali?action=sellers', { headers: getHeaders() });
+                sellers = await res.json();
+                renderSellers();
+            } catch (e) { console.error(e); }
+        }
+
+        function renderSellers() {
+            const tbody = document.getElementById('sellers-tbody');
+            const summary = document.getElementById('seller-summary');
+            
+            // Calculate commissions from orders
+            const stats = {};
+            (orders || []).filter(o => o.status === 'paid' || o.status === 'confirmed').forEach(o => {
+                const sellerId = o.selections?.seller_id;
+                if (sellerId) {
+                    if (!stats[sellerId]) stats[sellerId] = { bottles: 0, commission: 0 };
+                    
+                    // Count bottles from selections
+                    let bottles = 0;
+                    if (o.selections.cart) {
+                        o.selections.cart.forEach(item => {
+                            const packSize = item.selections ? item.selections.length : 1;
+                            bottles += (packSize * (item.qty || 1));
+                        });
+                    }
+                    stats[sellerId].bottles += bottles;
+                    stats[sellerId].commission += (bottles * 1.00);
+                }
+            });
+
+            tbody.innerHTML = (sellers || []).map(s => {
+                const sStats = stats[s.id] || { bottles: 0, commission: 0 };
+                return `
+                    <tr class="hover:bg-gray-50/50 transition-colors group text-sm">
+                        <td class="px-8 py-6">
+                            <div class="font-bold text-gray-800">${s.name}</div>
+                            <div class="text-[10px] font-mono text-gray-400 uppercase tracking-tighter">${s.phone}</div>
+                        </td>
+                        <td class="px-8 py-6">
+                            <span class="px-3 py-1 bg-gray-100 rounded-lg font-mono text-xs font-bold text-brand-dark">${s.referral_code}</span>
+                        </td>
+                        <td class="px-8 py-6 text-center font-black text-gray-800">${sStats.bottles}</td>
+                        <td class="px-8 py-6 text-right">
+                            <span class="font-black font-mono text-brand-brown">$${sStats.commission.toFixed(2)}</span>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+
+            const totalCommission = Object.values(stats).reduce((sum, s) => sum + s.commission, 0);
+            summary.innerHTML = `
+                <div class="grid grid-cols-2 gap-4">
+                    <div class="p-6 bg-white/5 rounded-3xl border border-white/5">
+                        <span class="text-[9px] font-black uppercase text-white/30 tracking-widest block mb-1">Total Payouts</span>
+                        <div class="text-3xl font-black text-brand-gold">$${totalCommission.toFixed(2)}</div>
+                    </div>
+                    <div class="p-6 bg-white/5 rounded-3xl border border-white/5">
+                        <span class="text-[9px] font-black uppercase text-white/30 tracking-widest block mb-1">Active Sellers</span>
+                        <div class="text-3xl font-black text-white">${sellers.length}</div>
+                    </div>
+                </div>
+            `;
+        }
+
+        async function addSeller() {
+            const name = document.getElementById('seller-name').value;
+            const phone = document.getElementById('seller-phone').value;
+            const code = document.getElementById('seller-code').value;
+            
+            if (!name || !phone || !code) return alert("Fill all fields");
+            
+            try {
+                const res = await fetch('/api/cali?action=add_seller', {
+                    method: 'POST',
+                    headers: getHeaders(),
+                    body: JSON.stringify({ name, phone, code })
+                });
+                if (res.ok) {
+                    alert("Seller enabled!");
+                    document.getElementById('seller-name').value = '';
+                    document.getElementById('seller-phone').value = '';
+                    document.getElementById('seller-code').value = '';
+                    await loadSellers();
+                } else {
+                    const err = await res.json();
+                    alert("Error enabling seller: " + (err.error || "Unknown error"));
+                }
+            } catch (e) { 
+                console.error(e); 
+                alert("Connection failed while enabling seller.");
+            }
         }
 
         function showTab(tab) {
@@ -317,7 +605,8 @@
                         <i class="fas fa-pen text-xs"></i>
                     </button>
                     <div class="w-full h-48 bg-brand-cream rounded-[2rem] flex items-center justify-center mb-8 overflow-hidden border border-brand-brown/5 shadow-inner">
-                        ${p.image_url ? `<img src="${p.image_url}" class="w-full h-full object-cover">` : '<i class="fas fa-mug-hot text-4xl text-brand-brown/20"></i>'}
+                        ${p.image_url ? `<img src="${p.image_url}" class="w-full h-full object-cover" onerror="this.style.display='none'; this.nextElementSibling.style.display='block'">` : ''}
+                        <i class="fas fa-mug-hot text-4xl text-brand-brown/20" style="${p.image_url ? 'display:none' : 'display:block'}"></i>
                     </div>
                     <div class="px-2 flex-1">
                         <h3 class="text-2xl font-serif font-bold text-brand-dark mb-1">${p.name}</h3>
@@ -356,15 +645,22 @@
             }
 
             tbody.innerHTML = orders.map(o => {
-                const isPaid = o.payment_status === 'confirmed';
-                const statusClass = isPaid ? "bg-green-50 text-green-600" : "bg-orange-50 text-orange-600";
+                const isPaid = o.status === 'paid' || o.status === 'confirmed';
+                const isRefunded = o.status === 'refunded';
+                const statusClass = isPaid ? "bg-green-50 text-green-600" : (isRefunded ? "bg-blue-50 text-blue-600" : "bg-orange-50 text-orange-600");
                 
                 // Construct selection text from cart array if available
                 let selectionText = "";
                 if (o.selections && o.selections.cart) {
-                    selectionText = o.selections.cart.map(i => `${i.qty}x ${i.flavor} (${i.milk})`).join(', ');
+                    selectionText = o.selections.cart.map(i => {
+                        if (i.selections && Array.isArray(i.selections)) {
+                            const details = i.selections.map((s, idx) => `#${idx+1}: ${s.flavor} (${s.milk})`).join(', ');
+                            return `${i.qty}x ${i.name} [${details}]`;
+                        }
+                        return `${i.qty}x ${i.name} (${i.flavor || 'N/A'}, ${i.milk || 'N/A'})`;
+                    }).join('<br>');
                 } else {
-                    selectionText = `${o.quantity}x ${o.cali_products?.name || 'Artisan Pack'}`;
+                    selectionText = `${o.quantity || 1}x ${o.cali_products?.name || 'Artisan Pack'}`;
                 }
 
                 return `
@@ -380,7 +676,7 @@
                             </div>
                         </td>
                         <td class="px-8 py-6 text-right">
-                            <span class="font-black font-mono text-gray-800">$${parseFloat(o.total_price).toFixed(2)}</span>
+                            <span class="font-black font-mono text-gray-800">$${parseFloat(o.total).toFixed(2)}</span>
                         </td>
                         <td class="px-8 py-6">
                             <div class="text-[10px] font-bold text-gray-700">${o.cali_locations?.name || 'Custom Drop'}</div>
@@ -388,7 +684,7 @@
                         </td>
                         <td class="px-8 py-6">
                             <span class="px-3 py-1 rounded-full text-[8px] font-black uppercase tracking-[0.1em] border ${statusClass}">
-                                ${o.payment_status}
+                                ${o.status}
                             </span>
                         </td>
                         <td class="px-8 py-6 text-center">
@@ -440,9 +736,11 @@
             const title = document.getElementById('product-modal-title');
             const delBtn = document.getElementById('prod-delete-btn');
             const statusText = document.getElementById('upload-status-text');
+            const previewImg = document.getElementById('modal-image-preview');
             
             statusText.innerText = "Click to upload photo";
             statusText.className = "text-[10px] font-black uppercase tracking-widest text-gray-400";
+            previewImg.classList.add('hidden');
             
             if (id) {
                 const p = products.find(x => x.id === id);
@@ -454,6 +752,11 @@
                 document.getElementById('prod-image').value = p.image_url || '';
                 document.getElementById('prod-active').checked = p.active;
                 delBtn.classList.remove('hidden');
+
+                if (p.image_url) {
+                    previewImg.src = p.image_url;
+                    previewImg.classList.remove('hidden');
+                }
             } else {
                 title.innerText = 'New Artisan Item';
                 document.getElementById('prod-id').value = '';
@@ -470,6 +773,7 @@
             const file = input.files[0];
             if (!file) return;
             const statusText = document.getElementById('upload-status-text');
+            const previewImg = document.getElementById('modal-image-preview');
             statusText.innerText = "Processing Image...";
             
             try {
@@ -478,6 +782,9 @@
                     window.pendingImageBase64 = reader.result;
                     statusText.innerText = "✨ Photo Ready (Save to Finish)";
                     statusText.className = "text-[10px] font-black uppercase tracking-widest text-brand-brown animate-pulse";
+                    
+                    previewImg.src = reader.result;
+                    previewImg.classList.remove('hidden');
                 };
                 reader.readAsDataURL(file);
             } catch (e) { alert("Image processing failed."); }
@@ -497,7 +804,7 @@
                 const res = await fetch(`/api/cali?action=update_order&id=${id}`, {
                     method: 'PATCH',
                     headers: getHeaders(),
-                    body: JSON.stringify({ payment_status: status })
+                    body: JSON.stringify({ status: status })
                 });
                 if (res.ok) { closeModal('order-modal'); loadOrders(); }
             } catch (e) { console.error(e); }
@@ -547,39 +854,247 @@
 
         function openLocationModal(id = null) {
             document.getElementById('location-modal').classList.remove('hidden');
+            const delBtn = document.getElementById('loc-delete-btn');
+            
             if (id) {
                 const l = locations.find(x => x.id === id);
                 document.getElementById('loc-id').value = l.id;
                 document.getElementById('loc-name').value = l.name;
                 document.getElementById('loc-city').value = l.city;
                 document.getElementById('loc-active').checked = l.active;
+                delBtn.classList.remove('hidden');
             } else {
                 document.getElementById('loc-id').value = '';
                 document.getElementById('loc-name').value = '';
                 document.getElementById('loc-city').value = '';
                 document.getElementById('loc-active').checked = true;
+                delBtn.classList.add('hidden');
             }
         }
 
         async function saveLocation() {
             const id = document.getElementById('loc-id').value;
+            const btn = document.getElementById('loc-save-btn');
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Saving...';
+
             const payload = {
                 name: document.getElementById('loc-name').value,
                 city: document.getElementById('loc-city').value,
                 active: document.getElementById('loc-active').checked
             };
+
             const url = id ? `/api/cali?action=locations&id=${id}` : '/api/cali?action=locations';
             const method = id ? 'PUT' : 'POST';
+            
             try {
-                await fetch(url, { method, headers: getHeaders(), body: JSON.stringify(payload) });
-                closeModal('location-modal'); loadLocations();
-            } catch (e) { console.error(e); }
+                const res = await fetch(url, { 
+                    method, 
+                    headers: getHeaders(), 
+                    body: JSON.stringify(payload) 
+                });
+                
+                if (res.ok) {
+                    closeModal('location-modal'); 
+                    await loadLocations(); 
+                } else {
+                    const err = await res.json();
+                    alert("Error: " + (err.error || "Failed to save location"));
+                }
+            } catch (e) { 
+                console.error(e); 
+                alert("Connection failed");
+            } finally {
+                btn.disabled = false;
+                btn.innerText = 'Save Location';
+            }
+        }
+
+        async function deleteLocation() {
+            const id = document.getElementById('loc-id').value;
+            if (!id) return;
+            
+            if (!confirm("Are you sure you want to permanently remove this drop point? This cannot be undone.")) return;
+            
+            try {
+                const res = await fetch(`/api/cali?action=locations&id=${id}`, {
+                    method: 'DELETE',
+                    headers: getHeaders()
+                });
+                
+                if (res.ok) {
+                    closeModal('location-modal');
+                    await loadLocations();
+                } else {
+                    const err = await res.json();
+                    alert("Error: " + (err.error || "Failed to delete"));
+                }
+            } catch (e) {
+                console.error(e);
+                alert("Connection failed");
+            }
+        }
+
+        function renderPrepView() {
+            const activeOrders = (orders || []).filter(o => o.status === 'paid' || o.status === 'confirmed');
+            const activeSubs = (subscriptions || []).filter(s => s.status === 'active');
+            
+            const summaryGrid = document.getElementById('prep-summary-grid');
+            const manifestTbody = document.getElementById('prep-manifest-tbody');
+            const progressContainer = document.getElementById('fulfillment-progress');
+            const ingredientList = document.getElementById('ingredient-list');
+
+            let totals = {
+                bottles: 0,
+                oatMilk: 0,
+                flavors: {}
+            };
+
+            let manifestRows = [];
+
+            // 1. Process One-time Orders
+            activeOrders.forEach(o => {
+                if (!o.selections || !o.selections.cart) return;
+                processItems(o.selections.cart, o.id, o.customer_name, o.cali_locations, 'order');
+            });
+
+            // 2. Process Recurring Subscriptions
+            activeSubs.forEach(s => {
+                if (!s.selections || !s.selections.cart) return;
+                processItems(s.selections.cart, s.id, s.customer_name, s.cali_locations, 'subscription');
+            });
+
+            function processItems(cart, id, customerName, location, type) {
+                cart.forEach(item => {
+                    const itemQty = parseInt(item.qty || 1);
+                    
+                    if (item.selections && Array.isArray(item.selections)) {
+                        const bottlesPerPack = item.selections.length;
+                        totals.bottles += (itemQty * bottlesPerPack);
+
+                        item.selections.forEach(sel => {
+                            if (sel.milk === 'Oat Milk') totals.oatMilk += itemQty;
+                            totals.flavors[sel.flavor] = (totals.flavors[sel.flavor] || 0) + itemQty;
+                        });
+
+                        const desc = item.selections.map((s, i) => `#${i+1}: ${s.flavor} (${s.milk})`).join('<br>');
+                        manifestRows.push(`
+                            <tr class="hover:bg-gray-50/50 transition-colors group text-xs">
+                                <td class="px-8 py-5">
+                                    <div class="font-bold text-gray-800">${item.qty}x ${item.name}</div>
+                                    <div class="text-[9px] font-mono text-gray-400 uppercase">${type}: ${id.substring(0,8)}</div>
+                                </td>
+                                <td class="px-8 py-5 leading-relaxed text-gray-500">${desc}</td>
+                                <td class="px-8 py-5 text-center font-black">${item.qty}</td>
+                                <td class="px-8 py-5">
+                                    <div class="text-[10px] font-bold text-gray-700">${location?.name || 'Custom'}</div>
+                                    <div class="text-[9px] text-gray-400">${location?.city || ''}</div>
+                                </td>
+                            </tr>
+                        `);
+                    } else {
+                        // Fallback for older orders
+                        const bottlesPerPack = item.bottles || 1;
+                        totals.bottles += (itemQty * bottlesPerPack);
+                        if (item.milk === 'Oat Milk') totals.oatMilk += (itemQty * bottlesPerPack);
+                        if (item.flavor) totals.flavors[item.flavor] = (totals.flavors[item.flavor] || 0) + (itemQty * bottlesPerPack);
+
+                        manifestRows.push(`
+                            <tr class="hover:bg-gray-50/50 transition-colors group text-xs">
+                                <td class="px-8 py-5">
+                                    <div class="font-bold text-gray-800">${item.qty}x ${item.name}</div>
+                                    <div class="text-[9px] font-mono text-gray-400 uppercase">${type}: ${id.substring(0,8)}</div>
+                                </td>
+                                <td class="px-8 py-5 leading-relaxed text-gray-500">${item.flavor || 'N/A'} (${item.milk || 'N/A'})</td>
+                                <td class="px-8 py-5 text-center font-black">${item.qty}</td>
+                                <td class="px-8 py-5">
+                                    <div class="text-[10px] font-bold text-gray-700">${location?.name || 'Custom'}</div>
+                                    <div class="text-[9px] text-gray-400">${location?.city || ''}</div>
+                                </td>
+                            </tr>
+                        `);
+                    }
+                });
+            }
+
+            // Calculate Ingredients
+            const coffeeGallons = (totals.bottles * 4 / 128).toFixed(1);
+            const regMilkGallons = ((totals.bottles - totals.oatMilk) * 8 / 128).toFixed(1);
+            const oatMilkGallons = (totals.oatMilk * 8 / 128).toFixed(1);
+
+            let syrupItems = Object.entries(totals.flavors).map(([name, count]) => {
+                const bCount = Math.ceil(count / 25);
+                return `
+                <div class="p-4 bg-white rounded-2xl border border-gray-100 flex justify-between items-center">
+                    <div>
+                        <span class="text-[8px] font-black uppercase text-gray-400 block tracking-widest">${name}</span>
+                        <span class="text-xs font-bold text-gray-800">${bCount} Bottle${bCount > 1 ? 's' : ''} (750ml)</span>
+                    </div>
+                    <i class="fas fa-prescription-bottle text-brand-gold/20"></i>
+                </div>`;
+            }).join('');
+
+            ingredientList.innerHTML = `
+                <div class="p-6 bg-white rounded-3xl border border-gray-100 flex flex-col justify-center">
+                    <span class="text-[9px] font-black uppercase text-gray-400 block tracking-widest mb-2">Total Bottles Needed</span>
+                    <div class="text-3xl font-black text-brand-dark">${totals.bottles} Units</div>
+                </div>
+                <div class="p-6 bg-white rounded-3xl border border-gray-100 flex flex-col justify-center">
+                    <span class="text-[9px] font-black uppercase text-gray-400 block tracking-widest mb-2">Cold Brew Concentrate</span>
+                    <div class="text-3xl font-black text-brand-brown">${coffeeGallons} Gallons</div>
+                </div>
+                <div class="p-6 bg-white rounded-3xl border border-gray-100 flex flex-col justify-center">
+                    <span class="text-[9px] font-black uppercase text-gray-400 block tracking-widest mb-2">Regular Milk</span>
+                    <div class="text-3xl font-black text-gray-600">${regMilkGallons} Gallons</div>
+                </div>
+                <div class="p-6 bg-white rounded-3xl border border-gray-100 flex flex-col justify-center">
+                    <span class="text-[9px] font-black uppercase text-gray-400 block tracking-widest mb-2">Oat Milk</span>
+                    <div class="text-3xl font-black text-brand-gold">${oatMilkGallons} Gallons</div>
+                </div>
+                <div class="col-span-full mt-4">
+                    <h4 class="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 mb-4 ml-2">Syrups Required</h4>
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">${syrupItems || '<div class="col-span-full py-4 text-center text-gray-400 italic">Wait for orders...</div>'}</div>
+                </div>
+            `;
+
+            // Render Summary Cards
+            summaryGrid.innerHTML = `
+                <div class="p-6 bg-white/5 rounded-3xl border border-white/5 shadow-inner">
+                    <span class="text-[9px] font-black uppercase text-white/30 tracking-widest block mb-1">Bottles To Brew</span>
+                    <div class="text-4xl font-black text-brand-gold">${totals.bottles}</div>
+                </div>
+                <div class="p-6 bg-white/5 rounded-3xl border border-white/5 shadow-inner">
+                    <span class="text-[9px] font-black uppercase text-white/30 tracking-widest block mb-1">Oat Milk Units</span>
+                    <div class="text-4xl font-black text-white">${totals.oatMilk}</div>
+                </div>
+            `;
+
+            // Render Manifest
+            manifestTbody.innerHTML = manifestRows.length ? manifestRows.join('') : '<tr><td colspan="4" class="px-8 py-20 text-center text-gray-400 italic">No paid orders for production yet.</td></tr>';
+
+            // Render Progress / Flavor Bars
+            const flavorEntries = Object.entries(totals.flavors).sort((a,b) => b[1] - a[1]);
+            progressContainer.innerHTML = flavorEntries.map(([name, count]) => {
+                const percent = (count / totals.bottles) * 100;
+                return `
+                <div class="space-y-2">
+                    <div class="flex justify-between items-center text-[10px] font-black uppercase tracking-widest">
+                        <span>${name}</span>
+                        <span class="text-brand-brown">${count} Bottled</span>
+                    </div>
+                    <div class="h-2 w-full bg-gray-50 rounded-full overflow-hidden border border-gray-100">
+                        <div class="h-full bg-brand-gold rounded-full" style="width: ${percent}%"></div>
+                    </div>
+                </div>
+                `;
+            }).join('') || '<div class="text-center py-10 text-gray-400 italic">Wait for first order...</div>';
         }
 
         function updateStats() {
-            document.getElementById('total-orders-count').innerText = (orders || []).filter(o => o.payment_status !== 'rejected').length;
-            const revenue = (orders || []).filter(o => o.payment_status === 'confirmed').reduce((sum, o) => sum + parseFloat(o.total_price), 0);
+            document.getElementById('total-orders-count').innerText = (orders || []).filter(o => o.status !== 'rejected').length;
+            const revenue = (orders || []).filter(o => o.status === 'paid' || o.status === 'confirmed').reduce((sum, o) => sum + parseFloat(o.total || 0), 0);
             document.getElementById('total-revenue').innerText = `$${revenue.toFixed(2)}`;
+            renderPrepView();
         }
 
         function closeModal(id) { 

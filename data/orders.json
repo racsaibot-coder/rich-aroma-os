@@ -1,6 +1,237 @@
 {
   "orders": [
     {
+      "id": "ORD-${Date.now()}",
+      "order_number": 6883831,
+      "items": [],
+      "subtotal": 0,
+      "tax": 0,
+      "discount": 0,
+      "total": 0,
+      "status": "pending",
+      "payment_method": "cash"
+    },
+    {
+      "id": "ORD-1775111673201",
+      "order_number": 6111673,
+      "items": [
+        {
+          "id": "vip_test_drink",
+          "qty": 1
+        }
+      ],
+      "subtotal": 100,
+      "tax": 0,
+      "discount": 0,
+      "total": 100,
+      "status": "pending",
+      "payment_method": "cash",
+      "customer_id": "C_VIP_TEST"
+    },
+    {
+      "id": "ORD-1775105196477",
+      "order_number": 6105196,
+      "items": [
+        {
+          "id": "hot_latte",
+          "name": "Latte",
+          "price": 60,
+          "finalPrice": 60,
+          "qty": 1,
+          "mods": []
+        }
+      ],
+      "subtotal": 60,
+      "tax": 0,
+      "discount": 0,
+      "total": 60,
+      "status": "pending",
+      "payment_method": "cash",
+      "notes": "Mobile Order (pickup) [CLIENTE: Launch Tester]"
+    },
+    {
+      "id": "ORD-1775077088781",
+      "order_number": 6077088,
+      "items": [
+        {
+          "id": "food_baleadas",
+          "name": "Baleadas",
+          "price": 25,
+          "finalPrice": 25,
+          "qty": 2,
+          "mods": []
+        }
+      ],
+      "subtotal": 50,
+      "tax": 0,
+      "discount": 0,
+      "total": 50,
+      "status": "pending",
+      "payment_method": "cash",
+      "notes": "Walk-in"
+    },
+    {
+      "id": "ORD-1775077088605",
+      "order_number": 6077088,
+      "items": [
+        {
+          "id": "hot_latte",
+          "name": "Latte",
+          "price": 60,
+          "finalPrice": 60,
+          "qty": 1,
+          "mods": []
+        }
+      ],
+      "subtotal": 60,
+      "tax": 0,
+      "discount": 0,
+      "total": 60,
+      "status": "pending",
+      "payment_method": "transfer",
+      "notes": "Mobile Order (pickup) [CLIENTE: Mobile Tester]"
+    },
+    {
+      "id": "ORD-1775054030491",
+      "order_number": 6054030,
+      "items": [
+        {
+          "id": "hot_latte",
+          "name": "Latte",
+          "price": 60,
+          "finalPrice": 60,
+          "mods": [],
+          "qty": 1
+        },
+        {
+          "id": "food_chicken_salad_bowl",
+          "name": "Chicken Salad Bowl",
+          "price": 150,
+          "finalPrice": 150,
+          "mods": [],
+          "qty": 1
+        }
+      ],
+      "subtotal": 210,
+      "tax": 0,
+      "discount": 0,
+      "total": 210,
+      "status": "paid",
+      "payment_method": "rico_balance",
+      "customer_id": "C040",
+      "notes": "Balance Test"
+    },
+    {
+      "id": "ORD-1775053979541",
+      "order_number": 6053979,
+      "items": [
+        {
+          "id": "hot_latte",
+          "name": "Latte",
+          "price": 60,
+          "finalPrice": 60,
+          "mods": [],
+          "qty": 1
+        },
+        {
+          "id": "food_chicken_salad_bowl",
+          "name": "Chicken Salad Bowl",
+          "price": 150,
+          "finalPrice": 150,
+          "mods": [],
+          "qty": 1
+        }
+      ],
+      "subtotal": 210,
+      "tax": 0,
+      "discount": 0,
+      "total": 210,
+      "status": "pending",
+      "payment_method": "cash",
+      "notes": "Mobile Order (pickup) [CLIENTE: Test Guest | TEL: 12345678]"
+    },
+    {
+      "id": "ORD-1775052159211",
+      "order_number": 6052159,
+      "items": [
+        {
+          "id": "hot_latte",
+          "name": "Latte",
+          "price": 60,
+          "finalPrice": 60,
+          "mods": [],
+          "qty": 1
+        },
+        {
+          "id": "food_chicken_salad_bowl",
+          "name": "Chicken Salad Bowl",
+          "price": 150,
+          "finalPrice": 150,
+          "mods": [],
+          "qty": 1
+        }
+      ],
+      "subtotal": 210,
+      "tax": 0,
+      "discount": 0,
+      "total": 210,
+      "status": "pending",
+      "payment_method": "cash",
+      "notes": "Mobile Order (pickup) [CLIENTE: Test Guest | TEL: 12345678]",
+      "scheduled_for": null,
+      "fulfillment_type": "pickup",
+      "delivery_address": null,
+      "delivery_status": null
+    },
+    {
+      "id": "ORD-1774902709654",
+      "order_number": 5902709,
+      "items": [
+        {
+          "id": "LATTE-01",
+          "name": "Hot Latte",
+          "price": 55,
+          "finalPrice": 55,
+          "qty": 2,
+          "modifiers": []
+        }
+      ],
+      "subtotal": 110,
+      "tax": 0,
+      "discount": 0,
+      "total": 110,
+      "status": "pending",
+      "payment_method": "cash",
+      "scheduled_for": null,
+      "fulfillment_type": "pickup",
+      "delivery_address": null,
+      "delivery_status": null
+    },
+    {
+      "id": "ORD-1774902691848",
+      "order_number": 5902691,
+      "items": [
+        {
+          "id": "LATTE-01",
+          "name": "Hot Latte",
+          "price": 55,
+          "finalPrice": 55,
+          "qty": 2,
+          "modifiers": []
+        }
+      ],
+      "subtotal": 110,
+      "tax": 0,
+      "discount": 0,
+      "total": 110,
+      "status": "pending",
+      "payment_method": "cash",
+      "scheduled_for": null,
+      "fulfillment_type": "pickup",
+      "delivery_address": null,
+      "delivery_status": null
+    },
+    {
       "id": "ORD-0044",
       "order_number": 44,
       "items": [

@@ -4,6 +4,10 @@
     <link rel="icon" type="image/png" href="/favicon.png">    <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Rich Aroma | Ordenar</title>
+    <link rel="manifest" href="/order-manifest.json">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link rel="apple-touch-icon" href="/rico-logo.png">
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <script>
@@ -40,8 +44,8 @@
         <div class="w-24 h-24 bg-red-500/20 text-red-500 rounded-full flex items-center justify-center text-4xl mb-6">
             <i class="fas fa-store-slash"></i>
         </div>
-        <h2 class="text-3xl font-display font-bold text-white mb-4">Estamos cerrados.</h2>
-        <p class="text-white/60 mb-8 text-lg">¡Te esperamos pronto!</p>
+        <h2 class="text-3xl font-display font-bold text-white mb-4">Estamos Cerrados Hoy</h2>
+        <p class="text-white/60 mb-8 text-lg">¡Vuelve pronto para disfrutar de lo mejor!</p>
     </div>
 
     <!-- Header -->
@@ -85,11 +89,6 @@
         </div>
     </div>
 
-    <!-- Testing Banner -->
-    <div class="bg-red-500/20 border-b border-red-500/50 p-3 text-center">
-        <p class="text-red-400 text-sm font-bold"><i class="fas fa-tools mr-2"></i>Sistema en fase de prueba. Por favor no realizar órdenes reales.</p>
-    </div>
-
     <!-- Fulfillment Type -->
     <div class="flex gap-3 p-4 bg-dark border-b border-white/5 overflow-x-auto hide-scrollbar" id="fulfillment-selector">
         <button id="btn-pickup" class="fulfillment-btn px-5 py-2 rounded-full border border-gold bg-gold text-dark text-sm font-bold whitespace-nowrap" onclick="setFulfillment('pickup')">
@@ -118,31 +117,50 @@
 
     <!-- UNIVERSAL BOTTOM NAVIGATION -->
     <nav class="fixed bottom-0 left-0 right-0 z-[200] bg-dark/80 backdrop-blur-xl border-t border-white/5 px-4 pb-8 pt-3 flex justify-around items-center safe-area-inset-bottom shadow-[0_-10px_40px_rgba(0,0,0,0.5)]">
-        <a href="/order" class="flex flex-col items-center gap-1 text-gold" id="nav-menu" onclick="showMenuView(); return false;">
-            <div class="w-10 h-10 rounded-2xl bg-gold/10 flex items-center justify-center">
+        <a href="#" class="flex flex-col items-center gap-1 text-gold" id="nav-menu" onclick="showMenuView(); return false;">
+            <div class="w-10 h-10 rounded-2xl bg-gold/10 flex items-center justify-center transition-colors">
                 <i class="fas fa-mug-hot"></i>
             </div>
             <span class="text-[10px] font-black uppercase tracking-widest">Menú</span>
         </a>
-        <a href="/order" id="nav-tracking" class="hidden flex flex-col items-center gap-1 text-white/40 hover:text-gold transition-colors" onclick="showTracking(); return false;">
+        <a href="#" id="nav-tracking" class="hidden flex flex-col items-center gap-1 text-white/40 hover:text-gold transition-colors relative" onclick="showTracking(); return false;">
             <div class="w-10 h-10 rounded-2xl hover:bg-gold/10 flex items-center justify-center transition-colors">
                 <i class="fas fa-receipt"></i>
             </div>
             <span class="text-[10px] font-bold uppercase tracking-widest">Estado</span>
+            <!-- Notification Dot -->
+            <div id="nav-tracking-dot" class="hidden absolute top-2 right-2 w-2.5 h-2.5 bg-gold rounded-full border-2 border-dark shadow-[0_0_10px_rgba(201,166,107,0.8)] animate-bounce"></div>
         </a>
-        <a href="/dashboard.html" class="flex flex-col items-center gap-1 text-white/40 hover:text-gold transition-colors">
+        <a href="#" id="nav-wallet" class="flex flex-col items-center gap-1 text-white/40 hover:text-gold transition-colors" onclick="showWalletView(); return false;">
             <div class="w-10 h-10 rounded-2xl hover:bg-gold/10 flex items-center justify-center transition-colors">
                 <i class="fas fa-wallet"></i>
             </div>
             <span class="text-[10px] font-bold uppercase tracking-widest">Billetera</span>
         </a>
-        <a href="/profile/index.html" class="flex flex-col items-center gap-1 text-white/40 hover:text-gold transition-colors">
+        <a href="#" id="nav-profile" class="flex flex-col items-center gap-1 text-white/40 hover:text-gold transition-colors" onclick="showProfileView(); return false;">
             <div class="w-10 h-10 rounded-2xl hover:bg-gold/10 flex items-center justify-center transition-colors">
                 <i class="fas fa-user-circle"></i>
             </div>
             <span class="text-[10px] font-bold uppercase tracking-widest">Perfil</span>
         </a>
     </nav>
+
+    <!-- PWA INSTALL PROMPT (Hidden by default) -->
+    <div id="pwa-install-prompt" class="hidden fixed bottom-28 left-6 right-6 z-[250] bg-gold p-6 rounded-[2.5rem] shadow-2xl flex items-center justify-between animate-in slide-in-from-bottom-8 duration-700">
+        <div class="flex items-center gap-4 text-dark">
+            <div class="w-12 h-12 bg-dark rounded-2xl flex items-center justify-center text-gold">
+                <i class="fas fa-mobile-alt text-2xl"></i>
+            </div>
+            <div>
+                <h4 class="font-black text-xs uppercase tracking-widest">Instalar App</h4>
+                <p class="text-[10px] font-medium opacity-70">Acceso rápido y notificaciones.</p>
+            </div>
+        </div>
+        <div class="flex gap-2">
+            <button onclick="dismissPWA()" class="w-10 h-10 rounded-full bg-dark/10 flex items-center justify-center text-dark"><i class="fas fa-times text-xs"></i></button>
+            <button id="pwa-install-btn" class="bg-dark text-white px-6 py-3 rounded-full font-black text-[10px] uppercase tracking-widest shadow-xl">Instalar</button>
+        </div>
+    </div>
 
     <!-- Active Order / Tracking View -->
     <div id="tracking-view" class="hidden px-4 py-8 max-w-md mx-auto pb-32">
@@ -189,13 +207,13 @@
             </div>
             
             <div class="space-y-6 relative before:absolute before:inset-0 before:ml-5 before:-translate-x-px md:before:mx-auto md:before:translate-x-0 before:h-full before:w-0.5 before:bg-gradient-to-b before:from-gold before:via-white/10 before:to-transparent">
-                <div class="relative flex items-center justify-between md:justify-normal md:odd:flex-row-reverse group is-active">
-                    <div class="flex items-center justify-center w-10 h-10 rounded-full border-4 border-charcoal bg-gold text-dark font-bold shrink-0 md:order-1 md:group-odd:-translate-x-1/2 md:group-even:translate-x-1/2 shadow">
+                <div class="relative flex items-center justify-between md:justify-normal md:odd:flex-row-reverse group">
+                    <div class="flex items-center justify-center w-10 h-10 rounded-full border-4 border-charcoal bg-white/10 text-white/50 font-bold shrink-0 md:order-1 md:group-odd:-translate-x-1/2 md:group-even:translate-x-1/2 shadow" id="step-received-icon">
                         <i class="fas fa-check"></i>
                     </div>
                     <div class="w-[calc(100%-4rem)] md:w-[calc(50%-2.5rem)] p-4 rounded-xl shadow bg-white/5 border border-white/10">
-                        <div class="font-bold text-white">Recibida</div>
-                        <div class="text-xs text-white/50">Ya la tenemos en el sistema.</div>
+                        <div class="font-bold text-white/50" id="step-received-text">Recibida</div>
+                        <div class="text-xs text-white/40">Ya la tenemos en el sistema.</div>
                     </div>
                 </div>
 
@@ -236,6 +254,15 @@
             </div>
         </div>
 
+        <!-- ORDER QR CODE (For POS Lookup) -->
+        <div class="bg-white p-8 rounded-[3rem] text-center space-y-4 mb-12 shadow-2xl">
+            <p class="text-dark/40 font-black text-[10px] uppercase tracking-[0.3em]">Presenta en Caja</p>
+            <div class="flex justify-center">
+                <img id="order-qr" src="" class="w-48 h-48 mix-blend-multiply">
+            </div>
+            <p class="text-dark font-bold text-sm tracking-tight">Escanea para check-in rápido</p>
+        </div>
+
         <!-- Add on feature -->
         <div class="bg-gold/10 border border-gold/30 rounded-3xl p-6 text-center hidden" id="addon-box" style="display:none !important;">
             <h3 class="text-gold font-bold mb-2"><i class="fas fa-plus-circle"></i> ¿Olvidaste algo?</h3>
@@ -246,7 +273,181 @@
         <button onclick="newOrder()" class="w-full bg-white/5 border border-white/10 text-white py-3 rounded-xl font-bold shadow hover:bg-white/10 transition mt-4 hidden" id="new-order-btn">Hacer Otra Orden</button>
     </div>
 
-    <!-- MODIFIER MODAL -->
+    <!-- Wallet (Billetera) View -->
+    <div id="wallet-view" class="hidden px-6 py-10 max-w-md mx-auto pb-32 space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-500">
+        <div class="text-center">
+            <h2 class="text-3xl font-display font-bold text-white mb-2">Mi Billetera</h2>
+            <p class="text-gold/60 text-[10px] font-black uppercase tracking-[0.3em]">Membresía VIP</p>
+        </div>
+
+        <!-- VIP GOLD CARD -->
+        <div id="vip-card-container">
+            <style>
+                .vip-card-3d {
+                    perspective: 1000px;
+                    width: 100%;
+                    height: 224px;
+                    cursor: pointer;
+                }
+                .vip-card-inner {
+                    position: relative;
+                    width: 100%;
+                    height: 100%;
+                    text-align: left;
+                    transition: transform 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+                    transform-style: preserve-3d;
+                }
+                .vip-card-3d.is-flipped .vip-card-inner {
+                    transform: rotateY(180deg);
+                }
+                .vip-card-front, .vip-card-back {
+                    position: absolute;
+                    width: 100%;
+                    height: 100%;
+                    -webkit-backface-visibility: hidden;
+                    backface-visibility: hidden;
+                    border-radius: 2.5rem;
+                    overflow: hidden;
+                }
+                .vip-card-back {
+                    transform: rotateY(180deg);
+                    background: linear-gradient(135deg, #B08D55 0%, #C9A66B 50%, #D4AF37 100%);
+                    display: flex;
+                    flex-direction: column;
+                    align-items: center;
+                    justify-content: center;
+                    padding: 2rem;
+                    border: 1px solid rgba(212, 175, 55, 0.3);
+                }
+            </style>
+            
+            <div id="vip-gold-card" class="hidden vip-card-3d" onclick="this.classList.toggle('is-flipped')">
+                <div class="vip-card-inner">
+                    <!-- Front Face -->
+                    <div class="vip-card-front p-8 shadow-2xl border border-gold/30 flex flex-col justify-between" 
+                         style="background: linear-gradient(135deg, #D4AF37 0%, #C9A66B 50%, #B08D55 100%);">
+                        
+                        <div class="absolute -top-24 -right-24 w-64 h-64 bg-white/20 blur-3xl rounded-full"></div>
+                        <div class="absolute -bottom-24 -left-24 w-64 h-64 bg-black/10 blur-3xl rounded-full"></div>
+
+                        <div class="relative z-10 flex justify-between items-start">
+                            <div class="space-y-1">
+                                <p class="text-dark/40 text-[9px] font-black uppercase tracking-widest">Socio Fundador</p>
+                                <h3 id="card-name" class="text-2xl font-display font-black text-dark tracking-tight uppercase">---</h3>
+                            </div>
+                            <img src="/rico-logo.png" class="w-12 h-12 rounded-full border-2 border-dark/10 brightness-0 opacity-40">
+                        </div>
+
+                        <div class="relative z-10 grid grid-cols-2 gap-4">
+                            <div class="space-y-0.5">
+                                <p class="text-dark/40 text-[8px] font-black uppercase tracking-widest">Rico Cash</p>
+                                <p id="card-balance" class="text-3xl font-mono font-black text-dark">L 0.00</p>
+                            </div>
+                            <div class="space-y-0.5 text-right">
+                                <p class="text-dark/40 text-[8px] font-black uppercase tracking-widest">Rico Points</p>
+                                <p id="card-points" class="text-3xl font-mono font-black text-dark/80">0</p>
+                            </div>
+                        </div>
+
+                        <!-- Star Streak -->
+                        <div class="relative z-10 pt-4 border-t border-dark/10 flex justify-between items-center">
+                            <div class="flex gap-1.5" id="visit-stars"></div>
+                            <span class="text-[8px] font-black text-dark/40 uppercase tracking-tighter">Visit Streak</span>
+                        </div>
+                    </div>
+
+                    <!-- Back Face (QR Code) -->
+                    <div class="vip-card-back shadow-2xl relative">
+                        <div class="absolute top-4 left-8 right-8 flex justify-between items-center opacity-40">
+                            <span class="text-[8px] font-black uppercase tracking-widest text-dark">Scan at Register</span>
+                            <i class="fas fa-qrcode text-[10px] text-dark"></i>
+                        </div>
+                        
+                        <div class="bg-white p-3 rounded-3xl shadow-inner border-4 border-dark/5">
+                            <img id="card-qr" src="" class="w-28 h-28 mix-blend-multiply">
+                        </div>
+                        
+                        <div class="mt-4 text-center">
+                            <p id="qr-label" class="text-[10px] font-black uppercase text-dark tracking-widest mb-0.5">---</p>
+                            <p class="text-[8px] font-bold text-dark/40 uppercase tracking-tight">VIP Member Identification</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Non-VIP Placeholder -->
+            <div id="vip-placeholder" class="bg-white/5 border border-white/10 rounded-[2.5rem] p-8 text-center space-y-4">
+                <div class="w-16 h-16 bg-gold/10 rounded-full flex items-center justify-center text-gold mx-auto mb-2">
+                    <i class="fas fa-crown text-2xl"></i>
+                </div>
+                <h3 class="text-white font-bold text-lg">Únete al Club VIP</h3>
+                <p class="text-white/40 text-xs leading-relaxed">Obtén tu tarjeta digital dorada, café gratis diario y 10% de descuento en todas tus compras.</p>
+                <button onclick="window.location.href='/membership'" class="text-gold font-black text-[10px] uppercase tracking-widest bg-gold/10 px-6 py-3 rounded-full border border-gold/20 hover:bg-gold/20 transition-all">Saber Más</button>
+            </div>
+        </div>
+
+        <button onclick="openTopupModal()" class="w-full py-5 rounded-[2rem] bg-gold/10 border border-gold/30 text-gold font-black text-xs uppercase tracking-[0.2em] shadow-xl hover:bg-gold/20 transition-all active:scale-95">
+            <i class="fas fa-plus-circle mr-2"></i> Recargar Rico Cash
+        </button>
+
+        <div class="bg-white/5 rounded-[2.5rem] p-8 border border-white/5">
+            <h4 class="text-white/40 text-[10px] font-black uppercase tracking-widest mb-6">Beneficios Activos</h4>
+            <div class="space-y-4">
+                <div class="flex items-center gap-4">
+                    <div class="w-10 h-10 rounded-2xl bg-gold/10 flex items-center justify-center text-gold"><i class="fas fa-percent"></i></div>
+                    <div>
+                        <p class="text-sm font-bold text-white">10% de Descuento</p>
+                        <p class="text-[10px] text-white/40 leading-tight">En toda la casa al pagar con Rico Cash.</p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-4">
+                    <div class="w-10 h-10 rounded-2xl bg-gold/10 flex items-center justify-center text-gold"><i class="fas fa-coffee"></i></div>
+                    <div>
+                        <p class="text-sm font-bold text-white">Café Gratis Diario</p>
+                        <p class="text-[10px] text-white/40 leading-tight">Canjea tu café de la casa una vez al día.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Profile (Perfil) View -->
+    <div id="profile-view" class="hidden px-6 py-10 max-w-md mx-auto pb-32 space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+        <div class="text-center space-y-4">
+            <div class="w-24 h-24 bg-gold/10 rounded-full flex items-center justify-center text-4xl text-gold mx-auto border-2 border-gold/20 shadow-2xl">
+                <i class="fas fa-user-circle"></i>
+            </div>
+            <div>
+                <h2 id="profile-name" class="text-3xl font-display font-bold text-white">---</h2>
+                <p id="profile-phone" class="text-gold font-mono text-sm opacity-60">---</p>
+            </div>
+        </div>
+
+        <div class="space-y-3">
+            <h3 class="text-white/40 uppercase text-[10px] font-black tracking-widest px-4">Mis Datos lealtad</h3>
+            <div class="bg-charcoal rounded-[2rem] border border-white/10 overflow-hidden">
+                <div class="p-5 flex justify-between items-center border-b border-white/5">
+                    <span class="text-white/50 text-sm">Miembro Desde</span>
+                    <span id="profile-date" class="text-white font-bold text-sm">---</span>
+                </div>
+                <div class="p-5 flex justify-between items-center border-b border-white/5">
+                    <span class="text-white/50 text-sm">Nivel de Lealtad</span>
+                    <span id="profile-tier" class="text-gold font-black text-[10px] uppercase tracking-widest bg-gold/10 px-3 py-1 rounded-full border border-gold/30">---</span>
+                </div>
+                <div class="p-5 flex justify-between items-center">
+                    <span class="text-white/50 text-sm">Total Invertido</span>
+                    <span id="profile-spent" class="text-white font-mono font-bold text-sm">L 0.00</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="pt-10">
+            <button onclick="logout()" class="w-full py-5 rounded-[2rem] bg-red-500/10 border border-red-500/30 text-red-500 font-black text-xs uppercase tracking-[0.2em] hover:bg-red-500/20 transition-all active:scale-95">
+                Cerrar Sesión
+            </button>
+        </div>
+    </div>
+        <div class="text-center mb-8">
     <div id="modifier-modal" class="hidden fixed inset-0 bg-black/80 backdrop-blur-sm z-[250] flex flex-col justify-end">
         <div class="bg-dark w-full max-h-[85vh] rounded-t-3xl shadow-2xl flex flex-col overflow-hidden border-t border-gold/20 relative animate-[slideUp_0.3s_ease-out]">
             <div class="absolute top-3 left-1/2 -translate-x-1/2 w-12 h-1.5 bg-white/20 rounded-full"></div>
@@ -428,15 +629,19 @@
         </div>
     </div>
 
-    <!-- INLINE LOGIN MODAL -->
+    <!-- INLINE LOGIN/SIGNUP MODAL -->
     <div id="login-modal" class="hidden fixed inset-0 bg-black/90 backdrop-blur-sm z-[300] flex items-center justify-center p-6">
-        <div class="bg-dark w-full max-w-sm rounded-3xl border border-gold/20 shadow-2xl overflow-hidden p-8">
+        <div class="bg-dark w-full max-w-sm rounded-3xl border border-gold/20 shadow-2xl overflow-hidden p-8 animate-in zoom-in-95 duration-300">
             <div class="text-center mb-6">
-                <h3 class="text-2xl font-display font-bold text-white mb-2">Acceder</h3>
-                <p class="text-white/50 text-sm">Ingresa tu número y PIN para continuar.</p>
+                <h3 class="text-2xl font-display font-bold text-white mb-2" id="login-title">Acceder</h3>
+                <p class="text-white/50 text-sm" id="login-desc">Ingresa tu número y PIN para continuar.</p>
             </div>
             
             <div class="space-y-4">
+                <div id="login-name-field" class="hidden space-y-2">
+                    <label class="text-[10px] text-white/40 uppercase font-black tracking-widest block">Tu Nombre</label>
+                    <input type="text" id="login-name" placeholder="Ej. Juan Pérez" class="w-full p-4 bg-white/5 border border-white/10 text-white rounded-2xl text-sm focus:outline-none focus:border-gold transition-colors">
+                </div>
                 <div class="space-y-2">
                     <label class="text-[10px] text-white/40 uppercase font-black tracking-widest block">Teléfono</label>
                     <input type="tel" id="login-phone" placeholder="9999-9999" class="w-full p-4 bg-white/5 border border-white/10 text-white rounded-2xl text-center text-xl font-bold tracking-widest focus:outline-none focus:border-gold transition-colors">
@@ -446,9 +651,14 @@
                     <input type="password" id="login-pin" maxlength="4" placeholder="••••" class="w-full p-4 bg-white/5 border border-white/10 text-white rounded-2xl text-center text-3xl font-bold tracking-[1rem] focus:outline-none focus:border-gold transition-colors">
                 </div>
                 
-                <button onclick="handleInlineLogin()" id="inline-login-btn" class="w-full gold-btn py-4 rounded-2xl font-bold text-lg shadow-xl shadow-gold/20 mt-4 active:scale-95 transition-transform">
+                <button onclick="handleInlineAuth()" id="inline-login-btn" class="w-full gold-btn py-4 rounded-2xl font-bold text-lg shadow-xl shadow-gold/20 mt-4 active:scale-95 transition-transform">
                     Ingresar
                 </button>
+                
+                <div class="text-center pt-2">
+                    <button onclick="toggleLoginMode()" id="login-mode-toggle" class="text-gold font-bold text-xs uppercase tracking-widest hover:underline">¿No tienes cuenta? Regístrate</button>
+                </div>
+
                 <button onclick="closeLoginModal()" class="w-full text-white/30 font-bold py-2 hover:text-white transition-colors text-sm">Cancelar</button>
             </div>
         </div>
@@ -809,10 +1019,14 @@
             const qtyEl = document.getElementById("mod-quantity");
             if(qtyEl) qtyEl.innerText = "1";
             currentItem = menuItems.find(i => i.id === id);
-            const relevantGroups = itemModGroups.filter(img => img.item_id === id).sort((a,b)=>a.display_order - b.display_order).map(img => img.group_id);
+            
+            // Fix: itemModGroups might use UUID strings or different ID types
+            const relevantGroups = itemModGroups
+                .filter(img => img.item_id === id)
+                .sort((a, b) => (a.display_order || 0) - (b.display_order || 0))
+                .map(img => img.group_id);
             
             if(relevantGroups.length === 0) {
-                // If no mods, just add directly
                 openNoteOnlyModal();
                 return;
             }
@@ -828,17 +1042,13 @@
 
             // 2. Apply base recipe
             if (currentItem.base_recipe) {
-                for (const groupId in currentMods) {
-                    if (currentMods[groupId].length > 0) {
-                        const selectedOptId = currentMods[groupId][0];
-                        const selectedOpt = modOptions.find(o => o.id === selectedOptId);
-                        if (selectedOpt && currentItem.base_recipe[selectedOpt.name]) {
-                            const recipe = currentItem.base_recipe[selectedOpt.name];
-                            for (const [targetGroupId, targetOptionId] of Object.entries(recipe)) {
-                                if (currentMods[targetGroupId]) {
-                                    currentMods[targetGroupId] = [targetOptionId];
-                                }
-                            }
+                // The base_recipe can be { "groupId": "optionId" } or { "SizeName": { "groupId": "optionId" } }
+                // For Niah's it is { "milkGroupId": "almondId" }
+                for (const [groupId, optionId] of Object.entries(currentItem.base_recipe)) {
+                    if (currentMods[groupId]) {
+                        // If it's a simple mapping, apply it
+                        if (typeof optionId === 'string') {
+                            currentMods[groupId] = [optionId];
                         }
                     }
                 }
@@ -853,15 +1063,35 @@
                 if (!group) return;
                 const options = modOptions.filter(o => o.group_id === groupId);
 
-                html += `<div class="mb-6"><h3 class="text-white/60 uppercase text-xs tracking-widest font-bold mb-3">${group.name}</h3><div class="grid grid-cols-2 gap-3">`;
+                html += `
+                    <div class="mb-6">
+                        <div class="flex justify-between items-center mb-3">
+                            <h3 class="text-white/60 uppercase text-[10px] tracking-[0.2em] font-black">${group.name}</h3>
+                            ${group.required ? '<span class="text-[8px] bg-gold/20 text-gold px-2 py-0.5 rounded font-black uppercase">Requerido</span>' : ''}
+                        </div>
+                        <div class="grid grid-cols-2 gap-3">
+                `;
+                
                 options.forEach(opt => {
-                    const sel = currentMods[groupId].includes(opt.id) ? 'border-2 border-gold bg-gold/10 text-gold' : 'border border-white/10 bg-white/5 text-white';
-                    html += `<button onclick="toggleDynamicMod('${group.id}', '${opt.id}', ${group.max_selections})" id="mod-btn-${opt.id}" class="mod-btn transition-colors duration-200 p-4 rounded-2xl font-bold text-sm text-left flex justify-between items-center ${sel}"><span>${opt.name}</span>${opt.price_adjustment > 0 ? `<span class="text-xs opacity-70">+L.${opt.price_adjustment}</span>` : ''}</button>`;
+                    const isSelected = (currentMods[groupId] || []).includes(opt.id);
+                    const selClass = isSelected ? 'border-2 border-gold bg-gold/10 text-gold shadow-[0_0_15px_rgba(201,166,107,0.1)]' : 'border border-white/10 bg-white/5 text-white/60';
+                    
+                    html += `
+                        <button onclick="toggleDynamicMod('${group.id}', '${opt.id}', ${group.max_selections || 1})" 
+                                id="mod-btn-${opt.id}" 
+                                class="mod-btn transition-all duration-300 p-4 rounded-2xl font-bold text-xs text-left flex justify-between items-center ${selClass}">
+                            <span>${opt.name}</span>
+                            ${parseFloat(opt.price_adjustment) > 0 ? `<span class="text-[9px] opacity-60">+L.${opt.price_adjustment}</span>` : ''}
+                        </button>`;
                 });
                 html += `</div></div>`;
             });
             
-            html += `<div class="mb-6"><h3 class="text-white/60 uppercase text-xs tracking-widest font-bold mb-3">Instrucciones para este plato</h3><input type="text" id="mod-note" placeholder="Ej. Sin cebolla..." class="w-full p-4 bg-white/5 border border-white/10 text-white rounded-2xl text-base focus:outline-none focus:border-gold"></div>`;
+            html += `
+                <div class="mb-6">
+                    <h3 class="text-white/60 uppercase text-[10px] tracking-[0.2em] font-black mb-3">Instrucciones Especiales</h3>
+                    <input type="text" id="mod-note" placeholder="Ej. Bien caliente, sin azúcar..." class="w-full p-5 bg-white/5 border border-white/10 text-white rounded-2xl text-sm focus:outline-none focus:border-gold transition-all">
+                </div>`;
             
             container.innerHTML = html;
             document.getElementById('mod-item-name').innerText = currentItem.name;
@@ -1357,7 +1587,8 @@
                 return;
             }
 
-            document.getElementById('badge-name').innerText = currentCustomer.name.split(' ')[0];
+            const firstName = currentCustomer.name.split(' ')[0];
+            document.getElementById('badge-name').innerText = firstName;
             document.getElementById('badge-tier').innerText = `${currentCustomer.tier || 'BRONZE'} TIER`;
             document.getElementById('loyalty-badge').classList.remove('hidden');
             
@@ -1369,6 +1600,62 @@
                     <p class="text-[10px] text-white/50 tracking-tight">${currentCustomer.points || 0} Pts</p>
                 </div>
             `;
+
+            // VIP Logic
+            const isVip = currentCustomer.is_vip === true || (Array.isArray(currentCustomer.tags) && currentCustomer.tags.includes('VIP'));
+            const vipCard = document.getElementById('vip-gold-card');
+            const vipPlaceholder = document.getElementById('vip-placeholder');
+
+            if (isVip) {
+                vipCard.classList.remove('hidden');
+                vipPlaceholder.classList.add('hidden');
+                
+                // Populate Wallet Card
+                document.getElementById('card-name').innerText = currentCustomer.name;
+                document.getElementById('card-balance').innerText = `L ${balance.toFixed(2)}`;
+                document.getElementById('card-points').innerText = currentCustomer.points || 0;
+                
+                // Update QR Code
+                const qrImg = document.getElementById('card-qr');
+                const qrLabel = document.getElementById('qr-label');
+                if (qrImg && currentCustomer.phone) {
+                    // Link to staff view
+                    const qrData = `https://www.richaromacoffee.com/staff?phone=${currentCustomer.phone}`;
+                    qrImg.src = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(qrData)}&color=1a1a1a&bgcolor=ffffff`;
+                    qrLabel.innerText = currentCustomer.name.split(' ')[0] + "'s Rico Pass";
+                }
+
+                // Render Stars (Streak)
+                const starsContainer = document.getElementById('visit-stars');
+                const visits = currentCustomer.visits || 0;
+                const displayStars = 7; // Weekly cycle
+                const activeStars = visits % displayStars === 0 && visits > 0 ? displayStars : visits % displayStars;
+                
+                let starsHtml = '';
+                for (let i = 0; i < displayStars; i++) {
+                    if (i < activeStars) {
+                        starsHtml += '<i class="fas fa-star text-dark text-[10px] drop-shadow-sm"></i>';
+                    } else {
+                        starsHtml += '<i class="fas fa-star text-dark/10 text-[10px]"></i>';
+                    }
+                }
+                starsContainer.innerHTML = starsHtml;
+            } else {
+                vipCard.classList.add('hidden');
+                vipPlaceholder.classList.remove('hidden');
+            }
+
+            // Populate Profile View
+            document.getElementById('profile-name').innerText = currentCustomer.name;
+            document.getElementById('profile-phone').innerText = currentCustomer.phone;
+            document.getElementById('profile-tier').innerText = `${currentCustomer.tier || 'BRONZE'} TIER`;
+            document.getElementById('profile-spent').innerText = `L ${(parseFloat(currentCustomer.total_spent) || 0).toFixed(2)}`;
+            
+            const joinDate = currentCustomer.member_since || currentCustomer.created_at;
+            if (joinDate) {
+                const date = new Date(joinDate);
+                document.getElementById('profile-date').innerText = date.toLocaleDateString('es-HN', { month: 'long', year: 'numeric' });
+            }
         }
 
         
@@ -1420,53 +1707,83 @@
 
         function startTrackClock() {
             clearInterval(trackTimerInterval);
-            const startTime = new Date();
+            if (!activeOrder || !activeOrder.created_at) return;
+            
+            const orderTime = new Date(activeOrder.created_at);
+            
             trackTimerInterval = setInterval(() => {
                 const now = new Date();
-                const diff = Math.floor((now - startTime) / 1000);
+                const diff = Math.floor((now - orderTime) / 1000);
+                if (diff < 0) return;
+                
                 const mins = String(Math.floor(diff / 60)).padStart(2, '0');
                 const secs = String(diff % 60).padStart(2, '0');
                 const timeEl = document.getElementById('track-time');
                 if (timeEl) timeEl.innerText = `${mins}:${secs}`;
+                
+                // Stop clock if order is ready/completed
+                if (['completed', 'ready'].includes(activeOrder.status)) {
+                    clearInterval(trackTimerInterval);
+                }
             }, 1000);
+        }
+
+        function updateNavBadge() {
+            const dot = document.getElementById('nav-tracking-dot');
+            const nav = document.getElementById('nav-tracking');
+            if (activeOrder) {
+                nav.classList.remove('hidden');
+                const isActive = !['completed', 'ready'].includes(activeOrder.status);
+                if (isActive) {
+                    dot.classList.remove('hidden');
+                    nav.querySelector('div').classList.add('animate-pulse', 'shadow-[0_0_15px_rgba(201,166,107,0.3)]');
+                } else {
+                    dot.classList.add('hidden');
+                    nav.querySelector('div').classList.remove('animate-pulse', 'shadow-[0_0_15px_rgba(201,166,107,0.3)]');
+                }
+            } else {
+                nav.classList.add('hidden');
+            }
         }
 
         function showMenuView() {
             document.getElementById('main-view').classList.remove('hidden');
             document.getElementById('fulfillment-selector').classList.remove('hidden');
             document.getElementById('tracking-view').classList.add('hidden');
+            document.getElementById('wallet-view').classList.add('hidden');
+            document.getElementById('profile-view').classList.add('hidden');
 
             // Update Nav State
-            const navTracking = document.getElementById('nav-tracking');
-            const navMenu = document.getElementById('nav-menu');
-            if (navTracking) {
-                navTracking.classList.replace('text-gold', 'text-white/40');
-                navTracking.querySelector('div').classList.replace('bg-gold/10', 'hover:bg-gold/10');
-            }
-            if (navMenu) {
-                navMenu.classList.replace('text-white/40', 'text-gold');
-                navMenu.querySelector('div').classList.replace('hover:bg-gold/10', 'bg-gold/10');
-            }
+            updateNavActive('nav-menu');
         }
 
         function showTracking() {
+            if (!activeOrder) return showMenuView();
             document.getElementById('main-view').classList.add('hidden');
             document.getElementById('fulfillment-selector').classList.add('hidden');
             document.getElementById('tracking-view').classList.remove('hidden');
+            document.getElementById('wallet-view').classList.add('hidden');
+            document.getElementById('profile-view').classList.add('hidden');
             document.getElementById('tracking-icon-container').classList.remove('hidden');
 
+            // Set Initial State based on activeOrder.status
+            const status = activeOrder.status;
+            document.getElementById('track-status-title').innerText = (status === 'ready' || status === 'completed') ? "¡Orden Lista!" : "Preparando tu Orden";
+            
+            // Reset and apply correct steps
+            ['received', 'prep', 'ready'].forEach(s => {
+                const icon = document.getElementById(`step-${s}-icon`);
+                const text = document.getElementById(`step-${s}-text`);
+                if (icon) { icon.classList.remove('bg-gold', 'text-dark'); icon.classList.add('bg-white/10', 'text-white/50'); }
+                if (text) { text.classList.remove('text-white'); text.classList.add('text-white/50'); }
+            });
+
+            if (status === 'pending' || status === 'paid') setStep('received', true);
+            else if (['preparing', 'drinks_ready', 'food_ready'].includes(status)) setStep('prep', true);
+            else if (status === 'ready' || status === 'completed') setStep('ready', true);
+
             // Update Nav State
-            const navTracking = document.getElementById('nav-tracking');
-            const navMenu = document.getElementById('nav-menu');
-            if (navTracking) {
-                navTracking.classList.remove('hidden');
-                navTracking.classList.replace('text-white/40', 'text-gold');
-                navTracking.querySelector('div').classList.replace('hover:bg-gold/10', 'bg-gold/10');
-            }
-            if (navMenu) {
-                navMenu.classList.replace('text-gold', 'text-white/40');
-                navMenu.querySelector('div').classList.replace('bg-gold/10', 'hover:bg-gold/10');
-            }
+            updateNavActive('nav-tracking');
 
             if (activeOrder && activeOrder.payment_method === 'transfer') {                document.getElementById('transfer-upload-section').classList.remove('hidden');
                 document.getElementById('track-bank-info').classList.remove('hidden');
@@ -1474,7 +1791,7 @@
                 document.getElementById('transfer-upload-section').classList.add('hidden');
             }
             
-            document.getElementById('track-order-num').innerText = activeOrder.order_number || activeOrder.id;
+            document.getElementById('track-order-num').innerText = activeOrder.order_number ? activeOrder.order_number.toString().padStart(2, '0') : activeOrder.id;
             const types = { pickup: 'Para Llevar', dinein: 'Restaurante', delivery: 'A Domicilio' };
             document.getElementById('track-type').innerText = types[activeOrder.fulfillment_type || fulfillmentType];
             
@@ -1482,8 +1799,17 @@
             const transferTotalEl = document.getElementById('track-transfer-total');
             if (transferTotalEl) transferTotalEl.innerText = `L. ${parseFloat(activeOrder.total || 0).toFixed(2)}`;
             
+            // Highlight first step immediately
+            setStep('received', true); 
             renderTrackedItems();
             startTrackClock();
+
+            // Generate Order QR Code
+            const qrImg = document.getElementById('order-qr');
+            if (qrImg && activeOrder.id) {
+                const qrData = `richaroma:order:${activeOrder.id}`;
+                qrImg.src = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(qrData)}&color=1a1a1a&bgcolor=ffffff`;
+            }
 
             // Addon logic removed per request - show new order button immediately
             document.getElementById('addon-box').classList.add('hidden');
@@ -1493,46 +1819,41 @@
             clearInterval(statusPollingTimer);
             statusPollingTimer = setInterval(async () => {
                 try {
-                    // This assumes we add a GET /api/orders/:id endpoint later.
-                    // For now we can fetch the user's past orders or the full orders list to find it
                     const res = await fetch('/api/orders'); 
                     if(res.ok) {
                         const data = await res.json();
                         const currentOrder = data.orders.find(o => o.id === activeOrder.id);
                         if(currentOrder) {
-                            // Update UI if paid
+                            // Update order number in case it was assigned later
+                            if (currentOrder.order_number) {
+                                document.getElementById('track-order-num').innerText = currentOrder.order_number.toString().padStart(2, '0');
+                            }
+                            
                             if(currentOrder.status === 'paid') {
                                 document.getElementById('transfer-upload-section').classList.add('hidden');
-                                // Keep the clock visible but update the desc
                                 const timeVal = document.getElementById('track-time').innerText;
                                 document.getElementById('track-status-desc').innerHTML = `Orden #${currentOrder.order_number || currentOrder.id} • <span id="track-time">${timeVal}</span> • Pago Confirmado ✅`;
                             }
-                            
-                            // HANDLE REJECTED TRANSFER
                             if(currentOrder.status === 'pending' && activeOrder.payment_method === 'transfer') {
-                                // If staff marks it back to pending (rejected), show alert
                                 if (currentOrder.notes && currentOrder.notes.includes('RECHAZADA')) {
                                     document.getElementById('track-status-title').innerText = "Transferencia Rechazada ⚠️";
                                     document.getElementById('track-status-desc').innerText = "Tu comprobante fue rechazado. Tu orden está en espera.";
                                     document.getElementById('transfer-upload-section').classList.remove('hidden');
-                                    document.getElementById('track-bank-info').classList.remove('hidden'); // Show bank info again
-                                    
+                                    document.getElementById('track-bank-info').classList.remove('hidden'); 
                                     const statusMsg = document.getElementById('receipt-upload-status');
                                     statusMsg.classList.remove('hidden');
                                     statusMsg.innerText = "❌ COMPROBANTE INVÁLIDO. Por favor verifica el monto y vuelve a subir la captura.";
                                     statusMsg.className = "mt-4 p-4 bg-red-500/20 border border-red-500/50 text-red-400 font-bold rounded-xl text-center animate-bounce";
-                                    
-                                    document.getElementById('receipt-upload').classList.remove('hidden'); // Show input again
+                                    document.getElementById('receipt-upload').classList.remove('hidden');
                                 }
                             }
-
-                            if(currentOrder.status === 'preparing') setStep('prep');
-                            if(currentOrder.status === 'completed' || currentOrder.status === 'ready') {
+                            if(['preparing', 'drinks_ready', 'food_ready'].includes(currentOrder.status)) {
+                                setStep('prep');
+                            }
+                            if(['completed', 'ready'].includes(currentOrder.status)) {
                                 setStep('ready');
-                                clearInterval(statusPollingTimer); // Stop polling when done
-                                clearInterval(trackTimerInterval); // Stop clock when ready
-                                
-                                // Disable Add-ons and force new order when completed
+                                clearInterval(statusPollingTimer);
+                                clearInterval(trackTimerInterval);
                                 clearInterval(addonTimer);
                                 document.getElementById('addon-box').classList.add('hidden');
                                 document.getElementById('new-order-btn').classList.remove('hidden');
@@ -1541,6 +1862,53 @@
                     }
                 } catch(e) { console.error('Status poll error', e); }
             }, 3000);
+        }
+
+        function showWalletView() {
+            if (!currentCustomer) return openLoginModal();
+            document.getElementById('main-view').classList.add('hidden');
+            document.getElementById('fulfillment-selector').classList.add('hidden');
+            document.getElementById('tracking-view').classList.add('hidden');
+            document.getElementById('wallet-view').classList.remove('hidden');
+            document.getElementById('profile-view').classList.add('hidden');
+            updateNavActive('nav-wallet');
+        }
+
+        function showProfileView() {
+            if (!currentCustomer) return openLoginModal();
+            document.getElementById('main-view').classList.add('hidden');
+            document.getElementById('fulfillment-selector').classList.add('hidden');
+            document.getElementById('tracking-view').classList.add('hidden');
+            document.getElementById('wallet-view').classList.add('hidden');
+            document.getElementById('profile-view').classList.remove('hidden');
+            updateNavActive('nav-profile');
+        }
+
+        function updateNavActive(activeId) {
+            const navIds = ['nav-menu', 'nav-tracking', 'nav-wallet', 'nav-profile'];
+            navIds.forEach(id => {
+                const el = document.getElementById(id);
+                if (!el) return;
+                if (id === activeId) {
+                    el.classList.replace('text-white/40', 'text-gold');
+                    el.querySelector('div').classList.replace('hover:bg-gold/10', 'bg-gold/10');
+                } else {
+                    el.classList.replace('text-gold', 'text-white/40');
+                    el.querySelector('div').classList.replace('bg-gold/10', 'hover:bg-gold/10');
+                }
+            });
+        }
+
+        function logout() {
+            if (confirm('¿Cerrar sesión?')) {
+                localStorage.removeItem('ra_customer_phone');
+                localStorage.removeItem('ra_customer_pin');
+                localStorage.removeItem('ra_customer_data');
+                currentCustomer = null;
+                showMenuView();
+                updateLoyaltyUI();
+                updateIdentityFields();
+            }
         }
 
         function renderTrackedItems() {
@@ -1569,22 +1937,53 @@
         const prepChime = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3'); // soft ding
         const readyChime = new Audio('https://assets.mixkit.co/active_storage/sfx/2013/2013-preview.mp3'); // happy chime
         let currentStepState = 'pending';
+        let isProcessingAction = false;
 
-        function setStep(step) {
-            if(step === 'prep') {
-                if (currentStepState !== 'prep') {
-                    prepChime.play().catch(e=>console.log(e));
-                    currentStepState = 'prep';
+        async function enableNotifications() {
+            if (isProcessingAction) return;
+            isProcessingAction = true;
+            const granted = await requestNotificationPermission();
+            if (granted) {
+                document.getElementById('notify-btn').classList.add('hidden');
+                showLocalNotification("¡Listo!", "Te avisaremos cuando tu orden esté preparada.");
+            } else {
+                alert("Por favor habilita las notificaciones en la configuración de tu navegador.");
+            }
+            isProcessingAction = false;
+        }
+
+        function setStep(step, silent = false) {
+            if(step === 'received') {
+                const icon = document.getElementById('step-received-icon');
+                const text = document.getElementById('step-received-text');
+                if (icon) {
+                    icon.classList.replace('bg-white/10', 'bg-gold');
+                    icon.classList.replace('text-white/50', 'text-dark');
                 }
+                if (text) {
+                    text.classList.replace('text-white/50', 'text-white');
+                }
+            }
+            if(step === 'prep') {
+                setStep('received', true); // Ensure previous steps are lit silently
+                if (currentStepState !== 'prep' && !silent) {
+                    prepChime.play().catch(e=>console.log(e));
+                }
+                currentStepState = 'prep';
+                
                 document.getElementById('step-prep-icon').classList.replace('bg-white/10', 'bg-gold');
                 document.getElementById('step-prep-icon').classList.replace('text-white/50', 'text-dark');
                 document.getElementById('step-prep-text').classList.replace('text-white/50', 'text-white');
             }
             if(step === 'ready') {
-                if (currentStepState !== 'ready') {
+                setStep('received', true);
+                setStep('prep', true);
+                if (currentStepState !== 'ready' && !silent) {
                     readyChime.play().catch(e=>console.log(e));
-                    currentStepState = 'ready';
+                    showLocalNotification("☕ ¡Orden Lista!", `Tu orden #${activeOrder.order_number || ''} está lista en barra.`);
                 }
+                currentStepState = 'ready';
+
                 document.getElementById('step-ready-icon').classList.replace('bg-white/10', 'bg-gold');
                 document.getElementById('step-ready-icon').classList.replace('text-white/50', 'text-dark');
                 document.getElementById('step-ready-text').classList.replace('text-white/50', 'text-white');
@@ -1631,20 +2030,35 @@
         }
 
         function newOrder() {
+            cart = [];
+            saveCart();
             activeOrder = null;
+            saveActiveOrder();
             clearInterval(addonTimer);
             isAddonMode = false;
+            currentStepState = 'pending';
+            
             document.getElementById('tracking-view').classList.add('hidden');
+            document.getElementById('tracking-icon-container').classList.add('hidden');
             document.getElementById('main-view').classList.remove('hidden');
             document.getElementById('fulfillment-selector').classList.remove('hidden');
             document.getElementById('track-status-title').innerText = "Preparando tu Orden";
             
-            // Reset steps
+            // Reset steps UI
             ['prep', 'ready'].forEach(s => {
-                document.getElementById(`step-${s}-icon`).classList.replace('bg-gold', 'bg-white/10');
-                document.getElementById(`step-${s}-icon`).classList.replace('text-dark', 'text-white/50');
-                document.getElementById(`step-${s}-text`).classList.replace('text-white', 'text-white/50');
+                const icon = document.getElementById(`step-${s}-icon`);
+                const text = document.getElementById(`step-${s}-text`);
+                if (icon) {
+                    icon.classList.remove('bg-gold', 'text-dark');
+                    icon.classList.add('bg-white/10', 'text-white/50');
+                }
+                if (text) {
+                    text.classList.remove('text-white');
+                    text.classList.add('text-white/50');
+                }
             });
+            
+            updateCartUI();
         }
 
         function openLoginModal() {
@@ -1658,45 +2072,87 @@
             document.getElementById('login-modal').classList.add('hidden');
         }
 
-        async function handleInlineLogin() {
+        let isSignupMode = false;
+        function toggleLoginMode() {
+            isSignupMode = !isSignupMode;
+            const title = document.getElementById('login-title');
+            const desc = document.getElementById('login-desc');
+            const nameField = document.getElementById('login-name-field');
+            const btn = document.getElementById('inline-login-btn');
+            const toggle = document.getElementById('login-mode-toggle');
+
+            if (isSignupMode) {
+                title.innerText = "Crear Cuenta";
+                desc.innerText = "Únete al club y empieza a ganar.";
+                nameField.classList.remove('hidden');
+                btn.innerText = "Registrarme";
+                toggle.innerText = "¿Ya tienes cuenta? Ingresa";
+            } else {
+                title.innerText = "Acceder";
+                desc.innerText = "Ingresa tu número y PIN para continuar.";
+                nameField.classList.add('hidden');
+                btn.innerText = "Ingresar";
+                toggle.innerText = "¿No tienes cuenta? Regístrate";
+            }
+        }
+
+        async function handleInlineAuth() {
             const phoneInput = document.getElementById('login-phone');
             const pinInput = document.getElementById('login-pin');
+            const nameInput = document.getElementById('login-name');
             const btn = document.getElementById('inline-login-btn');
-            
+
             const phone = phoneInput.value.replace(/[^\d+]/g, '');
             const pin = pinInput.value;
-            
+            const name = nameInput.value;
+
             if (!phone || pin.length !== 4) {
                 alert("Ingresa un número y PIN de 4 dígitos.");
                 return;
             }
-            
+
+            if (isSignupMode && !name) {
+                alert("Por favor ingresa tu nombre.");
+                return;
+            }
+
             const ogText = btn.innerHTML;
             btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
             btn.disabled = true;
-            
+
             try {
-                const res = await fetch('/api/customer/login', {
+                const endpoint = isSignupMode ? '/api/customers' : '/api/customer/login';
+                const body = isSignupMode ? { name, phone, pin } : { phone, pin };
+
+                const res = await fetch(endpoint, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ phone, pin })
+                    body: JSON.stringify(body)
                 });
-                
+
                 const data = await res.json();
                 if (res.ok) {
                     currentCustomer = data.customer;
                     localStorage.setItem('ra_customer_phone', phone);
                     localStorage.setItem('ra_customer_pin', pin);
                     localStorage.setItem('ra_customer_data', JSON.stringify(data.customer));
-                    
+
                     updateLoyaltyUI();
                     updateIdentityFields();
                     closeLoginModal();
-                    
+
+                    // Handle redirection if specified
+                    const urlParams = new URLSearchParams(window.location.search);
+                    const redirect = urlParams.get('redirect');
+                    if (redirect === 'membership') {
+                        window.location.href = '/membership';
+                        return;
+                    }
+
                     // Re-render checkout to show new options (like Rico Cash)
                     renderPaymentOptions();
                 } else {
-                    alert(data.error || "Login fallido");
+                    alert(data.error || "Error en autenticación");
                 }
             } catch (e) {
                 console.error(e);
@@ -1707,26 +2163,50 @@
             }
         }
 
-        function newOrder() {
-            cart = [];
-            saveCart();
-            activeOrder = null;
-            saveActiveOrder();
-            document.getElementById('tracking-view').classList.add('hidden');
-            document.getElementById('tracking-icon-container').classList.add('hidden');
-            document.getElementById('main-view').classList.remove('hidden');
-            document.getElementById('fulfillment-selector').classList.remove('hidden');
-            updateCartUI();
+        // PWA Install Logic
+        let deferredPrompt;
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            if (!localStorage.getItem('pwa_dismissed')) {
+                document.getElementById('pwa-install-prompt').classList.remove('hidden');
+            }
+        });
+
+        document.getElementById('pwa-install-btn')?.addEventListener('click', async () => {
+            if (deferredPrompt) {
+                deferredPrompt.prompt();
+                const { outcome } = await deferredPrompt.userChoice;
+                if (outcome === 'accepted') dismissPWA();
+                deferredPrompt = null;
+            }
+        });
+
+        function dismissPWA() {
+            document.getElementById('pwa-install-prompt').classList.add('hidden');
+            localStorage.setItem('pwa_dismissed', 'true');
+        }
+
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('/sw-order.js');
+        }
+
+        async function requestNotificationPermission() {
+            if ('Notification' in window) {
+                const permission = await Notification.requestPermission();
+                return permission === 'granted';
+            }
+            return false;
+        }
+
+        function showLocalNotification(title, body) {
+            if ('Notification' in window && Notification.permission === 'granted') {
+                new Notification(title, { body, icon: '/rico-logo.png' });
+            }
         }
 
         // Init
         async function refreshCustomerData() {
-            // Check for active order tracking nav
-            if (activeOrder) {
-                const navTracking = document.getElementById('nav-tracking');
-                if (navTracking) navTracking.classList.remove('hidden');
-            }
-
             // Load from cache first for instant UX
             const cachedData = localStorage.getItem('ra_customer_data');
             if (cachedData) {
@@ -1738,9 +2218,12 @@
             }
 
             const phone = localStorage.getItem('ra_customer_phone');
+            const pin = localStorage.getItem('ra_customer_pin');
+
             if (phone) {
                 try {
-                    const r = await fetch(`/api/customer/profile?phone=${encodeURIComponent(phone)}`);
+                    // Use secured profile endpoint
+                    const r = await fetch(`/api/customer/profile?phone=${encodeURIComponent(phone)}&pin=${encodeURIComponent(pin || '')}`);
                     const u = await r.json();
                     if (u && !u.error) {
                         currentCustomer = u;
@@ -1750,11 +2233,43 @@
                     } else {
                         currentCustomer = null;
                         localStorage.removeItem('ra_customer_phone');
+                        localStorage.removeItem('ra_customer_pin');
                         localStorage.removeItem('ra_customer_data');
                         updateLoyaltyUI();
                         updateIdentityFields();
                     }
                 } catch(e) { console.error(e); }
+            }
+
+            // BACKGROUND STATUS SYNC (Silently check active order)
+            if (activeOrder) {
+                // If order is more than 6 hours old, clear it
+                const orderTime = new Date(activeOrder.created_at);
+                const hoursOld = (new Date() - orderTime) / 1000 / 60 / 60;
+                if (hoursOld > 6) {
+                    activeOrder = null;
+                    saveActiveOrder();
+                    updateNavBadge();
+                    return;
+                }
+
+                try {
+                    const res = await fetch('/api/orders'); 
+                    if(res.ok) {
+                        const data = await res.json();
+                        const serverOrder = data.orders.find(o => o.id === activeOrder.id);
+                        if(serverOrder) {
+                            if (activeOrder.status !== serverOrder.status) {
+                                activeOrder = serverOrder;
+                                saveActiveOrder();
+                                if (activeOrder.status === 'ready') {
+                                    showLocalNotification("☕ ¡Orden Lista!", `Tu orden #${activeOrder.order_number} está lista.`);
+                                }
+                            }
+                        }
+                    }
+                } catch(e) {}
+                updateNavBadge();
             }
         }
 
@@ -1776,22 +2291,26 @@
             loadMenu();
             loadCart();
             setFulfillment('pickup');
-            
-            // Auto login logic
-            refreshCustomerData();
 
-            // Check if there is an active order to track
+            // Initial customer load
+            await refreshCustomerData();
+
+            // Handle deep links (e.g. login request from membership page)
             const urlParams = new URLSearchParams(window.location.search);
-            if (activeOrder || urlParams.get('view') === 'tracking') {
-                if (activeOrder) {
-                    showTracking();
-                } else if (urlParams.get('view') === 'tracking') {
-                    // If they forced tracking view but none active, show menu
-                    showMenuView();
-                }
+            if (urlParams.get('action') === 'login' && !currentCustomer) {
+                openLoginModal();
             }
-        });
 
+            // Always show menu by default unless specifically forced by URL
+            if (urlParams.get('view') === 'tracking' && activeOrder) {
+                showTracking();
+            } else {
+                showMenuView();
+            }
+
+            // Start silent background sync every 15s
+            setInterval(refreshCustomerData, 15000);
+        });
     </script>
 </body>
 </html>

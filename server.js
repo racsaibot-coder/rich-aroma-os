@@ -28,6 +28,91 @@ const supabase = createClient(supabaseUrl, supabaseKey);
 app.use(cors());
 app.use(express.json({ limit: '10mb' })); // Increased for image uploads
 
+// ==========================================
+// CALI DISTRO API (Sync with api/cali.js)
+// ==========================================
+
+app.all('/api/cali', async (req, res) => {
+    try {
+        const { action, id } = req.query;
+        const isAdmin = req.user && req.user.role === 'admin';
+
+        // --- PUBLIC ---
+        if (req.method === 'GET' && action === 'products') {
+            const { data, error } = await supabase.from('cali_products').select('*').order('created_at', { ascending: false });
+            if (error) throw error;
+            return res.json(data || []);
+        }
+        if (req.method === 'GET' && action === 'locations') {
+            const { data, error } = await supabase.from('cali_locations').select('*').eq('active', true);
+            if (error) throw error;
+            return res.json(data || []);
+        }
+        if (req.method === 'POST' && action === 'submit_order') {
+            const { data, error } = await supabase.from('cali_orders').insert(req.body).select().single();
+            if (error) throw error;
+            return res.json(data);
+        }
+
+        // --- ADMIN REQUIRED ---
+        if (!isAdmin && !req.headers.authorization?.includes('EMP-admin')) {
+            return res.status(401).json({ error: 'Unauthorized' });
+        }
+
+        if (action === 'products' && req.method === 'POST') {
+            const { data, error } = await supabase.from('cali_products').insert(req.body).select().single();
+            if (error) throw error;
+            return res.json(data);
+        }
+        if (action === 'products' && id && req.method === 'PUT') {
+            const { data, error } = await supabase.from('cali_products').update(req.body).eq('id', id).select().single();
+            if (error) throw error;
+            return res.json(data);
+        }
+        if (action === 'locations' && req.method === 'POST') {
+            const { data, error } = await supabase.from('cali_locations').insert(req.body).select().single();
+            if (error) throw error;
+            return res.json(data);
+        }
+        if (req.method === 'GET' && action === 'orders') {
+            const { data, error } = await supabase.from('cali_orders').select('*, cali_locations(name, city), cali_products(name)').order('created_at', { ascending: false });
+            if (error) throw error;
+            return res.json(data || []);
+        }
+        if (action === 'update_order' && id && req.method === 'PATCH') {
+            const { imageBase64, action: subAction, ...updates } = req.body;
+            if (subAction === 'upload_receipt' && imageBase64) {
+                const mockUrl = `https://storage.example.com/receipts/MOCK_\${id}.png`;
+                const { data, error } = await supabase.from('cali_orders').update({ payment_proof_url: mockUrl }).eq('id', id).select().single();
+                if (error) throw error;
+                return res.json(data);
+            }
+            const { data, error } = await supabase.from('cali_orders').update(updates).eq('id', id).select().single();
+            if (error) throw error;
+            return res.json(data);
+        }
+
+        res.status(404).json({ error: 'Action not found' });
+    } catch (e) {
+        res.status(500).json({ error: e.message });
+    }
+});
+
+app.post('/api/checkout', async (req, res) => {
+    try {
+        const { product_id, quantity, selections } = req.body;
+        const { data: product } = await supabase.from('cali_products').select('*').eq('id', product_id).single();
+        if (!product) return res.status(404).json({ error: 'Product not found' });
+
+        let unitPrice = parseFloat(product.price);
+        if (selections?.milk === 'Oat Milk') unitPrice += (product.bottles_per_pack || 1);
+
+        res.json({ url: `https://checkout.stripe.com/pay/mock_session_\${Date.now()}` });
+    } catch (e) {
+        res.status(500).json({ error: e.message });
+    }
+});
+
 // Global Store Status
 let storeIsOpen = false; // Default to closed, will sync below
 
@@ -268,6 +353,15 @@ app.use(requireAuth);
 // Serve static files
 app.use('/src', express.static(path.join(__dirname, 'src')));
 app.use(express.static(path.join(__dirname, 'public')));
+
+// Explicit routes for common pages (matching vercel.json)
+app.get('/pos', (req, res) => res.sendFile(path.join(__dirname, 'public/drive-thru.html')));
+app.get('/kitchen', (req, res) => res.sendFile(path.join(__dirname, 'public/kitchen.html')));
+app.get('/order', (req, res) => res.sendFile(path.join(__dirname, 'public/order.html')));
+app.get('/membership', (req, res) => res.sendFile(path.join(__dirname, 'public/membership.html')));
+app.get('/staff', (req, res) => res.sendFile(path.join(__dirname, 'public/staff.html')));
+app.get('/driver', (req, res) => res.sendFile(path.join(__dirname, 'src/driver/dashboard.html')));
+app.get('/admin', (req, res) => res.sendFile(path.join(__dirname, 'public/admin.html')));
 
 // ============== API ROUTES ==============
 
@@ -959,7 +1053,7 @@ app.post('/api/orders', async (req, res) => {
         }
 
         const orderData = {
-            id: `ORD-\${Date.now()}`,
+            id: 'ORD-' + Date.now(),
             order_number: orderNum,
             items: finalOrderData.items,
             subtotal: finalOrderData.subtotal,
@@ -1007,45 +1101,57 @@ app.post('/api/orders', async (req, res) => {
         } catch (fsErr) { console.error("Local save failed:", fsErr); }
 
         // --- DEDUCTION ENGINE ---
-        try {
-            const orderItems = orderData.items || []; 
-            for (const item of orderItems) {
-                // 1. Deduct for Menu Item
-                const { data: ingredients } = await supabase
-                    .from('menu_item_ingredients')
-                    .select('*')
-                    .eq('item_id', item.id);
-                
-                for (const ing of (ingredients || [])) {
-                    const amountToDeduct = ing.quantity * (item.qty || 1);
-                    await supabase.rpc('decrement_inventory', { 
-                        item_id: ing.inventory_item_id, 
-                        amount: amountToDeduct 
-                    });
-                }
+        (async () => {
+            try {
+                const orderItems = orderData.items || [];
+                const itemIds = orderItems.map(i => i.id);
+                const allMods = [];
+                orderItems.forEach(i => { if (i.mods && Array.isArray(i.mods)) allMods.push(...i.mods); });
+                const modIds = allMods.map(m => typeof m === 'object' ? m.id : m).filter(Boolean);
 
-                // 2. Deduct for Modifiers
-                if (item.mods && Array.isArray(item.mods)) {
-                    for (const mod of item.mods) {
-                        const modId = typeof mod === 'object' ? mod.id : mod;
-                        if (!modId) continue;
+                // Fetch all ingredients in parallel
+                const [itemIngsRes, modIngsRes] = await Promise.all([
+                    supabase.from('menu_item_ingredients').select('*').in('menu_item_id', itemIds),
+                    supabase.from('modifier_ingredients').select('*').in('modifier_id', modIds)
+                ]);
 
-                        const { data: modIngs } = await supabase
-                            .from('modifier_ingredients')
-                            .select('*')
-                            .eq('modifier_id', modId);
-                            
-                        for (const mIng of (modIngs || [])) {
-                            const amountToDeduct = mIng.quantity * (item.qty || 1); 
-                            await supabase.rpc('decrement_inventory', {
-                                item_id: mIng.inventory_item_id,
-                                amount: amountToDeduct
-                            });
+                const allDecrements = [];
+
+                // 1. Process Menu Items
+                for (const item of orderItems) {
+                    const ings = (itemIngsRes.data || []).filter(i => i.menu_item_id === item.id);
+                    for (const ing of ings) {
+                        const amountToDeduct = (parseFloat(ing.quantity) || 0) * (item.qty || 1);
+                        allDecrements.push(supabase.rpc('decrement_inventory', { 
+                            item_id: ing.inventory_item_id, 
+                            amount: amountToDeduct 
+                        }));
+                    }
+
+                    // 2. Process Modifiers for this item
+                    if (item.mods && Array.isArray(item.mods)) {
+                        for (const mod of item.mods) {
+                            const modId = typeof mod === 'object' ? mod.id : mod;
+                            const ings = (modIngsRes.data || []).filter(i => i.modifier_id === modId);
+                            for (const mIng of ings) {
+                                const amountToDeduct = (parseFloat(mIng.quantity) || 0) * (item.qty || 1);
+                                allDecrements.push(supabase.rpc('decrement_inventory', { 
+                                    item_id: mIng.inventory_item_id, 
+                                    amount: amountToDeduct 
+                                }));
+                            }
                         }
                     }
                 }
-            }
-        } catch (deductError) { console.error("Inventory deduction failed:", deductError); }
+
+                // Execute all decrements in parallel (fire and forget)
+                if (allDecrements.length > 0) {
+                    console.log(`[Inventory] Firing ${allDecrements.length} decrements...`);
+                    await Promise.all(allDecrements);
+                }
+
+            } catch (deductError) { console.error("[Inventory] Deduction engine failed:", deductError); }
+        })();
 
         res.json(data);
 
@@ -3787,64 +3893,13 @@ if (require.main === module) {
     });
 }
 
-module.exports = app;
-
-// ==========================================
-// CALI DISTRO API ROUTES
-// ==========================================
-
+// Legacy support for explicit routes
 app.get('/api/cali/products', async (req, res) => {
-    const { data, error } = await supabase.from('cali_products').select('*').order('created_at', { ascending: false });
-    if (error) return res.status(500).json({ error: error.message });
+    const { data } = await supabase.from('cali_products').select('*').order('created_at', { ascending: false });
     res.json(data);
 });
-
-app.post('/api/cali/products', requireAdmin, async (req, res) => {
-    const { data, error } = await supabase.from('cali_products').insert(req.body).select().single();
-    if (error) return res.status(500).json({ error: error.message });
-    res.json(data);
-});
-
-app.put('/api/cali/products/:id', requireAdmin, async (req, res) => {
-    const { data, error } = await supabase.from('cali_products').update(req.body).eq('id', req.params.id).select().single();
-    if (error) return res.status(500).json({ error: error.message });
-    res.json(data);
-});
-
-app.delete('/api/cali/products/:id', requireAdmin, async (req, res) => {
-    const { error } = await supabase.from('cali_products').delete().eq('id', req.params.id);
-    if (error) return res.status(500).json({ error: error.message });
-    res.json({ success: true });
-});
-
-
-app.post('/api/cali/locations', requireAdmin, async (req, res) => {
-    const { data, error } = await supabase.from('cali_locations').insert(req.body).select().single();
-    if (error) return res.status(500).json({ error: error.message });
-    res.json(data);
-});
-
-app.put('/api/cali/locations/:id', requireAdmin, async (req, res) => {
-    const { data, error } = await supabase.from('cali_locations').update(req.body).eq('id', req.params.id).select().single();
-    if (error) return res.status(500).json({ error: error.message });
-    res.json(data);
-});
-
-app.delete('/api/cali/locations/:id', requireAdmin, async (req, res) => {
-    const { error } = await supabase.from('cali_locations').delete().eq('id', req.params.id);
-    if (error) return res.status(500).json({ error: error.message });
-    res.json({ success: true });
-});
-
 app.get('/api/cali/locations', async (req, res) => {
-    const { data, error } = await supabase.from('cali_locations').select('*');
-    if (error) return res.status(500).json({ error: error.message });
-    res.json(data);
-});
-
-app.get('/api/cali/orders', requireAdmin, async (req, res) => {
-    const { data, error } = await supabase.from('cali_orders').select('*, cali_locations(*)').order('created_at', { ascending: false });
-    if (error) return res.status(500).json({ error: error.message });
+    const { data } = await supabase.from('cali_locations').select('*');
     res.json(data);
 });
 

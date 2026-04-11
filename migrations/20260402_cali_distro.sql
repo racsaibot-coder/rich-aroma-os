@@ -9,6 +9,7 @@ CREATE TABLE IF NOT EXISTS cali_products (
     inventory_limit INTEGER,
     active BOOLEAN DEFAULT true,
     image_url TEXT,
+    options JSONB DEFAULT jsonb_build_object('milk', jsonb_build_array(jsonb_build_object('name', 'Regular Milk', 'price', 0), jsonb_build_object('name', 'Oat Milk', 'price', 1.0)), 'flavors', jsonb_build_array('Vanilla', 'Caramel', 'Oreo Supreme', 'French Vanilla', 'Mix')),
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
@@ -26,6 +27,7 @@ CREATE TABLE IF NOT EXISTS cali_locations (
 CREATE TABLE IF NOT EXISTS cali_orders (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     customer_name TEXT NOT NULL,
+    customer_email TEXT,
     customer_phone TEXT NOT NULL,
     location_id UUID REFERENCES cali_locations(id),
     product_id UUID REFERENCES cali_products(id),
@@ -34,5 +36,8 @@ CREATE TABLE IF NOT EXISTS cali_orders (
     payment_status TEXT DEFAULT 'pending', -- pending, confirmed, rejected
     payment_proof_url TEXT,
     tracking_number TEXT,
+    selections JSONB DEFAULT '{}'::jsonb,
+    notes TEXT,
+    payment_link TEXT,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );

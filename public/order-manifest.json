@@ -1,0 +1,20 @@
+{
+  "name": "Rich Aroma Order",
+  "short_name": "Rich Aroma",
+  "start_url": "/order",
+  "display": "standalone",
+  "background_color": "#1E1610",
+  "theme_color": "#C9A66B",
+  "icons": [
+    {
+      "src": "/rico-logo.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/rico-logo.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

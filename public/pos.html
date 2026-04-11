@@ -1,420 +1,1698 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="en">
 <head>
     <link rel="icon" type="image/png" href="/favicon.png">    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Rich Aroma | POS</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rich Aroma POS v2.0</title>
+    <link rel="manifest" href="/pos-manifest.json">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link rel="apple-touch-icon" href="/favicon.png">
+    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    colors: {
-                        gold: '#C9A66B',
-                        dark: '#1E1610',
-                        charcoal: '#2C241E',
-                        cream: '#F5F5F0',
-                        success: '#10B981',
-                        danger: '#EF4444'
-                    },
-                    fontFamily: {
-                        sans: ['Inter', 'sans-serif'],
-                        display: ['Playfair Display', 'serif']
+    <style>
+        .blink-urgent { animation: pulse-red 2s infinite; }
+        @keyframes pulse-red {
+            0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); }
+            70% { box-shadow: 0 0 0 10px rgba(239, 68, 68, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+        }
+        .mic-active {
+            background-color: #ef4444 !important;
+            animation: pulse-mic 1s infinite;
+        }
+        @keyframes pulse-mic {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); }
+        }
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: #1a1714;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #333;
+            border-radius: 10px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: #444;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 h-screen flex overflow-hidden">
+
+    <!-- LEFT SIDEBAR: LIVE ORDER FEED -->
+    <div class="w-1/5 bg-gray-900 flex flex-col border-r border-black overflow-hidden shadow-2xl">
+        <div class="p-4 bg-gray-800 border-b border-black flex justify-between items-center">
+            <div>
+                <h3 class="text-white font-black text-xs uppercase tracking-widest flex items-center gap-2">
+                    <span class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
+                    Heartbeat
+                </h3>
+                <p id="hb-status" class="text-[8px] text-gray-500 font-bold uppercase mt-0.5 tracking-tighter">Last sync: Just now</p>
+            </div>
+            <div class="flex items-center gap-2">
+                <button onclick="fetchLiveOrders()" class="text-gray-500 hover:text-white transition-colors"><i class="fas fa-sync-alt text-[10px]"></i></button>
+                <span id="live-order-count" class="bg-blue-600 text-white text-[10px] px-2 py-0.5 rounded-full font-bold">0</span>
+            </div>
+        </div>
+        <div class="flex-1 overflow-y-auto p-2 space-y-2 custom-scrollbar" id="live-order-feed">
+            <!-- Orders injected here -->
+            <div class="text-center py-10 text-gray-600 text-xs italic">Connecting...</div>
+        </div>
+    </div>
+
+    <!-- PIN SETUP MODAL -->
+    <div id="pin-modal" class="hidden fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50">
+        <div class="bg-white w-1/3 rounded-2xl shadow-2xl p-8 text-center">
+            <div class="mb-4">
+                <span class="text-6xl">👻</span>
+            </div>
+            <h2 class="text-2xl font-bold text-gray-800 mb-2">Ghost Account Detected!</h2>
+            <p class="text-gray-600 mb-6">This player won rewards but hasn't set up their security PIN yet. Ask them to choose a 4-digit PIN.</p>
+            
+            <input type="password" id="new-pin" maxlength="4" class="text-center text-4xl tracking-widest w-full border-2 border-gray-300 rounded-xl p-4 mb-6 focus:border-blue-500 outline-none" placeholder="0000">
+            
+            <button onclick="savePin()" class="w-full bg-blue-600 text-white py-4 rounded-xl font-bold text-xl shadow-lg hover:bg-blue-700">
+                Set PIN & Activate
+            </button>
+        </div>
+    </div>
+
+    
+    <!-- START SHIFT / LOGIN MODAL -->
+    <div id="shift-modal" class="hidden fixed inset-0 bg-black bg-opacity-95 flex items-center justify-center z-[100] transition-all backdrop-blur-md">
+        <div class="bg-white w-full max-w-md rounded-3xl shadow-2xl p-8 text-center border-t-8 border-gold">
+            <div id="login-stage">
+                <div class="w-20 h-20 bg-gold/10 text-gold rounded-full flex items-center justify-center mx-auto mb-6 text-3xl">
+                    <i class="fas fa-user-lock"></i>
+                </div>
+                <h2 class="text-3xl font-black text-gray-800 mb-2 uppercase tracking-tighter">Cashier Login</h2>
+                <p class="text-gray-500 mb-8 font-bold text-xs uppercase tracking-widest">Ingrese su PIN personal</p>
+                
+                <input type="password" id="login-pin" maxlength="4" onkeyup="if(event.key==='Enter') handleLogin()" class="text-center text-5xl tracking-[0.5em] w-full border-b-4 border-gray-100 rounded-none p-4 mb-8 focus:border-gold outline-none font-black text-gold" placeholder="****">
+                
+                <button onclick="handleLogin()" class="w-full bg-gray-900 text-white py-5 rounded-2xl font-black text-xl shadow-xl hover:bg-black active:scale-95 transition-all uppercase tracking-widest">Entrar</button>
+            </div>
+
+            <div id="open-shift-stage" class="hidden">
+                <div class="w-20 h-20 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto mb-6 text-3xl">
+                    <i class="fas fa-cash-register"></i>
+                </div>
+                <h2 class="text-2xl font-black text-gray-800 mb-2 uppercase tracking-tighter" id="welcome-msg">Bienvenido</h2>
+                <p class="text-gray-500 mb-8 font-bold text-xs uppercase tracking-widest">La caja está cerrada. Inicie turno:</p>
+                
+                <div class="mb-8">
+                    <label class="block text-left text-[10px] font-black uppercase text-gray-400 tracking-widest mb-2">Base de Caja (Lempiras)</label>
+                    <input type="number" id="shift-cash" onkeyup="if(event.key==='Enter') confirmStartShift()" class="text-center text-5xl w-full border-b-4 border-gray-100 rounded-none p-4 focus:border-green-500 outline-none font-black text-green-600" placeholder="0.00">
+                </div>
+                
+                <button onclick="confirmStartShift()" class="w-full bg-green-600 text-white py-5 rounded-2xl font-black text-xl shadow-xl hover:bg-green-700 active:scale-95 transition-all uppercase tracking-widest">Abrir Registro</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- RECARGA MODAL -->
+    <div id="recarga-modal" class="hidden fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-[80] backdrop-blur-sm">
+        <div class="bg-white w-full max-w-sm rounded-2xl shadow-2xl p-8">
+            <h2 class="text-2xl font-bold text-gray-800 mb-2 text-center">Recargar Rico Cash</h2>
+            <p class="text-center text-gray-500 mb-6 text-sm">Add funds to customer wallet</p>
+            
+            <input type="number" id="recarga-amount" placeholder="Monto (Lps)" class="w-full border-2 border-gray-300 rounded-xl p-4 mb-4 text-center text-2xl font-bold focus:border-gold outline-none">
+            
+            <div class="grid grid-cols-2 gap-2 mb-6">
+                <button onclick="submitRecarga('cash')" class="py-3 bg-green-100 text-green-700 font-bold rounded-lg hover:bg-green-200">Efectivo</button>
+                <button onclick="submitRecarga('transfer')" class="py-3 bg-purple-100 text-purple-700 font-bold rounded-lg hover:bg-purple-200">Transferencia</button>
+            </div>
+            
+            <button onclick="document.getElementById('recarga-modal').classList.add('hidden')" class="w-full bg-gray-200 text-gray-800 py-3 rounded-xl font-bold hover:bg-gray-300">Cancelar</button>
+        </div>
+    </div>
+
+    <!-- TENDER MODAL -->
+    <div id="tender-modal" class="hidden fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-[70] backdrop-blur-sm">
+        <div class="bg-white w-full max-w-lg rounded-2xl shadow-2xl p-8">
+            <h2 class="text-2xl font-bold text-gray-800 mb-2 text-center border-b pb-4">Método de Pago</h2>
+            
+            <div class="flex justify-between items-center text-2xl mb-6 mt-4 p-4 bg-gray-100 rounded-xl">
+                <span class="text-gray-500 font-bold">Total a Pagar:</span>
+                <span class="font-bold text-black" id="tender-due">L. 0.00</span>
+            </div>
+            
+            <div class="grid grid-cols-4 gap-4 mb-6">
+                <button onclick="setTender('cash')" id="btn-tender-cash" class="py-6 rounded-xl border-2 border-green-500 bg-green-50 text-green-700 font-bold text-lg flex flex-col items-center gap-2 hover:bg-green-100 transition"><i class="fas fa-money-bill-wave text-2xl"></i> Efectivo</button>
+                <button onclick="setTender('card')" id="btn-tender-card" class="hidden py-6 rounded-xl border-2 border-gray-200 text-gray-500 font-bold text-lg flex flex-col items-center gap-2 hover:bg-gray-50 transition"><i class="fas fa-credit-card text-2xl"></i> Tarjeta</button>
+                <button onclick="setTender('transfer')" id="btn-tender-transfer" class="py-6 rounded-xl border-2 border-gray-200 text-gray-500 font-bold text-lg flex flex-col items-center gap-2 hover:bg-gray-50 transition"><i class="fas fa-exchange-alt text-2xl"></i> Transf</button>
+                <button onclick="setTender('rico_balance')" id="btn-tender-rico" class="py-6 rounded-xl border-2 border-gray-200 text-gray-500 font-bold text-lg flex flex-col items-center gap-2 hover:bg-gray-50 transition"><i class="fas fa-wallet text-2xl"></i> Rico Cash</button>
+            </div>
+            
+            <div id="rico-instructions" class="hidden mb-6 p-4 bg-blue-50 text-blue-800 rounded-xl border border-blue-200 text-center">
+                <i class="fas fa-wallet mb-2 text-2xl"></i>
+                <p class="font-bold">Pago con Rico Cash</p>
+                <p id="rico-available-msg" class="text-sm mt-1">Balance disponible: L. 0.00</p>
+            </div>
+
+            <div id="transfer-instructions" class="hidden mb-6 p-4 bg-purple-50 text-purple-800 rounded-xl border border-purple-200 text-center">
+                <i class="fas fa-info-circle mb-2 text-2xl"></i>
+                <p class="font-bold">Transferencia Bancaria</p>
+                <p class="text-sm mt-1">Verificar captura en WhatsApp antes de completar.</p>
+            </div>
+
+            <div id="cash-calculator" class="hidden space-y-4 mb-8 bg-gray-50 p-4 rounded-xl border border-gray-200">
+                <div class="grid grid-cols-3 gap-2 mb-2">
+                    <button onclick="quickCash(100)" class="py-2 bg-white border border-gray-300 rounded-lg font-bold hover:bg-gray-100 transition">L. 100</button>
+                    <button onclick="quickCash(200)" class="py-2 bg-white border border-gray-300 rounded-lg font-bold hover:bg-gray-100 transition">L. 200</button>
+                    <button onclick="quickCash(500)" class="py-2 bg-white border border-gray-300 rounded-lg font-bold hover:bg-gray-100 transition">L. 500</button>
+                </div>
+                <div class="flex justify-between items-center"><span class="text-gray-500 font-bold">Efectivo Recibido:</span><input type="number" id="tender-received" oninput="calculateChange()" class="w-1/2 p-2 border-2 border-gray-300 rounded-lg text-right text-2xl font-black focus:border-green-500 outline-none" placeholder="0.00"></div>
+                <div class="flex justify-between items-center text-xl text-green-600 font-bold pt-2 border-t border-gray-200"><span>Cambio:</span><span id="tender-change" class="text-2xl font-black">L. 0.00</span></div>
+            </div>
+
+            <div class="flex items-center justify-between mb-6 bg-gray-50 p-4 rounded-xl border border-gray-200">
+                <span class="font-bold text-gray-700"><i class="fas fa-receipt mr-2"></i> Imprimir Recibo</span>
+                <label class="relative inline-flex items-center cursor-pointer">
+                  <input type="checkbox" id="print-receipt-toggle" class="sr-only peer">
+                  <div class="w-11 h-6 bg-gray-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                </label>
+            </div>
+
+            <div class="flex gap-4">
+                <button onclick="document.getElementById('tender-modal').classList.add('hidden')" class="w-1/3 bg-gray-200 text-gray-800 py-4 rounded-xl font-bold hover:bg-gray-300 transition">Cancelar</button>
+                <button onclick="processCobrar()" id="confirm-tender-btn" class="w-2/3 bg-gray-900 text-white py-4 rounded-xl font-bold text-xl shadow-lg hover:bg-black transition flex items-center justify-center gap-2"><i class="fas fa-check"></i> Cobrar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ADMIN PIN MODAL -->
+    <div id="admin-pin-modal" class="hidden fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50">
+        <div class="bg-white w-1/3 rounded-2xl shadow-2xl p-8 text-center">
+            <div class="mb-4 text-red-500 text-5xl"><i class="fas fa-lock"></i></div>
+            <h2 class="text-2xl font-bold text-gray-800 mb-2">Acceso de Gerente</h2>
+            <p class="text-gray-600 mb-6">Enter PIN de Admin</p>
+            
+            <input type="password" id="admin-pin" maxlength="4" class="text-center text-4xl tracking-widest w-full border-2 border-gray-300 rounded-xl p-4 mb-6 focus:border-red-500 outline-none" placeholder="****">
+            
+            <div class="flex gap-4">
+                <button onclick="document.getElementById('admin-pin-modal').classList.add('hidden')" class="w-1/2 bg-gray-200 text-gray-800 py-4 rounded-xl font-bold text-xl hover:bg-gray-300">Cancel</button>
+                <button onclick="verifyAdminPin()" class="w-1/2 bg-red-600 text-white py-4 rounded-xl font-bold text-xl shadow-lg hover:bg-red-700">Login</button>
+            </div>
+        </div>
+    </div>
+
+    
+    <!-- ADMIN DASHBOARD PANEL -->
+    <div id="admin-dashboard" class="hidden fixed inset-0 bg-gray-100 z-[60] flex flex-col">
+        <div class="bg-gray-900 text-white p-4 flex justify-between items-center shadow-md">
+            <h1 class="text-2xl font-bold"><i class="fas fa-lock"></i> Admin Dashboard</h1>
+            <button onclick="closeAdminDashboard()" class="bg-gray-700 hover:bg-gray-600 px-4 py-2 rounded font-bold">Exit Admin</button>
+        </div>
+        <div class="p-8 flex gap-8 h-full">
+            <!-- Quick Actions -->
+            <div class="w-1/4 space-y-4">
+                <button onclick="showAdminTab('menu')" class="w-full bg-white p-6 rounded-xl shadow border-l-4 border-blue-500 text-left font-bold text-lg hover:bg-gray-50">Menu Manager</button>
+                <button onclick="showAdminTab('sales')" class="w-full bg-white p-6 rounded-xl shadow border-l-4 border-green-500 text-left font-bold text-lg hover:bg-gray-50">Sales Report</button>
+                <button onclick="showAdminTab('orders')" class="w-full bg-white p-6 rounded-xl shadow border-l-4 border-purple-500 text-left font-bold text-lg hover:bg-gray-50">Today's Orders</button>
+            </div>
+            <!-- Content Area -->
+            <div class="flex-1 bg-white rounded-xl shadow p-8 overflow-y-auto" id="admin-content-area">
+                <h2 class="text-2xl font-bold mb-4 text-gray-800">Welcome to Admin</h2>
+                <p class="text-gray-500 mb-6">Select an option from the left.</p>
+            </div>
+        </div>
+    </div>
+
+    </div>
+
+    <!-- CUSTOM ITEM MODAL -->
+    <div id="custom-item-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div class="bg-white w-1/3 rounded-2xl shadow-2xl flex flex-col overflow-hidden">
+            <div class="p-6 border-b border-gray-200 flex justify-between items-center bg-gray-50">
+                <h2 class="text-xl font-bold">Add Custom Item</h2>
+                <button onclick="closeCustomItemModal()" class="text-gray-400 hover:text-red-500 text-3xl">&times;</button>
+            </div>
+            <div class="p-6 space-y-4">
+                <div>
+                    <label class="block text-sm font-bold text-gray-700 mb-1">Item Name</label>
+                    <input type="text" id="custom-item-name" placeholder="e.g. Special Pastry" class="w-full p-3 border border-gray-300 rounded-lg text-lg">
+                </div>
+                <div>
+                    <label class="block text-sm font-bold text-gray-700 mb-1">Price (Lempiras)</label>
+                    <input type="number" id="custom-item-price" placeholder="0.00" class="w-full p-3 border border-gray-300 rounded-lg text-lg">
+                </div>
+                <div>
+                    <label class="block text-sm font-bold text-gray-700 mb-1">Kitchen Category</label>
+                    <select id="custom-item-category" class="w-full p-3 border border-gray-300 rounded-lg text-lg">
+                        <option value="food">Comida (Kitchen)</option>
+                        <option value="coffee">Bebida (Barista)</option>
+                    </select>
+                </div>
+            </div>
+            <div class="p-6 border-t border-gray-200 bg-gray-50">
+                <button onclick="addCustomItemToCart()" class="w-full bg-purple-600 text-white py-3 rounded-xl font-bold text-lg shadow hover:bg-purple-700">
+                    Add to Order
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODIFIER MODAL (Hidden by default) -->
+    <div id="modifier-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div class="bg-white w-[90%] h-[90%] rounded-3xl shadow-2xl flex flex-col overflow-hidden">
+            <!-- Header -->
+            <div class="p-6 border-b border-gray-200 flex justify-between items-center bg-gray-50 shrink-0">
+                <div>
+                    <h2 class="text-3xl font-black" id="mod-item-name">Latte</h2>
+                    <p class="text-green-600 font-mono text-xl" id="mod-item-price">L. 55.00</p>
+                </div>
+                <button onclick="closeModal()" class="w-12 h-12 flex items-center justify-center rounded-full bg-gray-200 text-gray-600 hover:bg-red-500 hover:text-white transition-all text-2xl font-bold">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+
+            <!-- Optimized Grid for Groups -->
+            <div class="flex-1 overflow-y-auto p-8" id="mod-dynamic-container-wrapper">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-8" id="mod-dynamic-container">
+                    <!-- Dynamic groups injected here -->
+                </div>
+                
+                <!-- Custom Note (Full Width) -->
+                <div class="mt-12 pt-8 border-t border-gray-100">
+                    <h3 class="font-bold text-gray-400 uppercase text-xs tracking-widest mb-4">Custom Note / Nota</h3>
+                    <input type="text" id="mod-note" placeholder="Ej. Sin azucar, bien caliente..." class="w-full p-5 bg-gray-50 border-2 border-gray-100 rounded-2xl text-lg focus:border-blue-500 outline-none transition-all">
+                </div>
+            </div>
+
+            <!-- Footer Action -->
+            <div class="p-6 border-t border-gray-200 bg-gray-50 space-y-4">
+                <!-- Quantity Selector -->
+                <div class="flex items-center justify-between bg-white p-3 rounded-xl border-2 border-gray-100 shadow-inner">
+                    <span class="text-gray-400 font-black uppercase text-xs tracking-widest ml-2">QTY / CANTIDAD</span>
+                    <div class="flex items-center gap-4">
+                        <button onclick="changeQuantity(-1)" class="w-14 h-14 flex items-center justify-center rounded-xl bg-gray-100 text-gray-600 hover:bg-gray-200 active:scale-95 transition-all text-3xl font-bold">
+                            <i class="fas fa-minus"></i>
+                        </button>
+                        <span id="mod-quantity" class="font-mono font-black text-4xl text-blue-600 min-w-[3rem] text-center tracking-tighter">1</span>
+                        <button onclick="changeQuantity(1)" class="w-14 h-14 flex items-center justify-center rounded-xl bg-blue-600 text-white hover:bg-blue-700 shadow-lg shadow-blue-600/20 active:scale-95 transition-all text-3xl font-bold">
+                            <i class="fas fa-plus"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <button onclick="confirmItem()" class="w-full bg-blue-600 text-white py-5 rounded-2xl font-black text-2xl shadow-xl hover:bg-blue-700 active:scale-95 transition-all flex justify-between px-10">
+                    <span>Add to Order</span>
+                    <span id="mod-final-price" class="bg-black/20 px-4 py-1 rounded-xl">L. 55.00</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- LEFT: MENU & CART -->
+    <div class="w-[55%] flex flex-col border-r border-gray-300">
+        
+        <!-- Header -->
+        <div class="bg-white p-4 flex justify-between items-center shadow-sm z-50 relative">
+            <div class="flex items-center gap-4">
+                <h1 class="text-2xl font-bold text-gray-800 cursor-pointer select-none" onclick="triggerAdmin()">☕️ POS v2.0</h1>
+                
+                <!-- Store Status Toggle -->
+                <div class="flex items-center gap-2 bg-gray-100 p-1.5 rounded-full border border-gray-200 shadow-inner">
+                    <span id="store-status-label" class="text-sm font-bold text-green-600 px-2 w-16 text-center">ABIERTO</span>
+                    <label class="relative inline-flex items-center cursor-pointer">
+                      <input type="checkbox" id="store-status-toggle" class="sr-only peer" checked onchange="toggleStoreStatus(this)">
+                      <div class="w-11 h-6 bg-gray-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-green-500"></div>
+                    </label>
+                </div>
+            </div>
+
+            <div class="flex gap-3 items-center">
+                <div id="connection-status" class="bg-green-100 text-green-800 px-3 py-1.5 rounded-lg font-mono text-sm transition-colors duration-300">
+                    ONLINE 🟢
+                </div>
+                
+                <!-- Config Dropdown -->
+                <div class="relative inline-block text-left">
+                    <button onclick="document.getElementById('config-menu').classList.toggle('hidden')" class="bg-gray-800 text-white px-3 py-2 rounded-lg font-bold hover:bg-gray-700 transition flex items-center gap-2 text-sm">
+                        <i class="fas fa-cog"></i> Config ▾
+                    </button>
+                    <div id="config-menu" class="hidden origin-top-right absolute right-0 mt-2 w-56 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 divide-y divide-gray-100 z-[60]">
+                        <div class="py-1">
+                            <button onclick="toggleSoloMode(); document.getElementById('config-menu').classList.add('hidden')" id="solo-mode-btn" class="text-gray-700 group flex items-center px-4 py-2 text-sm w-full hover:bg-gray-100">
+                                <i class="fas fa-user-shield mr-3 text-orange-500"></i> Solo Mode: OFF
+                            </button>
+                        </div>
+                        <div class="py-1">
+                            <button onclick="connectHardware(); document.getElementById('config-menu').classList.add('hidden')" class="text-gray-700 group flex items-center px-4 py-2 text-sm w-full hover:bg-gray-100">
+                                <i class="fas fa-plug mr-3 text-blue-500"></i> <span id="printer-status">Connect Hardware</span>
+                            </button>
+                        </div>
+                        <div class="py-1">
+                            <button onclick="printTestReceipt(); document.getElementById('config-menu').classList.add('hidden')" class="text-gray-700 group flex items-center px-4 py-2 text-sm w-full hover:bg-gray-100">
+                                <i class="fas fa-print mr-3 text-gray-500"></i> Test Printer & Drawer
+                            </button>
+                        </div>
+                        <div class="py-1">
+                            <button onclick="endShift(); document.getElementById('config-menu').classList.add('hidden')" class="text-red-600 group flex items-center px-4 py-2 text-sm w-full hover:bg-red-50 font-bold">
+                                <i class="fas fa-door-closed mr-3"></i> Close Shift
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Solo Mode Banner (Dynamic) -->
+        <div id="solo-banner" class="hidden bg-red-600 text-white p-3 text-center font-bold uppercase tracking-widest shadow-md">
+            ⚠️ SOLO SHIFT ACTIVE: DRINKS ONLY. FOOD ORDERS LOCKED TO PREVENT BOTTLENECKS.
+        </div>
+
+        <!-- Smart Upsell Banner Removed -->
+
+        <!-- Category Toggles -->
+        <div class="px-4 pt-4 pb-2 grid grid-cols-5 gap-3 w-full">
+            <button onclick="filterCategory('Combos', this)" class="cat-btn bg-gray-800 text-gold px-2 py-3 rounded-xl font-bold shadow-lg hover:bg-gray-900 transition text-md tracking-wide border-2 border-gray-800 w-full text-center">🔥 Combos</button>
+            <button onclick="filterCategory('Calientes', this)" class="cat-btn bg-gray-100 text-gray-700 px-2 py-3 rounded-xl font-bold shadow hover:bg-gray-200 border-2 border-gray-200 transition text-md tracking-wide w-full text-center">☕ Calientes</button>
+            <button onclick="filterCategory('Heladas', this)" class="cat-btn bg-gray-100 text-gray-700 px-2 py-3 rounded-xl font-bold shadow hover:bg-gray-200 border-2 border-gray-200 transition text-md tracking-wide w-full text-center">🥤 Heladas</button>
+            <button onclick="filterCategory('Comida', this)" class="cat-btn bg-gray-100 text-gray-700 px-2 py-3 rounded-xl font-bold shadow hover:bg-gray-200 border-2 border-gray-200 transition text-md tracking-wide w-full text-center">🥐 Comida</button>
+            <button onclick="openCustomItemModal()" class="bg-purple-100 text-purple-700 px-2 py-3 rounded-xl font-bold shadow hover:bg-purple-200 border-2 border-purple-200 transition text-md tracking-wide w-full text-center"><i class="fas fa-plus"></i> Custom</button>
+        </div>
+
+        <!-- Menu Grid -->
+        <div class="p-4 overflow-y-auto grid grid-cols-4 gap-4 flex-1" id="menu-grid">
+            <!-- Items injected via JS -->
+        </div>
+    </div>
+
+    <!-- RIGHT: CART & WHATSAPP BOT SIM -->
+    <div class="w-1/4 bg-white flex flex-col shadow-xl z-10">
+        
+        <!-- Customer Info -->
+        <div class="p-4 border-b border-gray-200 bg-gray-50">
+            <label class="text-[10px] font-black uppercase text-gray-400 tracking-widest mb-2 block">Customer Identification / Cliente</label>
+            
+            <div id="cust-lookup-ui">
+                <div class="flex gap-1 mb-2">
+                    <select id="cust-country" class="bg-white border-2 border-gray-200 rounded px-1 text-xs font-bold focus:border-blue-500 outline-none">
+                        <option value="+504">+504</option>
+                        <option value="+1">+1</option>
+                    </select>
+                    <input type="text" placeholder="Phone Number / Teléfono" class="flex-1 p-2 border-2 border-gray-200 rounded focus:border-blue-500 outline-none font-bold" id="cust-id">
+                    <button onclick="lookupCustomer()" class="bg-blue-600 text-white px-4 rounded hover:bg-blue-700 transition-colors shadow-lg shadow-blue-600/20"><i class="fas fa-search"></i></button>
+                </div>
+
+                <!-- Join Incentive Banner -->
+                <div id="join-incentive" class="bg-gradient-to-r from-orange-500 to-orange-600 p-3 rounded-xl text-white mb-3 shadow-lg animate-pulse cursor-pointer hover:scale-[1.02] transition-transform" onclick="document.getElementById('cust-id').focus()">
+                    <div class="flex items-center gap-2">
+                        <i class="fas fa-gift text-xl"></i>
+                        <div>
+                            <p class="text-[10px] font-black uppercase leading-none opacity-80">PROMO DE HOY</p>
+                            <p class="text-xs font-bold leading-tight">¿Desea unirse? ¡Recibe L. 30 de crédito hoy!</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="space-y-2">
+                    <input type="text" id="guest-name-input" placeholder="Guest Name (Required) / Nombre" class="w-full p-2 border-2 border-gray-200 rounded focus:border-orange-500 outline-none text-sm font-medium">
+                </div>
+            </div>
+
+            <div id="cust-profile" class="hidden relative">
+                <!-- Profile content injected via JS -->
+            </div>
+        </div>
+
+        <!-- Cart Items -->
+        <div class="flex-1 overflow-y-auto p-4" id="cart-items">
+            <!-- Cart items go here -->
+            <div class="text-center text-gray-400 mt-10">El carrito está vacío</div>
+        </div>
+
+        <!-- Fulfillment Type -->
+        <div class="px-6 py-3 border-t border-gray-200 bg-white">
+            <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 text-center">Tipo de Orden</p>
+            <div class="grid grid-cols-2 gap-2">
+                <button onclick="setFulfillment('dinein')" id="btn-fulfill-dinein" class="py-2.5 rounded-lg font-bold text-xs uppercase tracking-tight border-2 transition-all border-blue-600 bg-blue-50 text-blue-700 flex items-center justify-center gap-2 shadow-sm">
+                    <i class="fas fa-utensils"></i> Aquí
+                </button>
+                <button onclick="setFulfillment('pickup')" id="btn-fulfill-pickup" class="py-2.5 rounded-lg font-bold text-xs uppercase tracking-tight border-2 transition-all border-gray-100 text-gray-400 flex items-center justify-center gap-2 hover:bg-gray-50">
+                    <i class="fas fa-walking"></i> Llevar
+                </button>
+            </div>
+        </div>
+
+        <!-- Totals -->
+        <div class="p-6 bg-gray-50 border-t border-gray-200">
+            <div class="flex justify-between text-xl font-bold mb-4">
+                <span>Total:</span>
+                <span id="cart-total">L. 0.00</span>
+            </div>
+            <div class="flex gap-3">
+                <button onclick="submitPendingOrder()" class="flex-1 bg-white border-2 border-gray-200 text-gray-600 py-4 rounded-xl font-bold text-sm hover:bg-gray-50 transition-all">
+                    ENVIAR A COCINA
+                </button>
+                <button onclick="openTenderModal()" id="main-charge-btn" class="flex-[2] bg-green-600 text-white py-4 rounded-xl font-bold text-xl shadow hover:bg-green-700 transition-all">
+                    CHARGE (Enter)
+                </button>
+            </div>
+        </div>
+
+        <!-- WhatsApp Bot Simulator Tab Removed for now -->
+
+    </div>
+
+    <!-- KITCHEN STATUS MODAL -->
+    <div id="kitchen-modal" class="hidden fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-[110] backdrop-blur-sm">
+        <div class="bg-white w-full max-w-4xl h-3/4 rounded-2xl shadow-2xl flex flex-col overflow-hidden border-t-8 border-yellow-500">
+            <div class="p-6 border-b border-gray-200 flex justify-between items-center bg-gray-900 text-white">
+                <h2 class="text-2xl font-bold"><i class="fas fa-eye text-yellow-500 mr-2"></i> Kitchen Status</h2>
+                <button onclick="closeKitchenStatus()" class="text-gray-400 hover:text-white text-3xl">&times;</button>
+            </div>
+            <div class="flex-1 overflow-y-auto p-6 bg-gray-100" id="kitchen-orders-container">
+                <div class="text-center text-gray-500 mt-10"><i class="fas fa-spinner fa-spin text-3xl mb-4"></i><br>Loading active orders...</div>
+            </div>
+        </div>
+    </div>
+
+<script>
+    // ==========================================
+    // ☕️ RICH AROMA POS v2.0 - CORE SCRIPT
+    // ==========================================
+
+    // --- GLOBAL STATE ---
+    let menu = [];
+    let modGroups = [];
+    let modOptions = [];
+    let itemModGroups = [];
+    let cart = [];
+    
+    let currentCashier = null;
+    let currentShiftId = null;
+    let startingCash = 0;
+    let currentTenderMethod = 'cash';
+    let fulfillmentType = 'dinein'; // Default for Main POS
+    let currentOrderId = null; // Track if we are editing an existing order
+    let currentCustomerId = null;
+    window.loadedCustomer = null;
+
+    let isSoloMode = false;
+    let currentQuantity = 1;
+    let currentMods = {};
+    let currentItem = null;
+
+    let liveOrders = [];
+    let pendingVerifications = [];
+    let kitchenPollInterval = null;
+
+    // --- INITIALIZATION ---
+    window.onload = async () => {
+        console.log("🚀 POS v2.0 Initializing...");
+        
+        // 1. Fetch Menu
+        await refreshMenu();
+
+        // 2. Restore Shift
+        await restoreShift();
+
+        // 3. Restore Cart
+        restoreCart();
+
+        // 4. Initial Renders
+        renderMenu();
+        fetchLiveOrders();
+        fetchStoreStatus();
+        fetchPendingVerifications();
+
+        // 5. Start Polling
+        setInterval(fetchLiveOrders, 10000);
+        setInterval(fetchPendingVerifications, 10000);
+        setInterval(fetchStoreStatus, 30000);
+    };
+
+    async function refreshMenu() {
+        try {
+            const res = await fetch('/api/menu?admin=true', {
+                headers: { 'Authorization': 'Bearer EMP-admin' }
+            });
+            const data = await res.json();
+            
+            let sourceItems = data.items || [];
+            if (sourceItems.length === 0 && data.categories) {
+                data.categories.forEach(cat => { if (cat.items) sourceItems = sourceItems.concat(cat.items); });
+            }
+
+            if (sourceItems.length > 0) {
+                menu = sourceItems.map(i => ({
+                    id: i.id || 'unknown',
+                    name: i.name || 'Unnamed Item',
+                    price: parseFloat(i.price) || 0,
+                    category: i.category || 'Otros',
+                    available: i.available !== false,
+                    base_recipe: i.base_recipe || null,
+                    image: i.image_url || i.image || "https://images.unsplash.com/photo-1510591509098-f4fdc6d0ff04?w=400&q=80"
+                }));
+                modGroups = data.modGroups || [];
+                modOptions = data.modOptions || [];
+                itemModGroups = data.itemModGroups || [];
+                console.log(`✅ Loaded ${menu.length} items.`);
+            }
+        } catch (e) {
+            console.error("❌ Menu fetch failed", e);
+            // Fallback Menu
+            menu = [
+                { id: 'hot_latte', name: 'Latte', price: 55, category: 'coffee', image: 'https://images.unsplash.com/photo-1570968992272-1512fdad694d?w=400&q=80', available: true },
+                { id: 'hot_americano', name: 'Americano', price: 40, category: 'coffee', image: 'https://images.unsplash.com/photo-1510591509098-f4fdc6d0ff04?w=400&q=80', available: true }
+            ];
+        }
+    }
+
+    async function restoreShift() {
+        const modal = document.getElementById('shift-modal');
+        const loginStage = document.getElementById('login-stage');
+        const openStage = document.getElementById('open-shift-stage');
+
+        // Check local session first
+        const saved = localStorage.getItem('pos_active_shift');
+        if (saved) {
+            try {
+                const s = JSON.parse(saved);
+                currentShiftId = s.shiftId;
+                currentCashier = s.cashier;
+                startingCash = s.startingCash;
+                window.currentEmployee = { name: s.cashier }; // Minimal mock
+                modal.classList.add('hidden');
+                console.log("✅ Restored session from localStorage:", currentCashier);
+                return;
+            } catch(e) {}
+        }
+
+        // Always show modal if no local session
+        modal.classList.remove('hidden');
+        loginStage.classList.remove('hidden');
+        openStage.classList.add('hidden');
+
+        try {
+            const token = 'EMP-admin';
+            const res = await fetch('/api/cash/current-shift', { headers: { 'Authorization': `Bearer ${token}` } });
+            if (res.ok) {
+                const data = await res.json();
+                if (data && data.shift && data.shift.status === 'open') {
+                    // Shift IS open in DB
+                    window.activeDBShift = data.shift;
+                    console.log("✅ Active shift found in DB:", data.shift.id);
+                } else {
+                    window.activeDBShift = null;
+                    if (localStorage.getItem('pos_active_shift')) {
+                        localStorage.removeItem('pos_active_shift');
+                        console.log("🧹 Cleared stale local shift.");
+                        location.reload();
                     }
                 }
             }
-        }
-    </script>
-    <style>
-        body { background-color: #1E1610; color: #F5F5F0; font-family: 'Inter', sans-serif; }
-        .glass-panel { background: rgba(44, 36, 30, 0.95); border: 1px solid rgba(201, 166, 107, 0.1); backdrop-filter: blur(10px); }
-        .active-tab { background-color: #C9A66B; color: #1E1610; }
-        ::-webkit-scrollbar { width: 6px; }
-        ::-webkit-scrollbar-track { background: #1E1610; }
-        ::-webkit-scrollbar-thumb { background: #2C241E; border-radius: 3px; }
-        
-        /* Toast Animation */
-        @keyframes slideIn {
-            from { transform: translateX(100%); opacity: 0; }
-            to { transform: translateX(0); opacity: 1; }
-        }
-        .toast { animation: slideIn 0.3s ease-out forwards; }
-    </style>
-</head>
-<body class="h-screen flex overflow-hidden">
+        } catch (e) { console.error("Shift DB check failed", e); }
+    }
 
-    <!-- Sidebar (Navigation) -->
-    <aside class="w-20 bg-dark border-r border-white/5 flex flex-col items-center py-6 gap-8 z-20">
-        <div class="w-10 h-10 rounded-full bg-gold flex items-center justify-center text-dark text-xl font-bold mb-4">
-            <i class="fas fa-lion"></i>
-        </div>
-        
-        <button class="w-12 h-12 rounded-xl bg-gold/10 text-gold flex items-center justify-center hover:bg-gold hover:text-dark transition-all active-tab" onclick="switchTab('pos')">
-            <i class="fas fa-cash-register text-lg"></i>
-        </button>
-        <button class="w-12 h-12 rounded-xl bg-white/5 text-white/40 flex items-center justify-center hover:bg-gold hover:text-dark transition-all" onclick="window.location.href='/dashboard.html'">
-            <i class="fas fa-list-ul text-lg"></i>
-        </button>
-        <button class="w-12 h-12 rounded-xl bg-white/5 text-white/40 flex items-center justify-center hover:bg-gold hover:text-dark transition-all" onclick="alert('Customers Module coming soon!')">
-            <i class="fas fa-users text-lg"></i>
-        </button>
-        
-        <div class="mt-auto">
-            <button onclick="document.getElementById('close-modal').classList.remove('hidden')" class="w-12 h-12 rounded-xl bg-danger/10 text-danger flex items-center justify-center hover:bg-danger hover:text-white transition-all">
-                <i class="fas fa-power-off text-lg"></i>
-            </button>
-        </div>
-    </aside>
-
-    <!-- Main Content Area -->
-    <main class="flex-1 flex overflow-hidden relative">
-        
-        <!-- Toast Container -->
-        <div id="toast-container" class="absolute top-6 right-6 z-50 flex flex-col gap-2 pointer-events-none"></div>
-
-        <!-- Left: Menu Grid -->
-        <div class="flex-1 p-6 overflow-y-auto flex flex-col">
-            <!-- Header -->
-            <div class="flex justify-between items-center mb-6 shrink-0">
-                <div>
-                    <h1 class="text-2xl font-bold font-display text-gold">Buenos Días, NeeNee 👋</h1>
-                    <p class="text-white/40 text-sm">Caja Principal • <span id="clock" class="font-mono">--:--</span></p>
-                </div>
-                <div class="flex gap-2" id="category-filters">
-                    <!-- Filters injected here -->
-                    <button onclick="filterMenu('all')" class="hidden px-4 py-2 rounded-lg bg-gold text-dark font-bold text-sm hover:opacity-90 transition-colors">Todo</button>
-                    <button onclick="filterMenu('Combos')" class="px-4 py-2 rounded-lg border border-white/10 bg-white/5 text-white/70 font-bold text-sm hover:bg-white/10 transition-colors">🔥 Combos</button>
-                    <button onclick="filterMenu('Calientes')" class="px-4 py-2 rounded-lg border border-white/10 bg-white/5 text-white/70 font-bold text-sm hover:bg-white/10 transition-colors">☕ Calientes</button>
-                    <button onclick="filterMenu('Heladas')" class="px-4 py-2 rounded-lg border border-white/10 bg-white/5 text-white/70 font-bold text-sm hover:bg-white/10 transition-colors">🥤 Heladas</button>
-                    <button onclick="filterMenu('Comida')" class="px-4 py-2 rounded-lg border border-white/10 bg-white/5 text-white/70 font-bold text-sm hover:bg-white/10 transition-colors">🥐 Comida</button>
-                </div>
-            </div>
-
-            <!-- Grid -->
-            <div class="grid grid-cols-3 xl:grid-cols-4 gap-4 pb-20" id="menu-grid">
-                <!-- Items injected by JS -->
-                <div class="col-span-full text-center py-10 text-white/20">
-                    <i class="fas fa-spinner fa-spin text-2xl mb-2"></i>
-                    <p>Cargando menú...</p>
-                </div>
-            </div>
-        </div>
-
-        <!-- Right: Current Ticket -->
-        <div class="w-96 bg-charcoal border-l border-white/5 flex flex-col shadow-2xl relative z-10">
-            
-            <!-- Customer Selector -->
-            <div class="p-4 border-b border-white/5">
-                <button class="w-full py-3 px-4 bg-dark rounded-xl border border-white/10 flex items-center justify-between hover:border-gold/30 transition-all group">
-                    <div class="flex items-center gap-3">
-                        <div class="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center text-white/40 group-hover:text-gold group-hover:bg-gold/10">
-                            <i class="fas fa-user-plus"></i>
-                        </div>
-                        <span class="text-white/60 font-medium group-hover:text-white">Cliente General</span>
-                    </div>
-                    <i class="fas fa-chevron-right text-xs text-white/20"></i>
-                </button>
-            </div>
-
-            <!-- Ticket Items -->
-            <div class="flex-1 overflow-y-auto p-4 space-y-2" id="ticket-items">
-                <!-- Empty State -->
-                <div class="h-full flex flex-col items-center justify-center text-white/20">
-                    <i class="fas fa-receipt text-4xl mb-3"></i>
-                    <p class="text-sm">Ticket Vacío</p>
-                </div>
-            </div>
-
-            <!-- Totals -->
-            <div class="p-6 bg-dark border-t border-white/5 space-y-4">
-                <div class="flex justify-between text-sm text-white/60">
-                    <span>Subtotal</span>
-                    <span id="subtotal-display">L 0.00</span>
-                </div>
-                <div class="flex justify-between text-sm text-white/60">
-                    <span>ISV (<span id="tax-rate-display">15</span>%)</span>
-                    <span id="tax-display">L 0.00</span>
-                </div>
-                <div class="flex justify-between items-end border-t border-white/10 pt-4">
-                    <span class="text-white/40 font-medium">Total</span>
-                    <span class="text-3xl font-bold font-display text-gold" id="total-display">L 0.00</span>
-                </div>
-
-
-                <!-- Discounts Button -->
-                <button onclick="toggleDiscounts()" class="w-full py-3 mb-2 bg-charcoal hover:bg-white/5 border border-white/5 rounded-xl text-white/60 hover:text-white transition-all flex items-center justify-center gap-2">
-                    <i class="fas fa-percent"></i>
-                    <span>Aplicar Descuento</span>
-                </button>
-
-                <!-- Pay Button -->
-                <button id="pay-btn" onclick="submitOrder()" disabled class="w-full py-4 bg-white/10 text-white/20 font-bold text-lg rounded-xl shadow-lg transition-all flex items-center justify-center gap-2 cursor-not-allowed">
-                    <span>COBRAR</span>
-                    <i class="fas fa-arrow-right"></i>
-                </button>
-            </div>
-        </div>
-
-        <!-- BLIND CLOSE MODAL -->
-        <div id="close-modal" class="hidden absolute inset-0 bg-black/95 backdrop-blur-md z-50 flex items-center justify-center p-4">
-            <div class="bg-dark border border-white/10 rounded-2xl w-full max-w-md p-8 shadow-2xl text-center">
-                <div class="w-16 h-16 rounded-full bg-gold/20 text-gold flex items-center justify-center text-3xl mx-auto mb-6">
-                    <i class="fas fa-cash-register"></i>
-                </div>
-                
-                <h2 class="text-2xl font-bold text-white mb-2">Cierre de Caja</h2>
-                <p class="text-white/40 mb-8 text-sm">Ingresa el efectivo contado FÍSICAMENTE.</p>
-
-                <div class="mb-6">
-                    <label class="block text-left text-xs text-gold font-bold mb-2 uppercase tracking-widest">Efectivo en Cajón (Lempiras)</label>
-                    <input type="number" id="counted-cash" placeholder="0.00" class="w-full bg-white/5 border border-white/20 rounded-xl py-4 px-6 text-3xl text-white font-mono text-center focus:border-gold focus:outline-none focus:ring-1 focus:ring-gold transition-all">
-                </div>
-                
-                <div class="mb-8">
-                    <label class="block text-left text-xs text-gold font-bold mb-2 uppercase tracking-widest">Notas / Justificación</label>
-                    <textarea id="close-notes" placeholder="Ej: Gastos de caja chica..." class="w-full bg-white/5 border border-white/20 rounded-xl p-4 text-white placeholder-white/20 focus:border-gold focus:outline-none"></textarea>
-                </div>
-
-                <div class="grid grid-cols-2 gap-4">
-                    <button onclick="document.getElementById('close-modal').classList.add('hidden')" class="py-4 rounded-xl bg-white/5 hover:bg-white/10 text-white font-bold transition-all">Cancelar</button>
-                    <button onclick="submitBlindClose()" class="py-4 rounded-xl bg-gold hover:bg-yellow-500 text-dark font-bold transition-all shadow-lg shadow-gold/20">
-                        <i class="fas fa-lock mr-2"></i> CERRAR TURNO
-                    </button>
-                </div>
-            </div>
-        </div>
-        
-        <!-- DISCOUNT MODAL (Existing) -->
-        <div id="discount-modal" class="hidden absolute inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-            <div class="bg-dark border border-white/10 rounded-2xl w-full max-w-md p-6 shadow-2xl transform transition-all scale-100">
-                <div class="flex justify-between items-center mb-6">
-                    <h2 class="text-xl font-bold text-white"><i class="fas fa-tags text-gold mr-2"></i> Descuentos</h2>
-                    <button onclick="toggleDiscounts()" class="text-white/40 hover:text-white"><i class="fas fa-times text-xl"></i></button>
-                </div>
-                
-                <div class="space-y-3">
-                    <button onclick="applyDiscount('senior')" class="w-full p-4 bg-charcoal hover:bg-white/5 border border-white/5 rounded-xl flex items-center justify-between group transition-all">
-                        <div class="flex items-center gap-4">
-                            <div class="w-10 h-10 rounded-full bg-blue-500/20 text-blue-400 flex items-center justify-center text-lg"><i class="fas fa-user-clock"></i></div>
-                            <div class="text-left">
-                                <h3 class="font-bold text-white group-hover:text-gold">Tercera Edad</h3>
-                                <p class="text-xs text-white/40">25% (Solo consumo personal)</p>
-                            </div>
-                        </div>
-                        <i class="fas fa-chevron-right text-white/20"></i>
-                    </button>
-
-                    <button onclick="applyDiscount('responder')" class="w-full p-4 bg-charcoal hover:bg-white/5 border border-white/5 rounded-xl flex items-center justify-between group transition-all">
-                        <div class="flex items-center gap-4">
-                            <div class="w-10 h-10 rounded-full bg-red-500/20 text-red-400 flex items-center justify-center text-lg"><i class="fas fa-ambulance"></i></div>
-                            <div class="text-left">
-                                <h3 class="font-bold text-white group-hover:text-gold">Primeros Auxilios</h3>
-                                <p class="text-xs text-white/40">15% (Bomberos, Cruz Roja)</p>
-                            </div>
-                        </div>
-                        <i class="fas fa-chevron-right text-white/20"></i>
-                    </button>
-                    
-                    <button onclick="applyDiscount('custom')" class="w-full p-4 bg-charcoal hover:bg-white/5 border border-white/5 rounded-xl flex items-center justify-between group transition-all">
-                        <div class="flex items-center gap-4">
-                            <div class="w-10 h-10 rounded-full bg-white/10 text-white/60 flex items-center justify-center text-lg"><i class="fas fa-pencil-alt"></i></div>
-                            <div class="text-left">
-                                <h3 class="font-bold text-white group-hover:text-gold">Manual / Cortesía</h3>
-                                <p class="text-xs text-white/40">Autorización de Gerente</p>
-                            </div>
-                        </div>
-                        <i class="fas fa-chevron-right text-white/20"></i>
-                    </button>
-                </div>
-            </div>
-        </div>
-
-    </main>
-
-    <script>
-        // ... (Clock code) ...
-
-        // State
-        let allCategories = [];
-        let allItems = [];
-        let cart = [];
-        let activeDiscount = null; // { type: 'senior', percent: 0.25, items: [] }
-        let taxRate = 0.00;
-        let isProcessing = false;
-
-        // ... (LoadMenu, RenderFilters, etc) ...
-
-        function toggleDiscounts() {
-            const modal = document.getElementById('discount-modal');
-            modal.classList.toggle('hidden');
-        }
-        
-        function applyDiscount(type) {
-            if (cart.length === 0) return;
-            
-            // For MVP: Apply to WHOLE cart for now, or last item?
-            // "Senior" usually applies to specific items.
-            // Let's implement a simple "Whole Cart" version first for speed,
-            // or "Select Items" logic is complex.
-            // Compromise: Apply to ALL items for now, assuming cashier split the check if needed.
-            // Or prompt "Apply to Last Item?"
-            
-            // Let's do: Apply to Whole Order for simplicity in this version.
-            
-            let percent = 0;
-            if(type === 'senior') percent = 0.25;
-            if(type === 'responder') percent = 0.15;
-            if(type === 'custom') {
-                const manual = prompt("Porcentaje de descuento (0-100):");
-                if(manual) percent = parseFloat(manual) / 100;
-            }
-            
-            activeDiscount = { type, percent };
-            toggleDiscounts();
-            renderCart();
-            showToast(`Descuento ${(percent*100).toFixed(0)}% Aplicado`, 'success');
-        }
-
-        function renderCart() {
-            // ... (Previous logic) ...
-            
-            // Recalculate with Discount
-            let subtotal = 0;
-            cart.forEach(item => subtotal += item.price);
-            
-            let discountAmount = 0;
-            if(activeDiscount) {
-                discountAmount = subtotal * activeDiscount.percent;
-            }
-            
-            const subtotalAfterDiscount = subtotal - discountAmount;
-            const tax = subtotalAfterDiscount * taxRate;
-            const total = subtotalAfterDiscount + tax;
-
-            // Update UI
-            container.innerHTML = html; // (Your existing html loop)
-            subtotalDisplay.innerText = `L ${subtotal.toFixed(2)}`;
-            
-            // Show Discount Line if active
-            if(activeDiscount) {
-                // Hack: Inject discount line into Tax Display area or create new element
-                // For now, let's append it to subtotal text or just log it
-                 subtotalDisplay.innerHTML = `L ${subtotal.toFixed(2)} <span class="text-red-400 text-xs block">- L ${discountAmount.toFixed(2)} (${(activeDiscount.percent*100).toFixed(0)}%)</span>`;
-            }
-            
-            taxDisplay.innerText = `L ${tax.toFixed(2)}`;
-            totalDisplay.innerText = `L ${total.toFixed(2)}`;
-            
-            // ... (Pay Btn logic) ...
-        }
-
-        async function submitBlindClose() {
-            const counted = parseFloat(document.getElementById('counted-cash').value);
-            const notes = document.getElementById('close-notes').value;
-
-            if (isNaN(counted)) {
-                alert("Ingresa el monto contado");
-                return;
-            }
-
+    function restoreCart() {
+        const saved = localStorage.getItem('pos_cart_state');
+        if (saved) {
             try {
-                // Here we would call the API
-                // For MVP, we simulate the variance check
-                
-                // Mock System Expected:
-                const expected = 5000; // Example
-                const variance = counted - expected;
-                const varianceColor = variance < 0 ? 'text-red-500' : 'text-green-500';
-                
-                // Show Result Alert (In production this is sent to Admin only, Cashier sees simple success)
-                alert(`Cierre Enviado.\n\nContado: L ${counted.toFixed(2)}\nEsperado: L ${expected.toFixed(2)}\nDiferencia: L ${variance.toFixed(2)}\n\nReporte enviado a Gerencia.`);
-                
-                // Close modal
-                document.getElementById('close-modal').classList.add('hidden');
-                
-                // Send Telegram Alert (Mock)
-                console.log(`[ALERT] Blind Close: Counted ${counted}, Expected ${expected}, Variance ${variance}. Notes: ${notes}`);
-
-            } catch (e) {
-                alert("Error al cerrar caja");
-            }
-        }
-
-        async function submitOrder() {
-            if (isProcessing || cart.length === 0) return;
-            isProcessing = true;
-            
-            const payBtn = document.getElementById('pay-btn');
-            const originalText = payBtn.innerHTML;
-            payBtn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> Procesando...`;
-
-            try {
-                // Calculate totals
-                const subtotal = cart.reduce((sum, item) => sum + item.price, 0);
-                const tax = subtotal * taxRate;
-                const total = subtotal + tax;
-
-                // Prepare Payload
-                const payload = {
-                    items: cart.map(i => ({ id: i.id, quantity: 1, price: i.price, name: i.name })),
-                    subtotal: subtotal,
-                    tax: tax,
-                    total: total,
-                    paymentMethod: 'cash', // Default for now
-                    customerId: null // Default generic
-                };
-
-                const res = await fetch('/api/orders', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
-                });
-
-                if (!res.ok) throw new Error('Failed to create order');
-                
-                const order = await res.json();
-                
-                // Success
-                playSound('success');
-                showToast(`Orden #${order.order_number} Creada!`, 'success');
-                cart = [];
+                const data = JSON.parse(saved);
+                cart = data.cart || [];
+                currentCustomerId = data.customerId || null;
                 renderCart();
+            } catch(e) {}
+        }
+    }
 
-            } catch (e) {
-                console.error("Order error:", e);
-                showToast('Error al crear orden', 'error');
-            } finally {
-                isProcessing = false;
-                payBtn.innerHTML = originalText;
+    function saveCartState() {
+        localStorage.setItem('pos_cart_state', JSON.stringify({ cart, customerId: currentCustomerId }));
+    }
+
+    // --- HEARTBEAT (LIVE FEED) ---
+    async function fetchLiveOrders() {
+        const statusEl = document.getElementById('hb-status');
+        try {
+            const res = await fetch('/api/orders', {
+                headers: { 'Authorization': 'Bearer EMP-admin' }
+            });
+            const data = await res.json();
+            const allOrders = data.orders || [];
+            
+            const todayStr = new Date().toDateString();
+            liveOrders = allOrders.filter(o => {
+                if (!o.created_at) return false;
+                const orderDate = new Date(o.created_at);
+                return orderDate.toDateString() === todayStr && 
+                       ['pending', 'paid', 'preparing', 'ready', 'pending_verification'].includes(o.status);
+            }).sort((a,b) => new Date(b.created_at) - new Date(a.created_at));
+
+            renderLiveFeed();
+            if (statusEl) statusEl.innerText = 'Last sync: ' + new Date().toLocaleTimeString();
+        } catch(e) { 
+            if (statusEl) statusEl.innerText = "Sync Error";
+        }
+    }
+
+    function renderLiveFeed() {
+        const container = document.getElementById('live-order-feed');
+        document.getElementById('live-order-count').innerText = liveOrders.length;
+
+        if (liveOrders.length === 0) {
+            container.innerHTML = '<div class="text-center py-10 text-gray-600 text-xs italic">No active orders</div>';
+            return;
+        }
+
+        let html = '';
+        liveOrders.forEach(o => {
+            const isMobile = o.notes && o.notes.includes('Mobile Order');
+            // Cash mobile orders stay in "Cobrar" mode until status is 'paid' or further
+            const isUnpaidCashMobile = isMobile && o.payment_method === 'cash' && ['pending', 'preparing', 'ready'].includes(o.status);
+            const isReady = o.status === 'ready';
+            
+            let statusClass = "bg-gray-700 text-gray-300";
+            let recallBtn = "";
+            
+            if (o.status === 'pending') {
+                statusClass = "bg-orange-500/20 text-orange-500 border border-orange-500/50";
+                recallBtn = `<button onclick="recallOrder('${o.id}')" class="ml-auto bg-orange-500 text-white px-2 py-1 rounded text-[8px] font-black uppercase tracking-widest hover:bg-orange-600 transition-all">Recuperar</button>`;
+            }
+            if (o.status === 'paid') statusClass = "bg-blue-900 text-blue-200 border border-blue-700";
+            if (o.status === 'preparing') statusClass = "bg-orange-900 text-orange-200 border border-orange-700";
+            if (o.status === 'ready') statusClass = "bg-green-900 text-green-200 border border-green-700 animate-pulse";
+            
+            let name = "Walk-in";
+            if (o.customers && o.customers.name) {
+                name = o.customers.name;
+            } else if (o.notes) {
+                if (o.notes.includes('[CLIENTE:')) {
+                    const match = o.notes.match(/\[CLIENTE:\s*([^\]]+)\]/);
+                    if (match) name = match[1].trim();
+                } else if (o.notes.includes('[GUEST:')) {
+                    const match = o.notes.match(/\[GUEST:\s*([^|\]]+)/);
+                    if (match) name = match[1].trim();
+                }
+            }
+
+            html += '<div class="p-3 rounded-xl bg-gray-800 border border-white/5 shadow-lg mb-2 ' + (isReady ? 'ring-2 ring-green-500 shadow-[0_0_15px_rgba(34,197,94,0.3)]' : '') + '">';
+            html += '    <div class="flex justify-between items-start mb-1">';
+            const orderNumDisplay = o.order_number ? o.order_number.toString().padStart(2, '0') : '---';
+            html += '        <div class="flex items-center gap-2">';
+            html += '            <span class="text-[10px] font-black text-gray-500 tracking-tighter">#' + orderNumDisplay + '</span>';
+            html += '            <span class="text-[9px] px-2 py-0.5 rounded-full font-black uppercase ' + statusClass + '">' + o.status + '</span>';
+            html += '        </div>';
+            html +=          recallBtn;
+            html += '    </div>';
+            html += '    <div class="font-bold text-white text-sm truncate">' + name + '</div>';
+            html += '    <div class="flex justify-between items-center mt-1">';
+            html += '        <span class="text-[9px] font-bold text-gray-500 uppercase">' + o.payment_method + '</span>';
+            html += '        <span class="text-xs font-black text-blue-400 font-mono">L ' + (parseFloat(o.total) || 0).toFixed(2) + '</span>';
+            html += '    </div>';
+            html += '    <div class="flex gap-1 mt-2">';
+            if (isUnpaidCashMobile) {
+                html += '        <button onclick="openVerifyModal()" class="flex-1 py-1.5 bg-green-600 text-white text-[10px] font-black uppercase rounded-lg hover:bg-green-500 transition-all">Cobrar L.' + o.total + '</button>';
+            } else if (isReady) {
+                html += '        <button onclick="deliverOrder(\'' + o.id + '\')" class="flex-1 py-2 bg-green-500 text-dark font-black text-[10px] uppercase rounded-lg shadow-lg hover:bg-green-400 transition-all">✅ ENTREGAR</button>';
+            }
+            
+            // Reject button for any active order
+            html += '        <button onclick="rejectOrder(\'' + o.id + '\', \'' + (o.order_number || '') + '\', \'' + (o.customers?.phone || '') + '\', \'' + (o.customers?.name || '') + '\')" class="px-3 bg-red-900/40 text-red-500 rounded-lg border border-red-900/60 hover:bg-red-900/60 transition-all"><i class="fas fa-times"></i></button>';
+            html += '    </div>';
+            html += '</div>';
+        });
+        container.innerHTML = html;
+    }
+
+    async function deliverOrder(id) {
+        try {
+            const res = await fetch(`/api/orders/${id}`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer EMP-admin' },
+                body: JSON.stringify({ status: 'completed' })
+            });
+            if (res.ok) {
+                await fetchLiveOrders();
+            }
+        } catch(e) { console.error("Error delivering order", e); }
+    }
+
+    async function rejectOrder(id, num, phone, name) {
+        const reason = prompt(`Motivo de rechazo para orden #${num}:`, "Captura de pantalla no válida o transferencia no recibida.");
+        if (reason === null) return;
+        
+        try {
+            const res = await fetch(`/api/orders/${id}`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer EMP-admin' },
+                body: JSON.stringify({ 
+                    status: 'cancelled',
+                    notes: `[REJECTED] ${reason}`
+                })
+            });
+            
+            if(res.ok) {
+                if (phone) {
+                    const message = `Hola ${name.split(' ')[0] || 'Cliente'}, tu solicitud de membresía #${num} fue rechazada por: ${reason}. Por favor intenta de nuevo con una captura válida.`;
+                    const waUrl = `https://wa.me/${phone.replace(/\D/g, '')}?text=${encodeURIComponent(message)}`;
+                    if(confirm("Orden rechazada. ¿Deseas notificar al cliente vía WhatsApp?")) {
+                        window.open(waUrl, '_blank');
+                    }
+                }
+                await fetchLiveOrders();
+                await fetchPendingVerifications();
+                closeVerifyModal();
+            } else {
+                alert("Error al rechazar.");
+            }
+        } catch(e) { console.error(e); }
+    }
+
+    // --- MENU & RENDERING ---
+    function renderMenu() {
+        renderMenuGrid(menu);
+    }
+
+    function renderMenuGrid(items) {
+        const grid = document.getElementById('menu-grid');
+        if (!items || items.length === 0) {
+            grid.innerHTML = '<div class="col-span-4 text-center py-20 text-gray-400 italic">No items found in this category</div>';
+            return;
+        }
+
+        let html = '';
+        items.forEach(item => {
+            const isSoldOut = item.available === false;
+            const isLocked = isSoloMode && item.category === 'food';
+            const isDisabled = isSoldOut || isLocked;
+            
+            const clickAction = isLocked 
+                ? 'onclick="alert(\'Food locked during Solo Shift.\')"' 
+                : isSoldOut 
+                    ? 'onclick="alert(\'Product Sold Out!\')"'
+                    : 'onclick="openModifier(\'' + item.id + '\')"';
+            
+            html += '<div ' + clickAction + ' class="bg-white rounded-xl shadow flex flex-col h-48 overflow-hidden relative ' + (isDisabled ? 'opacity-50 grayscale' : 'cursor-pointer hover:shadow-md border border-gray-100 group') + '">';
+            html += '    <div class="h-32 w-full overflow-hidden bg-gray-100">';
+            html += '        <img src="' + (item.image || '') + '" class="w-full h-full object-cover group-hover:scale-110 transition duration-500">';
+            html += '    </div>';
+            html += '    <div class="p-3 flex justify-between items-center bg-white flex-1">';
+            html += '        <div class="font-bold text-gray-800 leading-tight text-sm">' + item.name + '</div>';
+            html += '        <div class="text-xs bg-green-100 text-green-700 px-2 py-1 rounded font-bold">L. ' + (parseFloat(item.price) || 0).toFixed(2) + '</div>';
+            html += '    </div>';
+            if (isSoldOut) {
+                html += '    <div class="absolute inset-0 bg-black/60 flex items-center justify-center font-black text-white text-xs uppercase tracking-widest border-4 border-gray-800 rounded-xl">Agotado</div>';
+            }
+            html += '</div>';
+        });
+        grid.innerHTML = html;
+    }
+
+    function filterCategory(cat, btnEl) {
+        document.querySelectorAll('.cat-btn').forEach(btn => btn.className = "cat-btn bg-gray-100 text-gray-700 px-2 py-3 rounded-xl font-bold shadow hover:bg-gray-200 border-2 border-gray-200 transition text-md tracking-wide w-full text-center");
+        if(btnEl) btnEl.className = "cat-btn bg-gray-800 text-gold px-2 py-3 rounded-xl font-bold shadow-lg hover:bg-gray-900 transition text-md tracking-wide border-2 border-gray-800 w-full text-center";
+        
+        const search = cat.toLowerCase();
+        let filtered = (cat === 'all') ? menu : menu.filter(i => {
+            const itemCat = (i.category || '').toLowerCase();
+            const itemName = (i.name || '').toLowerCase();
+            const itemId = (i.id || '').toLowerCase();
+            
+            if (search === 'combos') {
+                return itemId.startsWith('combo_') || itemName.includes('combo');
+            }
+            if (search === 'calientes') {
+                return itemCat.includes('hot') || itemCat.includes('coffee') || itemCat.includes('caliente');
+            }
+            if (search === 'heladas') {
+                // Remove 'Te' from Heladas
+                if (itemName.includes('te') && !itemName.includes('frappe')) return false;
+                return itemCat.includes('cold') || itemCat.includes('drink') || itemCat.includes('helada') || itemCat.includes('frappe') || itemCat.includes('granita');
+            }
+            if (search === 'comida') {
+                // Show only FOOD that is NOT a combo
+                const isFood = itemCat.includes('food') || itemCat.includes('comida');
+                const isCombo = itemId.startsWith('combo_') || itemName.includes('combo');
+                return isFood && !isCombo;
+            }
+            
+            return itemCat.includes(search);
+        });
+
+        // Custom Sort for Combos
+        if (search === 'combos') {
+            const sortOrder = ['combo_1', 'combo_2', 'combo_3', 'combo_4'];
+            filtered.sort((a, b) => {
+                const indexA = sortOrder.indexOf(a.id);
+                const indexB = sortOrder.indexOf(b.id);
+                if (indexA !== -1 && indexB !== -1) return indexA - indexB;
+                if (indexA !== -1) return -1;
+                if (indexB !== -1) return 1;
+                return 0;
+            });
+        }
+
+        // Custom Sort for Heladas
+        if (search === 'heladas') {
+            const sortOrder = ['cold_supreme_frappe', 'cold_fresa_frappe', 'cold_coffee_frappe', 'cold_french_vanilla', 'cold_caramel_iced'];
+            filtered.sort((a, b) => {
+                const indexA = sortOrder.indexOf(a.id);
+                const indexB = sortOrder.indexOf(b.id);
+                if (indexA !== -1 && indexB !== -1) return indexA - indexB;
+                if (indexA !== -1) return -1;
+                if (indexB !== -1) return 1;
+                return 0;
+            });
+        }
+
+        // Custom Sort for Comida
+        if (search === 'comida') {
+            const sortOrder = [
+                'food_avocado_toast_huevo',
+                'food_banano_almond_toast',
+                'food_chicken_salad_bowl',
+                'food_baleadas',
+                'food_chicken_melt',
+                'food_grill_cheese_jamon',
+                'food_grill_cheese',
+                'food_papas',
+                'food_crepas_3',
+                'food_crepas_1'
+            ];
+            filtered.sort((a, b) => {
+                const indexA = sortOrder.indexOf(a.id);
+                const indexB = sortOrder.indexOf(b.id);
+                if (indexA !== -1 && indexB !== -1) return indexA - indexB;
+                if (indexA !== -1) return -1;
+                if (indexB !== -1) return 1;
+                return 0;
+            });
+        }
+
+        renderMenuGrid(filtered);
+    }
+
+    // --- MODIFIER LOGIC ---
+    function openModifier(id) {
+        currentItem = menu.find(i => i.id === id);
+        currentQuantity = 1;
+        currentMods = {};
+        
+        // Pre-select defaults
+        const relevantGroupIds = itemModGroups
+            .filter(img => img.item_id === id)
+            .sort((a, b) => (a.display_order || 0) - (b.display_order || 0))
+            .map(img => img.group_id);
+
+        relevantGroupIds.forEach(groupId => {
+            const group = modGroups.find(g => g.id === groupId);
+            if (!group) return;
+            const defaults = modOptions.filter(o => o.group_id === group.id && o.is_default);
+            if (defaults.length > 0) {
+                currentMods[group.id] = defaults.map(d => d.id);
+            }
+        });
+
+        document.getElementById('mod-item-name').innerText = currentItem.name;
+        document.getElementById('mod-item-price').innerText = `L. ${(parseFloat(currentItem.price) || 0).toFixed(2)}`;
+        document.getElementById('mod-quantity').innerText = "1";
+        document.getElementById('mod-note').value = ""; // Clear notes for new item
+        
+        renderModifiers(id);
+        document.getElementById('modifier-modal').classList.remove('hidden');
+        updateModPrice();
+    }
+
+    function renderModifiers(id) {
+        const container = document.getElementById('mod-dynamic-container');
+        const relevantGroupIds = itemModGroups
+            .filter(img => img.item_id === id)
+            .sort((a, b) => (a.display_order || 0) - (b.display_order || 0))
+            .map(img => img.group_id);
+        
+        container.innerHTML = relevantGroupIds.map(groupId => {
+            const group = modGroups.find(g => g.id === groupId);
+            if (!group) return '';
+            const options = modOptions.filter(o => o.group_id === group.id);
+            const selected = currentMods[group.id] || [];
+            
+            // Auto-adjust grid columns based on option count
+            const gridCols = options.length > 4 ? 'grid-cols-3' : 'grid-cols-2';
+
+            return `
+                <div class="bg-gray-50/50 p-5 rounded-3xl border border-gray-100">
+                    <h3 class="font-black text-gray-400 uppercase text-[10px] tracking-[0.2em] mb-4 flex items-center justify-between">
+                        <span>${group.name}</span>
+                        ${group.required ? '<span class="bg-red-100 text-red-600 px-2 py-0.5 rounded text-[8px]">OBLIGATORIO</span>' : '<span class="text-[8px] opacity-50 italic">Opcional</span>'}
+                    </h3>
+                    <div class="grid ${gridCols} gap-3">
+                        ${options.map(opt => {
+                            const isSel = selected.includes(opt.id);
+                            return `
+                            <button onclick="toggleMod('${group.id}', '${opt.id}', ${group.max_selections}, '${id}')" id="mod-${opt.id}" 
+                                class="p-4 border-2 rounded-2xl text-xs font-black transition-all flex flex-col items-start gap-1 shadow-sm ${isSel ? 'border-blue-600 bg-blue-600 text-white shadow-blue-600/20' : 'border-white bg-white text-gray-600 hover:border-blue-200'}">
+                                <span class="leading-tight">${opt.name}</span>
+                                ${opt.price_adjustment > 0 ? `<span class="${isSel ? 'text-white/70' : 'text-green-600'} text-[9px] font-mono">+L.${opt.price_adjustment}</span>` : ''}
+                            </button>
+                            `;
+                        }).join('')}
+                    </div>
+                </div>
+            `;
+        }).join('');
+    }
+
+    function toggleMod(groupId, optId, max, itemId) {
+        let selected = currentMods[groupId] || [];
+        if (selected.includes(optId)) {
+            // Only allow deselect if not required or if multiple are allowed
+            if (!modGroups.find(g => g.id === groupId).required || selected.length > 1) {
+                selected = selected.filter(id => id !== optId);
+            }
+        } else {
+            if (max === 1) selected = [optId];
+            else if (selected.length < max) selected.push(optId);
+        }
+        currentMods[groupId] = selected;
+        renderModifiers(itemId);
+        updateModPrice();
+    }
+
+    function changeQuantity(amt) {
+        currentQuantity = Math.max(1, currentQuantity + amt);
+        document.getElementById('mod-quantity').innerText = currentQuantity;
+        updateModPrice();
+    }
+
+    function updateModPrice() {
+        let total = parseFloat(currentItem.price) || 0;
+        let allRequiredMet = true;
+
+        const relevantGroupIds = itemModGroups
+            .filter(img => img.item_id === currentItem.id)
+            .sort((a, b) => (a.display_order || 0) - (b.display_order || 0))
+            .map(img => img.group_id);
+
+        relevantGroupIds.forEach(groupId => {
+            const group = modGroups.find(g => g.id === groupId);
+            if (!group) return;
+            const selected = currentMods[group.id] || [];
+            if (group.required && selected.length === 0) allRequiredMet = false;
+            
+            selected.forEach(oid => {
+                const opt = modOptions.find(o => o.id === oid);
+                if (opt) total += parseFloat(opt.price_adjustment || 0);
+            });
+        });
+
+        const confirmBtn = document.querySelector('button[onclick="confirmItem()"]');
+        if (confirmBtn) {
+            confirmBtn.disabled = !allRequiredMet;
+            confirmBtn.className = `w-full py-5 rounded-2xl font-black text-2xl shadow-xl active:scale-95 transition-all flex justify-between px-10 ${allRequiredMet ? 'bg-blue-600 text-white hover:bg-blue-700' : 'bg-gray-300 text-gray-500 cursor-not-allowed shadow-none'}`;
+        }
+
+        document.getElementById('mod-final-price').innerText = `L. ${(total * currentQuantity).toFixed(2)}`;
+    }
+
+    function confirmItem() {
+        const mods = [];
+        for (const gid in currentMods) {
+            currentMods[gid].forEach(oid => {
+                const opt = modOptions.find(o => o.id === oid);
+                if (opt) mods.push({ name: opt.name });
+            });
+        }
+        const item = { ...currentItem, qty: currentQuantity, mods, finalPrice: parseFloat(document.getElementById('mod-final-price').innerText.replace('L. ', '')) / currentQuantity };
+        cart.push(item);
+        saveCartState();
+        renderCart();
+        document.getElementById('modifier-modal').classList.add('hidden');
+    }
+
+    // --- CART & CHECKOUT ---
+    function renderCart() {
+        const container = document.getElementById('cart-items');
+        if (cart.length === 0) {
+            container.innerHTML = '<div class="text-center text-gray-400 mt-10 text-xs italic">Cart Empty</div>';
+            document.getElementById('cart-total').innerText = 'L. 0.00';
+            return;
+        }
+
+        container.innerHTML = cart.map((item, index) => `
+            <div class="flex justify-between items-start mb-3 bg-gray-50 p-3 rounded-xl border border-gray-100">
+                <div class="flex-1">
+                    <div class="font-bold text-sm text-gray-800">${item.qty}x ${item.name}</div>
+                    <div class="text-[10px] text-gray-500">${item.mods.map(m=>m.name).join(', ')}</div>
+                </div>
+                <div class="flex flex-col items-end gap-1">
+                    <span class="font-mono text-sm font-black">L. ${(parseFloat(item.finalPrice || 0) * item.qty).toFixed(2)}</span>
+                    <button onclick="removeFromCart(${index})" class="text-red-400 text-[10px] font-bold uppercase">Remove</button>
+                </div>
+            </div>
+        `).join('');
+
+        const total = cart.reduce((sum, item) => sum + (parseFloat(item.finalPrice || 0) * item.qty), 0);
+        document.getElementById('cart-total').innerText = `L. ${total.toFixed(2)}`;
+    }
+
+    function removeFromCart(idx) {
+        cart.splice(idx, 1);
+        saveCartState();
+        renderCart();
+    }
+
+    function openTenderModal() {
+        if (cart.length === 0) return;
+        const total = cart.reduce((sum, item) => sum + (parseFloat(item.finalPrice || 0) * item.qty), 0);
+        document.getElementById('tender-due').innerText = `L. ${total.toFixed(2)}`;
+        document.getElementById('tender-received').value = '';
+        document.getElementById('tender-change').innerText = 'L. 0.00';
+        
+        const btnRico = document.getElementById('btn-tender-rico');
+        if (window.loadedCustomer) {
+            btnRico.classList.remove('hidden');
+            document.getElementById('rico-available-msg').innerText = `Balance: L. ${(parseFloat(window.loadedCustomer.rico_balance) || 0).toFixed(2)}`;
+        } else {
+            btnRico.classList.add('hidden');
+        }
+        
+        setTender('cash');
+        document.getElementById('tender-modal').classList.remove('hidden');
+    }
+
+    function setTender(method) {
+        currentTenderMethod = method;
+        document.querySelectorAll('[id^="btn-tender-"]').forEach(b => b.className = "py-6 rounded-xl border-2 border-gray-200 text-gray-500 font-bold text-lg flex flex-col items-center gap-2 hover:bg-gray-50 transition");
+        document.getElementById(`btn-tender-${method === 'rico_balance' ? 'rico' : method}`).className = "py-6 rounded-xl border-2 border-blue-500 bg-blue-50 text-blue-700 font-bold text-lg flex flex-col items-center gap-2 transition";
+        
+        document.getElementById('cash-calculator').classList.toggle('hidden', method !== 'cash');
+        document.getElementById('rico-instructions').classList.toggle('hidden', method !== 'rico_balance');
+        calculateChange();
+    }
+
+    function quickCash(amt) {
+        document.getElementById('tender-received').value = amt;
+        calculateChange();
+    }
+
+    function calculateChange() {
+        const total = cart.reduce((sum, item) => sum + (parseFloat(item.finalPrice || 0) * item.qty), 0);
+        const received = parseFloat(document.getElementById('tender-received').value) || 0;
+        const change = received - total;
+        const confirmBtn = document.getElementById('confirm-tender-btn');
+        const changeEl = document.getElementById('tender-change');
+        
+        changeEl.innerText = `L. ${Math.max(0, change).toFixed(2)}`;
+        
+        let valid = true;
+        if (currentTenderMethod === 'cash') {
+            if (received < total) {
+                valid = false;
+                confirmBtn.innerText = `Faltan L. ${(total - received).toFixed(2)}`;
+            } else {
+                confirmBtn.innerHTML = '<i class="fas fa-check mr-2"></i> Cobrar';
             }
         }
+        
+        if (currentTenderMethod === 'rico_balance') {
+            if (!window.loadedCustomer || window.loadedCustomer.rico_balance < total) {
+                valid = false;
+                confirmBtn.innerText = "Saldo Insuficiente";
+            } else {
+                confirmBtn.innerHTML = '<i class="fas fa-check mr-2"></i> Cobrar con Rico Cash';
+            }
+        }
+        
+        confirmBtn.disabled = !valid;
+        confirmBtn.classList.toggle('opacity-50', !valid);
+        changeEl.classList.toggle('text-red-500', !valid && received > 0);
+    }
 
-        // Utils
-        function showToast(msg, type = 'info') {
-            const container = document.getElementById('toast-container');
-            const el = document.createElement('div');
-            const colors = type === 'success' ? 'bg-success text-white' : (type === 'error' ? 'bg-danger text-white' : 'bg-charcoal text-white border border-gold');
-            
-            el.className = `toast pointer-events-auto px-6 py-4 rounded-xl shadow-2xl flex items-center gap-3 font-bold ${colors}`;
-            el.innerHTML = `
-                <i class="fas fa-${type === 'success' ? 'check-circle' : (type === 'error' ? 'times-circle' : 'info-circle')}"></i>
-                ${msg}
-            `;
-            
-            container.appendChild(el);
-            setTimeout(() => {
-                el.style.opacity = '0';
-                el.style.transform = 'translateX(100%)';
-                setTimeout(() => el.remove(), 300);
-            }, 3000);
+    function setFulfillment(type) {
+        fulfillmentType = type;
+        document.getElementById('btn-fulfill-dinein').className = type === 'dinein'
+            ? 'py-2.5 rounded-lg font-bold text-xs uppercase tracking-tight border-2 transition-all border-blue-600 bg-blue-50 text-blue-700 flex items-center justify-center gap-2 shadow-sm'
+            : 'py-2.5 rounded-lg font-bold text-xs uppercase tracking-tight border-2 transition-all border-gray-100 text-gray-400 flex items-center justify-center gap-2 hover:bg-gray-50';
+        document.getElementById('btn-fulfill-pickup').className = type === 'pickup'
+            ? 'py-2.5 rounded-lg font-bold text-xs uppercase tracking-tight border-2 transition-all border-blue-600 bg-blue-50 text-blue-700 flex items-center justify-center gap-2 shadow-sm'
+            : 'py-2.5 rounded-lg font-bold text-xs uppercase tracking-tight border-2 transition-all border-gray-100 text-gray-400 flex items-center justify-center gap-2 hover:bg-gray-50';
+    }
+
+    async function submitPendingOrder() {
+        if (cart.length === 0) return alert("Carrito vacío");
+        const total = cart.reduce((sum, item) => sum + (item.finalPrice * item.qty), 0);
+        const subtotal = total;
+        
+        const payload = {
+            items: cart,
+            subtotal,
+            total,
+            paymentMethod: currentTenderMethod,
+            customerId: currentCustomerId,
+            fulfillmentType: fulfillmentType,
+            status: 'pending',
+            notes: document.getElementById('guest-name-input').value.trim() ? `[CLIENTE: ${document.getElementById('guest-name-input').value.trim()}]` : null
+        };
+
+        try {
+            const url = currentOrderId ? `/api/orders/${currentOrderId}?v=${Date.now()}` : `/api/orders?v=${Date.now()}`;
+            const method = currentOrderId ? 'PATCH' : 'POST';
+
+            const res = await fetch(url, {
+                method: method,
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': 'Bearer EMP-admin'
+                },
+                body: JSON.stringify(payload)
+            });
+
+            if (res.ok) {
+                alert("✅ ORDEN ENVIADA A COCINA (TAB ABIERTA)");
+                clearOrderState();
+                fetchLiveOrders();
+            } else {
+                const err = await res.json();
+                alert("Error Servidor: " + (err.error || "Error desconocido"));
+            }
+        } catch(e) { 
+            console.error("Network Error:", e);
+            alert("Error de Conexión: " + e.message); 
+        }
+    }
+
+    function clearOrderState() {
+        cart = [];
+        currentOrderId = null;
+        currentCustomerId = null;
+        window.loadedCustomer = null;
+        document.getElementById('guest-name-input').value = "";
+        document.getElementById('main-charge-btn').innerText = "CHARGE (Enter)";
+        renderCart();
+        saveCartState();
+    }
+
+    async function recallOrder(id) {
+        const order = liveOrders.find(o => o.id === id);
+        if (!order) return;
+        
+        if (cart.length > 0 && !confirm("¿Vaciar carrito actual para recuperar esta orden?")) return;
+        
+        // Reconstruct Cart
+        cart = (order.items || []).map(i => ({
+            ...i,
+            qty: i.qty || i.quantity || 1,
+            finalPrice: i.price,
+            mods: i.mods || []
+        }));
+        
+        currentOrderId = order.id;
+        currentCustomerId = order.customer_id;
+        
+        // Restore Guest Name if present
+        if (order.notes && order.notes.includes('[CLIENTE:')) {
+            const match = order.notes.match(/\[CLIENTE:\s*([^\]]+)\]/);
+            if (match) document.getElementById('guest-name-input').value = match[1].trim();
         }
 
-        function playSound(type) {
-            // Placeholder for sound effects
-            // const audio = new Audio(`/sounds/${type}.mp3`);
-            // audio.play().catch(e => {});
+        renderCart();
+        
+        // Change Charge Button Label
+        document.getElementById('main-charge-btn').innerText = "UPDATE & CHARGE";
+        
+        alert("✅ Orden Recuperada - Puedes agregar más o cobrar.");
+    }
+
+    async function processCobrar() {
+        const total = cart.reduce((sum, item) => sum + (item.finalPrice * item.qty), 0);
+        const subtotal = total;
+        const payload = {
+            items: cart,
+            subtotal,
+            total,
+            paymentMethod: currentTenderMethod,
+            customerId: currentCustomerId,
+            fulfillmentType: fulfillmentType,
+            status: 'paid',
+            notes: document.getElementById('guest-name-input').value.trim() ? `[CLIENTE: ${document.getElementById('guest-name-input').value.trim()}]` : null
+        };
+
+        const confirmBtn = document.getElementById('confirm-tender-btn');
+        confirmBtn.disabled = true;
+        confirmBtn.innerText = "PROCESANDO...";
+
+        try {
+            const url = currentOrderId ? `/api/orders/${currentOrderId}?v=${Date.now()}` : `/api/orders?v=${Date.now()}`;
+            const method = currentOrderId ? 'PATCH' : 'POST';
+
+            const res = await fetch(url, {
+                method: method,
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'Authorization': 'Bearer EMP-admin'
+                },
+                body: JSON.stringify(payload)
+            });
+
+            if (res.ok) {
+                alert("✅ Venta Completada");
+                clearOrderState();
+                location.reload();
+            } else {
+                const err = await res.json();
+                alert("Error: " + (err.error || "No se pudo procesar pago"));
+                confirmBtn.disabled = false;
+                confirmBtn.innerText = "Cobrar";
+            }
+        } catch(e) { 
+            alert("Error de Conexión: " + e.message); 
+            confirmBtn.disabled = false;
+            confirmBtn.innerText = "Cobrar";
         }
-    </script>
+    }
+
+    // --- CUSTOMER LOOKUP ---
+    async function lookupCustomer() {
+        const country = document.getElementById('cust-country').value;
+        const input = document.getElementById('cust-id');
+        let query = input.value.replace(/\D/g, '');
+        if (!query.startsWith('+')) query = country + query;
+
+        try {
+            const res = await fetch(`/api/customers/phone/${query}`, {
+                headers: { 'Authorization': 'Bearer EMP-admin' }
+            });
+            const data = await res.json();
+            if (res.ok) {
+                currentCustomerId = data.id;
+                window.loadedCustomer = data;
+                document.getElementById('cust-lookup-ui').classList.add('hidden');
+                const profile = document.getElementById('cust-profile');
+                profile.innerHTML = `
+                    <div class="bg-blue-50 p-4 rounded-2xl border border-blue-100 flex justify-between items-center shadow-sm">
+                        <div>
+                            <div class="font-black text-blue-900">${data.name}</div>
+                            <div class="text-[10px] font-bold text-blue-600">Balance: L. ${(parseFloat(data.rico_balance) || 0).toFixed(2)}</div>
+                        </div>
+                        <button onclick="clearCustomer()" class="text-xs font-bold text-gray-400">Clear</button>
+                    </div>
+                `;
+                profile.classList.remove('hidden');
+            } else {
+                // Quick create UI
+                document.getElementById('cust-profile').innerHTML = `
+                    <div class="bg-orange-50 p-4 rounded-2xl border border-orange-200">
+                        <p class="text-orange-800 font-bold text-xs mb-2 italic">New Customer?</p>
+                        <input type="text" id="new-cust-name" placeholder="Full Name" class="w-full p-2 border-2 border-orange-200 rounded-lg mb-2">
+                        <button onclick="quickCreateCustomer('${query}')" class="w-full bg-orange-600 text-white font-bold py-2 rounded-lg">Unir + L.30 Bonus</button>
+                    </div>
+                `;
+                document.getElementById('cust-profile').classList.remove('hidden');
+                document.getElementById('cust-lookup-ui').classList.add('hidden');
+            }
+        } catch(e) {}
+    }
+
+    function clearCustomer() {
+        currentCustomerId = null;
+        window.loadedCustomer = null;
+        document.getElementById('cust-profile').classList.add('hidden');
+        document.getElementById('cust-lookup-ui').classList.remove('hidden');
+    }
+
+    async function quickCreateCustomer(phone) {
+        const name = document.getElementById('new-cust-name').value;
+        await fetch('/api/customers', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer EMP-admin' },
+            body: JSON.stringify({ phone, name })
+        });
+        document.getElementById('cust-id').value = phone;
+        lookupCustomer();
+    }
+
+    // --- SHIFT & STATUS ---
+    async function handleLogin() {
+        const pin = document.getElementById('login-pin').value;
+        if (!pin) return alert("Ingrese su PIN");
+
+        try {
+            const res = await fetch('/api/cash/verify-pin', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer EMP-admin' },
+                body: JSON.stringify({ pin })
+            });
+            const data = await res.json();
+
+            if (!res.ok) throw new Error(data.error || "PIN Inválido");
+
+            // Successful Login
+            window.currentEmployee = data.employee;
+            console.log("👤 Cashier Logged In:", window.currentEmployee.name);
+
+            if (window.activeDBShift) {
+                // Shift already open, just join it
+                currentShiftId = window.activeDBShift.id;
+                currentCashier = window.currentEmployee.name;
+                startingCash = window.activeDBShift.opening_amount;
+                document.getElementById('shift-modal').classList.add('hidden');
+                console.log("🚀 Joining active shift...");
+            } else {
+                // No shift open, proceed to Step 2
+                document.getElementById('login-stage').classList.add('hidden');
+                document.getElementById('open-shift-stage').classList.remove('hidden');
+                document.getElementById('welcome-msg').innerText = `Hola, ${window.currentEmployee.name}`;
+            }
+        } catch (err) {
+            alert(err.message);
+        }
+    }
+
+    async function confirmStartShift() {
+        const cash = document.getElementById('shift-cash').value;
+        if (!cash) return alert("Ingrese la base de caja");
+
+        try {
+            const res = await fetch('/api/cash/open-shift', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer EMP-admin' },
+                body: JSON.stringify({ 
+                    employeeId: window.currentEmployee.id, 
+                    openingAmount: parseFloat(cash) 
+                })
+            });
+            const data = await res.json();
+
+            if (!res.ok) throw new Error(data.error || "Error al abrir caja");
+
+            // Success
+            currentShiftId = data.id;
+            currentCashier = window.currentEmployee.name;
+            startingCash = parseFloat(cash);
+            
+            // Save local fallback
+            localStorage.setItem('pos_active_shift', JSON.stringify({
+                shiftId: data.id,
+                cashier: currentCashier,
+                startingCash: startingCash,
+                startTime: new Date().toISOString()
+            }));
+
+            document.getElementById('shift-modal').classList.add('hidden');
+            await fetchStoreStatus();
+            console.log("✅ Shift Opened successfully.");
+        } catch (err) {
+            alert(err.message);
+        }
+    }
+
+    async function endShift() {
+        if (!currentShiftId) return alert("No hay una sesión activa para cerrar.");
+        
+        const cash = prompt("💰 CIERRE DE CAJA\n\nIngrese el TOTAL DE EFECTIVO físico en caja\n(Incluyendo la base de L. " + startingCash + "):");
+        if (cash === null || cash === "") return;
+        
+        const amount = parseFloat(cash);
+        if (isNaN(amount)) return alert("Monto inválido");
+
+        try {
+            const res = await fetch('/api/cash/close-shift', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer EMP-admin' },
+                body: JSON.stringify({ shiftId: currentShiftId, closingAmount: amount })
+            });
+
+            const text = await res.text();
+            let data;
+            try {
+                data = JSON.parse(text);
+            } catch (e) {
+                console.error("Non-JSON response:", text);
+                throw new Error("Server returned an invalid response. Please contact admin.");
+            }
+
+            if (res.ok) {
+                // Clear Local Session
+                localStorage.removeItem('pos_active_shift');
+                currentShiftId = null;
+                currentCashier = null;
+                window.currentEmployee = null;
+
+                await fetchStoreStatus();
+                showShiftReport(data.report);
+            } else {
+                alert("Error al cerrar caja: " + (data.error || text || "Error desconocido"));
+            }
+        } catch(e) { 
+            console.error("Close Shift Catch:", e);
+            alert("Error: " + e.message); 
+        }    }
+
+    async function toggleStoreStatus(checkbox) {
+        const res = await fetch('/api/store/status', {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer EMP-admin' },
+            body: JSON.stringify({ isOpen: checkbox.checked })
+        });
+        if (res.ok) fetchStoreStatus();
+    }
+
+    async function fetchStoreStatus() {
+        try {
+            const res = await fetch('/api/store/status', {
+                headers: { 'Authorization': 'Bearer EMP-admin' }
+            });
+            const data = await res.json();
+            const toggle = document.getElementById('store-status-toggle');
+            const label = document.getElementById('store-status-label');
+            
+            if (toggle) toggle.checked = data.isOpen;
+            if (label) {
+                label.innerText = data.isOpen ? 'ABIERTO' : 'CERRADO';
+                label.className = `text-sm font-bold ${data.isOpen ? 'text-green-600' : 'text-red-600'} px-2 w-16 text-center`;
+            }
+            
+            // Also update a global banner or pulse if closed
+            const banner = document.getElementById('connection-status');
+            if (banner) {
+                if (!data.isOpen) {
+                    banner.innerText = "TIENDA CERRADA 🔴";
+                    banner.className = "bg-red-100 text-red-800 px-3 py-1.5 rounded-lg font-mono text-sm transition-all";
+                } else {
+                    banner.innerText = "TIENDA ABIERTA 🟢";
+                    banner.className = "bg-green-100 text-green-800 px-3 py-1.5 rounded-lg font-mono text-sm transition-all";
+                }
+            }
+        } catch(e) { console.error("Error fetching store status", e); }
+    }
+
+    // --- ADMIN PANEL ---
+    function triggerAdmin() {
+        document.getElementById('admin-dashboard').classList.remove('hidden');
+    }
+    function closeAdminDashboard() {
+        document.getElementById('admin-dashboard').classList.add('hidden');
+    }
+    async function showAdminTab(tab) {
+        const content = document.getElementById('admin-content-area');
+        content.innerHTML = '<div class="text-center py-20"><i class="fas fa-spinner fa-spin text-3xl text-gray-300"></i></div>';
+        
+        if (tab === 'menu') {
+            const res = await fetch('/api/menu?admin=true', {
+                headers: { 'Authorization': 'Bearer EMP-admin' }
+            });
+            const data = await res.json();
+            content.innerHTML = `<div class="grid grid-cols-2 gap-4">${data.items.map(i => `
+                <div class="p-4 border rounded-xl flex justify-between items-center ${i.available ? '' : 'bg-red-50'}">
+                    <span>${i.name}</span>
+                    <input type="checkbox" ${i.available ? 'checked' : ''} onchange="toggleItemAvailability('${i.id}', this.checked)">
+                </div>
+            `).join('')}</div>`;
+        } else {
+            content.innerHTML = '<p class="text-center text-gray-400 py-20 italic">Reporting module loading...</p>';
+        }
+    }
+
+    async function toggleItemAvailability(id, available) {
+        await fetch(`/api/menu/items/${id}`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer EMP-admin' },
+            body: JSON.stringify({ available })
+        });
+        showAdminTab('menu');
+    }
+
+    // --- VERIFICATION QUEUE ---
+    async function fetchPendingVerifications() {
+        const res = await fetch('/api/orders', {
+            headers: { 'Authorization': 'Bearer EMP-admin' }
+        });
+        const data = await res.json();
+        pendingVerifications = data.orders.filter(o => {
+            if (o.status === 'pending_verification') return true;
+            // Include membership transfer requests
+            if (o.payment_method === 'transfer' && o.status === 'pending') return true;
+            if (o.payment_method === 'cash' && o.notes?.includes('Mobile Order')) {
+                return ['pending', 'preparing', 'ready'].includes(o.status);
+            }
+            return false;
+        });
+        
+        const btn = document.getElementById('verifyPaymentAlert');
+        btn.classList.toggle('hidden', pendingVerifications.length === 0);
+        document.getElementById('verifyCount').innerText = pendingVerifications.length;
+    }
+
+    function openVerifyModal() {
+        document.getElementById('verifyModal').classList.remove('hidden');
+        renderVerifyModal();
+    }
+    function closeVerifyModal() {
+        document.getElementById('verifyModal').classList.add('hidden');
+    }
+    function renderVerifyModal() {
+        const container = document.getElementById('verifyContent');
+        if (pendingVerifications.length === 0) return closeVerifyModal();
+        
+        const o = pendingVerifications[0];
+        const isCash = o.payment_method === 'cash';
+        const isMembership = o.items && o.items.some(i => i.id === 'vip_membership');
+        
+        container.innerHTML = `
+            <div class="text-center">
+                <h4 class="text-2xl font-bold">${isCash ? 'Cobro en Efectivo' : (isMembership ? '👑 Membresía VIP' : 'Verificar Pago')}</h4>
+                <p class="text-4xl font-black my-4">L. ${o.total}</p>
+                ${isCash ? '' : `<div class="bg-gray-100 p-4 rounded mb-4 italic text-sm">Verifica la transferencia en tu banca móvil...</div>`}
+                <div class="flex gap-4">
+                    <button onclick="approveTransfer('${o.id}')" class="flex-1 bg-green-600 text-white font-bold py-4 rounded-xl shadow-lg hover:bg-green-700 transition-all">Aprobar</button>
+                    <button onclick="rejectOrder('${o.id}', '${o.order_number}', '${o.customers?.phone || ''}', '${o.customers?.name || ''}')" class="flex-1 bg-red-100 text-red-600 font-bold py-4 rounded-xl border border-red-200 hover:bg-red-200 transition-all">Rechazar</button>
+                </div>
+                <button onclick="closeVerifyModal()" class="w-full mt-4 text-gray-400 font-bold py-2">Cerrar</button>
+            </div>
+        `;
+    }
+
+    async function approveTransfer(id) {
+        try {
+            const res = await fetch(`/api/orders/${id}`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer EMP-admin' },
+                body: JSON.stringify({ status: 'paid' })
+            });
+            if (res.ok) {
+                fetchPendingVerifications();
+                fetchLiveOrders();
+                closeVerifyModal();
+            } else {
+                alert("Error al aprobar.");
+            }
+        } catch (e) { console.error(e); }
+    }
+
+    function showShiftReport(r) {
+        const content = document.getElementById('shift-report-content');
+        if (!r) {
+            content.innerHTML = '<p class="text-red-500 text-center py-10 font-bold">Error: Report data is missing.</p>';
+            document.getElementById('shiftReportModal').classList.remove('hidden');
+            return;
+        }
+        
+        // Ensure all fields exist and are numbers
+        const opening = parseFloat(r.opening_amount || 0);
+        const cashSales = parseFloat(r.sales?.cash || 0);
+        const closing = parseFloat(r.closing_amount || 0);
+        const transactions = parseFloat(r.transactions || 0);
+        const expected = opening + cashSales + transactions;
+        const diff = closing - expected;
+        const ricoSales = parseFloat(r.sales?.rico_balance || 0);
+        const orderCount = parseInt(r.order_count || 0);
+        
+        content.innerHTML = `
+            <div class="p-6 bg-gray-900 text-gold rounded-2xl font-mono text-sm space-y-3 border border-white/10 shadow-2xl">
+                <div class="flex justify-between border-b border-white/10 pb-2">
+                    <span class="text-gray-400">Starting Float:</span>
+                    <span class="font-black text-white">L. ${opening.toFixed(2)}</span>
+                </div>
+                <div class="flex justify-between">
+                    <span class="text-gray-400">Cash Sales:</span>
+                    <span class="font-black text-white">+ L. ${cashSales.toFixed(2)}</span>
+                </div>
+                <div class="flex justify-between text-blue-400 border-t border-white/10 pt-2">
+                    <span>Expected in Drawer:</span>
+                    <span class="font-black">L. ${expected.toFixed(2)}</span>
+                </div>
+                <div class="flex justify-between text-yellow-400">
+                    <span>Actual in Drawer:</span>
+                    <span class="font-black">L. ${closing.toFixed(2)}</span>
+                </div>
+                <div class="flex justify-between text-xl font-black p-3 rounded-xl ${diff >= 0 ? 'bg-green-900/30 text-green-400' : 'bg-red-900/30 text-red-400'}">
+                    <span>DISCREPANCY:</span>
+                    <span>L. ${diff.toFixed(2)}</span>
+                </div>
+                <div class="mt-4 pt-4 border-t border-white/10 space-y-1">
+                    <div class="flex justify-between text-[10px]">
+                        <span class="text-gray-500 uppercase">Rico Cash Sales:</span>
+                        <span class="text-white">L. ${ricoSales.toFixed(2)}</span>
+                    </div>
+                    <div class="flex justify-between text-[10px]">
+                        <span class="text-gray-500 uppercase">Total Orders:</span>
+                        <span class="text-white">${orderCount}</span>
+                    </div>
+                </div>
+            </div>
+        `;
+        document.getElementById('shiftReportModal').classList.remove('hidden');
+    }
+
+    function printShiftReport() {
+        window.print();
+    }
+
+    function closeModal() { document.getElementById('modifier-modal').classList.add('hidden'); }
+
+</script>
+
+<!-- Payment Verification Alert & Modal -->
+<button id="verifyPaymentAlert" class="hidden fixed bottom-4 right-4 z-50 bg-red-600 text-white font-bold text-xl py-4 px-6 rounded-full shadow-2xl animate-bounce hover:bg-red-700 transition" onclick="openVerifyModal()">
+  🚨 ¡Verificar Pago! <span id="verifyCount" class="bg-white text-red-600 text-sm px-2 py-1 rounded-full ml-2">1</span>
+</button>
+
+<div id="verifyModal" class="hidden fixed inset-0 bg-black bg-opacity-75 z-50 flex items-center justify-center p-4">
+  <div class="bg-white rounded-lg p-6 max-w-lg w-full max-h-[90vh] overflow-y-auto">
+    <div class="flex justify-between items-center mb-4">
+      <h3 class="text-2xl font-bold">Verificar Pago</h3>
+      <button onclick="closeVerifyModal()" class="text-gray-500 hover:text-gray-700 text-2xl">&times;</button>
+    </div>
+    <div id="verifyContent" class="space-y-4 text-center">
+      <!-- Dynamic content -->
+    </div>
+  </div>
+</div>
+
+<!-- SHIFT REPORT (Z-REPORT) MODAL -->
+<div id="shiftReportModal" class="hidden fixed inset-0 bg-black bg-opacity-90 z-[300] flex items-center justify-center p-4">
+    <div class="bg-white rounded-3xl shadow-2xl max-w-lg w-full overflow-hidden border-t-8 border-gray-900">
+        <div class="p-8">
+            <div class="text-center mb-6">
+                <div class="w-16 h-16 bg-gray-100 text-gray-900 rounded-full flex items-center justify-center mx-auto mb-4 text-2xl">
+                    <i class="fas fa-file-invoice-dollar"></i>
+                </div>
+                <h3 class="text-3xl font-black uppercase tracking-tighter">Cierre de Caja</h3>
+                <p class="text-gray-500 font-bold uppercase text-[10px] tracking-widest mt-1">Shift Report / Z-Report</p>
+            </div>
+
+            <div id="shift-report-content" class="space-y-4">
+                <!-- Data injected via JS -->
+            </div>
+
+            <div class="mt-8 flex gap-4">
+                <button onclick="window.location.reload()" class="flex-1 bg-gray-900 text-white font-black py-4 rounded-xl shadow-lg hover:bg-black active:scale-95 transition-all uppercase text-sm">Entendido (Cerrar)</button>
+                <button onclick="printShiftReport()" class="w-16 bg-gray-100 text-gray-600 rounded-xl hover:bg-gray-200 transition-all flex items-center justify-center text-xl">
+                    <i class="fas fa-print"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
 </body>
 </html>

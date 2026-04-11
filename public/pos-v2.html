@@ -3,7 +3,11 @@
 <head>
     <link rel="icon" type="image/png" href="/favicon.png">    <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Rich Aroma POS v2.0 (Smart Upgrade)</title>
+    <title>Rich Aroma POS v2.0</title>
+    <link rel="manifest" href="/pos-manifest.json">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link rel="apple-touch-icon" href="/favicon.png">
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
@@ -256,24 +260,28 @@
 
     <!-- MODIFIER MODAL (Hidden by default) -->
     <div id="modifier-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-        <div class="bg-white w-2/3 h-3/4 rounded-2xl shadow-2xl flex flex-col overflow-hidden">
+        <div class="bg-white w-[90%] h-[90%] rounded-3xl shadow-2xl flex flex-col overflow-hidden">
             <!-- Header -->
-            <div class="p-6 border-b border-gray-200 flex justify-between items-center bg-gray-50">
+            <div class="p-6 border-b border-gray-200 flex justify-between items-center bg-gray-50 shrink-0">
                 <div>
-                    <h2 class="text-2xl font-bold" id="mod-item-name">Latte</h2>
+                    <h2 class="text-3xl font-black" id="mod-item-name">Latte</h2>
                     <p class="text-green-600 font-mono text-xl" id="mod-item-price">L. 55.00</p>
                 </div>
-                <button onclick="closeModal()" class="text-gray-400 hover:text-red-500 text-3xl">&times;</button>
+                <button onclick="closeModal()" class="w-12 h-12 flex items-center justify-center rounded-full bg-gray-200 text-gray-600 hover:bg-red-500 hover:text-white transition-all text-2xl font-bold">
+                    <i class="fas fa-times"></i>
+                </button>
             </div>
 
-            <!-- Scrollable Options -->
-            <div class="flex-1 overflow-y-auto p-6 space-y-8" id="mod-dynamic-container">
-                <!-- Dynamic groups injected here -->
+            <!-- Optimized Grid for Groups -->
+            <div class="flex-1 overflow-y-auto p-8" id="mod-dynamic-container-wrapper">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-8" id="mod-dynamic-container">
+                    <!-- Dynamic groups injected here -->
+                </div>
                 
-                <!-- Custom Note -->
-                <div>
-                    <h3 class="font-bold text-gray-500 uppercase text-sm mb-3">Custom Note / Nota</h3>
-                    <input type="text" id="mod-note" placeholder="e.g. Extra hot, no foam..." class="w-full p-4 border border-gray-300 rounded-xl text-lg">
+                <!-- Custom Note (Full Width) -->
+                <div class="mt-12 pt-8 border-t border-gray-100">
+                    <h3 class="font-bold text-gray-400 uppercase text-xs tracking-widest mb-4">Custom Note / Nota</h3>
+                    <input type="text" id="mod-note" placeholder="Ej. Sin azucar, bien caliente..." class="w-full p-5 bg-gray-50 border-2 border-gray-100 rounded-2xl text-lg focus:border-blue-500 outline-none transition-all">
                 </div>
             </div>
 
@@ -421,15 +429,33 @@
             <div class="text-center text-gray-400 mt-10">El carrito está vacío</div>
         </div>
 
+        <!-- Fulfillment Type -->
+        <div class="px-6 py-3 border-t border-gray-200 bg-white">
+            <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 text-center">Tipo de Orden</p>
+            <div class="grid grid-cols-2 gap-2">
+                <button onclick="setFulfillment('dinein')" id="btn-fulfill-dinein" class="py-2.5 rounded-lg font-bold text-xs uppercase tracking-tight border-2 transition-all border-blue-600 bg-blue-50 text-blue-700 flex items-center justify-center gap-2 shadow-sm">
+                    <i class="fas fa-utensils"></i> Aquí
+                </button>
+                <button onclick="setFulfillment('pickup')" id="btn-fulfill-pickup" class="py-2.5 rounded-lg font-bold text-xs uppercase tracking-tight border-2 transition-all border-gray-100 text-gray-400 flex items-center justify-center gap-2 hover:bg-gray-50">
+                    <i class="fas fa-walking"></i> Llevar
+                </button>
+            </div>
+        </div>
+
         <!-- Totals -->
         <div class="p-6 bg-gray-50 border-t border-gray-200">
             <div class="flex justify-between text-xl font-bold mb-4">
                 <span>Total:</span>
                 <span id="cart-total">L. 0.00</span>
             </div>
-            <button onclick="openTenderModal()" class="w-full bg-green-600 text-white py-4 rounded-xl font-bold text-xl shadow hover:bg-green-700">
-                CHARGE (Enter)
-            </button>
+            <div class="flex gap-3">
+                <button onclick="submitPendingOrder()" class="flex-1 bg-white border-2 border-gray-200 text-gray-600 py-4 rounded-xl font-bold text-sm hover:bg-gray-50 transition-all">
+                    ENVIAR A COCINA
+                </button>
+                <button onclick="openTenderModal()" id="main-charge-btn" class="flex-[2] bg-green-600 text-white py-4 rounded-xl font-bold text-xl shadow hover:bg-green-700 transition-all">
+                    CHARGE (Enter)
+                </button>
+            </div>
         </div>
 
         <!-- WhatsApp Bot Simulator Tab Removed for now -->
@@ -465,6 +491,8 @@
     let currentShiftId = null;
     let startingCash = 0;
     let currentTenderMethod = 'cash';
+    let fulfillmentType = 'dinein'; // Default for Main POS
+    let currentOrderId = null; // Track if we are editing an existing order
     let currentCustomerId = null;
     window.loadedCustomer = null;
 
@@ -504,7 +532,9 @@
 
     async function refreshMenu() {
         try {
-            const res = await fetch('/api/menu?admin=true');
+            const res = await fetch('/api/menu?admin=true', {
+                headers: { 'Authorization': 'Bearer EMP-admin' }
+            });
             const data = await res.json();
             
             let sourceItems = data.items || [];
@@ -641,6 +671,12 @@
             const isReady = o.status === 'ready';
             
             let statusClass = "bg-gray-700 text-gray-300";
+            let recallBtn = "";
+            
+            if (o.status === 'pending') {
+                statusClass = "bg-orange-500/20 text-orange-500 border border-orange-500/50";
+                recallBtn = `<button onclick="recallOrder('${o.id}')" class="ml-auto bg-orange-500 text-white px-2 py-1 rounded text-[8px] font-black uppercase tracking-widest hover:bg-orange-600 transition-all">Recuperar</button>`;
+            }
             if (o.status === 'paid') statusClass = "bg-blue-900 text-blue-200 border border-blue-700";
             if (o.status === 'preparing') statusClass = "bg-orange-900 text-orange-200 border border-orange-700";
             if (o.status === 'ready') statusClass = "bg-green-900 text-green-200 border border-green-700 animate-pulse";
@@ -660,21 +696,28 @@
 
             html += '<div class="p-3 rounded-xl bg-gray-800 border border-white/5 shadow-lg mb-2 ' + (isReady ? 'ring-2 ring-green-500 shadow-[0_0_15px_rgba(34,197,94,0.3)]' : '') + '">';
             html += '    <div class="flex justify-between items-start mb-1">';
-            html += '        <span class="text-[10px] font-black text-gray-500 tracking-tighter">#' + (o.order_number || '---') + '</span>';
-            html += '        <span class="text-[9px] px-2 py-0.5 rounded-full font-black uppercase ' + statusClass + '">' + o.status + '</span>';
+            const orderNumDisplay = o.order_number ? o.order_number.toString().padStart(2, '0') : '---';
+            html += '        <div class="flex items-center gap-2">';
+            html += '            <span class="text-[10px] font-black text-gray-500 tracking-tighter">#' + orderNumDisplay + '</span>';
+            html += '            <span class="text-[9px] px-2 py-0.5 rounded-full font-black uppercase ' + statusClass + '">' + o.status + '</span>';
+            html += '        </div>';
+            html +=          recallBtn;
             html += '    </div>';
             html += '    <div class="font-bold text-white text-sm truncate">' + name + '</div>';
             html += '    <div class="flex justify-between items-center mt-1">';
             html += '        <span class="text-[9px] font-bold text-gray-500 uppercase">' + o.payment_method + '</span>';
             html += '        <span class="text-xs font-black text-blue-400 font-mono">L ' + (parseFloat(o.total) || 0).toFixed(2) + '</span>';
             html += '    </div>';
+            html += '    <div class="flex gap-1 mt-2">';
             if (isUnpaidCashMobile) {
-                html += '    <button onclick="openVerifyModal()" class="w-full mt-2 py-1.5 bg-green-600 text-white text-[10px] font-black uppercase rounded-lg hover:bg-green-500 transition-all">Cobrar L.' + o.total + '</button>';
+                html += '        <button onclick="openVerifyModal()" class="flex-1 py-1.5 bg-green-600 text-white text-[10px] font-black uppercase rounded-lg hover:bg-green-500 transition-all">Cobrar L.' + o.total + '</button>';
+            } else if (isReady) {
+                html += '        <button onclick="deliverOrder(\'' + o.id + '\')" class="flex-1 py-2 bg-green-500 text-dark font-black text-[10px] uppercase rounded-lg shadow-lg hover:bg-green-400 transition-all">✅ ENTREGAR</button>';
             }
-            // Only show Deliver button if it's ready AND paid (or not an unpaid mobile cash order)
-            if (isReady && !isUnpaidCashMobile) {
-                html += '    <button onclick="deliverOrder(\'' + o.id + '\')" class="w-full mt-2 py-2 bg-green-500 text-dark font-black text-[10px] uppercase rounded-lg shadow-lg hover:bg-green-400 transition-all">✅ ENTREGAR</button>';
-            }
+            
+            // Reject button for any active order
+            html += '        <button onclick="rejectOrder(\'' + o.id + '\', \'' + (o.order_number || '') + '\', \'' + (o.customers?.phone || '') + '\', \'' + (o.customers?.name || '') + '\')" class="px-3 bg-red-900/40 text-red-500 rounded-lg border border-red-900/60 hover:bg-red-900/60 transition-all"><i class="fas fa-times"></i></button>';
+            html += '    </div>';
             html += '</div>';
         });
         container.innerHTML = html;
@@ -684,13 +727,44 @@
         try {
             const res = await fetch(`/api/orders/${id}`, {
                 method: 'PATCH',
-                headers: {'Content-Type': 'application/json', 'Authorization': 'Bearer EMP-admin'},
+                headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer EMP-admin' },
                 body: JSON.stringify({ status: 'completed' })
             });
             if (res.ok) {
                 await fetchLiveOrders();
             }
         } catch(e) { console.error("Error delivering order", e); }
+    }
+
+    async function rejectOrder(id, num, phone, name) {
+        const reason = prompt(`Motivo de rechazo para orden #${num}:`, "Captura de pantalla no válida o transferencia no recibida.");
+        if (reason === null) return;
+        
+        try {
+            const res = await fetch(`/api/orders/${id}`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer EMP-admin' },
+                body: JSON.stringify({ 
+                    status: 'cancelled',
+                    notes: `[REJECTED] ${reason}`
+                })
+            });
+            
+            if(res.ok) {
+                if (phone) {
+                    const message = `Hola ${name.split(' ')[0] || 'Cliente'}, tu solicitud de membresía #${num} fue rechazada por: ${reason}. Por favor intenta de nuevo con una captura válida.`;
+                    const waUrl = `https://wa.me/${phone.replace(/\D/g, '')}?text=${encodeURIComponent(message)}`;
+                    if(confirm("Orden rechazada. ¿Deseas notificar al cliente vía WhatsApp?")) {
+                        window.open(waUrl, '_blank');
+                    }
+                }
+                await fetchLiveOrders();
+                await fetchPendingVerifications();
+                closeVerifyModal();
+            } else {
+                alert("Error al rechazar.");
+            }
+        } catch(e) { console.error(e); }
     }
 
     // --- MENU & RENDERING ---
@@ -841,6 +915,7 @@
         document.getElementById('mod-item-name').innerText = currentItem.name;
         document.getElementById('mod-item-price').innerText = `L. ${(parseFloat(currentItem.price) || 0).toFixed(2)}`;
         document.getElementById('mod-quantity').innerText = "1";
+        document.getElementById('mod-note').value = ""; // Clear notes for new item
         
         renderModifiers(id);
         document.getElementById('modifier-modal').classList.remove('hidden');
@@ -859,19 +934,24 @@
             if (!group) return '';
             const options = modOptions.filter(o => o.group_id === group.id);
             const selected = currentMods[group.id] || [];
+            
+            // Auto-adjust grid columns based on option count
+            const gridCols = options.length > 4 ? 'grid-cols-3' : 'grid-cols-2';
+
             return `
-                <div class="mb-6">
-                    <h3 class="font-bold text-gray-500 uppercase text-xs tracking-widest mb-3">
-                        ${group.name} ${group.required ? '<span class="text-red-500">*</span>' : ''}
+                <div class="bg-gray-50/50 p-5 rounded-3xl border border-gray-100">
+                    <h3 class="font-black text-gray-400 uppercase text-[10px] tracking-[0.2em] mb-4 flex items-center justify-between">
+                        <span>${group.name}</span>
+                        ${group.required ? '<span class="bg-red-100 text-red-600 px-2 py-0.5 rounded text-[8px]">OBLIGATORIO</span>' : '<span class="text-[8px] opacity-50 italic">Opcional</span>'}
                     </h3>
-                    <div class="grid grid-cols-2 gap-2">
+                    <div class="grid ${gridCols} gap-3">
                         ${options.map(opt => {
                             const isSel = selected.includes(opt.id);
                             return `
                             <button onclick="toggleMod('${group.id}', '${opt.id}', ${group.max_selections}, '${id}')" id="mod-${opt.id}" 
-                                class="p-3 border-2 rounded-xl text-sm font-bold transition-all text-left flex justify-between items-center ${isSel ? 'border-blue-500 bg-blue-50 text-blue-700' : 'border-gray-100 hover:border-blue-200'}">
-                                <span>${opt.name}</span>
-                                <span class="text-[10px] text-green-600">${opt.price_adjustment > 0 ? '+L.' + opt.price_adjustment : ''}</span>
+                                class="p-4 border-2 rounded-2xl text-xs font-black transition-all flex flex-col items-start gap-1 shadow-sm ${isSel ? 'border-blue-600 bg-blue-600 text-white shadow-blue-600/20' : 'border-white bg-white text-gray-600 hover:border-blue-200'}">
+                                <span class="leading-tight">${opt.name}</span>
+                                ${opt.price_adjustment > 0 ? `<span class="${isSel ? 'text-white/70' : 'text-green-600'} text-[9px] font-mono">+L.${opt.price_adjustment}</span>` : ''}
                             </button>
                             `;
                         }).join('')}
@@ -1047,31 +1127,147 @@
         changeEl.classList.toggle('text-red-500', !valid && received > 0);
     }
 
-    async function processCobrar() {
+    function setFulfillment(type) {
+        fulfillmentType = type;
+        document.getElementById('btn-fulfill-dinein').className = type === 'dinein'
+            ? 'py-2.5 rounded-lg font-bold text-xs uppercase tracking-tight border-2 transition-all border-blue-600 bg-blue-50 text-blue-700 flex items-center justify-center gap-2 shadow-sm'
+            : 'py-2.5 rounded-lg font-bold text-xs uppercase tracking-tight border-2 transition-all border-gray-100 text-gray-400 flex items-center justify-center gap-2 hover:bg-gray-50';
+        document.getElementById('btn-fulfill-pickup').className = type === 'pickup'
+            ? 'py-2.5 rounded-lg font-bold text-xs uppercase tracking-tight border-2 transition-all border-blue-600 bg-blue-50 text-blue-700 flex items-center justify-center gap-2 shadow-sm'
+            : 'py-2.5 rounded-lg font-bold text-xs uppercase tracking-tight border-2 transition-all border-gray-100 text-gray-400 flex items-center justify-center gap-2 hover:bg-gray-50';
+    }
+
+    async function submitPendingOrder() {
+        if (cart.length === 0) return alert("Carrito vacío");
         const total = cart.reduce((sum, item) => sum + (item.finalPrice * item.qty), 0);
+        const subtotal = total;
+        
         const payload = {
             items: cart,
+            subtotal,
             total,
             paymentMethod: currentTenderMethod,
             customerId: currentCustomerId,
+            fulfillmentType: fulfillmentType,
+            status: 'pending',
             notes: document.getElementById('guest-name-input').value.trim() ? `[CLIENTE: ${document.getElementById('guest-name-input').value.trim()}]` : null
         };
 
         try {
-            const res = await fetch('/api/orders', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+            const url = currentOrderId ? `/api/orders/${currentOrderId}?v=${Date.now()}` : `/api/orders?v=${Date.now()}`;
+            const method = currentOrderId ? 'PATCH' : 'POST';
+
+            const res = await fetch(url, {
+                method: method,
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': 'Bearer EMP-admin'
+                },
                 body: JSON.stringify(payload)
             });
+
             if (res.ok) {
-                alert("✅ Success!");
-                cart = [];
-                currentCustomerId = null;
-                window.loadedCustomer = null;
-                saveCartState();
-                location.reload();
+                alert("✅ ORDEN ENVIADA A COCINA (TAB ABIERTA)");
+                clearOrderState();
+                fetchLiveOrders();
+            } else {
+                const err = await res.json();
+                alert("Error Servidor: " + (err.error || "Error desconocido"));
             }
-        } catch(e) { alert("Error!"); }
+        } catch(e) { 
+            console.error("Network Error:", e);
+            alert("Error de Conexión: " + e.message); 
+        }
+    }
+
+    function clearOrderState() {
+        cart = [];
+        currentOrderId = null;
+        currentCustomerId = null;
+        window.loadedCustomer = null;
+        document.getElementById('guest-name-input').value = "";
+        document.getElementById('main-charge-btn').innerText = "CHARGE (Enter)";
+        renderCart();
+        saveCartState();
+    }
+
+    async function recallOrder(id) {
+        const order = liveOrders.find(o => o.id === id);
+        if (!order) return;
+        
+        if (cart.length > 0 && !confirm("¿Vaciar carrito actual para recuperar esta orden?")) return;
+        
+        // Reconstruct Cart
+        cart = (order.items || []).map(i => ({
+            ...i,
+            qty: i.qty || i.quantity || 1,
+            finalPrice: i.price,
+            mods: i.mods || []
+        }));
+        
+        currentOrderId = order.id;
+        currentCustomerId = order.customer_id;
+        
+        // Restore Guest Name if present
+        if (order.notes && order.notes.includes('[CLIENTE:')) {
+            const match = order.notes.match(/\[CLIENTE:\s*([^\]]+)\]/);
+            if (match) document.getElementById('guest-name-input').value = match[1].trim();
+        }
+
+        renderCart();
+        
+        // Change Charge Button Label
+        document.getElementById('main-charge-btn').innerText = "UPDATE & CHARGE";
+        
+        alert("✅ Orden Recuperada - Puedes agregar más o cobrar.");
+    }
+
+    async function processCobrar() {
+        const total = cart.reduce((sum, item) => sum + (item.finalPrice * item.qty), 0);
+        const subtotal = total;
+        const payload = {
+            items: cart,
+            subtotal,
+            total,
+            paymentMethod: currentTenderMethod,
+            customerId: currentCustomerId,
+            fulfillmentType: fulfillmentType,
+            status: 'paid',
+            notes: document.getElementById('guest-name-input').value.trim() ? `[CLIENTE: ${document.getElementById('guest-name-input').value.trim()}]` : null
+        };
+
+        const confirmBtn = document.getElementById('confirm-tender-btn');
+        confirmBtn.disabled = true;
+        confirmBtn.innerText = "PROCESANDO...";
+
+        try {
+            const url = currentOrderId ? `/api/orders/${currentOrderId}?v=${Date.now()}` : `/api/orders?v=${Date.now()}`;
+            const method = currentOrderId ? 'PATCH' : 'POST';
+
+            const res = await fetch(url, {
+                method: method,
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'Authorization': 'Bearer EMP-admin'
+                },
+                body: JSON.stringify(payload)
+            });
+
+            if (res.ok) {
+                alert("✅ Venta Completada");
+                clearOrderState();
+                location.reload();
+            } else {
+                const err = await res.json();
+                alert("Error: " + (err.error || "No se pudo procesar pago"));
+                confirmBtn.disabled = false;
+                confirmBtn.innerText = "Cobrar";
+            }
+        } catch(e) { 
+            alert("Error de Conexión: " + e.message); 
+            confirmBtn.disabled = false;
+            confirmBtn.innerText = "Cobrar";
+        }
     }
 
     // --- CUSTOMER LOOKUP ---
@@ -1082,7 +1278,9 @@
         if (!query.startsWith('+')) query = country + query;
 
         try {
-            const res = await fetch(`/api/customers/phone/${query}`);
+            const res = await fetch(`/api/customers/phone/${query}`, {
+                headers: { 'Authorization': 'Bearer EMP-admin' }
+            });
             const data = await res.json();
             if (res.ok) {
                 currentCustomerId = data.id;
@@ -1125,7 +1323,7 @@
         const name = document.getElementById('new-cust-name').value;
         await fetch('/api/customers', {
             method: 'POST',
-            headers: {'Content-Type': 'application/json'},
+            headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer EMP-admin' },
             body: JSON.stringify({ phone, name })
         });
         document.getElementById('cust-id').value = phone;
@@ -1219,7 +1417,7 @@
         try {
             const res = await fetch('/api/cash/close-shift', {
                 method: 'POST',
-                headers: {'Content-Type': 'application/json', 'Authorization': 'Bearer EMP-admin'},
+                headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer EMP-admin' },
                 body: JSON.stringify({ shiftId: currentShiftId, closingAmount: amount })
             });
 
@@ -1252,7 +1450,7 @@
     async function toggleStoreStatus(checkbox) {
         const res = await fetch('/api/store/status', {
             method: 'PATCH',
-            headers: {'Content-Type': 'application/json'},
+            headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer EMP-admin' },
             body: JSON.stringify({ isOpen: checkbox.checked })
         });
         if (res.ok) fetchStoreStatus();
@@ -1260,7 +1458,9 @@
 
     async function fetchStoreStatus() {
         try {
-            const res = await fetch('/api/store/status');
+            const res = await fetch('/api/store/status', {
+                headers: { 'Authorization': 'Bearer EMP-admin' }
+            });
             const data = await res.json();
             const toggle = document.getElementById('store-status-toggle');
             const label = document.getElementById('store-status-label');
@@ -1297,7 +1497,9 @@
         content.innerHTML = '<div class="text-center py-20"><i class="fas fa-spinner fa-spin text-3xl text-gray-300"></i></div>';
         
         if (tab === 'menu') {
-            const res = await fetch('/api/menu?admin=true');
+            const res = await fetch('/api/menu?admin=true', {
+                headers: { 'Authorization': 'Bearer EMP-admin' }
+            });
             const data = await res.json();
             content.innerHTML = `<div class="grid grid-cols-2 gap-4">${data.items.map(i => `
                 <div class="p-4 border rounded-xl flex justify-between items-center ${i.available ? '' : 'bg-red-50'}">
@@ -1313,7 +1515,7 @@
     async function toggleItemAvailability(id, available) {
         await fetch(`/api/menu/items/${id}`, {
             method: 'PATCH',
-            headers: {'Content-Type': 'application/json', 'Authorization': 'Bearer EMP-admin'},
+            headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer EMP-admin' },
             body: JSON.stringify({ available })
         });
         showAdminTab('menu');
@@ -1327,6 +1529,8 @@
         const data = await res.json();
         pendingVerifications = data.orders.filter(o => {
             if (o.status === 'pending_verification') return true;
+            // Include membership transfer requests
+            if (o.payment_method === 'transfer' && o.status === 'pending') return true;
             if (o.payment_method === 'cash' && o.notes?.includes('Mobile Order')) {
                 return ['pending', 'preparing', 'ready'].includes(o.status);
             }
@@ -1351,29 +1555,37 @@
         
         const o = pendingVerifications[0];
         const isCash = o.payment_method === 'cash';
+        const isMembership = o.items && o.items.some(i => i.id === 'vip_membership');
         
         container.innerHTML = `
             <div class="text-center">
-                <h4 class="text-2xl font-bold">${isCash ? 'Cobro en Efectivo' : 'Verificar Pago'}</h4>
+                <h4 class="text-2xl font-bold">${isCash ? 'Cobro en Efectivo' : (isMembership ? '👑 Membresía VIP' : 'Verificar Pago')}</h4>
                 <p class="text-4xl font-black my-4">L. ${o.total}</p>
-                ${isCash ? '' : `<div class="bg-gray-100 p-4 rounded mb-4 italic">Check receipt in notes...</div>`}
+                ${isCash ? '' : `<div class="bg-gray-100 p-4 rounded mb-4 italic text-sm">Verifica la transferencia en tu banca móvil...</div>`}
                 <div class="flex gap-4">
-                    <button onclick="approveTransfer('${o.id}')" class="flex-1 bg-green-600 text-white font-bold py-4 rounded-xl">Aprobar</button>
-                    <button onclick="closeVerifyModal()" class="flex-1 bg-gray-200 py-4 rounded-xl">Luego</button>
+                    <button onclick="approveTransfer('${o.id}')" class="flex-1 bg-green-600 text-white font-bold py-4 rounded-xl shadow-lg hover:bg-green-700 transition-all">Aprobar</button>
+                    <button onclick="rejectOrder('${o.id}', '${o.order_number}', '${o.customers?.phone || ''}', '${o.customers?.name || ''}')" class="flex-1 bg-red-100 text-red-600 font-bold py-4 rounded-xl border border-red-200 hover:bg-red-200 transition-all">Rechazar</button>
                 </div>
+                <button onclick="closeVerifyModal()" class="w-full mt-4 text-gray-400 font-bold py-2">Cerrar</button>
             </div>
         `;
     }
 
     async function approveTransfer(id) {
-        await fetch(`/api/orders/${id}`, {
-            method: 'PATCH',
-            headers: {'Content-Type': 'application/json', 'Authorization': 'Bearer EMP-admin'},
-            body: JSON.stringify({ status: 'paid' })
-        });
-        fetchPendingVerifications();
-        fetchLiveOrders();
-        closeVerifyModal();
+        try {
+            const res = await fetch(`/api/orders/${id}`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer EMP-admin' },
+                body: JSON.stringify({ status: 'paid' })
+            });
+            if (res.ok) {
+                fetchPendingVerifications();
+                fetchLiveOrders();
+                closeVerifyModal();
+            } else {
+                alert("Error al aprobar.");
+            }
+        } catch (e) { console.error(e); }
     }
 
     function showShiftReport(r) {

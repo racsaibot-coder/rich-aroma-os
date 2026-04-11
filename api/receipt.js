@@ -5,30 +5,44 @@ const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseKey = process.env.SUPABASE_ANON_KEY;
 const supabase = createClient(supabaseUrl, supabaseKey);
 
-export default async function handler(req, res) {
+module.exports = async function handler(req, res) {
     // Only allow POST
     if (req.method !== 'POST') {
         return res.status(405).json({ error: 'Method not allowed' });
     }
 
     try {
-        const { id } = req.query; // comes from the route if mapped properly, or we pass it in body
+        const { id } = req.query; 
         const { imageBase64, orderId, fileName } = req.body;
         
         const targetId = id || orderId;
 
         if (!targetId || !imageBase64) {
-            return res.status(400).json({ error: 'Missing orderId or image' });
+            console.error("[Receipt] Missing data:", { targetId, hasImage: !!imageBase64 });
+            return res.status(400).json({ error: 'Falta ID de orden o imagen' });
+        }
+
+        // Validate base64 format
+        if (!imageBase64.startsWith('data:image/')) {
+            return res.status(400).json({ error: 'Formato de imagen inválido' });
         }
 
         // Convert base64 to buffer
-        const base64Data = imageBase64.replace(/^data:image\/\w+;base64,/, "");
+        // More robust regex to handle different image types
+        const matches = imageBase64.match(/^data:([a-zA-Z0-9]+\/[a-zA-Z0-9-.+]+);base64,(.*)$/);
+        if (!matches || matches.length < 3) {
+            return res.status(400).json({ error: 'Mecanismo de imagen no reconocido' });
+        }
+
+        const mimeType = matches[1];
+        const base64Data = matches[2];
         const buffer = Buffer.from(base64Data, 'base64');
-        const mimeType = imageBase64.match(/^data:(image\/\w+);base64,/)?.[1] || 'image/png';
         const ext = mimeType.split('/')[1] || 'png';
         
         const cleanName = (fileName || 'receipt').replace(/[^a-zA-Z0-9.]/g, '');
         const storagePath = `receipts/${targetId}_${Date.now()}_${cleanName}.${ext}`;
+
+        console.log("[Receipt] Uploading to Supabase:", storagePath);
 
         const { data, error } = await supabase.storage
             .from('menu-images')
@@ -43,13 +57,14 @@ export default async function handler(req, res) {
             .from('menu-images')
             .getPublicUrl(storagePath);
 
-        const { data: orderData } = await supabase.from('orders').select('notes').eq('id', targetId).single();
+        // Update Order Notes
+        const { data: orderData } = await supabase.from('orders').select('notes').eq('id', targetId).maybeSingle();
         const existingNotes = orderData ? (orderData.notes || '') : '';
         const newNotes = existingNotes + '\n[RECEIPT_URL:' + publicUrl + ']';
 
         const { error: dbError } = await supabase
             .from('orders')
-            .update({ notes: newNotes, status: 'pending_verification' }) // Set to pending verification for POS
+            .update({ notes: newNotes, status: 'pending_verification' })
             .eq('id', targetId);
 
         if (dbError) throw dbError;
@@ -60,4 +75,4 @@ export default async function handler(req, res) {
         console.error('Upload Error:', error);
         return res.status(500).json({ error: error.message });
     }
-}
+};

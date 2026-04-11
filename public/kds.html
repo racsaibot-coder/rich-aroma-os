@@ -145,6 +145,13 @@
         // Poll Loop
         setInterval(fetchOrders, 3000); // 3s poll
         
+        // Full Sync Loop (Resilience against missed orders)
+        setInterval(() => {
+            console.log("[KDS] Running Full Heartbeat Sync...");
+            lastRenderData = ""; // Force a full DOM redraw
+            fetchOrders();
+        }, 60000); // 60s full sync
+
         setInterval(() => {
             document.querySelectorAll('.timer-display').forEach(el => {
                 const time = el.getAttribute('data-time');
@@ -230,17 +237,18 @@
         }
 
         function render() {
-            if(currentMode === 'status') renderStatusBoard();
-            else renderKDS();
+            try {
+                if(currentMode === 'status') renderStatusBoard();
+                else renderKDS();
+            } catch(e) { console.error("Render error", e); }
         }
 
-        // Store previously rendered order IDs to avoid full DOM redraws
-        let renderedOrderIds = new Set();
-
-        
         function isDrinkItem(item) {
+            if (!item) return false;
             const name = (item.name || '').toLowerCase();
             const id = (item.id || '').toLowerCase();
+            const cat = (item.category || '').toLowerCase();
+            if (id === 'vip_membership' || name.includes('membresía')) return false;
             return id.startsWith('hot_') || id.startsWith('cold_') || id.startsWith('frappe_') || 
                    name.includes('latte') || name.includes('brew') || name.includes('capp') || 
                    name.includes('tea') || name.includes('te ') || name.includes('icee') || 
@@ -248,34 +256,50 @@
                    name.includes('frappe') || name.includes('macchiato') || name.includes('jugo') || 
                    name.includes('licuado') || name.includes('granita') || name.includes('smoothie') || 
                    name.includes('caliente') || name.includes('helada') || name.includes('americano') ||
-                   name.includes('chocolate') || name.includes('cafe') || name.includes('café');
+                   name.includes('chocolate') || name.includes('cafe') || name.includes('café') ||
+                   name.includes('combo') || cat.includes('coffee') || cat.includes('drinks') || cat.includes('heladas');
         }
         
         function isFoodItem(item) {
+            if (!item) return false;
             const name = (item.name || '').toLowerCase();
             const id = (item.id || '').toLowerCase();
-            if (isComboItem(name)) return true; // Combos have food
+            const cat = (item.category || '').toLowerCase();
+            if (id === 'vip_membership' || name.includes('membresía')) return false;
             return id.startsWith('food_') || name.includes('baleada') || name.includes('sandwich') || 
                    name.includes('crepa') || name.includes('bowl') || name.includes('toast') || 
                    name.includes('melt') || name.includes('fries') || name.includes('papas') || 
-                   name.includes('burger') || name.includes('hamburguesa');
+                   name.includes('burger') || name.includes('hamburguesa') || name.includes('combo') ||
+                   cat.includes('food') || cat.includes('comida');
         }
 
         function isComboItem(name) {
             return (name || '').toLowerCase().includes('combo');
         }
 
+        // Store previously rendered state to avoid flicker
+        let lastRenderData = "";
+
         function renderKDS() {
-            const grid = document.getElementById('kds-grid');
-            grid.innerHTML = '';
-            
-            // Filter orders that are NOT completed
             const activeOrders = orders.filter(o => {
                 if (o.status === 'completed') return false;
+                if (o.status === 'cancelled') return false;
+                // Don't show membership-only orders on KDS
+                const hasOnlyMembership = (o.items || []).every(i => i.id === 'vip_membership');
+                if (hasOnlyMembership) return false;
+
                 if (currentMode === 'drinks' && o.status === 'drinks_ready') return false;
                 if (currentMode === 'food' && o.status === 'food_ready') return false;
                 return true;
             });
+
+            // Fingerprint to avoid redraw if data is identical
+            const currentFingerprint = JSON.stringify(activeOrders.map(o => ({id: o.id, status: o.status}))) + currentMode;
+            if (currentFingerprint === lastRenderData) return;
+            lastRenderData = currentFingerprint;
+
+            const grid = document.getElementById('kds-grid');
+            grid.innerHTML = '';
             
             activeOrders.forEach(order => {
                 // Filter Items based on Mode
@@ -416,13 +440,17 @@
                     <button onclick="completeOrder('${order.id}')" class="w-full py-4 bg-success hover:bg-green-400 text-white font-bold rounded-xl transition-all mt-2 active:scale-95 shadow-[0_0_15px_rgba(16,185,129,0.3)]">
                         <i class="fas fa-check-circle mr-2"></i> LISTO
                     </button>
-                    `}
-                `;
+                    `}                `;
                 grid.appendChild(card);
             });
         }
 
         function renderStatusBoard() {
+            // Fingerprint for status board
+            const currentFingerprint = JSON.stringify(orders.map(o => ({id: o.id, status: o.status}))) + currentMode;
+            if (currentFingerprint === lastRenderData) return;
+            lastRenderData = currentFingerprint;
+
             const colPrep = document.getElementById('col-prep');
             const colReady = document.getElementById('col-ready');
             
@@ -430,26 +458,25 @@
             colReady.innerHTML = '';
 
             // Status Logic
-            // Active = Preparing
-            // Completed (Recently) = Ready
-            
-            orders.forEach(order => {
+            orders.forEach((order, index) => {
                 if(order.status === 'pending' || order.status === 'paid' || order.status === 'preparing') {
-                    // Preparing
+                    // Preparing (Giant Text)
                     colPrep.innerHTML += `
-                        <div class="text-4xl text-white/50 font-bold font-mono py-2 border-b border-white/5">
-                            #${order.order_number} <span class="text-2xl text-white/20 ml-4">${order.customers?.name || ''}</span>
+                        <div class="text-6xl text-white/40 font-black font-mono py-6 border-b border-white/5 flex items-center gap-6">
+                            <span class="text-gold/30">#</span>${order.order_number} 
+                            <span class="text-3xl text-white/10 uppercase truncate">${order.customers?.name?.split(' ')[0] || ''}</span>
                         </div>
                     `;
-                } else if(order.status === 'completed') {
-                    // Only show if completed in last 15 mins
-                    const doneTime = new Date(order.completed_at || order.created_at); // Fallback
+                } else if(order.status === 'completed' || order.status === 'ready') {
+                    // Only show if completed in last 10 mins
+                    const doneTime = new Date(order.completed_at || order.created_at);
                     const now = new Date();
-                    if((now - doneTime) < 15 * 60 * 1000) {
+                    if((now - doneTime) < 10 * 60 * 1000) {
+                        const isNewest = index === 0; // Simple highlight for first ready
                         colReady.innerHTML += `
-                            <div class="text-5xl text-gold font-bold font-mono py-4 border-b border-gold/10 flex justify-between items-center">
-                                <span>#${order.order_number}</span>
-                                <i class="fas fa-check text-3xl"></i>
+                            <div class="text-8xl text-gold font-black font-mono py-10 border-b border-gold/10 flex justify-between items-center ${isNewest ? 'animate-in zoom-in-95 duration-500' : ''}">
+                                <span><span class="text-gold/20">#</span>${order.order_number}</span>
+                                <i class="fas fa-check-circle text-5xl opacity-50"></i>
                             </div>
                         `;
                     }
@@ -465,12 +492,19 @@
             order.status = 'preparing';
             render();
             
-            // API Call
-            await fetch(`/api/orders/${id}`, {
-                method: 'PATCH',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({ status: 'preparing' })
-            });
+            try {
+                // API Call
+                const res = await fetch(`/api/orders/${id}`, {
+                    method: 'PATCH',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ status: 'preparing' })
+                });
+                if (!res.ok) throw new Error("Update failed");
+            } catch(e) {
+                console.error(e);
+                alert("Error al iniciar orden");
+                fetchOrders(); // Refresh to revert
+            }
         }
 
         async function completeOrder(id) {
@@ -481,18 +515,17 @@
             let hasFood = false;
 
             (order.items || []).forEach(item => {
-                const name = item.name || '';
-                if (isDrinkItem(name) || isComboItem(name)) hasDrinks = true;
-                if (!isDrinkItem(name) || isComboItem(name)) hasFood = true;
+                if (isDrinkItem(item) || isComboItem(item.name)) hasDrinks = true;
+                if (isFoodItem(item)) hasFood = true;
             });
 
             let newStatus = 'completed';
 
             if (hasDrinks && hasFood) {
                 if (currentMode === 'drinks') {
-                    newStatus = order.status === 'food_ready' ? 'completed' : 'drinks_ready';
+                    newStatus = (order.status === 'food_ready' || order.status === 'ready') ? 'completed' : 'drinks_ready';
                 } else if (currentMode === 'food') {
-                    newStatus = order.status === 'drinks_ready' ? 'completed' : 'food_ready';
+                    newStatus = (order.status === 'drinks_ready' || order.status === 'ready') ? 'completed' : 'food_ready';
                 }
             }
 
@@ -500,12 +533,48 @@
             order.status = newStatus;
             render();
             
-            // API Call
-            await fetch(`/api/orders/${id}`, {
-                method: 'PATCH',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({ status: newStatus })
-            });
+            try {
+                // API Call
+                const res = await fetch(`/api/orders/${id}`, {
+                    method: 'PATCH',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ status: newStatus })
+                });
+                if (!res.ok) throw new Error("Update failed");
+            } catch(e) {
+                console.error(e);
+                alert("Error al completar orden");
+                fetchOrders(); // Refresh to revert
+            }
+        }
+
+        async function rejectOrder(id, num, phone, name) {
+            const reason = prompt(`Motivo de rechazo para orden #${num}:`, "Captura de pantalla no válida o transferencia no recibida.");
+            if (reason === null) return;
+            
+            try {
+                const res = await fetch(`/api/orders/${id}`, {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                        status: 'cancelled',
+                        notes: `[REJECTED] ${reason}`
+                    })
+                });
+                
+                if(res.ok) {
+                    if (phone) {
+                        const message = `Hola ${name.split(' ')[0]}, tu solicitud de membresía #${num} fue rechazada por: ${reason}. Por favor intenta de nuevo con una captura válida.`;
+                        const waUrl = `https://wa.me/${phone.replace(/\D/g, '')}?text=${encodeURIComponent(message)}`;
+                        if(confirm("Orden rechazada. ¿Deseas notificar al cliente vía WhatsApp?")) {
+                            window.open(waUrl, '_blank');
+                        }
+                    }
+                    fetchOrders();
+                } else {
+                    alert("Error al rechazar.");
+                }
+            } catch(e) { console.error(e); }
         }
     </script>
     

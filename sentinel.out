@@ -14,3 +14,29 @@
 /bin/sh: lsof: command not found
 /bin/sh: lsof: command not found
 /bin/sh: lsof: command not found
+/bin/sh: line 1: 66724 Terminated: 15          nohup node server.js >> server.log 2>&1
+/bin/sh: lsof: command not found
+/bin/sh: lsof: command not found
+/bin/sh: lsof: command not found
+/bin/sh: lsof: command not found
+/bin/sh: lsof: command not found
+/bin/sh: lsof: command not found
+/bin/sh: lsof: command not found
+/bin/sh: line 1: 33352 Killed: 9               nohup node server.js >> server.log 2>&1
+/bin/sh: lsof: command not found
+/bin/sh: line 1: 33589 Killed: 9               nohup node server.js >> server.log 2>&1
+/bin/sh: lsof: command not found
+/bin/sh: lsof: command not found
+/bin/sh: lsof: command not found
+/bin/sh: lsof: command not found
+/bin/sh: lsof: command not found
+/bin/sh: lsof: command not found
+/bin/sh: lsof: command not found
+/bin/sh: lsof: command not found
+/bin/sh: lsof: command not found
+/bin/sh: lsof: command not found
+/bin/sh: lsof: command not found
+/bin/sh: lsof: command not found
+/bin/sh: lsof: command not found
+/bin/sh: lsof: command not found
+/bin/sh: lsof: command not found

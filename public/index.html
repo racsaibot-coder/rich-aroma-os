@@ -4,7 +4,7 @@
     <link rel="icon" type="image/png" href="/favicon.png">    
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Rich Aroma | Café & Comida</title>
+    <title>Rich Aroma | Coffee & Food</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <script>
@@ -13,192 +13,259 @@
                 extend: {
                     colors: {
                         gold: '#C9A66B',
-                        dark: '#1E1610',
-                        charcoal: '#2C241E',
+                        dark: '#120C09',
+                        charcoal: '#1E1610',
                         cream: '#F5F5F0'
                     },
                     fontFamily: {
-                        sans: ['Inter', 'sans-serif'],
-                        display: ['Playfair Display', 'serif']
+                        sans: ['Fredoka', 'sans-serif'],
+                        display: ['Fredoka', 'serif']
                     }
                 }
             }
         }
     </script>
     <style>
-        body { background-color: #1E1610; color: #F5F5F0; font-family: 'Inter', sans-serif; }
-        .gold-btn { background: linear-gradient(135deg, #C9A66B 0%, #B08D55 100%); color: #1E1610; }
+        @import url('https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&display=swap');
+        body { background-color: #120C09; color: #F5F5F0; font-family: 'Fredoka', sans-serif; }
+        .gold-btn { background: linear-gradient(135deg, #C9A66B 0%, #B08D55 100%); color: #120C09; }
+        .glass-dark { background: rgba(30, 22, 16, 0.6); backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.05); }
         .hero-pattern {
-            background-image: radial-gradient(rgba(201, 166, 107, 0.15) 1px, transparent 1px);
-            background-size: 20px 20px;
+            background-image: radial-gradient(rgba(201, 166, 107, 0.1) 1px, transparent 1px);
+            background-size: 30px 30px;
+        }
+        .gold-text-gradient {
+            background: linear-gradient(135deg, #F4E2C0 0%, #C9A66B 50%, #B08D55 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .animate-float { animation: floating 3s ease-in-out infinite; }
+        @keyframes floating {
+            0% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
+            100% { transform: translateY(0px); }
         }
     </style>
 </head>
-<body class="min-h-screen hero-pattern relative overflow-x-hidden">
+<body class="min-h-screen hero-pattern relative overflow-x-hidden pb-20">
 
-    <!-- Top Nav -->
-    <header class="absolute top-0 w-full z-50 px-6 py-4 flex justify-between items-center">
+    <!-- Sticky Lead Magnet (Floating) -->
+    <div id="sticky-lead" class="fixed bottom-6 left-6 right-6 z-[100] flex justify-center animate-in slide-in-from-bottom-10 duration-1000">
+        <button onclick="document.getElementById('welcome-section').scrollIntoView({behavior:'smooth'})" class="glass-dark px-6 py-4 rounded-full shadow-2xl flex items-center gap-4 border border-gold/20 hover:border-gold/50 transition-all group">
+            <span class="w-8 h-8 rounded-full bg-gold flex items-center justify-center text-dark text-xs animate-bounce group-hover:scale-110 transition-transform">🎁</span>
+            <span class="text-xs font-bold uppercase tracking-widest">Reclama tu regalo de Bienvenida</span>
+            <i class="fas fa-arrow-right text-[10px] opacity-40"></i>
+        </button>
+    </div>
+
+    <!-- Top Navigation -->
+    <nav class="sticky top-0 w-full z-[100] glass-dark border-b border-white/5 px-6 py-4 flex justify-between items-center">
         <div class="flex items-center gap-3">
-            <img src="/rico-logo.png" alt="Rich Aroma" class="w-10 h-10 rounded-full border border-gold/20 object-cover">
-            <span class="font-display font-bold text-gold tracking-widest uppercase text-sm">Rich Aroma</span>
+            <img src="/rico-logo.png" alt="Rich Aroma" class="w-10 h-10 rounded-full border border-gold/20 object-cover shadow-lg">
+            <span class="font-bold text-gold tracking-widest uppercase text-xs">Rich Aroma</span>
         </div>
-        <a href="/profile/index.html" class="bg-white/10 border border-white/20 px-4 py-2 rounded-full text-white text-sm font-bold shadow-lg hover:bg-white/20 transition-colors"><i class="fas fa-user-circle mr-1 text-gold"></i> Mi Perfil</a>
+        <div class="flex items-center gap-4">
+            <a href="/order" class="text-[10px] font-black uppercase tracking-widest text-white/60 hover:text-gold transition-colors hidden md:block">Menu</a>
+            <a href="/membership" class="bg-gold/10 border border-gold/30 px-4 py-2 rounded-full text-gold text-[10px] font-black uppercase tracking-widest shadow-xl hover:bg-gold/20 transition-all"><i class="fas fa-crown mr-1"></i> VIP Club</a>
+        </div>
+    </nav>
+
+    <!-- DUAL-FUNNEL HERO -->
+    <header class="relative py-20 px-6 max-w-6xl mx-auto grid lg:grid-cols-2 gap-12 items-center">
+        
+        <!-- Left: The Experience (Honduras) -->
+        <div class="space-y-8 animate-in fade-in slide-in-from-left-8 duration-1000">
+            <div class="inline-block px-4 py-1 rounded-full bg-gold/10 border border-gold/20 text-gold text-[10px] font-black uppercase tracking-[0.3em]">Honduras Shop</div>
+            <h1 class="text-5xl md:text-7xl font-bold leading-[0.9] tracking-tighter">
+                El Mejor Café de <span class="gold-text-gradient italic">Quimistán</span>.
+            </h1>
+            <p class="text-white/50 text-lg max-w-md leading-relaxed">
+                Olvídate de las filas. Pide en línea, pasa recogiendo por nuestra barra o disfruta en mesa.
+            </p>
+            <div class="flex flex-col gap-4 pt-4">
+                <a href="/order" class="gold-btn px-10 py-5 rounded-2xl font-black text-lg shadow-[0_0_40px_rgba(201,166,107,0.2)] hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-3">
+                    <i class="fas fa-shopping-bag text-sm"></i> Pedir Ahora
+                </a>
+            </div>
+        </div>
+
+        <!-- Right: The Product (California) -->
+        <div class="animate-in fade-in slide-in-from-right-8 duration-1000 delay-200">
+            <div class="bg-charcoal rounded-[3rem] p-10 border border-white/5 shadow-2xl relative overflow-hidden group">
+                <div class="absolute -top-24 -right-24 w-64 h-64 bg-gold/10 blur-3xl rounded-full group-hover:bg-gold/20 transition-all"></div>
+                
+                <div class="relative z-10 space-y-6">
+                    <div class="flex justify-between items-center">
+                        <div class="px-4 py-1 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-400 text-[10px] font-black uppercase tracking-[0.3em]">California Direct</div>
+                        <span class="text-xs text-green-400 font-bold animate-pulse">● Freshly Bottled</span>
+                    </div>
+                    
+                    <h2 class="text-4xl font-bold leading-tight tracking-tight">Small Batch <br>Artisan Bottles.</h2>
+                    <p class="text-white/40 text-sm leading-relaxed">
+                        Hand-crafted, concentrated lattes shipped directly to your door in California every Monday.
+                    </p>
+                    
+                    <div class="py-6 flex items-center gap-6">
+                        <img src="https://zcqubacfcettwawcimsy.supabase.co/storage/v1/object/public/menu-images/cali_products/PROD_b1760261-3169-41e7-ad35-611422239e95_1775224160003.jpeg" class="w-24 h-32 object-cover rounded-2xl shadow-2xl rotate-[-5deg] group-hover:rotate-0 transition-transform duration-500">
+                        <div class="space-y-2">
+                            <p class="text-xs font-bold text-white/60">Next Shipping Batch:</p>
+                            <div class="flex gap-2">
+                                <span class="bg-white/5 px-3 py-2 rounded-lg text-lg font-black font-mono">MON</span>
+                                <span class="bg-gold/10 text-gold px-3 py-2 rounded-lg text-lg font-black font-mono tracking-tighter">BATCH #05</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <a href="/cali" class="w-full py-5 rounded-2xl bg-white text-dark font-black text-sm uppercase tracking-widest flex items-center justify-center gap-3 hover:bg-gold hover:text-dark transition-all shadow-xl active:scale-95">
+                        Shop California Catalog <i class="fas fa-truck"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
     </header>
 
-    <!-- Hero Section (Above the Fold) -->
-    <main class="pt-32 pb-16 px-6 text-center max-w-lg mx-auto flex flex-col items-center min-h-[85vh] justify-center relative z-10">
+    <!-- VIP MEMBERSHIP SALES SECTION -->
+    <section class="px-6 py-24 bg-dark relative overflow-hidden">
+        <div class="absolute inset-0 bg-gold/5 blur-[120px] rounded-full -translate-y-1/2"></div>
         
-        <!-- Glow Effect -->
-        <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[150%] h-96 bg-gold/5 rounded-full blur-[100px] -z-10 pointer-events-none"></div>
-
-        <h1 class="text-5xl font-display font-bold text-white mb-4 leading-tight tracking-tight">
-            El Mejor Café & Comida de <span class="text-gold italic">Honduras</span>.
-        </h1>
-        <p class="text-white/60 text-lg mb-10 max-w-sm">
-            Olvídate de las filas. Pide en línea y pasa recogiendo o te lo llevamos.
-        </p>
-
-        <!-- Primary Action -->
-        <a href="/order" class="w-full gold-btn py-5 rounded-2xl font-bold text-xl shadow-[0_0_30px_rgba(201,166,107,0.3)] hover:scale-[1.02] active:scale-[0.98] transition-transform flex items-center justify-center gap-3 mb-4">
-            <i class="fas fa-shopping-bag"></i> Pide para Llevar / Mesa
-        </a>
-
-        <!-- Secondary Action -->
-        <button onclick="document.getElementById('menu-preview').scrollIntoView({behavior:'smooth'})" class="w-full py-4 rounded-2xl font-bold text-white/80 border border-white/10 hover:bg-white/5 transition-colors">
-            Ver Menú y Precios
-        </button>
-
-    </main>
-
-    <!-- The Hook (Sign up) -->
-    <section class="px-6 py-12 bg-charcoal border-t border-b border-white/5 relative z-20">
-        <div class="max-w-md mx-auto text-center">
-            <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gold/10 text-gold text-2xl mb-4">
-                <i class="fas fa-gift"></i>
-            </div>
-            <h2 class="text-2xl font-bold text-white mb-2">L. 30 Gratis en tu Primera Orden</h2>
-            <p class="text-white/50 text-sm mb-6">Ingresa tu número de WhatsApp para reclamar tu saldo de bienvenida.</p>
-
-            <form id="welcome-form" onsubmit="claimWelcomeOffer(event)" class="flex flex-col gap-3">
-                <input type="text" id="name-input" placeholder="Tu Nombre" required class="w-full bg-dark border border-white/10 rounded-xl py-4 px-4 text-white focus:border-gold focus:outline-none focus:ring-1 focus:ring-gold transition-colors">
-                <div class="relative flex">
-                    <select id="country-code" class="bg-dark border border-white/10 border-r-0 rounded-l-xl py-4 pl-4 pr-2 text-white/60 font-mono focus:outline-none focus:border-gold transition-colors appearance-none">
-                        <option value="+504">🇭🇳 +504</option>
-                        <option value="+1">🇺🇸 +1</option>
-                    </select>
-                    <input type="tel" id="phone-input" placeholder="Tu número" required class="w-full bg-dark border border-white/10 rounded-r-xl py-4 px-4 text-white font-mono focus:border-gold focus:outline-none focus:ring-1 focus:ring-gold transition-colors">
+        <div class="max-w-5xl mx-auto grid lg:grid-cols-2 gap-16 items-center relative z-10">
+            <div class="order-2 lg:order-1 relative h-80 w-full perspective-1000 animate-float">
+                <!-- Gold Card Mockup -->
+                <div class="w-full h-full rounded-[3rem] p-10 flex flex-col justify-between shadow-[0_20px_80px_rgba(201,166,107,0.3)] border border-gold/40 overflow-hidden"
+                     style="background: linear-gradient(135deg, #D4AF37 0%, #C9A66B 50%, #B08D55 100%);">
+                    <div class="absolute -top-32 -right-32 w-80 h-80 bg-white/20 blur-3xl rounded-full"></div>
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <p class="text-dark/40 text-[10px] font-black uppercase tracking-widest mb-1">Rich Aroma Elite</p>
+                            <h3 class="text-3xl font-bold text-dark tracking-tighter">VIP MEMBER</h3>
+                        </div>
+                        <div class="w-12 h-12 bg-dark/10 rounded-full flex items-center justify-center border border-dark/10">
+                            <i class="fas fa-crown text-dark/60"></i>
+                        </div>
+                    </div>
+                    <div class="flex justify-between items-end">
+                        <div class="space-y-1">
+                            <p class="text-dark/40 text-[8px] font-black uppercase tracking-widest">Rico Cash Balance</p>
+                            <p class="text-4xl font-mono font-black text-dark tracking-tighter">L 500.00</p>
+                        </div>
+                        <i class="fas fa-qrcode text-4xl text-dark opacity-30"></i>
+                    </div>
                 </div>
-                <input type="password" id="pin-input" placeholder="Crea un PIN (4 dígitos)" maxlength="4" required class="w-full bg-dark border border-white/10 rounded-xl py-4 px-4 text-white text-center tracking-[0.5em] focus:border-gold focus:outline-none focus:ring-1 focus:ring-gold transition-colors">
-                <button type="submit" id="claim-btn" class="w-full bg-white text-dark font-bold py-4 rounded-xl hover:bg-gray-200 transition-colors">
-                    Reclamar L. 30
-                </button>
-            </form>
+            </div>
 
-            <div id="welcome-success" class="hidden bg-green-500/10 border border-green-500/30 text-green-400 p-4 rounded-xl mt-4">
-                <i class="fas fa-check-circle mr-2"></i> ¡Cuenta creada! Tus L.30 se aplicarán automáticamente al realizar tu primera orden. <a href="/order" class="underline font-bold ml-1">Pide ahora.</a>
+            <div class="order-1 lg:order-2 space-y-8 text-center lg:text-left">
+                <div class="inline-block px-4 py-1 rounded-full bg-gold/10 border border-gold/20 text-gold text-[10px] font-black uppercase tracking-[0.3em]">Exclusive Membership</div>
+                <h2 class="text-4xl md:text-6xl font-bold leading-tight tracking-tight">El Hábito que se <br><span class="gold-text-gradient">Paga Solo.</span></h2>
+                <p class="text-white/50 text-lg leading-relaxed max-w-md mx-auto lg:mx-0">
+                    Únete al Club VIP por L. 1,500 y recibe <span class="text-gold font-bold">L. 500 en Rico Cash</span> al instante para gastar en lo que quieras.
+                </p>
+                
+                <ul class="space-y-4 text-sm font-bold max-w-sm mx-auto lg:mx-0">
+                    <li class="flex items-center gap-3"><i class="fas fa-check-circle text-gold"></i> Café de la Casa GRATIS cada día</li>
+                    <li class="flex items-center gap-3"><i class="fas fa-check-circle text-gold"></i> 10% de Descuento permanente</li>
+                    <li class="flex items-center gap-3"><i class="fas fa-check-circle text-gold"></i> Acceso a eventos exclusivos</li>
+                </ul>
+
+                <a href="/membership" class="inline-flex gold-btn px-12 py-5 rounded-2xl font-black text-sm uppercase tracking-widest shadow-2xl hover:scale-[1.05] transition-all">
+                    Unirme al Club VIP
+                </a>
             </div>
         </div>
     </section>
 
-    <!-- Menu Preview -->
-    <section id="menu-preview" class="px-6 py-16 max-w-lg mx-auto relative z-10">
-        <h2 class="text-2xl font-bold text-white mb-8 text-center font-display">Favoritos del Menú</h2>
+    <!-- WELCOME OFFER (LEAD MAGNET) -->
+    <section id="welcome-section" class="px-6 py-24 bg-charcoal border-t border-white/5">
+        <div class="max-w-md mx-auto text-center space-y-8">
+            <div class="inline-flex items-center justify-center w-20 h-20 rounded-3xl bg-gold/10 text-gold text-3xl mb-4 rotate-6 border border-gold/20 shadow-2xl">
+                <i class="fas fa-gift"></i>
+            </div>
+            <h2 class="text-3xl md:text-4xl font-bold tracking-tight">Regalo de Bienvenida.</h2>
+            <p class="text-white/50 text-base">Ingresa tu número de WhatsApp para reclamar tus <span class="text-gold font-bold">L. 30 Gratis</span> para tu primera orden.</p>
+
+            <form id="welcome-form" onsubmit="claimWelcomeOffer(event)" class="space-y-3">
+                <input type="text" id="name-input" placeholder="Tu Nombre" required class="w-full glass-dark rounded-2xl py-5 px-6 text-white focus:border-gold outline-none transition-all placeholder:text-white/20">
+                <div class="relative flex gap-2">
+                    <select id="country-code" class="glass-dark rounded-2xl py-5 px-4 text-white/60 font-mono outline-none focus:border-gold appearance-none">
+                        <option value="+504">🇭🇳 +504</option>
+                        <option value="+1">🇺🇸 +1</option>
+                    </select>
+                    <input type="tel" id="phone-input" placeholder="Tu número" required class="flex-1 glass-dark rounded-2xl py-5 px-6 text-white font-mono outline-none focus:border-gold placeholder:text-white/20">
+                </div>
+                <input type="password" id="pin-input" placeholder="PIN de 4 dígitos" maxlength="4" required class="w-full glass-dark rounded-2xl py-5 px-6 text-white text-center tracking-[0.8em] font-black outline-none focus:border-gold placeholder:text-white/20 placeholder:tracking-normal">
+                <button type="submit" id="claim-btn" class="w-full gold-btn font-black py-5 rounded-2xl text-xs uppercase tracking-[0.2em] shadow-2xl hover:scale-[1.02] transition-all mt-4">
+                    Reclamar mi Saldo Gratis
+                </button>
+            </form>
+
+            <div id="welcome-success" class="hidden animate-in zoom-in-95 p-8 bg-gold/10 border-2 border-gold/30 rounded-[2.5rem] space-y-4">
+                <div class="text-4xl">🎉</div>
+                <h3 class="text-xl font-bold text-white">¡Cuenta Activada!</h3>
+                <p class="text-white/60 text-sm">Tus L. 30 ya están vinculados a tu número. Se aplicarán automáticamente al finalizar tu primera orden en línea.</p>
+                <a href="/order" class="inline-block gold-btn px-8 py-4 rounded-xl font-black text-[10px] uppercase tracking-widest">Pedir Ahora</a>
+            </div>
+        </div>
+    </section>
+
+    <!-- MENU PREVIEW -->
+    <section id="menu-preview" class="px-6 py-24 max-w-4xl mx-auto">
+        <div class="text-center mb-16 space-y-4">
+            <h2 class="text-4xl font-bold tracking-tight">Favoritos de la Casa.</h2>
+            <p class="text-white/40 text-sm uppercase tracking-widest font-black">Hechos con amor en Honduras</p>
+        </div>
         
-        <div class="space-y-4" id="favorites-container">
-            <!-- Dynamic items will be loaded here -->
-            <a href="/order" class="flex gap-4 p-4 rounded-2xl bg-charcoal border border-white/5 hover:border-gold/30 transition-colors group">
-                <img src="https://images.unsplash.com/photo-1510591509098-f4fdc6d0ff04?w=400&q=80" alt="Iced Americano" class="w-20 h-20 rounded-xl object-cover shrink-0 group-hover:scale-105 transition-transform">
-                <div class="flex-1 flex flex-col justify-center">
-                    <div class="flex justify-between items-start mb-1">
-                        <h3 class="font-bold text-white">Iced Americano</h3>
-                        <span class="text-gold font-mono font-bold">L 50</span>
-                    </div>
-                    <p class="text-xs text-white/50 line-clamp-2">Refrescante y fuerte, perfecto para el calor de Quimistán.</p>
-                </div>
-            </a>
-            
-            <a href="/order" class="flex gap-4 p-4 rounded-2xl bg-charcoal border border-white/5 hover:border-gold/30 transition-colors group">
-                <img src="https://images.unsplash.com/photo-1572442388796-11668a67e53d?w=400&q=80" alt="Cappuccino" class="w-20 h-20 rounded-xl object-cover shrink-0 group-hover:scale-105 transition-transform">
-                <div class="flex-1 flex flex-col justify-center">
-                    <div class="flex justify-between items-start mb-1">
-                        <h3 class="font-bold text-white">Cappuccino Caliente</h3>
-                        <span class="text-gold font-mono font-bold">L 55</span>
-                    </div>
-                    <p class="text-xs text-white/50 line-clamp-2">Espuma perfecta y el balance ideal de espresso.</p>
-                </div>
-            </a>
-            
-            <a href="/order" class="flex gap-4 p-4 rounded-2xl bg-charcoal border border-white/5 hover:border-gold/30 transition-colors group">
-                <img src="https://images.unsplash.com/photo-1515823662972-da6a2e4d3002?w=400&q=80" alt="Matcha Latte" class="w-20 h-20 rounded-xl object-cover shrink-0 group-hover:scale-105 transition-transform">
-                <div class="flex-1 flex flex-col justify-center">
-                    <div class="flex justify-between items-start mb-1">
-                        <h3 class="font-bold text-white">Iced Matcha Latte</h3>
-                        <span class="text-gold font-mono font-bold">L 70</span>
-                    </div>
-                    <p class="text-xs text-white/50 line-clamp-2">Auténtico matcha premium japonés sobre hielo.</p>
-                </div>
-            </a>
+        <div class="grid md:grid-cols-2 gap-6" id="favorites-container">
+            <!-- Dynamic items loaded here -->
         </div>
 
-        <div class="mt-8 text-center">
-            <a href="/order" class="text-gold font-bold hover:underline">Ver todo el menú <i class="fas fa-arrow-right ml-1 text-sm"></i></a>
+        <div class="mt-12 text-center">
+            <a href="/order" class="text-gold font-black text-xs uppercase tracking-[0.3em] border-b-2 border-gold/20 pb-2 hover:border-gold transition-all">Explorar Menú Completo <i class="fas fa-arrow-right ml-2"></i></a>
         </div>
     </section>
 
     <!-- Footer -->
-    <footer class="text-center pb-12 pt-6 text-white/30 text-xs">
-        <p>&copy; 2026 Rich Aroma Coffee & Food</p>
-        <p class="mt-1">Quimistán, Santa Bárbara</p>
+    <footer class="px-6 py-12 border-t border-white/5 text-center space-y-6">
+        <div class="flex justify-center gap-6 opacity-30 text-xl">
+            <i class="fab fa-instagram"></i>
+            <i class="fab fa-facebook"></i>
+            <i class="fab fa-whatsapp"></i>
+        </div>
+        <div class="space-y-1">
+            <p class="text-white/40 text-[10px] font-black uppercase tracking-[0.2em]">&copy; 2026 Rich Aroma Coffee & Food</p>
+            <p class="text-white/20 text-[9px] font-medium italic">Hand-crafted in Quimistán, Bottled in California.</p>
+        </div>
     </footer>
 
     <script>
-        // Fetch menu and pick top 3 favorites
+        // Version 2.0.1 - Conversion Overhaul
         async function loadFavorites() {
             const container = document.getElementById('favorites-container');
             try {
                 const res = await fetch('/api/menu');
                 const data = await res.json();
                 if (data && data.items && data.items.length > 0) {
-                    // Pick items that have images and are available
                     let items = data.items.filter(i => i.image_url && i.image_url.startsWith('http') && i.available !== false);
+                    if (items.length < 4) items = data.items.filter(i => i.available !== false);
                     
-                    // If not enough with real images, take any available
-                    if (items.length < 3) {
-                        items = data.items.filter(i => i.available !== false);
-                    }
-                    
-                    // Pick top 3 (Shuffle for variety)
                     items.sort(() => Math.random() - 0.5);
-                    const top3 = items.slice(0, 3);
+                    const selection = items.slice(0, 4);
                     
-                    let html = '';
-                    top3.forEach(item => {
-                        html += `
-                        <a href="/order" class="flex gap-4 p-4 rounded-2xl bg-charcoal border border-white/5 hover:border-gold/30 transition-colors group">
-                            <img src="${item.image_url || 'https://images.unsplash.com/photo-1510591509098-f4fdc6d0ff04?w=400&q=80'}" alt="${item.name}" class="w-20 h-20 rounded-xl object-cover shrink-0 group-hover:scale-105 transition-transform shadow-lg">
+                    container.innerHTML = selection.map(item => `
+                        <a href="/order" class="flex gap-5 p-5 rounded-3xl bg-charcoal border border-white/5 hover:border-gold/30 transition-all group shadow-xl">
+                            <img src="${item.image_url || 'https://images.unsplash.com/photo-1510591509098-f4fdc6d0ff04?w=400&q=80'}" class="w-24 h-24 rounded-2xl object-cover shrink-0 group-hover:scale-105 transition-transform">
                             <div class="flex-1 flex flex-col justify-center">
                                 <div class="flex justify-between items-start mb-1">
-                                    <h3 class="font-bold text-white text-sm md:text-base">${item.name}</h3>
-                                    <span class="text-gold font-mono font-bold text-sm">L ${parseFloat(item.price).toFixed(0)}</span>
+                                    <h3 class="font-bold text-white text-base">${item.name}</h3>
+                                    <span class="text-gold font-mono font-black text-sm">L ${parseFloat(item.price).toFixed(0)}</span>
                                 </div>
-                                <p class="text-[10px] md:text-xs text-white/50 line-clamp-2 uppercase tracking-widest font-medium">${item.category || 'Destacado'}</p>
+                                <p class="text-[10px] text-white/40 uppercase tracking-widest font-black mb-2">${item.category || 'Destacado'}</p>
+                                <span class="text-[10px] text-gold font-bold flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">Pedir ahora <i class="fas fa-plus"></i></span>
                             </div>
-                        </a>`;
-                    });
-                    
-                    if (html) {
-                        container.innerHTML = html;
-                    } else {
-                        container.innerHTML = '<p class="text-center text-white/20 py-10 italic">Explora nuestro menú completo para ver las opciones del día.</p>';
-                    }
+                        </a>
+                    `).join('');
                 }
-            } catch(e) {
-                console.error('Error loading favorites', e);
-                container.innerHTML = '<p class="text-center text-white/20 py-10 italic">Error al cargar favoritos.</p>';
-            }
+            } catch(e) { console.error('Error loading favorites', e); }
         }
         
-        // Load favorites on page load
         document.addEventListener('DOMContentLoaded', loadFavorites);
 
         async function claimWelcomeOffer(e) {
@@ -210,53 +277,41 @@
             const phone = country + rawPhone;
             const pin = document.getElementById('pin-input').value;
             
-            if(rawPhone.length < 8 || pin.length < 4 || !name) {
-                alert("Por favor completa todos los campos correctamente.");
-                return;
-            }
+            if(rawPhone.length < 8 || pin.length < 4 || !name) return alert("Completa los campos correctamente.");
 
-            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Procesando...';
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Procesando...';
             btn.disabled = true;
 
             try {
-                // Check if phone already exists via API
                 const res = await fetch('/api/customers/phone/' + encodeURIComponent(phone));
                 if (res.ok) {
                     const data = await res.json();
-                    // server.js returns the customer object directly on 200 OK
                     if (data && data.id) {
-                        const goToLogin = confirm("Este número ya está registrado. ¿Quieres ir a tu perfil para iniciar sesión?");
-                        if (goToLogin) {
-                            window.location.href = '/profile/index.html';
-                        }
-                        btn.innerHTML = 'Reclamar L. 30';
-                        btn.disabled = false;
+                        alert("Este número ya está registrado. Por favor inicia sesión.");
+                        window.location.href = '/order';
                         return;
                     }
                 }
                 
-                // If we got here, phone is new. Create the profile via API immediately
                 const createRes = await fetch('/api/customers', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ name: name, phone: phone, pin: pin })
+                    body: JSON.stringify({ name, phone, pin })
                 });
                 
-                if (!createRes.ok) {
-                    throw new Error("No se pudo crear la cuenta");
-                }
+                if (!createRes.ok) throw new Error("Error");
                 
-                localStorage.setItem('ra_customer_name', name);
                 localStorage.setItem('ra_customer_phone', phone);
                 localStorage.setItem('ra_customer_pin', pin);
-                localStorage.setItem('ra_welcome_offer_30', 'true'); // Will be claimed after first order
+                localStorage.setItem('ra_welcome_offer_30', 'true');
 
                 document.getElementById('welcome-form').classList.add('hidden');
                 document.getElementById('welcome-success').classList.remove('hidden');
+                document.getElementById('sticky-lead').classList.add('hidden');
 
             } catch(err) {
-                alert("Ocurrió un error. Intenta de nuevo.");
-                btn.innerHTML = 'Reclamar L. 30';
+                alert("Error al reclamar oferta. Intenta de nuevo.");
+                btn.innerHTML = 'Reclamar mi Saldo Gratis';
                 btn.disabled = false;
             }
         }
