@@ -45,7 +45,10 @@
         <div class="flex items-center gap-3">
             <img src="/rico-logo.png" class="w-10 h-10 rounded-xl object-cover border border-white/10 shadow-lg">
             <div>
-                <h1 class="text-sm font-black tracking-widest uppercase text-white/90">Rich Aroma Mobile</h1>
+                <div class="flex items-center gap-2">
+                    <h1 class="text-sm font-black tracking-widest uppercase text-white/90">Rich Aroma Mobile</h1>
+                    <span class="bg-white/10 text-white/40 text-[7px] font-black px-1.5 py-0.5 rounded-full border border-white/5">V2.1.1</span>
+                </div>
                 <p id="cashier-name" class="text-[9px] text-gold font-bold uppercase tracking-widest">Register Locked</p>
             </div>
         </div>
@@ -611,35 +614,45 @@
         }
 
         async function submitSale(isPending = false) {
-            console.log("SubmitSale called. isPending:", isPending);
-            
-            const selectedItems = isSplitMode 
-                ? cart.filter((_, i) => selectedIndices.includes(i))
-                : cart;
-            
-            if (selectedItems.length === 0) return alert("Selecciona productos");
-
-            const total = selectedItems.reduce((s, i) => s + (i.finalPrice * i.qty), 0);
-            const subtotal = total;
-            const payload = {
-                items: selectedItems, 
-                subtotal,
-                total, 
-                paymentMethod: isPending ? 'cash' : tenderMethod, 
-                customerId: currentCustomerId,
-                fulfillmentType: fulfillmentType,
-                status: isPending ? 'pending' : 'paid',
-                notes: `[MobilePOS] [Cashier: ${currentEmployee?.name || 'Unknown'}]${isSplitMode ? ' [SPLIT]' : ''}`
-            };
-
-            console.log("Sending payload:", payload);
-
-            const btn = isPending ? null : document.getElementById('final-charge-btn');
-            if (btn) { btn.disabled = true; btn.innerText = "PROCESANDO..."; }
-
             try {
-                // Use absolute path for safety
-                const res = await fetch('/api/orders', {
+                console.log("DEBUG: submitSale triggered. isPending:", isPending);
+                
+                const selectedItems = isSplitMode 
+                    ? cart.filter((_, i) => selectedIndices.includes(i))
+                    : cart;
+                
+                if (!selectedItems || selectedItems.length === 0) {
+                    alert("⚠️ Por favor selecciona productos primero.");
+                    return;
+                }
+
+                // 1. Calculate and Sanitized Data
+                const total = selectedItems.reduce((s, i) => s + (Number(i.finalPrice || 0) * Number(i.qty || 1)), 0);
+                const subtotal = total;
+                const payload = {
+                    items: selectedItems, 
+                    subtotal: Number(subtotal.toFixed(2)),
+                    total: Number(total.toFixed(2)), 
+                    paymentMethod: isPending ? 'cash' : (tenderMethod || 'cash'), 
+                    customerId: currentCustomerId || null,
+                    fulfillmentType: fulfillmentType || 'pickup',
+                    status: isPending ? 'pending' : 'paid',
+                    notes: `[MobilePOS] [Cashier: ${currentEmployee?.name || 'Unknown'}]${isSplitMode ? ' [SPLIT]' : ''}`
+                };
+
+                console.log("DEBUG: Payload prepared:", payload);
+
+                const btn = isPending ? null : document.getElementById('final-charge-btn');
+                if (btn) { 
+                    btn.disabled = true; 
+                    btn.innerText = "⏳ PROCESANDO..."; 
+                }
+
+                // 2. Execute Primary Request
+                const apiUrl = window.location.origin + '/api/orders';
+                console.log("DEBUG: Fetching:", apiUrl);
+
+                const res = await fetch(apiUrl, {
                     method: 'POST',
                     headers: { 
                         'Content-Type': 'application/json',
@@ -648,18 +661,18 @@
                     body: JSON.stringify(payload)
                 });
 
-                console.log("Response status:", res.status);
+                console.log("DEBUG: Response status:", res.status);
 
                 if (res.ok) {
                     const savedOrder = await res.json();
-                    console.log("Order saved successfully:", savedOrder);
+                    console.log("DEBUG: Success:", savedOrder);
 
-                    // 2. If split from existing tab, update the original tab
+                    // 3. Handle Tab Split / Recall Logic
                     if (isSplitMode && currentOrderId) {
                         const remainingItems = cart.filter((_, i) => !selectedIndices.includes(i));
                         if (remainingItems.length > 0) {
-                            const remTotal = remainingItems.reduce((s, i) => s + (i.finalPrice * i.qty), 0);
-                            await fetch(`/api/orders/${currentOrderId}`, {
+                            const remTotal = remainingItems.reduce((s, i) => s + (Number(i.finalPrice || 0) * Number(i.qty || 1)), 0);
+                            await fetch(`${window.location.origin}/api/orders/${currentOrderId}`, {
                                 method: 'PATCH',
                                 headers: { 
                                     'Content-Type': 'application/json',
@@ -667,15 +680,14 @@
                                 },
                                 body: JSON.stringify({
                                     items: remainingItems,
-                                    subtotal: remTotal,
-                                    total: remTotal,
+                                    subtotal: Number(remTotal.toFixed(2)),
+                                    total: Number(remTotal.toFixed(2)),
                                     notes: `[MobilePOS] [REMAINING FROM SPLIT]`
                                 })
                             });
-                            alert("✅ SELECCIÓN PAGADA. Lo demás sigue en la cuenta.");
+                            alert("✅ SELECCIÓN PAGADA.\nLos demás productos siguen en la cuenta.");
                         } else {
-                            // All items paid
-                            await fetch(`/api/orders/${currentOrderId}`, {
+                            await fetch(`${window.location.origin}/api/orders/${currentOrderId}`, {
                                 method: 'PATCH',
                                 headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer EMP-admin' },
                                 body: JSON.stringify({ status: 'completed' })
@@ -683,8 +695,7 @@
                             alert("✅ CUENTA TOTAL PAGADA");
                         }
                     } else if (currentOrderId && !isSplitMode) {
-                        // Regular full checkout of tab
-                        await fetch(`/api/orders/${currentOrderId}`, {
+                        await fetch(`${window.location.origin}/api/orders/${currentOrderId}`, {
                             method: 'PATCH',
                             headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer EMP-admin' },
                             body: JSON.stringify({ status: 'completed' })
@@ -697,19 +708,15 @@
                     currentOrderId = null;
                     location.reload();
                 } else {
-                    const errText = await res.text();
-                    console.error("Server Error Response:", errText);
-                    let errMsg = "Error en servidor";
-                    try {
-                        const errJson = JSON.parse(errText);
-                        errMsg = errJson.error || errMsg;
-                    } catch(e) {}
-                    alert("Error Servidor: " + errMsg);
-                    if (btn) { btn.disabled = false; btn.innerText = "COBRAR"; }
+                    const errorBody = await res.text();
+                    console.error("DEBUG: Server Error:", errorBody);
+                    alert("❌ ERROR EN SERVIDOR:\n" + (errorBody.slice(0, 100) || "No response"));
+                    if (btn) { btn.disabled = false; btn.innerText = "REINTENTAR"; }
                 }
             } catch(e) { 
-                console.error("Network Error Details:", e);
-                alert("Error de Conexión: " + e.message); 
+                console.error("DEBUG: Crash:", e);
+                alert("🚨 ERROR DE CONEXIÓN:\n" + e.message); 
+                const btn = document.getElementById('final-charge-btn');
                 if (btn) { btn.disabled = false; btn.innerText = "REINTENTAR"; }
             }
         }
