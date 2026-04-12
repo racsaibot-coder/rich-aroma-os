@@ -125,11 +125,26 @@
                    name.includes('burger') || name.includes('hamburguesa') || name.includes('combo');
         }
 
+        function getDisplayName(order) {
+            if (order.customers?.name) return order.customers.name;
+            if (order.notes) {
+                const clientMatch = order.notes.match(/\[CLIENTE:\s*([^\]]+)\]/);
+                if (clientMatch) return clientMatch[1].trim();
+                const guestMatch = order.notes.match(/\[GUEST:\s*([^|\]]+)/);
+                if (guestMatch) return guestMatch[1].trim();
+            }
+            return 'Invitado';
+        }
+
         function renderKDS() {
             const container = document.getElementById('kds-container');
             
             const activeOrders = orders.filter(o => {
                 if (['completed', 'cancelled', 'ready'].includes(o.status)) return false;
+                
+                // Approve logic: Hide pending cash/transfer orders until approved/paid
+                if (o.status === 'pending' && (o.payment_method === 'cash' || o.payment_method === 'transfer')) return false;
+
                 if (currentMode === 'drinks' && o.status === 'drinks_ready') return false;
                 if (currentMode === 'food' && o.status === 'food_ready') return false;
 
@@ -146,7 +161,7 @@
                 const items = (o.items || []).filter(i => currentMode === 'drinks' ? isDrink(i) : isFood(i));
                 const isPrep = o.status === 'preparing';
                 const orderNum = o.order_number ? o.order_number.toString().padStart(2, '0') : '---';
-                const custName = o.customers?.name || 'Invitado';
+                const custName = getDisplayName(o);
                 const status = o.status || 'pending';
                 
                 let typeText = '🍽️ AQUÍ';

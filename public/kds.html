@@ -211,6 +211,17 @@
             }
         }
 
+        function getDisplayName(order) {
+            if (order.customers?.name) return order.customers.name;
+            if (order.notes) {
+                const clientMatch = order.notes.match(/\[CLIENTE:\s*([^\]]+)\]/);
+                if (clientMatch) return clientMatch[1].trim();
+                const guestMatch = order.notes.match(/\[GUEST:\s*([^|\]]+)/);
+                if (guestMatch) return guestMatch[1].trim();
+            }
+            return 'Invitado';
+        }
+
         function setMode(mode) {
             currentMode = mode;
             
@@ -284,6 +295,10 @@
             const activeOrders = orders.filter(o => {
                 if (o.status === 'completed') return false;
                 if (o.status === 'cancelled') return false;
+                
+                // Approve logic: Hide pending cash/transfer orders until approved/paid
+                if (o.status === 'pending' && (o.payment_method === 'cash' || o.payment_method === 'transfer')) return false;
+
                 // Don't show membership-only orders on KDS
                 const hasOnlyMembership = (o.items || []).every(i => i.id === 'vip_membership');
                 if (hasOnlyMembership) return false;
@@ -352,7 +367,7 @@
                                 #${order.order_number}
                             </div>
                             <div class="overflow-hidden">
-                                <h3 class="font-bold text-lg text-white truncate">${order.customers?.name || 'Guest'}</h3>
+                                <h3 class="font-bold text-lg text-white truncate">${getDisplayName(order)}</h3>
                                 <div class="flex flex-wrap gap-1.5 mt-1">
                                     <span class="text-[9px] bg-white/10 px-2 py-0.5 rounded text-white/70 font-bold uppercase tracking-wider">${order.fulfillment_type === 'delivery' ? '🚗 Delivery' : order.fulfillment_type === 'pickup' ? '🛍️ Pickup' : '🍽️ Dine-in'}</span>
                                     ${order.payment_method === 'split_cash' ? '<span class="text-[9px] bg-red-500/20 px-2 py-0.5 rounded text-red-400 font-bold uppercase tracking-wider border border-red-500/50">COBRAR</span>' : ''}
@@ -460,11 +475,14 @@
             // Status Logic
             orders.forEach((order, index) => {
                 if(order.status === 'pending' || order.status === 'paid' || order.status === 'preparing') {
+                    // Approve logic: Hide pending cash/transfer orders until approved/paid
+                    if (order.status === 'pending' && (order.payment_method === 'cash' || order.payment_method === 'transfer')) return;
+
                     // Preparing (Giant Text)
                     colPrep.innerHTML += `
                         <div class="text-6xl text-white/40 font-black font-mono py-6 border-b border-white/5 flex items-center gap-6">
                             <span class="text-gold/30">#</span>${order.order_number} 
-                            <span class="text-3xl text-white/10 uppercase truncate">${order.customers?.name?.split(' ')[0] || ''}</span>
+                            <span class="text-3xl text-white/10 uppercase truncate">${getDisplayName(order).split(' ')[0] || ''}</span>
                         </div>
                     `;
                 } else if(order.status === 'completed' || order.status === 'ready') {
