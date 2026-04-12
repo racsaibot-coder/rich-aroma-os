@@ -47,7 +47,7 @@
             <div>
                 <div class="flex items-center gap-2">
                     <h1 class="text-sm font-black tracking-widest uppercase text-white/90">Rich Aroma Mobile</h1>
-                    <span class="bg-white/10 text-white/40 text-[7px] font-black px-1.5 py-0.5 rounded-full border border-white/5">V2.1.4</span>
+                    <span class="bg-white/10 text-white/40 text-[7px] font-black px-1.5 py-0.5 rounded-full border border-white/5">V2.1.5</span>
                 </div>
                 <p id="cashier-name" class="text-[9px] text-gold font-bold uppercase tracking-widest">Register Locked</p>
             </div>
@@ -106,10 +106,9 @@
         <div class="flex-1 overflow-y-auto p-6 space-y-4" id="cart-items-list"></div>
         <div class="p-8 bg-black/40 border-t border-white/5 space-y-6">
             <!-- Fulfillment Type Selector -->
-            <div class="grid grid-cols-3 gap-2 mb-4">
-                <button onclick="setFulfillment('pickup')" id="btn-fulfill-pickup" class="py-3 rounded-2xl font-black text-[8px] uppercase tracking-widest border-2 transition-all border-gold bg-gold text-dark">🛍️ Llevar</button>
-                <button onclick="setFulfillment('dinein')" id="btn-fulfill-dinein" class="py-3 rounded-2xl font-black text-[8px] uppercase tracking-widest border-2 transition-all border-white/10 text-white/40">🍽️ Aquí</button>
-                <button onclick="setFulfillment('delivery')" id="btn-fulfill-delivery" class="py-3 rounded-2xl font-black text-[8px] uppercase tracking-widest border-2 transition-all border-white/10 text-white/40">🚗 Dely</button>
+            <div class="grid grid-cols-2 gap-3 mb-4">
+                <button onclick="setFulfillment('pickup')" id="btn-fulfill-pickup" class="py-3 rounded-2xl font-black text-[10px] uppercase tracking-widest border-2 transition-all border-gold bg-gold text-dark">🛍️ Llevar</button>
+                <button onclick="setFulfillment('dinein')" id="btn-fulfill-dinein" class="py-3 rounded-2xl font-black text-[10px] uppercase tracking-widest border-2 transition-all border-white/10 text-white/40">🍽️ Aquí</button>
             </div>
 
             <div class="flex justify-between items-end">
@@ -328,14 +327,11 @@
         function setFulfillment(type) {
             fulfillmentType = type;
             document.getElementById('btn-fulfill-pickup').className = type === 'pickup' 
-                ? 'py-3 rounded-2xl font-black text-[8px] uppercase tracking-widest border-2 transition-all border-gold bg-gold text-dark'
-                : 'py-3 rounded-2xl font-black text-[8px] uppercase tracking-widest border-2 transition-all border-white/10 text-white/40';
+                ? 'py-3 rounded-2xl font-black text-[10px] uppercase tracking-widest border-2 transition-all border-gold bg-gold text-dark'
+                : 'py-3 rounded-2xl font-black text-[10px] uppercase tracking-widest border-2 transition-all border-white/10 text-white/40';
             document.getElementById('btn-fulfill-dinein').className = type === 'dinein'
-                ? 'py-3 rounded-2xl font-black text-[8px] uppercase tracking-widest border-2 transition-all border-gold bg-gold text-dark'
-                : 'py-3 rounded-2xl font-black text-[8px] uppercase tracking-widest border-2 transition-all border-white/10 text-white/40';
-            document.getElementById('btn-fulfill-delivery').className = type === 'delivery'
-                ? 'py-3 rounded-2xl font-black text-[8px] uppercase tracking-widest border-2 transition-all border-gold bg-gold text-dark'
-                : 'py-3 rounded-2xl font-black text-[8px] uppercase tracking-widest border-2 transition-all border-white/10 text-white/40';
+                ? 'py-3 rounded-2xl font-black text-[10px] uppercase tracking-widest border-2 transition-all border-gold bg-gold text-dark'
+                : 'py-3 rounded-2xl font-black text-[10px] uppercase tracking-widest border-2 transition-all border-white/10 text-white/40';
         }
 
         window.onload = async () => { await fetchMenu(); checkSession(); };
