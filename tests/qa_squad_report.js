@@ -20,9 +20,9 @@ async function runQA() {
         await page.waitForSelector('#menu-grid', { timeout: 10000 });
         
         const version = await page.evaluate(() => {
-            return document.body.innerText.includes('V2.1.2');
+            return document.body.innerText.includes('V2.1.3');
         });
-        results.mobilePos.notes.push(version ? 'Verified Version V2.1.2 is active.' : 'Version V2.1.2 NOT found.');
+        results.mobilePos.notes.push(version ? 'Verified Version V2.1.3 is active.' : 'Version V2.1.3 NOT found.');
 
         // Check for "COBRAR" button in tender modal
         const chargeBtnText = await page.evaluate(() => {
