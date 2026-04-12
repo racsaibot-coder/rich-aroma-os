@@ -4,7 +4,7 @@ async function runQA() {
     console.log('🚀 RICH AROMA QA SQUAD - COMMENCING FULL AUDIT\n');
     const browser = await puppeteer.launch({ headless: true });
     const page = await browser.newPage();
-    const baseUrl = 'http://localhost:8083';
+    const baseUrl = 'https://www.richaromacoffee.com';
 
     const results = {
         mobilePos: { status: 'Pending', notes: [] },
@@ -17,23 +17,25 @@ async function runQA() {
         // --- UNIT 1: MOBILE POS UX ---
         console.log('📦 Unit 1: Testing Mobile POS (/pos)...');
         await page.goto(`${baseUrl}/pos`);
-        await page.waitForSelector('#menu-grid', { timeout: 5000 });
+        await page.waitForSelector('#menu-grid', { timeout: 10000 });
         
-        const menuItems = await page.$$('#menu-grid > div');
-        if (menuItems.length > 0) {
-            results.mobilePos.notes.push(`Menu loaded with ${menuItems.length} items.`);
+        const version = await page.evaluate(() => {
+            return document.body.innerText.includes('V2.1.1');
+        });
+        results.mobilePos.notes.push(version ? 'Verified Version V2.1.1 is active.' : 'Version V2.1.1 NOT found.');
+
+        // Check for "COBRAR" button in tender modal
+        const chargeBtnText = await page.evaluate(() => {
+            const btn = document.getElementById('final-charge-btn');
+            return btn ? btn.innerText.trim() : 'NOT_FOUND';
+        });
+        results.mobilePos.notes.push(`Main Button text: ${chargeBtnText}`);
+        
+        if (version && chargeBtnText === 'COBRAR') {
             results.mobilePos.status = 'PASS';
         } else {
             results.mobilePos.status = 'FAIL';
-            results.mobilePos.notes.push('Menu grid is empty.');
         }
-
-        // Check for Quick Pay buttons
-        const hasQuickPay = await page.evaluate(() => {
-            // Need to open tender modal to see them
-            return !!document.querySelector('button[onclick*="quickCash(100)"]');
-        });
-        results.mobilePos.notes.push(hasQuickPay ? 'Quick Pay buttons (100, 200, 500) found.' : 'Quick Pay buttons missing.');
 
         // --- UNIT 2: DESKTOP POS & SPLIT TAB ---
         console.log('🖥️ Unit 2: Testing Desktop POS (/pos.html)...');

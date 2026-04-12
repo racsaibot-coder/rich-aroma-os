@@ -47,7 +47,7 @@
             <div>
                 <div class="flex items-center gap-2">
                     <h1 class="text-sm font-black tracking-widest uppercase text-white/90">Rich Aroma Mobile</h1>
-                    <span class="bg-white/10 text-white/40 text-[7px] font-black px-1.5 py-0.5 rounded-full border border-white/5">V2.1.1</span>
+                    <span class="bg-white/10 text-white/40 text-[7px] font-black px-1.5 py-0.5 rounded-full border border-white/5">V2.1.2</span>
                 </div>
                 <p id="cashier-name" class="text-[9px] text-gold font-bold uppercase tracking-widest">Register Locked</p>
             </div>
@@ -603,11 +603,16 @@
             const total = isSplitMode 
                 ? cart.filter((_, i) => selectedIndices.includes(i)).reduce((s, i) => s + (i.finalPrice * i.qty), 0)
                 : cart.reduce((s, i) => s + (i.finalPrice * i.qty), 0);
-            const received = parseFloat(document.getElementById('tender-input').value) || 0;
+            
+            const inputVal = document.getElementById('tender-input').value;
+            const received = inputVal === "" ? total : (parseFloat(inputVal) || 0);
             const change = received - total;
+            
             document.getElementById('tender-change').innerText = `L. ${Math.max(0, change).toFixed(0)}`;
             const btn = document.getElementById('final-charge-btn');
-            const isInvalid = (tenderMethod === 'cash' && received < total);
+            
+            // Only disable if they EXPLICITLY typed an amount lower than total
+            const isInvalid = (tenderMethod === 'cash' && inputVal !== "" && received < total);
             btn.disabled = isInvalid;
             btn.className = isInvalid ? 'flex-[2] bg-white/10 text-white/20 py-6 rounded-[2rem] font-black text-2xl' : 'flex-[2] bg-white text-dark py-6 rounded-[2rem] font-black text-2xl shadow-2xl';
             btn.innerText = isSplitMode ? "COBRAR SELECCIÓN" : "COBRAR";
