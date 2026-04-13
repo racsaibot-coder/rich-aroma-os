@@ -321,7 +321,7 @@
                 }
             </style>
             
-            <div id="vip-gold-card" class="hidden vip-card-3d" onclick="this.classList.toggle('is-flipped')">
+            <div id="vip-gold-card" class="hidden vip-card-3d" onclick="toggleCardFlip(event)">
                 <div class="vip-card-inner">
                     <!-- Front Face -->
                     <div class="vip-card-front p-8 shadow-2xl border border-gold/30 flex flex-col justify-between" 
@@ -336,7 +336,7 @@
                                 <h3 id="card-name" class="text-2xl font-display font-black text-dark tracking-tight uppercase">---</h3>
                             </div>
                             <div class="relative">
-                                <div onclick="event.stopPropagation(); triggerPhotoUpload()" class="w-16 h-16 rounded-full border-4 border-dark/10 overflow-hidden bg-dark/5 flex items-center justify-center cursor-pointer hover:scale-105 transition-transform shadow-lg group">
+                                <div onclick="triggerPhotoUpload()" class="w-16 h-16 rounded-full border-4 border-dark/10 overflow-hidden bg-dark/5 flex items-center justify-center cursor-pointer hover:scale-105 transition-transform shadow-lg group">
                                     <img id="card-photo" src="/rico-logo.png" class="w-full h-full object-cover grayscale brightness-125">
                                     <div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
                                         <i class="fas fa-camera text-white text-xs"></i>
@@ -1590,6 +1590,14 @@
             }, 4000);
         }
 
+        function toggleCardFlip(e) {
+            // Don't flip if clicking the photo or camera
+            if (e.target.closest('#card-photo') || e.target.closest('.fa-camera') || e.target.closest('#member-photo-input')) {
+                return;
+            }
+            document.getElementById('vip-gold-card').classList.toggle('is-flipped');
+        }
+
         function triggerPhotoUpload() {
             document.getElementById('member-photo-input').click();
         }
@@ -1599,6 +1607,13 @@
             if (!currentCustomer) return alert("Inicia sesión primero");
 
             const file = input.files[0];
+            
+            // Check file size (Vercel limit is 4.5MB total payload, 2MB is safe for Base64)
+            if (file.size > 2 * 1024 * 1024) {
+                alert("⚠️ La imagen es muy pesada. Por favor selecciona una de menos de 2MB.");
+                return;
+            }
+
             const reader = new FileReader();
             
             const photoEl = document.getElementById('card-photo');
@@ -1608,6 +1623,7 @@
             reader.onloadend = async () => {
                 const base64String = reader.result;
                 try {
+                    console.log("Uploading photo for customer:", currentCustomer.id);
                     const res = await fetch('/api/store?action=customer_update_photo', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
@@ -1618,6 +1634,10 @@
                         })
                     });
                     
+                    if (res.status === 413) {
+                        throw new Error("Imagen demasiado grande para el servidor.");
+                    }
+
                     const data = await res.json();
                     if (res.ok) {
                         currentCustomer.avatar_url = data.avatar_url;
@@ -1628,10 +1648,14 @@
                         throw new Error(data.error || 'Upload failed');
                     }
                 } catch (e) {
-                    console.error(e);
+                    console.error("Upload Error:", e);
                     photoEl.src = originalSrc;
                     alert('Error al subir foto: ' + e.message);
                 }
+            };
+            reader.onerror = () => {
+                photoEl.src = originalSrc;
+                alert("Error al leer el archivo.");
             };
             reader.readAsDataURL(file);
         }
