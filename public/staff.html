@@ -35,8 +35,8 @@
         <!-- Identity Header -->
         <div class="bg-white/5 border border-white/10 rounded-[2.5rem] p-8 text-center relative overflow-hidden">
             <div id="vip-indicator" class="hidden absolute top-4 right-4 bg-gold text-dark text-[8px] font-black px-2 py-1 rounded-full uppercase tracking-widest shadow-lg">VIP</div>
-            <div class="w-20 h-20 bg-gold/10 rounded-full flex items-center justify-center text-3xl text-gold mx-auto mb-4 border border-gold/20">
-                <i class="fas fa-user"></i>
+            <div class="w-32 h-32 rounded-full border-4 border-gold/20 mx-auto mb-4 overflow-hidden bg-gold/10 flex items-center justify-center shadow-2xl">
+                <img id="cust-photo" src="/rico-logo.png" class="w-full h-full object-cover">
             </div>
             <h2 id="cust-name" class="text-3xl font-bold tracking-tight">---</h2>
             <p id="cust-phone" class="text-white/40 font-mono text-sm tracking-widest mt-1">---</p>
@@ -133,6 +133,13 @@
             document.getElementById('cust-phone').innerText = customer.phone;
             document.getElementById('cust-balance').innerText = `L ${parseFloat(customer.rico_balance || 0).toFixed(2)}`;
             document.getElementById('cust-points').innerText = customer.points || 0;
+
+            const photoEl = document.getElementById('cust-photo');
+            if (customer.avatar_url) {
+                photoEl.src = customer.avatar_url;
+            } else {
+                photoEl.src = '/rico-logo.png';
+            }
 
             const isVip = customer.is_vip === true || (Array.isArray(customer.tags) && customer.tags.includes('VIP'));
             if (isVip) document.getElementById('vip-indicator').classList.remove('hidden');

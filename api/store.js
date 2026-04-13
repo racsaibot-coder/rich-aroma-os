@@ -425,6 +425,32 @@ module.exports = async function handler(req, res) {
             return res.json(data);
         }
 
+        if (action === 'customer_update_photo' && req.method === 'POST') {
+            const { customerId, imageBase64, fileName } = req.body;
+            if (!customerId || !imageBase64) return res.status(400).json({ error: "Missing data" });
+
+            const base64Data = imageBase64.replace(/^data:image\/\w+;base64,/, "");
+            const buffer = Buffer.from(base64Data, 'base64');
+            const mimeType = imageBase64.match(/^data:(image\/\w+);base64,/)?.[1] || 'image/png';
+            const ext = mimeType.split('/')[1] || 'png';
+            
+            const storagePath = `avatars/CUST_${customerId}_${Date.now()}.${ext}`;
+
+            const { error: uploadError } = await supabase.storage
+                .from('menu-images')
+                .upload(storagePath, buffer, { contentType: mimeType, upsert: true });
+
+            if (uploadError) throw uploadError;
+
+            const { data: { publicUrl } } = supabase.storage
+                .from('menu-images')
+                .getPublicUrl(storagePath);
+
+            const { data, error } = await supabase.from('customers').update({ avatar_url: publicUrl }).eq('id', customerId).select().single();
+            if (error) throw error;
+            return res.json(data);
+        }
+
         return res.status(404).json({ error: 'Action not found' });
 
     } catch (e) {

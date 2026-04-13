@@ -86,8 +86,14 @@
                         
                         <!-- Top: Logo and Label -->
                         <div class="flex justify-between items-start mb-4">
-                            <div class="w-12 h-12 bg-dark/10 rounded-full flex items-center justify-center">
-                                <i class="fas fa-crown text-2xl"></i>
+                            <div class="relative">
+                                <div onclick="event.stopPropagation(); triggerPhotoUpload()" class="w-16 h-16 rounded-full border-4 border-dark/10 overflow-hidden bg-dark/5 flex items-center justify-center cursor-pointer hover:scale-105 transition-transform shadow-lg group">
+                                    <img id="card-photo" src="/rico-logo.png" class="w-full h-full object-cover grayscale brightness-125">
+                                    <div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
+                                        <i class="fas fa-camera text-white text-xs"></i>
+                                    </div>
+                                </div>
+                                <input type="file" id="member-photo-input" accept="image/*" class="hidden" onchange="uploadMemberPhoto(this)">
                             </div>
                             <div class="text-right">
                                 <span class="font-black italic tracking-widest text-[10px] block opacity-60">VIP MEMBER</span>
@@ -318,12 +324,58 @@
             }
         }
 
+        function triggerPhotoUpload() {
+            document.getElementById('member-photo-input').click();
+        }
+
+        async function uploadMemberPhoto(input) {
+            if (!input.files || !input.files[0]) return;
+            if (!currentCustomer) return alert("Inicia sesión primero");
+
+            const file = input.files[0];
+            const reader = new FileReader();
+            
+            const photoEl = document.getElementById('card-photo');
+            const originalSrc = photoEl.src;
+            photoEl.src = 'https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExNHJ6OXJ6OXJ6OXJ6OXJ6OXJ6OXJ6OXJ6OXJ6OXJ6JmVwPXYxX2ludGVybmFsX2dpZl9ieV9pZCZjdD1n/3o7bu3XilJ5BOiSGic/giphy.gif';
+
+            reader.onloadend = async () => {
+                const base64String = reader.result;
+                try {
+                    const res = await fetch('/api/store?action=customer_update_photo', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            customerId: currentCustomer.id,
+                            imageBase64: base64String,
+                            fileName: file.name
+                        })
+                    });
+                    
+                    const data = await res.json();
+                    if (res.ok) {
+                        currentCustomer.avatar_url = data.avatar_url;
+                        localStorage.setItem('ra_customer_data', JSON.stringify(currentCustomer));
+                        renderProfile();
+                        alert('✅ ¡Foto Actualizada! Tu membresía está ahora verificada.');
+                    } else {
+                        throw new Error(data.error || 'Upload failed');
+                    }
+                } catch (e) {
+                    console.error(e);
+                    photoEl.src = originalSrc;
+                    alert('Error al subir foto: ' + e.message);
+                }
+            };
+            reader.readAsDataURL(file);
+        }
+
         function renderProfile() {
             document.getElementById('user-name').innerText = currentCustomer.name;
             document.getElementById('user-initial').innerText = currentCustomer.name.charAt(0).toUpperCase();
             document.getElementById('user-phone').innerText = currentCustomer.phone;
 
-            const totalCash = parseFloat(currentCustomer.rico_balance) || 0;
+            const totalCash = parseFloat(currentCustomer.rico_balance) || parseFloat(currentCustomer.cash_balance) || 0;
             document.getElementById('user-balance').innerText = `L ${totalCash.toFixed(2)}`;
             document.getElementById('rewards-points').innerText = currentCustomer.points || 0;
 
@@ -344,6 +396,16 @@
                 document.getElementById('vip-card-cash').innerText = `L ${totalCash.toFixed(2)}`;
                 document.getElementById('vip-card-points').innerText = currentCustomer.points || 0;
                 document.getElementById('vip-card-streak').innerText = currentCustomer.visits || 0;
+
+                // Photo Logic
+                const photoEl = document.getElementById('card-photo');
+                if (currentCustomer.avatar_url) {
+                    photoEl.src = currentCustomer.avatar_url;
+                    photoEl.classList.remove('grayscale', 'brightness-125');
+                } else {
+                    photoEl.src = '/rico-logo.png';
+                    photoEl.classList.add('grayscale', 'brightness-125');
+                }
                 
                 // Generate QR (Phone number is used for lookup in POS)
                 const qrData = currentCustomer.phone;

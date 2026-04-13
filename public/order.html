@@ -335,9 +335,16 @@
                                 <p class="text-dark/40 text-[9px] font-black uppercase tracking-widest">Socio Fundador</p>
                                 <h3 id="card-name" class="text-2xl font-display font-black text-dark tracking-tight uppercase">---</h3>
                             </div>
-                            <img src="/rico-logo.png" class="w-12 h-12 rounded-full border-2 border-dark/10 brightness-0 opacity-40">
+                            <div class="relative">
+                                <div onclick="event.stopPropagation(); triggerPhotoUpload()" class="w-16 h-16 rounded-full border-4 border-dark/10 overflow-hidden bg-dark/5 flex items-center justify-center cursor-pointer hover:scale-105 transition-transform shadow-lg group">
+                                    <img id="card-photo" src="/rico-logo.png" class="w-full h-full object-cover grayscale brightness-125">
+                                    <div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
+                                        <i class="fas fa-camera text-white text-xs"></i>
+                                    </div>
+                                </div>
+                                <input type="file" id="member-photo-input" accept="image/*" class="hidden" onchange="uploadMemberPhoto(this)">
+                            </div>
                         </div>
-
                         <div class="relative z-10 grid grid-cols-2 gap-4">
                             <div class="space-y-0.5">
                                 <p class="text-dark/40 text-[8px] font-black uppercase tracking-widest">Rico Cash</p>
@@ -1580,6 +1587,52 @@
             }, 4000);
         }
 
+        function triggerPhotoUpload() {
+            document.getElementById('member-photo-input').click();
+        }
+
+        async function uploadMemberPhoto(input) {
+            if (!input.files || !input.files[0]) return;
+            if (!currentCustomer) return alert("Inicia sesión primero");
+
+            const file = input.files[0];
+            const reader = new FileReader();
+            
+            const photoEl = document.getElementById('card-photo');
+            const originalSrc = photoEl.src;
+            photoEl.src = 'https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExNHJ6OXJ6OXJ6OXJ6OXJ6OXJ6OXJ6OXJ6OXJ6OXJ6OXJ6OXJ6JmVwPXYxX2ludGVybmFsX2dpZl9ieV9pZCZjdD1n/3o7bu3XilJ5BOiSGic/giphy.gif'; // Loading
+
+            reader.onloadend = async () => {
+                const base64String = reader.result;
+                try {
+                    const res = await fetch('/api/store?action=customer_update_photo', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            customerId: currentCustomer.id,
+                            imageBase64: base64String,
+                            fileName: file.name
+                        })
+                    });
+                    
+                    const data = await res.json();
+                    if (res.ok) {
+                        currentCustomer.avatar_url = data.avatar_url;
+                        localStorage.setItem('ra_customer_data', JSON.stringify(currentCustomer));
+                        updateLoyaltyUI();
+                        alert('✅ ¡Foto Actualizada! Tu membresía está ahora verificada.');
+                    } else {
+                        throw new Error(data.error || 'Upload failed');
+                    }
+                } catch (e) {
+                    console.error(e);
+                    photoEl.src = originalSrc;
+                    alert('Error al subir foto: ' + e.message);
+                }
+            };
+            reader.readAsDataURL(file);
+        }
+
         function updateLoyaltyUI() {
             if (!currentCustomer) {
                 document.getElementById('loyalty-badge').classList.add('hidden');
@@ -1614,6 +1667,16 @@
                 document.getElementById('card-name').innerText = currentCustomer.name;
                 document.getElementById('card-balance').innerText = `L ${balance.toFixed(2)}`;
                 document.getElementById('card-points').innerText = currentCustomer.points || 0;
+
+                // Photo Logic
+                const photoEl = document.getElementById('card-photo');
+                if (currentCustomer.avatar_url) {
+                    photoEl.src = currentCustomer.avatar_url;
+                    photoEl.classList.remove('grayscale', 'brightness-125');
+                } else {
+                    photoEl.src = '/rico-logo.png';
+                    photoEl.classList.add('grayscale', 'brightness-125');
+                }
                 
                 // Update QR Code
                 const qrImg = document.getElementById('card-qr');
