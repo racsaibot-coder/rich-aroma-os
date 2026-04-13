@@ -448,6 +448,13 @@
             </div>
         </div>
 
+        <div class="space-y-3">
+            <h3 class="text-white/40 uppercase text-[10px] font-black tracking-widest px-4">Historial de Órdenes</h3>
+            <div id="past-orders-list" class="space-y-3">
+                <!-- Past orders will be loaded here -->
+            </div>
+        </div>
+
         <div class="pt-10">
             <button onclick="logout()" class="w-full py-5 rounded-[2rem] bg-red-500/10 border border-red-500/30 text-red-500 font-black text-xs uppercase tracking-[0.2em] hover:bg-red-500/20 transition-all active:scale-95">
                 Cerrar Sesión
@@ -596,6 +603,23 @@
                     </div>
                 </div>
 
+                <!-- Order Scheduling -->
+                <div class="space-y-3">
+                    <h3 class="text-white/40 uppercase text-[10px] font-black tracking-widest px-1">Horario de Entrega</h3>
+                    <div class="grid grid-cols-2 gap-3">
+                        <button id="btn-schedule-asap" onclick="setSchedule('asap')" class="py-3 rounded-xl border-2 border-gold bg-gold/10 text-gold font-bold text-xs transition-all">
+                            <i class="fas fa-bolt mr-1"></i> Lo Antes Posible
+                        </button>
+                        <button id="btn-schedule-later" onclick="setSchedule('later')" class="py-3 rounded-xl border-2 border-white/5 bg-white/5 text-white/40 font-bold text-xs transition-all">
+                            <i class="fas fa-clock mr-1"></i> Programar
+                        </button>
+                    </div>
+                    <div id="schedule-time-picker" class="hidden animate-in slide-in-from-top-2 duration-300">
+                        <input type="datetime-local" id="scheduled-time" class="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white text-sm focus:border-gold outline-none">
+                        <p class="text-[9px] text-white/30 mt-2 ml-1 italic">* Sujeto a disponibilidad y horario de tienda.</p>
+                    </div>
+                </div>
+
                 <!-- Order Notes -->
                 <div class="space-y-3">
                     <h3 class="text-white/40 uppercase text-[10px] font-black tracking-widest px-1">Notas Especiales</h3>
@@ -717,6 +741,84 @@
         let currentMods = {};
         
         let fulfillmentType = 'pickup'; // default
+        let scheduledFor = null;
+
+        function setSchedule(type) {
+            const btnAsap = document.getElementById('btn-schedule-asap');
+            const btnLater = document.getElementById('btn-schedule-later');
+            const picker = document.getElementById('schedule-time-picker');
+            
+            if (type === 'asap') {
+                scheduledFor = null;
+                if (btnAsap) btnAsap.className = "py-3 rounded-xl border-2 border-gold bg-gold/10 text-gold font-bold text-xs transition-all";
+                if (btnLater) btnLater.className = "py-3 rounded-xl border-2 border-white/5 bg-white/5 text-white/40 font-bold text-xs transition-all";
+                if (picker) picker.classList.add('hidden');
+            } else {
+                if (btnLater) btnLater.className = "py-3 rounded-xl border-2 border-gold bg-gold/10 text-gold font-bold text-xs transition-all";
+                if (btnAsap) btnAsap.className = "py-3 rounded-xl border-2 border-white/5 bg-white/5 text-white/40 font-bold text-xs transition-all";
+                if (picker) picker.classList.remove('hidden');
+            }
+        }
+
+        async function toggleFavorite(e, itemId) {
+            e.stopPropagation();
+            if (!currentCustomer) return openLoginModal();
+            
+            try {
+                const res = await fetch('/api/store?action=customer_toggle_favorite', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ customerId: currentCustomer.id, itemId })
+                });
+                if (res.ok) {
+                    const updated = await res.json();
+                    currentCustomer.favorites = updated.favorites;
+                    localStorage.setItem('ra_customer_data', JSON.stringify(currentCustomer));
+                    loadMenu(); // Refresh to show updated hearts
+                }
+            } catch(e) { console.error(e); }
+        }
+
+        async function loadPastOrders() {
+            if (!currentCustomer) return;
+            const container = document.getElementById('past-orders-list');
+            if (!container) return;
+            
+            container.innerHTML = '<div class="py-10 text-center opacity-20"><i class="fas fa-spinner fa-spin text-2xl mb-2"></i><p class="text-[10px] uppercase font-black tracking-widest">Cargando historial...</p></div>';
+
+            try {
+                const res = await fetch(`/api/store?action=customer_past_orders&id=${currentCustomer.id}`);
+                const data = await res.json();
+                
+                if (data.orders && data.orders.length > 0) {
+                    container.innerHTML = data.orders.map(o => `
+                        <div class="p-4 bg-white/5 border border-white/5 rounded-2xl mb-3 flex justify-between items-center group">
+                            <div>
+                                <p class="text-[10px] font-black text-gold uppercase tracking-widest mb-1">#${o.order_number || o.id.slice(-4)} • ${new Date(o.created_at).toLocaleDateString()}</p>
+                                <p class="text-xs font-bold text-white">${o.items.map(i => i.name).join(', ')}</p>
+                                <p class="text-[10px] text-white/40 mt-1 uppercase">${o.status}</p>
+                            </div>
+                            <div class="text-right">
+                                <p class="text-sm font-black font-mono text-white">L. ${parseFloat(o.total).toFixed(2)}</p>
+                                <button onclick='repeatOrder(${JSON.stringify(o.items).replace(/'/g, "&apos;")})' class="mt-2 text-[8px] font-black uppercase text-gold border border-gold/30 px-2 py-1 rounded-lg hover:bg-gold hover:text-dark transition-all">Repetir</button>
+                            </div>
+                        </div>
+                    `).join('');
+                } else {
+                    container.innerHTML = '<div class="py-10 text-center opacity-20"><p class="text-[10px] uppercase font-black tracking-widest">No tienes órdenes previas</p></div>';
+                }
+            } catch(e) { 
+                console.error(e);
+                container.innerHTML = '<div class="py-10 text-center opacity-20"><p class="text-[10px] uppercase font-black tracking-widest">Error al cargar historial</p></div>';
+            }
+        }
+
+        function repeatOrder(items) {
+            cart = items.map(i => ({ ...i, qty: i.qty || 1 }));
+            saveCart();
+            updateCartUI();
+            openCartModal();
+        }
         let activeOrder = (() => {
             try {
                 const saved = localStorage.getItem('ra_active_order');
@@ -997,6 +1099,7 @@
                     items.forEach(item => {
                         const imgUrl = item.image_url || 'https://images.unsplash.com/photo-1510591509098-f4fdc6d0ff04?w=400&q=80';
                         const isCombo = category === 'Combos';
+                        const isFav = currentCustomer && Array.isArray(currentCustomer.favorites) && currentCustomer.favorites.includes(item.id);
                         const cardClass = isCombo ? "item-card rounded-2xl overflow-hidden flex flex-col group hover:border-gold transition-colors cursor-pointer border-2 border-gold/50 shadow-[0_0_15px_rgba(201,166,107,0.15)]" : "item-card rounded-2xl overflow-hidden flex flex-col group hover:border-gold/50 transition-colors cursor-pointer";
                         html += `
                             <div class="${cardClass}" onclick="openModifier('${item.id}')">
@@ -1006,6 +1109,9 @@
                                     <div class="absolute top-2 left-2 bg-gold/90 text-dark px-2 py-0.5 rounded-lg text-[9px] font-black uppercase tracking-tighter shadow-lg">
                                         +${Math.floor(item.price)} PTS
                                     </div>
+                                    <button onclick="toggleFavorite(event, '${item.id}')" class="absolute top-2 right-2 w-8 h-8 rounded-full bg-black/40 backdrop-blur-md flex items-center justify-center text-xs transition-all hover:scale-110 active:scale-90">
+                                        <i class="fa${isFav ? 's' : 'r'} fa-heart ${isFav ? 'text-red-500' : 'text-white/70'}"></i>
+                                    </button>
                                     <div class="absolute bottom-2 right-2 w-8 h-8 rounded-full bg-gold text-dark flex items-center justify-center shadow-lg"><i class="fas fa-plus text-xs"></i></div>
                                 </div>
                                 <div class="p-4 flex-1 flex flex-col justify-between">
@@ -1535,10 +1641,14 @@
             const total = subtotal - discount + tax;
 
             try {
+                const schedInput = document.getElementById('scheduled-time');
+                const scheduledVal = schedInput?.value || null;
+
                 const payload = {
                     items, subtotal, tax, discount: discount, total: total,
                     paymentMethod: paymentMethod,
-                    fulfillment: fulfillmentType,
+                    fulfillmentType: fulfillmentType,
+                    scheduledFor: scheduledVal,
                     notes: `Mobile Order (${fulfillmentType}) ${orderNotes ? '- ' + orderNotes : ''}`
                 };
                 if (currentCustomer) {
@@ -1985,6 +2095,7 @@
             document.getElementById('wallet-view').classList.add('hidden');
             document.getElementById('profile-view').classList.remove('hidden');
             updateNavActive('nav-profile');
+            loadPastOrders(); // Load history when viewing profile
         }
 
         function updateNavActive(activeId) {

@@ -291,9 +291,42 @@ module.exports = async function handler(req, res) {
             return res.json({ orders: enhancedOrders });
         }
 
+        // CUSTOMER PAST ORDERS
+        if (action === 'customer_past_orders' && req.method === 'GET') {
+            const { id } = req.query;
+            if (!id) return res.status(400).json({ error: "ID de cliente requerido" });
+            const { data, error } = await supabase
+                .from('orders')
+                .select('*')
+                .eq('customer_id', id)
+                .order('created_at', { ascending: false })
+                .limit(10);
+            if (error) throw error;
+            return res.json({ orders: data || [] });
+        }
+
+        // TOGGLE FAVORITE
+        if (action === 'customer_toggle_favorite' && req.method === 'POST') {
+            const { customerId, itemId } = req.body;
+            if (!customerId || !itemId) return res.status(400).json({ error: "Missing data" });
+
+            const { data: customer } = await supabase.from('customers').select('favorites').eq('id', customerId).single();
+            let favorites = Array.isArray(customer?.favorites) ? customer.favorites : [];
+            
+            if (favorites.includes(itemId)) {
+                favorites = favorites.filter(id => id !== itemId);
+            } else {
+                favorites.push(itemId);
+            }
+
+            const { data, error } = await supabase.from('customers').update({ favorites }).eq('id', customerId).select().single();
+            if (error) throw error;
+            return res.json(data);
+        }
+
         // ORDERS POST
         if (action === 'orders' && req.method === 'POST') {
-            const { items, subtotal, total, customerId, paymentMethod, notes, fulfillmentType, status } = req.body;
+            const { items, subtotal, total, customerId, paymentMethod, notes, fulfillmentType, status, scheduledFor } = req.body;
             
             let customer = null;
             if (customerId) {
@@ -334,11 +367,10 @@ module.exports = async function handler(req, res) {
             
             const orderNum = (maxOrder?.[0]?.order_number || 0) + 1;
 
-            // Inject fulfillment type into notes since column is missing
+            // Inject fulfillment type and schedule into notes since columns might be missing
             let finalNotes = notes || '';
-            if (fulfillmentType) {
-                finalNotes += ` [TYPE: ${fulfillmentType}]`;
-            }
+            if (fulfillmentType) finalNotes += ` [TYPE: ${fulfillmentType}]`;
+            if (scheduledFor) finalNotes += ` [SCHEDULED: ${scheduledFor}]`;
 
             const orderData = {
                 id: `ORD-${getHondurasDate()}-${Date.now().toString().slice(-4)}`,

@@ -400,5 +400,44 @@ module.exports = async function handler(req, res) {
         return res.json({ success: true });
     }
 
+    // STAFF MANAGEMENT
+    if (action === 'staff_availability' && req.method === 'GET') {
+        const { data, error } = await supabase.from('employee_availability').select('*, employees(name)');
+        if (error) return res.status(500).json({ error: error.message });
+        return res.json(data);
+    }
+
+    if (action === 'staff_schedule_set' && req.method === 'POST') {
+        if (!isAdmin) return res.status(403).json({ error: "Admin access required" });
+        const { schedules } = req.body; // [{ employee_id, day_of_week, start_time, end_time }]
+        
+        // Delete all old schedules and insert new ones
+        await supabase.from('employee_schedules').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+        const { data, error } = await supabase.from('employee_schedules').insert(schedules).select();
+        
+        if (error) return res.status(500).json({ error: error.message });
+        return res.json(data);
+    }
+
+    if (action === 'staff_schedules' && req.method === 'GET') {
+        const { data, error } = await supabase.from('employee_schedules').select('*, employees(name)');
+        if (error) return res.status(500).json({ error: error.message });
+        return res.json(data);
+    }
+
+    if (action === 'time_off_requests' && req.method === 'GET') {
+        const { data, error } = await supabase.from('time_off_requests').select('*, employees(name)').order('created_at', { ascending: false });
+        if (error) return res.status(500).json({ error: error.message });
+        return res.json(data);
+    }
+
+    if (action === 'time_off_request_approve' && req.method === 'PATCH') {
+        if (!isAdmin) return res.status(403).json({ error: "Admin access required" });
+        const { id, status } = req.body; // status = 'approved' or 'rejected'
+        const { data, error } = await supabase.from('time_off_requests').update({ status }).eq('id', id).select().single();
+        if (error) return res.status(500).json({ error: error.message });
+        return res.json(data);
+    }
+
     res.status(404).json({ error: 'Action not found' });
 }
