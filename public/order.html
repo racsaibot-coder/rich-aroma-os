@@ -1909,12 +1909,16 @@
             clearInterval(statusPollingTimer);
             statusPollingTimer = setInterval(async () => {
                 try {
-                    const res = await fetch('/api/orders'); 
+                    const res = await fetch(`/api/orders?v=${Date.now()}`); 
                     if(res.ok) {
                         const data = await res.json();
                         const currentOrder = data.orders.find(o => o.id === activeOrder.id);
                         if(currentOrder) {
-                            // Update order number in case it was assigned later
+                            // Update global object
+                            activeOrder = currentOrder;
+                            saveActiveOrder();
+
+                            // Sync UI elements
                             if (currentOrder.order_number) {
                                 document.getElementById('track-order-num').innerText = currentOrder.order_number.toString().padStart(2, '0');
                             }
@@ -1924,22 +1928,27 @@
                                 const timeVal = document.getElementById('track-time').innerText;
                                 document.getElementById('track-status-desc').innerHTML = `Orden #${currentOrder.order_number || currentOrder.id} • <span id="track-time">${timeVal}</span> • Pago Confirmado ✅`;
                             }
-                            if(currentOrder.status === 'pending' && activeOrder.payment_method === 'transfer') {
+
+                            if(currentOrder.status === 'pending' && currentOrder.payment_method === 'transfer') {
                                 if (currentOrder.notes && currentOrder.notes.includes('RECHAZADA')) {
                                     document.getElementById('track-status-title').innerText = "Transferencia Rechazada ⚠️";
                                     document.getElementById('track-status-desc').innerText = "Tu comprobante fue rechazado. Tu orden está en espera.";
                                     document.getElementById('transfer-upload-section').classList.remove('hidden');
                                     document.getElementById('track-bank-info').classList.remove('hidden'); 
                                     const statusMsg = document.getElementById('receipt-upload-status');
-                                    statusMsg.classList.remove('hidden');
-                                    statusMsg.innerText = "❌ COMPROBANTE INVÁLIDO. Por favor verifica el monto y vuelve a subir la captura.";
-                                    statusMsg.className = "mt-4 p-4 bg-red-500/20 border border-red-500/50 text-red-400 font-bold rounded-xl text-center animate-bounce";
+                                    if (statusMsg) {
+                                        statusMsg.classList.remove('hidden');
+                                        statusMsg.innerText = "❌ COMPROBANTE INVÁLIDO. Por favor verifica el monto y vuelve a subir la captura.";
+                                        statusMsg.className = "mt-4 p-4 bg-red-500/20 border border-red-500/50 text-red-400 font-bold rounded-xl text-center animate-bounce";
+                                    }
                                     document.getElementById('receipt-upload').classList.remove('hidden');
                                 }
                             }
+
                             if(['preparing', 'drinks_ready', 'food_ready'].includes(currentOrder.status)) {
                                 setStep('prep');
                             }
+
                             if(['completed', 'ready'].includes(currentOrder.status)) {
                                 setStep('ready');
                                 clearInterval(statusPollingTimer);
@@ -2358,14 +2367,22 @@
                 }
 
                 try {
-                    const res = await fetch('/api/orders'); 
+                    const res = await fetch(`/api/orders?v=${Date.now()}`); 
                     if(res.ok) {
                         const data = await res.json();
                         const serverOrder = data.orders.find(o => o.id === activeOrder.id);
                         if(serverOrder) {
-                            if (activeOrder.status !== serverOrder.status) {
+                            if (activeOrder.status !== serverOrder.status || activeOrder.order_number !== serverOrder.order_number) {
                                 activeOrder = serverOrder;
                                 saveActiveOrder();
+                                
+                                // Trigger UI update if tracking view is active
+                                const isTrackingVisible = !document.getElementById('tracking-view').classList.contains('hidden');
+                                if (isTrackingVisible) {
+                                    if(['preparing', 'drinks_ready', 'food_ready'].includes(activeOrder.status)) setStep('prep');
+                                    if(['completed', 'ready'].includes(activeOrder.status)) setStep('ready');
+                                }
+
                                 if (activeOrder.status === 'ready') {
                                     showLocalNotification("☕ ¡Orden Lista!", `Tu orden #${activeOrder.order_number} está lista.`);
                                 }
