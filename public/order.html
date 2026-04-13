@@ -1398,10 +1398,15 @@
         function updateIdentityFields() {
             const guestInfo = document.getElementById('guest-info-section');
             const bribeBanner = document.getElementById('guest-bribe-banner');
+            const nameInput = document.getElementById('guest-name');
+            const phoneInput = document.getElementById('guest-phone');
             
             if (currentCustomer) {
                 if (guestInfo) guestInfo.classList.add('hidden');
                 if (bribeBanner) bribeBanner.classList.add('hidden');
+                // Clear inputs so they don't leak into next guest session
+                if (nameInput) nameInput.value = "";
+                if (phoneInput) phoneInput.value = "";
             } else {
                 if (guestInfo) guestInfo.classList.remove('hidden');
                 if (bribeBanner) bribeBanner.classList.remove('hidden');
@@ -1409,8 +1414,6 @@
                 // Pre-fill from memory
                 const savedName = localStorage.getItem('ra_guest_name');
                 const savedPhone = localStorage.getItem('ra_guest_phone');
-                const nameInput = document.getElementById('guest-name');
-                const phoneInput = document.getElementById('guest-phone');
                 
                 if (savedName && nameInput && !nameInput.value) nameInput.value = savedName;
                 if (savedPhone && phoneInput && !phoneInput.value) phoneInput.value = savedPhone;
@@ -1928,7 +1931,9 @@
         }
 
         function showWalletView() {
-            if (!currentCustomer) return openLoginModal();
+            const hasSession = !!localStorage.getItem('ra_customer_phone');
+            if (!currentCustomer && !hasSession) return openLoginModal();
+            
             document.getElementById('main-view').classList.add('hidden');
             document.getElementById('fulfillment-selector').classList.add('hidden');
             document.getElementById('tracking-view').classList.add('hidden');
@@ -1938,7 +1943,9 @@
         }
 
         function showProfileView() {
-            if (!currentCustomer) return openLoginModal();
+            const hasSession = !!localStorage.getItem('ra_customer_phone');
+            if (!currentCustomer && !hasSession) return openLoginModal();
+
             document.getElementById('main-view').classList.add('hidden');
             document.getElementById('fulfillment-selector').classList.add('hidden');
             document.getElementById('tracking-view').classList.add('hidden');
@@ -2200,8 +2207,11 @@
                     localStorage.setItem('ra_customer_pin', pin);
                     localStorage.setItem('ra_customer_data', JSON.stringify(data.customer));
 
-                    updateLoyaltyUI();
-                    updateIdentityFields();
+                    // Clear guest data so it doesn't conflict
+                    localStorage.removeItem('ra_guest_name');
+                    localStorage.removeItem('ra_guest_phone');
+
+                    updateLoyaltyUI();                    updateIdentityFields();
                     closeLoginModal();
 
                     // Handle redirection if specified
@@ -2287,21 +2297,28 @@
                 try {
                     // Use secured profile endpoint
                     const r = await fetch(`/api/customer/profile?phone=${encodeURIComponent(phone)}&pin=${encodeURIComponent(pin || '')}`);
-                    const u = await r.json();
-                    if (u && !u.error) {
-                        currentCustomer = u;
-                        localStorage.setItem('ra_customer_data', JSON.stringify(u));
-                        updateLoyaltyUI();
-                        updateIdentityFields();
-                    } else {
+                    
+                    if (r.status === 401) {
+                        // Explicitly invalid session
                         currentCustomer = null;
                         localStorage.removeItem('ra_customer_phone');
                         localStorage.removeItem('ra_customer_pin');
                         localStorage.removeItem('ra_customer_data');
                         updateLoyaltyUI();
                         updateIdentityFields();
+                        return;
                     }
-                } catch(e) { console.error(e); }
+
+                    const u = await r.json();
+                    if (u && !u.error) {
+                        currentCustomer = u;
+                        localStorage.setItem('ra_customer_data', JSON.stringify(u));
+                        updateLoyaltyUI();
+                        updateIdentityFields();
+                    }
+                } catch(e) { 
+                    console.error("Silent sync failed, keeping local session:", e); 
+                }
             }
 
             // BACKGROUND STATUS SYNC (Silently check active order)
