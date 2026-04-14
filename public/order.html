@@ -442,8 +442,8 @@
                     <span id="profile-tier" class="text-gold font-black text-[10px] uppercase tracking-widest bg-gold/10 px-3 py-1 rounded-full border border-gold/30">---</span>
                 </div>
                 <div class="p-5 flex justify-between items-center">
-                    <span class="text-white/50 text-sm">Total Invertido</span>
-                    <span id="profile-spent" class="text-white font-mono font-bold text-sm">L 0.00</span>
+                    <span class="text-white/50 text-sm">Visitas Totales</span>
+                    <span id="profile-visits" class="text-white font-mono font-bold text-sm">0</span>
                 </div>
             </div>
         </div>
@@ -1849,7 +1849,7 @@
             document.getElementById('profile-name').innerText = currentCustomer.name;
             document.getElementById('profile-phone').innerText = currentCustomer.phone;
             document.getElementById('profile-tier').innerText = `${currentCustomer.tier || 'BRONZE'} TIER`;
-            document.getElementById('profile-spent').innerText = `L ${(parseFloat(currentCustomer.total_spent) || 0).toFixed(2)}`;
+            document.getElementById('profile-visits').innerText = currentCustomer.visits || 0;
             
             const joinDate = currentCustomer.member_since || currentCustomer.created_at;
             if (joinDate) {

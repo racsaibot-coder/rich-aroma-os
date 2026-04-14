@@ -96,6 +96,10 @@
       "dest": "/api/index.js"
     },
     {
+      "src": "/api/store",
+      "dest": "/api/store.js"
+    },
+    {
       "src": "/api/store/status",
       "dest": "/api/store.js?action=store_status"
     },
