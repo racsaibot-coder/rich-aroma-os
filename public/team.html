@@ -642,7 +642,7 @@
             const container = document.getElementById('admin-schedule-list');
             const today = new Date().toISOString().split('T')[0];
             const end = new Date();
-            end.setDate(end.getDate() + 14);
+            end.setDate(end.getDate() + 30); // Show full month
             const endDate = end.toISOString().split('T')[0];
 
             try {
@@ -655,16 +655,37 @@
                     return;
                 }
 
-                container.innerHTML = `<p class="text-[10px] font-black text-white/30 uppercase tracking-widest mb-2">Próximos Turnos (14 días)</p>` + 
-                    data.map(s => `
-                    <div class="bg-charcoal p-4 rounded-2xl border border-white/5 flex justify-between items-center">
-                        <div>
-                            <p class="font-bold text-sm">${s.employees?.name || '---'}</p>
-                            <p class="text-[10px] text-white/40 uppercase">${s.shift_date} • ${s.start_time.slice(0,5)} - ${s.end_time.slice(0,5)}</p>
+                // Group by date
+                const grouped = {};
+                data.forEach(s => {
+                    if (!grouped[s.shift_date]) grouped[s.shift_date] = [];
+                    grouped[s.shift_date].push(s);
+                });
+
+                const sortedDates = Object.keys(grouped).sort();
+
+                container.innerHTML = `<p class="text-[10px] font-black text-white/30 uppercase tracking-widest mb-4">Agenda del Mes (30 días)</p>` + 
+                    sortedDates.map(date => {
+                        const dateObj = new Date(date + 'T12:00:00');
+                        const dateTitle = `${DAYS[dateObj.getDay()]} ${date.split('-').reverse().slice(0,2).join('/')}`;
+                        
+                        return `
+                        <div class="space-y-2 mb-6">
+                            <h4 class="text-[10px] font-black text-gold/60 uppercase ml-2">${dateTitle}</h4>
+                            <div class="space-y-1">
+                                ${grouped[date].map(s => `
+                                    <div class="bg-charcoal p-4 rounded-2xl border border-white/5 flex justify-between items-center">
+                                        <div>
+                                            <p class="font-bold text-sm text-white">${s.employees?.name || '---'}</p>
+                                            <p class="text-[10px] text-white/40 uppercase font-black tracking-widest">${s.start_time.slice(0,5)} - ${s.end_time.slice(0,5)}</p>
+                                        </div>
+                                        <button onclick="deleteShift('${s.id}')" class="text-red-500/30 hover:text-red-500 p-2 transition-colors"><i class="fas fa-trash-alt"></i></button>
+                                    </div>
+                                `).join('')}
+                            </div>
                         </div>
-                        <button onclick="deleteShift('${s.id}')" class="text-red-500/50 hover:text-red-500 p-2 text-xs"><i class="fas fa-trash"></i></button>
-                    </div>
-                `).join('');
+                        `;
+                    }).join('');
             } catch (e) { console.error(e); }
         }
 
