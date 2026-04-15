@@ -27,7 +27,7 @@
     {
       "id": "ch_ig_story",
       "name": "Historia 'Sip & Share'",
-      "description": "Sube una historia de tu bebida/comida. Etiqueta a @RichAromaHN.",
+      "description": "Sube una historia de tu bebida/comida. Etiqueta a @richaromacoffee.",
       "reward": { "type": "token", "token_id": "tok_10_percent_off", "name": "10% Descuento (Próxima Visita)" },
       "icon": "☕",
       "type": "ugc",

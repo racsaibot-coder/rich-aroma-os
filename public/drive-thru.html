@@ -66,6 +66,9 @@
             <button onclick="filterCategory('Calientes', this)" class="cat-btn shrink-0 bg-white/5 text-white/40 px-6 py-2.5 rounded-full font-black text-[10px] uppercase tracking-widest transition-all">☕ Café</button>
             <button onclick="filterCategory('Heladas', this)" class="cat-btn shrink-0 bg-white/5 text-white/40 px-6 py-2.5 rounded-full font-black text-[10px] uppercase tracking-widest transition-all">🥤 Heladas</button>
             <button onclick="filterCategory('Comida', this)" class="cat-btn shrink-0 bg-white/5 text-white/40 px-6 py-2.5 rounded-full font-black text-[10px] uppercase tracking-widest transition-all">🥐 Comida</button>
+            <button onclick="filterCategory('Postres', this)" class="cat-btn shrink-0 bg-white/5 text-white/40 px-6 py-2.5 rounded-full font-black text-[10px] uppercase tracking-widest transition-all">🍰 Postres</button>
+            <button onclick="filterCategory('Sides', this)" class="cat-btn shrink-0 bg-white/5 text-white/40 px-6 py-2.5 rounded-full font-black text-[10px] uppercase tracking-widest transition-all">🍟 Sides</button>
+            <button onclick="filterCategory('Secreto', this)" class="cat-btn shrink-0 bg-white/5 text-white/40 px-6 py-2.5 rounded-full font-black text-[10px] uppercase tracking-widest transition-all">🤫 Secreto</button>
         </div>
 
         <!-- Menu Grid -->
@@ -429,6 +432,10 @@
             const filtered = menu.filter(i => {
                 const cat = (i.category || '').toLowerCase();
                 const name = (i.name || '').toLowerCase();
+                const id = (i.id || '').toLowerCase();
+                if (search === 'secreto') return cat.includes('secret') || id.startsWith('secret_');
+                if (search === 'postres') return cat.includes('reposteria') || cat.includes('pastry');
+                if (search === 'sides') return cat.includes('side') || cat.includes('acompañamiento');
                 if (search === 'combos') return i.id.startsWith('combo_') || name.includes('combo');
                 if (search === 'calientes') return cat.includes('hot') || cat.includes('coffee') || cat.includes('caliente');
                 if (search === 'heladas') return cat.includes('cold') || cat.includes('drink') || cat.includes('helada') || cat.includes('frappe');

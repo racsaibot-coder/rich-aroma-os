@@ -252,6 +252,14 @@
       "dest": "/api/checkout.js"
     },
     {
+      "src": "/team",
+      "dest": "/public/team.html"
+    },
+    {
+      "src": "/api/staff",
+      "dest": "/api/staff.js"
+    },
+    {
       "src": "/(.*)",
       "dest": "/public/$1"
     }

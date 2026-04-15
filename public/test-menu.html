@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html>
+<head><title>MENU TEST</title></head>
+<body>
+    <h1>MENU TEST</h1>
+    <div id="out">Loading...</div>
+    <script>
+        console.log('Test script starting');
+        document.getElementById('out').innerText = 'Script Started...';
+        fetch('/api/menu')
+            .then(res => res.json())
+            .then(data => {
+                console.log('Data:', data);
+                document.getElementById('out').innerHTML = 'Items: ' + (data.items ? data.items.length : 'none');
+                if(data.items) {
+                    let h = '<ul>';
+                    data.items.slice(0,5).forEach(i => h += '<li>' + i.name + '</li>');
+                    h += '</ul>';
+                    document.getElementById('out').innerHTML += h;
+                }
+            })
+            .catch(err => {
+                document.getElementById('out').innerText = 'Error: ' + err.message;
+            });
+    </script>
+</body>
+</html>

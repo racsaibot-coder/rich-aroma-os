@@ -347,7 +347,10 @@
                         <option value="combos">🔥 Combos / Paquetes</option>
                         <option value="coffee">☕ Café / Calientes</option>
                         <option value="drinks">🥤 Heladas / Refreshers</option>
-                        <option value="food">🥐 Comida / Repostería</option>
+                        <option value="food">🥐 Comida / Salados</option>
+                        <option value="pastry">🍰 Repostería / Dulce</option>
+                        <option value="side">🍟 Acompañamientos</option>
+                        <option value="secret">🤫 Menú Secreto</option>
                         <option value="retail">🛍️ Retail / Otros</option>
                     </select>
                 </div>
@@ -390,7 +393,10 @@
                         <option value="combos">🔥 Combos / Paquetes</option>
                         <option value="coffee">☕ Café / Calientes</option>
                         <option value="drinks">🥤 Heladas / Refreshers</option>
-                        <option value="food">🥐 Comida / Repostería</option>
+                        <option value="food">🥐 Comida / Salados</option>
+                        <option value="pastry">🍰 Repostería / Dulce</option>
+                        <option value="side">🍟 Acompañamientos</option>
+                        <option value="secret">🤫 Menú Secreto</option>
                         <option value="retail">🛍️ Retail / Otros</option>
                     </select>
                 </div>
@@ -1109,30 +1115,36 @@
             btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
             btn.disabled = true;
 
-            const formData = new FormData();
-            formData.append('image', file);
-
-            try {
-                const res = await fetch('/api/admin/upload-image', {
-                    method: 'POST',
-                    headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` },
-                    body: formData
-                });
-                
-                if (res.ok) {
-                    const data = await res.json();
-                    document.getElementById('edit-item-image').value = data.url;
-                } else {
-                    alert('Error uploading image');
+            const reader = new FileReader();
+            reader.onloadend = async () => {
+                const base64String = reader.result;
+                try {
+                    const res = await fetch('/api/admin?action=upload_image', {
+                        method: 'POST',
+                        headers: getHeaders(),
+                        body: JSON.stringify({
+                            imageBase64: base64String,
+                            fileName: file.name
+                        })
+                    });
+                    
+                    if (res.ok) {
+                        const data = await res.json();
+                        document.getElementById('edit-item-image').value = data.url;
+                    } else {
+                        const err = await res.json();
+                        alert('Error: ' + (err.error || 'Upload failed'));
+                    }
+                } catch(e) {
+                    console.error(e);
+                    alert('Upload failed');
+                } finally {
+                    btn.innerHTML = '<i class="fas fa-upload"></i>';
+                    btn.disabled = false;
+                    inputEl.value = '';
                 }
-            } catch(e) {
-                console.error(e);
-                alert('Upload failed');
-            } finally {
-                btn.innerHTML = '<i class="fas fa-upload"></i>';
-                btn.disabled = false;
-                inputEl.value = ''; // reset file input
-            }
+            };
+            reader.readAsDataURL(file);
         }
 
         async function updateMenuItem() {
