@@ -372,7 +372,18 @@ module.exports = async function handler(req, res) {
         const targetId = id || req.query.id;
         if (!targetId) return res.status(400).json({ error: "Employee ID required" });
         
+        // 1. Delete all related data to avoid Foreign Key constraints
+        await Promise.all([
+            supabase.from('time_entries').delete().eq('employee_id', targetId),
+            supabase.from('employee_availability').delete().eq('employee_id', targetId),
+            supabase.from('shift_assignments').delete().eq('employee_id', targetId),
+            supabase.from('employee_schedules').delete().eq('employee_id', targetId),
+            supabase.from('time_off_requests').delete().eq('employee_id', targetId)
+        ]);
+
+        // 2. Finally delete the employee record
         const { error } = await supabase.from('employees').delete().eq('id', targetId);
+        
         if (error) return res.status(500).json({ error: error.message });
         return res.json({ success: true });
     }
