@@ -863,7 +863,7 @@
             }
 
             function fetchStatus() {
-                fetch('/api/store?action=status').then(function(r) { return r.json(); }).then(function(d) {
+                fetch('/api/store/status').then(function(r) { return r.json(); }).then(function(d) {
                     storeIsOpen = d.isOpen;
                     if(!d.isOpen) document.getElementById('closed-overlay').classList.remove('hidden');
                 }).catch(function(e) { console.error('Status Error:', e); });

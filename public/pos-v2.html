@@ -1410,6 +1410,14 @@
             }));
 
             document.getElementById('shift-modal').classList.add('hidden');
+            
+            // Auto-open store when shift opens
+            await fetch('/api/store/status', {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer EMP-admin' },
+                body: JSON.stringify({ isOpen: true })
+            });
+
             await fetchStoreStatus();
             console.log("✅ Shift Opened successfully.");
         } catch (err) {
