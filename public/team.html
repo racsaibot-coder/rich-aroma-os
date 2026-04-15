@@ -512,11 +512,12 @@
                     if (!allEmployees || allEmployees.length === 0) {
                         console.log("Employees not loaded, fetching now...");
                         const empRes = await fetch(`/api/staff?action=admin_all_employees&${adminParams}`);
-                        allEmployees = await empRes.json();
+                        const rawData = await empRes.json();
+                        allEmployees = Array.isArray(rawData) ? rawData : (rawData.employees || []);
                     }
 
-                    if (!Array.isArray(allEmployees)) {
-                        throw new Error("No se pudo cargar la lista de empleados");
+                    if (!Array.isArray(allEmployees) || allEmployees.length === 0) {
+                        throw new Error("No hay empleados activos o no se pudo cargar la lista.");
                     }
 
                     content.innerHTML = `

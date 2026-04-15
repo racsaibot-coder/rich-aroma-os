@@ -129,8 +129,8 @@ module.exports = async function handler(req, res) {
             if (!isAdmin) return res.status(403).json({ error: "Admin access required" });
 
             if (action === 'admin_all_employees') {
-                const { data } = await supabase.from('employees').select('*').eq('active', true);
-                return res.json(data);
+                const { data } = await supabase.from('employees').select('*').eq('active', true).order('name');
+                return res.json(data || []);
             }
 
             if (action === 'admin_payroll_summary') {
