@@ -468,8 +468,12 @@
                     sortedCats.forEach(function(cat) {
                         html += '<div class="mb-8"><h2 class="text-gold text-xs font-black uppercase tracking-[0.2em] mb-4 border-l-4 border-gold pl-3">' + cat + '</h2><div class="grid grid-cols-2 md:grid-cols-3 gap-4">';
                         categories[cat].forEach(function(item) {
+                            var isFav = (currentCustomer && currentCustomer.favorites || []).includes(item.id);
                             html += '<div class="item-card p-4 rounded-3xl flex flex-col gap-3 cursor-pointer group active:scale-95 transition-transform" onclick="openModifier(\'' + item.id + '\')">';
-                            html += '<div class="h-32 bg-charcoal rounded-2xl overflow-hidden shadow-inner relative"><img src="' + (item.image_url || '/rico-logo.png') + '" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"></div>';
+                            html += '<div class="h-32 bg-charcoal rounded-2xl overflow-hidden shadow-inner relative">';
+                            html += '<img src="' + (item.image_url || '/rico-logo.png') + '" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500">';
+                            html += '<button onclick="toggleFavorite(event, \'' + item.id + '\')" class="absolute top-2 right-2 w-8 h-8 rounded-full bg-black/40 backdrop-blur-md flex items-center justify-center text-xs transition-all ' + (isFav ? 'text-red-500 bg-white' : 'text-white/70 hover:text-white') + '"><i class="' + (isFav ? 'fas' : 'far') + ' fa-heart"></i></button>';
+                            html += '</div>';
                             html += '<div><p class="font-bold text-sm leading-tight mb-1">' + item.name + '</p><p class="text-gold font-black text-sm">L ' + parseFloat(item.price || 0).toFixed(2) + '</p></div>';
                             html += '<button class="w-full py-2 bg-gold text-dark rounded-xl font-black text-[10px] uppercase shadow-lg">+ AGREGAR</button></div>';
                         });
@@ -485,6 +489,33 @@
                 for(var i=0; i<btns.length; i++) { btns[i].className = "cat-btn px-6 py-2 rounded-full border border-white/10 bg-white/5 text-white/70 text-sm font-bold hover:bg-white/10 transition-colors"; }
                 if(btnEl) btnEl.className = "cat-btn px-6 py-2 rounded-full border border-gold bg-gold text-dark text-sm font-bold shadow-lg";
                 renderMenu();
+            };
+
+            window.toggleFavorite = function(e, itemId) {
+                if (e) e.stopPropagation();
+                if (!currentCustomer) {
+                    alert("Por favor inicia sesión para guardar favoritos.");
+                    return;
+                }
+                
+                var btn = e.currentTarget;
+                btn.classList.add('animate-ping');
+
+                fetch('/api/store?action=customer_toggle_favorite', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ customerId: currentCustomer.id, itemId: itemId })
+                })
+                .then(function(r) { return r.json(); })
+                .then(function(data) {
+                    currentCustomer.favorites = data.favorites;
+                    localStorage.setItem('ra_customer_data', JSON.stringify(currentCustomer));
+                    renderMenu();
+                })
+                .catch(function(err) { console.error("Error toggling favorite", err); })
+                .finally(function() {
+                    btn.classList.remove('animate-ping');
+                });
             };
 
             // --- MODIFIER LOGIC ---
