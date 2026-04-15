@@ -257,11 +257,21 @@
             });
         }
 
+        let serverTimeOffset = 0; // Local - Server (ms)
+
         async function checkCurrentClockState() {
             try {
                 const res = await fetch(`/api/staff?action=timeclock_status&employeeId=${currentEmployee.id}`);
                 const data = await res.json();
                 
+                // Calculate time offset
+                if (data.serverTime) {
+                    const serverNow = new Date(data.serverTime).getTime();
+                    const localNow = Date.now();
+                    serverTimeOffset = localNow - serverNow;
+                    console.log(`[Timer] Server Sync - Offset: ${serverTimeOffset}ms`);
+                }
+
                 if (data && (data.type === 'in' || data.type === 'break_start' || data.type === 'break_end')) {
                     clockStartTime = new Date(data.timestamp);
                     startTimer(clockStartTime);
@@ -289,7 +299,10 @@
         function startTimer(startTime) {
             if (timerInterval) clearInterval(timerInterval);
             timerInterval = setInterval(() => {
-                const diff = new Date() - startTime;
+                // Adjust local time by offset to get estimated server time
+                const nowServer = Date.now() - serverTimeOffset;
+                const diff = nowServer - startTime.getTime();
+                
                 const h = String(Math.floor(diff / 3600000)).padStart(2, '0');
                 const m = String(Math.floor((diff % 3600000) / 60000)).padStart(2, '0');
                 const s = String(Math.floor((diff % 60000) / 1000)).padStart(2, '0');

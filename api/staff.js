@@ -47,7 +47,8 @@ module.exports = async function handler(req, res) {
                 .single();
             
             if (error && error.code !== 'PGRST116') throw error;
-            return res.json(data || { type: 'out' });
+            const response = data || { type: 'out' };
+            return res.json({ ...response, serverTime: new Date().toISOString() });
         }
 
         if (action === 'timeclock_summary' && req.method === 'GET') {
