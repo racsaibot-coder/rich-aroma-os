@@ -444,13 +444,19 @@
         }
 
         async function loadAdminData() {
-            const adminParams = `adminId=${currentEmployee.id}&adminPin=${localStorage.getItem('ra_staff_pin')}`;
+            const pin = localStorage.getItem('ra_staff_pin');
+            const adminParams = `adminId=${currentEmployee.id}&adminPin=${pin}`;
+            console.log("Loading Admin Data with params:", adminParams);
             try {
-                const [empRes] = await Promise.all([
-                    fetch(`/api/staff?action=admin_all_employees&${adminParams}`)
-                ]);
-                allEmployees = await empRes.json();
-            } catch (e) { console.error(e); }
+                const empRes = await fetch(`/api/staff?action=admin_all_employees&${adminParams}`);
+                const rawData = await empRes.json();
+                if (empRes.ok) {
+                    allEmployees = Array.isArray(rawData) ? rawData : (rawData.employees || []);
+                    console.log("Loaded employees:", allEmployees.length);
+                } else {
+                    console.error("Failed to load employees:", rawData.error);
+                }
+            } catch (e) { console.error("Admin data load error:", e); }
         }
 
         window.openAdminModal = async function(type) {
@@ -511,8 +517,13 @@
                     // Safety: Ensure allEmployees is loaded
                     if (!allEmployees || allEmployees.length === 0) {
                         console.log("Employees not loaded, fetching now...");
-                        const empRes = await fetch(`/api/staff?action=admin_all_employees&${adminParams}`);
+                        const pin = localStorage.getItem('ra_staff_pin');
+                        const empRes = await fetch(`/api/staff?action=admin_all_employees&adminId=${currentEmployee.id}&adminPin=${pin}`);
                         const rawData = await empRes.json();
+                        
+                        if (!empRes.ok) {
+                            throw new Error(rawData.error || "Error de autorización");
+                        }
                         allEmployees = Array.isArray(rawData) ? rawData : (rawData.employees || []);
                     }
 

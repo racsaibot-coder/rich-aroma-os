@@ -123,7 +123,8 @@ module.exports = async function handler(req, res) {
         const isAdminAction = action.startsWith('admin_');
         if (isAdminAction) {
             const { adminId, adminPin } = req.query.adminId ? req.query : req.body;
-            const { data: admin } = await supabase.from('employees').select('is_admin, role').eq('id', adminId).eq('pin', adminPin).single();
+            const cleanPin = (adminPin || '').replace('Bearer ', '').trim();
+            const { data: admin } = await supabase.from('employees').select('is_admin, role').eq('id', adminId).eq('pin', cleanPin).single();
             const isAdmin = admin && (admin.is_admin === true || admin.role?.toLowerCase() === 'admin');
             
             if (!isAdmin) return res.status(403).json({ error: "Admin access required" });
