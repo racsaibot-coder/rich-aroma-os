@@ -375,6 +375,7 @@ module.exports = async function handler(req, res) {
         // 1. Delete all related data to avoid Foreign Key constraints
         await Promise.all([
             supabase.from('time_entries').delete().eq('employee_id', targetId),
+            supabase.from('timeclock').delete().eq('employee_id', targetId),
             supabase.from('employee_availability').delete().eq('employee_id', targetId),
             supabase.from('shift_assignments').delete().eq('employee_id', targetId),
             supabase.from('employee_schedules').delete().eq('employee_id', targetId),

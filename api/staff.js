@@ -124,10 +124,18 @@ module.exports = async function handler(req, res) {
         if (isAdminAction) {
             const { adminId, adminPin } = req.query.adminId ? req.query : req.body;
             const cleanPin = (adminPin || '').replace('Bearer ', '').trim();
-            const { data: admin } = await supabase.from('employees').select('is_admin, role').eq('id', adminId).eq('pin', cleanPin).single();
+            
+            const { data: admin, error: authError } = await supabase.from('employees').select('id, name, is_admin, role').eq('id', adminId).eq('pin', cleanPin).single();
+            
+            console.log(`[Admin Auth] ID: ${adminId}, PIN: ${cleanPin}, Found: ${!!admin}, Error: ${authError?.message || 'None'}`);
+            if (admin) console.log(`[Admin Auth] Match - Role: ${admin.role}, is_admin: ${admin.is_admin}`);
+
             const isAdmin = admin && (admin.is_admin === true || admin.role?.toLowerCase() === 'admin');
             
-            if (!isAdmin) return res.status(403).json({ error: "Admin access required" });
+            if (!isAdmin) {
+                console.log(`[Admin Auth] Access Denied for ${adminId}`);
+                return res.status(403).json({ error: "Admin access required", details: authError?.message });
+            }
 
             if (action === 'admin_all_employees') {
                 const { data } = await supabase.from('employees').select('*').eq('active', true).order('name');

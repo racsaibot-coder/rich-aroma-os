@@ -516,11 +516,15 @@
                     
                     // Safety: Ensure allEmployees is loaded
                     if (!allEmployees || allEmployees.length === 0) {
-                        console.log("Employees not loaded, fetching now...");
                         const pin = localStorage.getItem('ra_staff_pin');
-                        const empRes = await fetch(`/api/staff?action=admin_all_employees&adminId=${currentEmployee.id}&adminPin=${pin}`);
+                        console.log(`[Planificador] Fetching employees for adminId: ${currentEmployee?.id}, pin: ${pin}`);
+                        
+                        const empRes = await fetch(`/api/staff?action=admin_all_employees&adminId=${currentEmployee?.id}&adminPin=${pin}`);
                         const rawData = await empRes.json();
                         
+                        console.log("[Planificador] Response status:", empRes.status);
+                        console.log("[Planificador] Raw data received:", rawData);
+
                         if (!empRes.ok) {
                             throw new Error(rawData.error || "Error de autorización");
                         }
@@ -528,6 +532,7 @@
                     }
 
                     if (!Array.isArray(allEmployees) || allEmployees.length === 0) {
+                        console.error("[Planificador] allEmployees is still empty/invalid:", allEmployees);
                         throw new Error("No hay empleados activos o no se pudo cargar la lista.");
                     }
 
