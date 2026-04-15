@@ -122,10 +122,10 @@ module.exports = async function handler(req, res) {
         // --- 4. Admin Actions ---
         const isAdminAction = action.startsWith('admin_');
         if (isAdminAction) {
-            const { adminPin } = req.query.adminId ? req.query : req.body;
-            const cleanPin = (adminPin || '').replace('Bearer ', '').trim();
+            const adminPin = req.query.adminPin || req.body.adminPin || req.query.adminId; // Fallback to adminId if misnamed
+            const cleanPin = (adminPin || '').toString().replace('Bearer ', '').trim();
             
-            // Check if THIS PIN belongs to an admin
+            console.log(`[Admin Auth Attempt] Action: ${action}, PIN: ${cleanPin ? '****' : 'MISSING'}`);
             const { data: admin, error: authError } = await supabase.from('employees')
                 .select('id, name, is_admin, role')
                 .eq('pin', cleanPin)
