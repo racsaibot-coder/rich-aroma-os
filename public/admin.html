@@ -1627,15 +1627,17 @@
                         : `<span class="bg-red-100 text-red-800 px-2 py-1 rounded-full text-[10px] font-bold uppercase">Disabled</span>`;
                         
                     const actionBtn = isActive
-                        ? `<button onclick="toggleEmployeeStatus('${emp.id}', false)" class="text-red-500 hover:text-red-700 text-sm font-bold"><i class="fas fa-ban"></i> Disable</button>`
-                        : `<button onclick="toggleEmployeeStatus('${emp.id}', true)" class="text-green-500 hover:text-green-700 text-sm font-bold"><i class="fas fa-check-circle"></i> Enable</button>`;
+                        ? `<button onclick="toggleEmployeeStatus('${emp.id}', false)" class="text-red-500 hover:text-red-700 text-sm font-bold mr-3"><i class="fas fa-ban"></i> Disable</button>`
+                        : `<button onclick="toggleEmployeeStatus('${emp.id}', true)" class="text-green-500 hover:text-green-700 text-sm font-bold mr-3"><i class="fas fa-check-circle"></i> Enable</button>`;
+
+                    const deleteBtn = `<button onclick="deleteEmployee('${emp.id}', '${escapeHtml(emp.name)}')" class="text-gray-400 hover:text-red-600 text-sm font-bold"><i class="fas fa-trash"></i></button>`;
 
                     row.innerHTML = `
                         <td class="p-4 font-bold text-gray-800">${escapeHtml(emp.name)}</td>
                         <td class="p-4 text-gray-600 capitalize">${escapeHtml(emp.role)}</td>
                         <td class="p-4 font-mono text-gray-600 tracking-widest">${escapeHtml(emp.pin || '----')}</td>
                         <td class="p-4">${statusBadge}</td>
-                        <td class="p-4 text-right">${actionBtn}</td>
+                        <td class="p-4 text-right">${actionBtn}${deleteBtn}</td>
                     `;
                     tbody.appendChild(row);
                 });
@@ -1682,7 +1684,7 @@
         
         async function toggleEmployeeStatus(id, isActive) {
             if(!confirm(`Are you sure you want to ${isActive ? 'enable' : 'disable'} this employee?`)) return;
-            
+
             try {
                 const res = await fetch(`/api/admin/employees/${id}`, {
                     method: 'PUT',
@@ -1699,6 +1701,25 @@
             }
         }
 
+        async function deleteEmployee(id, name) {
+            if(!confirm(`⚠️ ¿ELIMINAR PERMANENTEMENTE A ${name}?\n\nEsta acción no se puede deshacer y eliminará todo su historial.`)) return;
+
+            try {
+                const res = await fetch(`/api/admin/employees?id=${id}`, {
+                    method: 'DELETE',
+                    headers: getHeaders()
+                });
+                if(res.ok) {
+                    loadEmployees();
+                } else {
+                    const data = await res.json();
+                    alert("Error: " + (data.error || "No se pudo eliminar"));
+                }
+            } catch(e) {
+                console.error(e);
+                alert("Network error.");
+            }
+        }
         // Basic HTML escaper to prevent XSS
         function escapeHtml(unsafe) {
             return (unsafe || '').toString()

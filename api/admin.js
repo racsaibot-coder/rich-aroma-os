@@ -367,6 +367,16 @@ module.exports = async function handler(req, res) {
         return res.json(data);
     }
 
+    if (action === 'employees' && req.method === 'DELETE') {
+        if (!isAdmin) return res.status(403).json({ error: "Admin access required" });
+        const targetId = id || req.query.id;
+        if (!targetId) return res.status(400).json({ error: "Employee ID required" });
+        
+        const { error } = await supabase.from('employees').delete().eq('id', targetId);
+        if (error) return res.status(500).json({ error: error.message });
+        return res.json({ success: true });
+    }
+
     // LEADS
     if (action === 'leads' && req.method === 'GET') {
         if (!isAdmin) return res.status(403).json({ error: "Admin access required" });
