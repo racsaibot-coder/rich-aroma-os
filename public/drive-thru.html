@@ -429,19 +429,73 @@
         function renderMenu() {
             const grid = document.getElementById('menu-grid');
             const search = selectedCategory.toLowerCase();
-            const filtered = menu.filter(i => {
+            let filtered = (selectedCategory === 'all') ? menu : menu.filter(i => {
                 const cat = (i.category || '').toLowerCase();
                 const name = (i.name || '').toLowerCase();
                 const id = (i.id || '').toLowerCase();
+                
                 if (search === 'secreto') return cat.includes('secret') || id.startsWith('secret_');
                 if (search === 'postres') return cat.includes('reposteria') || cat.includes('pastry');
                 if (search === 'sides') return cat.includes('side') || cat.includes('acompañamiento');
-                if (search === 'combos') return i.id.startsWith('combo_') || name.includes('combo');
+                if (search === 'combos') return id.startsWith('combo_') || name.includes('combo');
                 if (search === 'calientes') return cat.includes('hot') || cat.includes('coffee') || cat.includes('caliente');
-                if (search === 'heladas') return cat.includes('cold') || cat.includes('drink') || cat.includes('helada') || cat.includes('frappe');
+                if (search === 'heladas') {
+                    if (name.includes('te') && !name.includes('frappe')) return false;
+                    return cat.includes('cold') || cat.includes('drink') || cat.includes('helada') || cat.includes('frappe') || cat.includes('granita');
+                }
                 if (search === 'comida') return (cat.includes('food') || cat.includes('comida')) && !name.includes('combo');
+                
                 return cat.includes(search);
             });
+
+            // Sorting
+            if (search === 'combos') {
+                const sortOrder = ['combo_1', 'combo_2', 'combo_3', 'combo_4'];
+                filtered.sort((a, b) => {
+                    const indexA = sortOrder.indexOf(a.id);
+                    const indexB = sortOrder.indexOf(b.id);
+                    if (indexA !== -1 && indexB !== -1) return indexA - indexB;
+                    if (indexA !== -1) return -1;
+                    if (indexB !== -1) return 1;
+                    return 0;
+                });
+            }
+
+            if (search === 'heladas') {
+                const sortOrder = ['cold_supreme_frappe', 'cold_fresa_frappe', 'cold_coffee_frappe', 'cold_french_vanilla', 'cold_caramel_iced'];
+                filtered.sort((a, b) => {
+                    const indexA = sortOrder.indexOf(a.id);
+                    const indexB = sortOrder.indexOf(b.id);
+                    if (indexA !== -1 && indexB !== -1) return indexA - indexB;
+                    if (indexA !== -1) return -1;
+                    if (indexB !== -1) return 1;
+                    return 0;
+                });
+            }
+
+            if (search === 'comida') {
+                const sortOrder = [
+                    'food_avocado_toast_huevo',
+                    'food_banano_almond_toast',
+                    'food_chicken_salad_bowl',
+                    'food_baleadas',
+                    'food_chicken_melt',
+                    'food_grill_cheese_jamon',
+                    'food_grill_cheese',
+                    'food_papas',
+                    'food_crepas_3',
+                    'food_crepas_1'
+                ];
+                filtered.sort((a, b) => {
+                    const indexA = sortOrder.indexOf(a.id);
+                    const indexB = sortOrder.indexOf(b.id);
+                    if (indexA !== -1 && indexB !== -1) return indexA - indexB;
+                    if (indexA !== -1) return -1;
+                    if (indexB !== -1) return 1;
+                    return 0;
+                });
+            }
+
             grid.innerHTML = filtered.map(i => `
                 <div onclick="openMod('${i.id}')" class="bg-white/5 border border-white/5 rounded-3xl overflow-hidden active:scale-95 transition-all flex flex-col h-44 relative ${i.available ? '' : 'opacity-40 grayscale'}">
                     <img src="${i.image}" class="h-28 w-full object-cover opacity-60">

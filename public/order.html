@@ -382,14 +382,25 @@
             // --- MENU LOGIC ---
             function getItemCategory(item) {
                 var cat = (item.category || '').toLowerCase();
+                var name = (item.name || '').toLowerCase();
                 var id = (item.id || '').toLowerCase();
                 if (cat.includes('secret') || id.startsWith('secret_')) return 'Menú Secreto';
-                if (id.startsWith('combo_') || item.name.toLowerCase().includes('combo')) return 'Combos';
-                if (cat.includes('hot') || cat.includes('coffee')) return 'Calientes';
-                if (cat.includes('cold') || cat.includes('drink')) return 'Heladas';
+                if (id.startsWith('combo_') || name.includes('combo')) return 'Combos';
+                if (cat.includes('hot') || cat.includes('coffee') || cat.includes('caliente')) return 'Calientes';
+                
+                // Heladas: Remove 'Te' from Heladas unless it's a frappe
+                if (cat.includes('cold') || cat.includes('drink') || cat.includes('helada') || cat.includes('frappe') || cat.includes('granita')) {
+                    if (name.includes('te') && !name.includes('frappe')) return 'Otros';
+                    return 'Heladas';
+                }
+                
                 if (cat.includes('pastry') || cat.includes('cake') || cat.includes('reposteria')) return 'Repostería';
                 if (cat.includes('side') || cat.includes('acompañamiento')) return 'Acompañamientos';
-                if (cat.includes('food') || cat.includes('comida')) return 'Comida';
+                
+                if (cat.includes('food') || cat.includes('comida')) {
+                    if (id.startsWith('combo_') || name.includes('combo')) return 'Combos';
+                    return 'Comida';
+                }
                 return 'Otros';
             }
 
@@ -409,6 +420,38 @@
                     var cat = getItemCategory(item);
                     if (!categories[cat]) categories[cat] = [];
                     categories[cat].push(item);
+                });
+
+                // Custom sort functions for specific categories
+                var categorySortOrders = {
+                    'Combos': ['combo_1', 'combo_2', 'combo_3', 'combo_4'],
+                    'Heladas': ['cold_supreme_frappe', 'cold_fresa_frappe', 'cold_coffee_frappe', 'cold_french_vanilla', 'cold_caramel_iced'],
+                    'Comida': [
+                        'food_avocado_toast_huevo',
+                        'food_banano_almond_toast',
+                        'food_chicken_salad_bowl',
+                        'food_baleadas',
+                        'food_chicken_melt',
+                        'food_grill_cheese_jamon',
+                        'food_grill_cheese',
+                        'food_papas',
+                        'food_crepas_3',
+                        'food_crepas_1'
+                    ]
+                };
+
+                Object.keys(categories).forEach(function(cat) {
+                    var sortOrder = categorySortOrders[cat];
+                    if (sortOrder) {
+                        categories[cat].sort(function(a, b) {
+                            var indexA = sortOrder.indexOf(a.id);
+                            var indexB = sortOrder.indexOf(b.id);
+                            if (indexA !== -1 && indexB !== -1) return indexA - indexB;
+                            if (indexA !== -1) return -1;
+                            if (indexB !== -1) return 1;
+                            return 0;
+                        });
+                    }
                 });
 
                 var order = ['Combos', 'Calientes', 'Heladas', 'Comida', 'Repostería', 'Acompañamientos', 'Menú Secreto', 'Otros'];
