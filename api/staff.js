@@ -122,19 +122,21 @@ module.exports = async function handler(req, res) {
         // --- 4. Admin Actions ---
         const isAdminAction = action.startsWith('admin_');
         if (isAdminAction) {
-            const { adminId, adminPin } = req.query.adminId ? req.query : req.body;
+            const { adminPin } = req.query.adminId ? req.query : req.body;
             const cleanPin = (adminPin || '').replace('Bearer ', '').trim();
             
-            const { data: admin, error: authError } = await supabase.from('employees').select('id, name, is_admin, role').eq('id', adminId).eq('pin', cleanPin).single();
+            // Check if THIS PIN belongs to an admin
+            const { data: admin, error: authError } = await supabase.from('employees')
+                .select('id, name, is_admin, role')
+                .eq('pin', cleanPin)
+                .eq('active', true)
+                .single();
             
-            console.log(`[Admin Auth] ID: ${adminId}, PIN: ${cleanPin}, Found: ${!!admin}, Error: ${authError?.message || 'None'}`);
-            if (admin) console.log(`[Admin Auth] Match - Role: ${admin.role}, is_admin: ${admin.is_admin}`);
-
             const isAdmin = admin && (admin.is_admin === true || admin.role?.toLowerCase() === 'admin');
             
             if (!isAdmin) {
-                console.log(`[Admin Auth] Access Denied for ${adminId}`);
-                return res.status(403).json({ error: "Admin access required", details: authError?.message });
+                console.log(`[Admin Auth] Access Denied for PIN: ${cleanPin}`);
+                return res.status(403).json({ error: "Admin access required" });
             }
 
             if (action === 'admin_all_employees') {
