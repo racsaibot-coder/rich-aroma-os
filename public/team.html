@@ -80,6 +80,7 @@
                 <div class="space-y-1">
                     <p class="text-[10px] uppercase font-black tracking-[0.3em] text-white/30">Estado de Turno</p>
                     <h3 id="clock-status" class="text-2xl font-black text-white">Fuera de Turno</h3>
+                    <p id="clock-start-display" class="text-xs font-bold text-gold/60 hidden italic"></p>
                 </div>
                 <div id="clock-timer" class="text-5xl font-black font-mono text-gold tabular-nums">00:00:00</div>
                 
@@ -265,6 +266,12 @@
                     startTimer(clockStartTime);
                     
                     document.getElementById('clock-status').innerText = 'En Turno';
+                    
+                    const startDisp = document.getElementById('clock-start-display');
+                    const entryTime = clockStartTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                    startDisp.innerText = `Entrada: ${entryTime}`;
+                    startDisp.classList.remove('hidden');
+
                     const mainBtn = document.getElementById('clock-btn');
                     mainBtn.innerText = 'MARCAR SALIDA';
                     mainBtn.classList.replace('bg-gold', 'bg-red-500');
@@ -493,9 +500,112 @@
                     </div>
                 `;
             } else if (type === 'scheduling') {
-                title.innerText = "Planificador";
-                content.innerHTML = '<p class="text-white/20 italic text-center py-10">Módulo de planificación en construcción.</p>';
+                title.innerText = "Planificador de Turnos";
+                content.innerHTML = `
+                    <div class="space-y-6">
+                        <div class="bg-white/5 p-6 rounded-3xl border border-white/10 space-y-4">
+                            <p class="text-[10px] font-black text-gold uppercase tracking-widest">Nuevo Turno</p>
+                            <div class="grid grid-cols-1 gap-3">
+                                <select id="shift-emp-id" class="w-full bg-charcoal text-white p-4 rounded-2xl border border-white/10 text-sm font-bold">
+                                    <option value="">Seleccionar Empleado</option>
+                                    ${allEmployees.map(e => `<option value="${e.id}">${e.name}</option>`).join('')}
+                                </select>
+                                <input type="date" id="shift-date" class="w-full bg-charcoal text-white p-4 rounded-2xl border border-white/10 text-sm font-bold" value="${new Date().toISOString().split('T')[0]}">
+                                <div class="grid grid-cols-2 gap-3">
+                                    <div>
+                                        <p class="text-[8px] text-white/40 uppercase mb-1 ml-2">Entrada</p>
+                                        <input type="time" id="shift-start" class="w-full bg-charcoal text-white p-4 rounded-2xl border border-white/10 text-sm font-bold" value="08:00">
+                                    </div>
+                                    <div>
+                                        <p class="text-[8px] text-white/40 uppercase mb-1 ml-2">Salida</p>
+                                        <input type="time" id="shift-end" class="w-full bg-charcoal text-white p-4 rounded-2xl border border-white/10 text-sm font-bold" value="16:00">
+                                    </div>
+                                </div>
+                                <button onclick="saveShift()" id="save-shift-btn" class="w-full py-4 bg-gold text-dark font-black rounded-2xl active:scale-95 transition-all mt-2">GUARDAR TURNO</button>
+                            </div>
+                        </div>
+                        <div id="admin-schedule-list" class="space-y-3">
+                            <p class="text-center py-10 opacity-30 text-xs italic">Cargando turnos recientes...</p>
+                        </div>
+                    </div>
+                `;
+                loadAdminSchedule();
             }
+        }
+
+        async function saveShift() {
+            const btn = document.getElementById('save-shift-btn');
+            const payload = {
+                assignments: [{
+                    employee_id: document.getElementById('shift-emp-id').value,
+                    shift_date: document.getElementById('shift-date').value,
+                    start_time: document.getElementById('shift-start').value,
+                    end_time: document.getElementById('shift-end').value
+                }]
+            };
+
+            if (!payload.assignments[0].employee_id) return alert("Selecciona un empleado");
+
+            btn.disabled = true;
+            btn.innerText = "GUARDANDO...";
+
+            try {
+                const adminParams = `adminId=${currentEmployee.id}&adminPin=${localStorage.getItem('ra_staff_pin')}`;
+                const res = await fetch(`/api/staff?action=admin_shift_assignments&${adminParams}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                if (res.ok) {
+                    alert("Turno guardado correctamente");
+                    openAdminModal('scheduling'); // Refresh
+                }
+            } catch (e) { console.error(e); }
+            btn.disabled = false;
+            btn.innerText = "GUARDAR TURNO";
+        }
+
+        async function deleteShift(id) {
+            if (!confirm("¿Eliminar este turno?")) return;
+            try {
+                const adminParams = `adminId=${currentEmployee.id}&adminPin=${localStorage.getItem('ra_staff_pin')}`;
+                await fetch(`/api/staff?action=admin_shift_assignments&${adminParams}`, {
+                    method: 'DELETE',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ id })
+                });
+                openAdminModal('scheduling'); // Refresh
+            } catch (e) { console.error(e); }
+        }
+
+        async function loadAdminSchedule() {
+            const container = document.getElementById('admin-schedule-list');
+            const today = new Date().toISOString().split('T')[0];
+            const end = new Date();
+            end.setDate(end.getDate() + 14);
+            const endDate = end.toISOString().split('T')[0];
+
+            try {
+                const adminParams = `adminId=${currentEmployee.id}&adminPin=${localStorage.getItem('ra_staff_pin')}`;
+                const res = await fetch(`/api/staff?action=admin_shift_assignments&startDate=${today}&endDate=${endDate}&${adminParams}`);
+                const data = await res.json();
+
+                if (data.length === 0) {
+                    container.innerHTML = '<p class="text-center py-10 opacity-30 text-xs italic">No hay turnos próximos.</p>';
+                    return;
+                }
+
+                container.innerHTML = `<p class="text-[10px] font-black text-white/30 uppercase tracking-widest mb-2">Próximos Turnos (14 días)</p>` + 
+                    data.map(s => `
+                    <div class="bg-charcoal p-4 rounded-2xl border border-white/5 flex justify-between items-center">
+                        <div>
+                            <p class="font-bold text-sm">${s.employees?.name || '---'}</p>
+                            <p class="text-[10px] text-white/40 uppercase">${s.shift_date} • ${s.start_time.slice(0,5)} - ${s.end_time.slice(0,5)}</p>
+                        </div>
+                        <button onclick="deleteShift('${s.id}')" class="text-red-500/50 hover:text-red-500 p-2 text-xs"><i class="fas fa-trash"></i></button>
+                    </div>
+                `).join('');
+            } catch (e) { console.error(e); }
         }
 
         function closeAdminModal() { document.getElementById('admin-modal').classList.add('hidden'); }
