@@ -458,7 +458,7 @@
             } catch (e) { console.error(e); }
         }
 
-        async function openAdminModal(type) {
+        window.openAdminModal = async function(type) {
             const modal = document.getElementById('admin-modal');
             const title = document.getElementById('admin-modal-title');
             const content = document.getElementById('admin-modal-content');
@@ -475,7 +475,7 @@
                 end.setDate(start.getDate() + 7);
 
                 content.innerHTML = '<p class="text-center py-10"><i class="fas fa-spinner fa-spin"></i> Cargando nómina...</p>';
-                
+
                 const adminParams = `adminId=${currentEmployee.id}&adminPin=${localStorage.getItem('ra_staff_pin')}`;
                 const res = await fetch(`/api/staff?action=admin_payroll_summary&startDate=${start.toISOString()}&endDate=${end.toISOString()}&${adminParams}`);
                 const data = await res.json();
@@ -533,7 +533,7 @@
             }
         }
 
-        async function saveShift() {
+        window.saveShift = async function() {
             const btn = document.getElementById('save-shift-btn');
             const payload = {
                 assignments: [{
@@ -565,7 +565,7 @@
             btn.innerText = "GUARDAR TURNO";
         }
 
-        async function deleteShift(id) {
+        window.deleteShift = async function(id) {
             if (!confirm("¿Eliminar este turno?")) return;
             try {
                 const adminParams = `adminId=${currentEmployee.id}&adminPin=${localStorage.getItem('ra_staff_pin')}`;
@@ -578,7 +578,7 @@
             } catch (e) { console.error(e); }
         }
 
-        async function loadAdminSchedule() {
+        window.loadAdminSchedule = async function() {
             const container = document.getElementById('admin-schedule-list');
             const today = new Date().toISOString().split('T')[0];
             const end = new Date();
@@ -608,8 +608,7 @@
             } catch (e) { console.error(e); }
         }
 
-        function closeAdminModal() { document.getElementById('admin-modal').classList.add('hidden'); }
-
+        window.closeAdminModal = function() { document.getElementById('admin-modal').classList.add('hidden'); }
         window.onload = () => {
             const pin = localStorage.getItem('ra_staff_pin');
             if (pin) { document.getElementById('staff-pin').value = pin; login(); }
