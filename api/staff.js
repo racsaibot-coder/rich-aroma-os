@@ -155,6 +155,29 @@ module.exports = async function handler(req, res) {
                 return res.json(data || []);
             }
 
+            if (action === 'admin_live_status') {
+                const { data: emps } = await supabase.from('employees').select('id, name').eq('active', true).order('name');
+                const { data: punches } = await supabase.from('time_entries')
+                    .select('employee_id, type, timestamp')
+                    .order('timestamp', { ascending: false });
+                
+                const report = emps.map(e => {
+                    const lastPunch = punches.find(p => p.employee_id === e.id);
+                    let status = 'out';
+                    if (lastPunch) {
+                        if (lastPunch.type === 'in' || lastPunch.type === 'break_end') status = 'in';
+                        else if (lastPunch.type === 'break_start') status = 'break';
+                    }
+                    return {
+                        id: e.id,
+                        name: e.name,
+                        status,
+                        last_punch: lastPunch?.timestamp
+                    };
+                });
+                return res.json(report);
+            }
+
             if (action === 'admin_payroll_summary') {
                 const { startDate, endDate } = req.query;
                 const { data: emps } = await supabase.from('employees').select('id, name, hourly_rate').eq('active', true);
