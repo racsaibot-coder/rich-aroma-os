@@ -170,17 +170,12 @@
     <!-- Admin Modal -->
     <div id="admin-modal" class="fixed inset-0 bg-dark/95 z-[200] hidden flex flex-col p-6 overflow-y-auto">
         <div class="flex justify-between items-center mb-8">
-            <h2 id="admin-modal-title" class="text-2xl font-black">---</h2>
-            <button onclick="closeAdminModal()" class="w-12 h-12 rounded-full bg-white/10 flex items-center justify-center">
-                <i class="fas fa-times"></i>
+            <h2 id="admin-modal-title" class="text-2xl font-black text-gold">---</h2>
+            <button onclick="closeAdminModal()" class="w-12 h-12 rounded-full bg-white/10 flex items-center justify-center text-white">
+                <i class="fas fa-times text-xl"></i>
             </button>
         </div>
-        <div id="admin-modal-content" class="space-y-6"></div>
-        <div class="mt-auto pt-8">
-            <button id="admin-modal-save" class="w-full bg-gold text-dark py-5 rounded-2xl font-black text-lg shadow-xl shadow-gold/20 active:scale-95 transition-all">
-                GUARDAR
-            </button>
-        </div>
+        <div id="admin-modal-content" class="space-y-6 pb-10"></div>
     </div>
 
     <script>
@@ -474,58 +469,78 @@
                 const end = new Date(start);
                 end.setDate(start.getDate() + 7);
 
-                content.innerHTML = '<p class="text-center py-10"><i class="fas fa-spinner fa-spin"></i> Cargando nómina...</p>';
+                content.innerHTML = '<p class="text-center py-10 text-white/40"><i class="fas fa-spinner fa-spin mr-2"></i> Cargando nómina...</p>';
 
-                const adminParams = `adminId=${currentEmployee.id}&adminPin=${localStorage.getItem('ra_staff_pin')}`;
-                const res = await fetch(`/api/staff?action=admin_payroll_summary&startDate=${start.toISOString()}&endDate=${end.toISOString()}&${adminParams}`);
-                const data = await res.json();
+                try {
+                    const adminParams = `adminId=${currentEmployee.id}&adminPin=${localStorage.getItem('ra_staff_pin')}`;
+                    const res = await fetch(`/api/staff?action=admin_payroll_summary&startDate=${start.toISOString()}&endDate=${end.toISOString()}&${adminParams}`);
+                    const data = await res.json();
 
-                content.innerHTML = `
-                    <div class="space-y-4">
-                        <div class="bg-white/5 p-4 rounded-2xl border border-white/10 text-center">
-                            <p class="text-[10px] font-black text-gold uppercase tracking-widest mb-1">Semana Actual</p>
-                            <p class="text-xs text-white/60">${start.toLocaleDateString()} al ${new Date(end.getTime()-1).toLocaleDateString()}</p>
-                        </div>
-                        <div class="space-y-2">
-                            ${data.map(emp => `
-                                <div class="bg-charcoal p-4 rounded-2xl border border-white/5 flex justify-between items-center">
-                                    <div>
-                                        <p class="font-bold text-sm">${emp.name}</p>
-                                        <p class="text-[10px] text-white/40 uppercase">${emp.hours} horas trabajadas</p>
+                    content.innerHTML = `
+                        <div class="space-y-6">
+                            <div class="bg-white/5 p-6 rounded-3xl border border-white/10 text-center">
+                                <p class="text-[10px] font-black text-gold uppercase tracking-widest mb-1">Semana Actual</p>
+                                <p class="text-xs text-white/60">${start.toLocaleDateString()} al ${new Date(end.getTime()-1).toLocaleDateString()}</p>
+                            </div>
+                            <div class="space-y-3">
+                                ${data.map(emp => `
+                                    <div class="bg-charcoal p-5 rounded-3xl border border-white/5 flex justify-between items-center">
+                                        <div>
+                                            <p class="font-bold text-white text-lg">${emp.name}</p>
+                                            <p class="text-[10px] text-white/40 uppercase font-black tracking-widest">${emp.hours} horas trabajadas</p>
+                                        </div>
+                                        <p class="text-gold font-black text-xl">L ${emp.pay}</p>
                                     </div>
-                                    <p class="text-gold font-black">L ${emp.pay}</p>
-                                </div>
-                            `).join('')}
+                                `).join('')}
+                            </div>
+                            <button onclick="closeAdminModal()" class="w-full py-5 bg-white/5 border border-white/10 rounded-2xl text-white/60 font-black text-sm uppercase tracking-widest">Cerrar</button>
                         </div>
-                    </div>
-                `;
+                    `;
+                } catch(e) {
+                    content.innerHTML = `<p class="text-red-400 text-center py-10">Error al cargar nómina</p>`;
+                }
             } else if (type === 'scheduling') {
-                title.innerText = "Planificador de Turnos";
+                title.innerText = "Planificador";
                 content.innerHTML = `
-                    <div class="space-y-6">
-                        <div class="bg-white/5 p-6 rounded-3xl border border-white/10 space-y-4">
-                            <p class="text-[10px] font-black text-gold uppercase tracking-widest">Nuevo Turno</p>
-                            <div class="grid grid-cols-1 gap-3">
-                                <select id="shift-emp-id" class="w-full bg-charcoal text-white p-4 rounded-2xl border border-white/10 text-sm font-bold">
-                                    <option value="">Seleccionar Empleado</option>
-                                    ${allEmployees.map(e => `<option value="${e.id}">${e.name}</option>`).join('')}
-                                </select>
-                                <input type="date" id="shift-date" class="w-full bg-charcoal text-white p-4 rounded-2xl border border-white/10 text-sm font-bold" value="${new Date().toISOString().split('T')[0]}">
-                                <div class="grid grid-cols-2 gap-3">
-                                    <div>
-                                        <p class="text-[8px] text-white/40 uppercase mb-1 ml-2">Entrada</p>
-                                        <input type="time" id="shift-start" class="w-full bg-charcoal text-white p-4 rounded-2xl border border-white/10 text-sm font-bold" value="08:00">
+                    <div class="space-y-8">
+                        <div class="bg-charcoal p-6 rounded-[2rem] border border-gold/20 space-y-6 shadow-2xl shadow-gold/5">
+                            <div class="space-y-1">
+                                <p class="text-[10px] font-black text-gold uppercase tracking-widest border-b border-gold/10 pb-2">Asignar Nuevo Turno</p>
+                            </div>
+                            
+                            <div class="space-y-4">
+                                <div class="space-y-2">
+                                    <label class="text-[10px] uppercase font-black text-white/30 ml-2">Empleado</label>
+                                    <select id="shift-emp-id" class="w-full bg-dark text-white p-5 rounded-2xl border border-white/10 text-sm font-bold focus:border-gold/50 transition-all outline-none appearance-none">
+                                        <option value="">Seleccionar Empleado...</option>
+                                        ${allEmployees.map(e => `<option value="${e.id}">${e.name}</option>`).join('')}
+                                    </select>
+                                </div>
+
+                                <div class="space-y-2">
+                                    <label class="text-[10px] uppercase font-black text-white/30 ml-2">Fecha</label>
+                                    <input type="date" id="shift-date" class="w-full bg-dark text-white p-5 rounded-2xl border border-white/10 text-sm font-bold focus:border-gold/50 transition-all outline-none" value="${new Date().toISOString().split('T')[0]}">
+                                </div>
+
+                                <div class="grid grid-cols-2 gap-4">
+                                    <div class="space-y-2">
+                                        <label class="text-[10px] uppercase font-black text-white/30 ml-2">Entrada</label>
+                                        <input type="time" id="shift-start" class="w-full bg-dark text-white p-5 rounded-2xl border border-white/10 text-sm font-bold focus:border-gold/50 transition-all outline-none" value="08:00">
                                     </div>
-                                    <div>
-                                        <p class="text-[8px] text-white/40 uppercase mb-1 ml-2">Salida</p>
-                                        <input type="time" id="shift-end" class="w-full bg-charcoal text-white p-4 rounded-2xl border border-white/10 text-sm font-bold" value="16:00">
+                                    <div class="space-y-2">
+                                        <label class="text-[10px] uppercase font-black text-white/30 ml-2">Salida</label>
+                                        <input type="time" id="shift-end" class="w-full bg-dark text-white p-5 rounded-2xl border border-white/10 text-sm font-bold focus:border-gold/50 transition-all outline-none" value="16:00">
                                     </div>
                                 </div>
-                                <button onclick="saveShift()" id="save-shift-btn" class="w-full py-4 bg-gold text-dark font-black rounded-2xl active:scale-95 transition-all mt-2">GUARDAR TURNO</button>
+
+                                <button onclick="saveShift()" id="save-shift-btn" class="w-full py-6 bg-gold text-dark font-black rounded-3xl active:scale-95 transition-all mt-2 shadow-lg shadow-gold/20 text-lg">
+                                    GUARDAR TURNO
+                                </button>
                             </div>
                         </div>
-                        <div id="admin-schedule-list" class="space-y-3">
-                            <p class="text-center py-10 opacity-30 text-xs italic">Cargando turnos recientes...</p>
+
+                        <div id="admin-schedule-list" class="space-y-4">
+                            <p class="text-center py-10 opacity-30 text-xs italic">Cargando turnos próximos...</p>
                         </div>
                     </div>
                 `;
