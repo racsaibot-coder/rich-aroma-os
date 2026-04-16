@@ -148,6 +148,14 @@
                 <!-- Steps here -->
             </div>
         </div>
+
+        <!-- QR Code Section -->
+        <div id="order-qr-container" class="bg-white p-6 rounded-3xl mb-6 flex flex-col items-center justify-center gap-3 shadow-2xl ring-4 ring-gold/20">
+            <p class="text-[10px] font-black text-dark/40 uppercase tracking-widest">Escanea en Caja</p>
+            <img id="order-qr-img" src="" class="w-48 h-48">
+            <p id="order-qr-id" class="text-[10px] font-mono font-bold text-dark/30 uppercase tracking-tighter">---</p>
+        </div>
+
         <button onclick="newOrder()" class="w-full bg-white/5 border border-white/10 text-white py-4 rounded-2xl font-bold shadow hover:bg-white/10 transition mt-4">Hacer Otra Orden</button>
     </div>
 
@@ -729,8 +737,21 @@
             };
 
             window.submitOrder = async function() {
-                let guestInfo = null;
+                let guestInfo = "";
                 if (!currentCustomer) {
+                    const wantLogin = await showUIModal({
+                        title: '¿Tienes cuenta?',
+                        message: 'Inicia sesión para acumular puntos y pagar con Rico Cash.',
+                        confirmText: 'Iniciar Sesión',
+                        cancelText: 'Seguir como Invitado'
+                    });
+
+                    if (wantLogin) {
+                        showView('profile-view');
+                        closeCartModal();
+                        return;
+                    }
+
                     const guestName = await showUIModal({
                         title: 'Tu Nombre',
                         message: 'Para procesar tu orden, por favor ingresa tu nombre:',
@@ -758,6 +779,11 @@
                 btn.disabled = true;
 
                 var total = cart.reduce(function(s, i) { return s + i.finalPrice; }, 0);
+                
+                // Add "Mobile Order" tag to notes so POS tracks it correctly
+                let finalNotes = `Mobile Order (${fulfillmentType === 'pickup' ? 'Llevar' : 'Aquí'})`;
+                if (guestInfo) finalNotes += ` ${guestInfo}`;
+
                 var payload = {
                     items: cart,
                     total: total,
@@ -766,7 +792,7 @@
                     paymentMethod: 'cash',
                     customerId: currentCustomer ? currentCustomer.id : null,
                     pin: localStorage.getItem('ra_customer_pin'),
-                    notes: guestInfo || null
+                    notes: finalNotes
                 };
                 fetch('/api/orders', {
                     method: 'POST',
@@ -895,8 +921,19 @@
                     if (el) el.classList.add('hidden');
                 });
                 document.getElementById('tracking-view').classList.remove('hidden');
-                document.getElementById('track-order-num').innerText = activeOrder.order_number || activeOrder.id.slice(-4);
+                
+                const num = activeOrder.order_number || activeOrder.id.slice(-4);
+                document.getElementById('track-order-num').innerText = num;
                 document.getElementById('track-time').innerText = new Date(activeOrder.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+                
+                // Generate QR Code using Google Charts API
+                const qrImg = document.getElementById('order-qr-img');
+                const qrId = document.getElementById('order-qr-id');
+                const orderData = activeOrder.id; // Encode the full order ID
+                qrImg.src = `https://chart.googleapis.com/chart?cht=qr&chs=300x300&chl=${encodeURIComponent(orderData)}&chld=M|0`;
+                qrId.innerText = activeOrder.id;
+
+                updateNavActive('nav-menu'); // Keep menu nav active or add a tracking one if needed
             };
 
             function updateNavActive(activeId) {
