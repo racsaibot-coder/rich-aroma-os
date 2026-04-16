@@ -467,7 +467,8 @@
 
         async function loadAdminData() {
             const pin = localStorage.getItem('ra_staff_pin');
-            const adminParams = `adminId=${currentEmployee.id}&adminPin=${pin}`;
+            const v = Date.now();
+            const adminParams = `adminId=${currentEmployee.id}&adminPin=${pin}&v=${v}`;
             console.log("Loading Admin Data with params:", adminParams);
             try {
                 const [empRes, availRes] = await Promise.all([
@@ -500,7 +501,9 @@
             content.innerHTML = '<p class="text-center py-10 text-white/40"><i class="fas fa-spinner fa-spin mr-2"></i> Cargando...</p>';
 
             try {
-                const adminParams = `adminId=${currentEmployee.id}&adminPin=${localStorage.getItem('ra_staff_pin')}`;
+                const pin = localStorage.getItem('ra_staff_pin');
+                const v = Date.now();
+                const adminParams = `adminId=${currentEmployee.id}&adminPin=${pin}&v=${v}`;
 
                 if (type === 'payroll') {
                     title.innerText = "Resumen de Nómina";
