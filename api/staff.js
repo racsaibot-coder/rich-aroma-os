@@ -156,6 +156,12 @@ module.exports = async function handler(req, res) {
                 return res.json(data || []);
             }
 
+            if (action === 'admin_staff_availability') {
+                const { data, error } = await supabase.from('employee_availability').select('*, employees(name)');
+                if (error) return res.status(500).json({ error: error.message });
+                return res.json(data || []);
+            }
+
             if (action === 'admin_live_status') {
                 const { data: emps } = await supabase.from('employees').select('id, name').eq('active', true).order('name');
                 const { data: punches } = await supabase.from('time_entries')

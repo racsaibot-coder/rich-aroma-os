@@ -190,7 +190,10 @@
         let timerInterval = null;
         let availabilityData = [];
         let allEmployees = [];
-        let businessNeeds = [];
+        let globalShifts = [];
+        let allStaffAvailability = [];
+        let currentCalMonth = new Date().getMonth();
+        let currentCalYear = new Date().getFullYear();
 
         const DAYS = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
 
@@ -467,14 +470,18 @@
             const adminParams = `adminId=${currentEmployee.id}&adminPin=${pin}`;
             console.log("Loading Admin Data with params:", adminParams);
             try {
-                const empRes = await fetch(`/api/staff?action=admin_all_employees&${adminParams}`);
-                const rawData = await empRes.json();
-                if (empRes.ok) {
-                    allEmployees = Array.isArray(rawData) ? rawData : (rawData.employees || []);
-                    console.log("Loaded employees:", allEmployees.length);
-                } else {
-                    console.error("Failed to load employees:", rawData.error);
-                }
+                const [empRes, availRes] = await Promise.all([
+                    fetch(`/api/staff?action=admin_all_employees&${adminParams}`),
+                    fetch(`/api/staff?action=admin_staff_availability&${adminParams}`)
+                ]);
+                
+                const rawEmps = await empRes.json();
+                allEmployees = Array.isArray(rawEmps) ? rawEmps : (rawEmps.employees || []);
+                
+                allStaffAvailability = await availRes.json();
+                
+                console.log("Loaded employees:", allEmployees.length);
+                console.log("Loaded staff availability records:", allStaffAvailability.length);
             } catch (e) { console.error("Admin data load error:", e); }
         }
 
@@ -535,62 +542,15 @@
                     
                     // Safety: Ensure allEmployees is loaded
                     if (!allEmployees || allEmployees.length === 0) {
-                        const pin = localStorage.getItem('ra_staff_pin');
-                        console.log(`[Planificador] Fetching employees for adminId: ${currentEmployee?.id}, pin: ${pin}`);
-                        
-                        const empRes = await fetch(`/api/staff?action=admin_all_employees&adminId=${currentEmployee?.id}&adminPin=${pin}`);
-                        const rawData = await empRes.json();
-                        
-                        console.log("[Planificador] Response status:", empRes.status);
-                        console.log("[Planificador] Raw data received:", rawData);
-
-                        if (!empRes.ok) {
-                            throw new Error(rawData.error || "Error de autorización");
-                        }
-                        allEmployees = Array.isArray(rawData) ? rawData : (rawData.employees || []);
+                        await loadAdminData();
                     }
 
                     if (!Array.isArray(allEmployees) || allEmployees.length === 0) {
-                        console.error("[Planificador] allEmployees is still empty/invalid:", allEmployees);
                         throw new Error("No hay empleados activos o no se pudo cargar la lista.");
                     }
 
-                    content.innerHTML = `
-                        <div class="space-y-8">
-                            <div class="bg-charcoal p-6 rounded-[2rem] border border-gold/20 space-y-6 shadow-2xl shadow-gold/5">
-                                <div class="space-y-1">
-                                    <p class="text-[10px] font-black text-gold uppercase tracking-widest border-b border-gold/10 pb-2">Asignar Nuevo Turno</p>
-                                </div>
-                                
-                                <div class="space-y-4">
-                                    <div class="space-y-2">
-                                        <label class="text-[10px] uppercase font-black text-white/30 ml-2">Empleado</label>
-                                        <select id="shift-emp-id" class="w-full bg-dark text-white p-5 rounded-2xl border border-white/10 text-sm font-bold focus:border-gold/50 transition-all outline-none appearance-none">
-                                            <option value="">Seleccionar Empleado...</option>
-                                            ${allEmployees.map(e => `<option value="${e.id}">${e.name}</option>`).join('')}
-                                        </select>
-                                    </div>
-
-                                    <div class="space-y-2">
-                                        <label class="text-[10px] uppercase font-black text-white/30 ml-2">Fecha</label>
-                                        <input type="date" id="shift-date" class="w-full bg-dark text-white p-5 rounded-2xl border border-white/10 text-sm font-bold focus:border-gold/50 transition-all outline-none" value="${new Date().toISOString().split('T')[0]}">
-                                    </div>
-
-                                    <div class="grid grid-cols-2 gap-4">
-                                        <div class="space-y-2">
-                                            <label class="text-[10px] uppercase font-black text-white/30 ml-2">Entrada</label>
-                                            <input type="time" id="shift-start" class="w-full bg-dark text-white p-5 rounded-2xl border border-white/10 text-sm font-bold focus:border-gold/50 transition-all outline-none" value="08:00">
-                                        </div>
-                                        <div class="space-y-2">
-                                            <label class="text-[10px] uppercase font-black text-white/30 ml-2">Salida</label>
-                                            <input type="time" id="shift-end" class="w-full bg-dark text-white p-5 rounded-2xl border border-white/10 text-sm font-bold focus:border-gold/50 transition-all outline-none" value="16:00">
-                                        </div>
-                                    </div>
-
-                                    <button onclick="saveShift()" id="save-shift-btn" class="w-full py-6 bg-gold text-dark font-black rounded-3xl active:scale-95 transition-all mt-2 shadow-lg shadow-gold/20 text-lg">
-                                        GUARDAR TURNO
-                                    </button>
-                                </div>
+                    renderAdminCalendar();
+                }
                             </div>
 
                             <div id="admin-schedule-list" class="space-y-4">
@@ -682,7 +642,7 @@
             btn.innerText = "GUARDAR TURNO";
         }
 
-        window.deleteShift = async function(id) {
+        window.deleteShift = async function(id, fromDetailDate) {
             if (!confirm("¿Eliminar este turno?")) return;
             try {
                 const adminParams = `adminId=${currentEmployee.id}&adminPin=${localStorage.getItem('ra_staff_pin')}`;
@@ -691,59 +651,164 @@
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ id })
                 });
-                openAdminModal('scheduling'); // Refresh
+                if (fromDetailDate) openDayDetail(fromDetailDate);
+                else openAdminModal('scheduling'); 
             } catch (e) { console.error(e); }
         }
 
-        window.loadAdminSchedule = async function() {
-            const container = document.getElementById('admin-schedule-list');
-            const today = new Date().toISOString().split('T')[0];
-            const end = new Date();
-            end.setDate(end.getDate() + 30); // Show full month
-            const endDate = end.toISOString().split('T')[0];
+        window.changeMonth = function(delta) {
+            currentCalMonth += delta;
+            if (currentCalMonth > 11) { currentCalMonth = 0; currentCalYear++; }
+            if (currentCalMonth < 0) { currentCalMonth = 11; currentCalYear--; }
+            renderAdminCalendar();
+        }
+
+        window.renderAdminCalendar = async function() {
+            const content = document.getElementById('admin-modal-content');
+            const pin = localStorage.getItem('ra_staff_pin');
+            const adminParams = `adminId=${currentEmployee.id}&adminPin=${pin}`;
+            
+            // Get first day of month and total days
+            const firstDay = new Date(currentCalYear, currentCalMonth, 1).getDay();
+            const daysInMonth = new Date(currentCalYear, currentCalMonth + 1, 0).getDate();
+            const monthName = new Intl.DateTimeFormat('es-HN', { month: 'long' }).format(new Date(currentCalYear, currentCalMonth));
+
+            content.innerHTML = '<p class="text-center py-10 text-white/40"><i class="fas fa-spinner fa-spin mr-2"></i> Cargando calendario...</p>';
+
+            try {
+                // Fetch shifts for this month
+                const startStr = `${currentCalYear}-${String(currentCalMonth + 1).padStart(2, '0')}-01`;
+                const endStr = `${currentCalYear}-${String(currentCalMonth + 1).padStart(2, '0')}-${daysInMonth}`;
+                const res = await fetch(`/api/staff?action=admin_shift_assignments&startDate=${startStr}&endDate=${endStr}&${adminParams}`);
+                globalShifts = await res.json();
+
+                let html = `
+                    <div class="space-y-6">
+                        <div class="flex justify-between items-center bg-white/5 p-4 rounded-2xl border border-white/10">
+                            <button onclick="changeMonth(-1)" class="w-10 h-10 rounded-xl bg-dark flex items-center justify-center text-white/60"><i class="fas fa-chevron-left"></i></button>
+                            <h3 class="font-black text-white uppercase tracking-widest">${monthName} ${currentCalYear}</h3>
+                            <button onclick="changeMonth(1)" class="w-10 h-10 rounded-xl bg-dark flex items-center justify-center text-white/60"><i class="fas fa-chevron-right"></i></button>
+                        </div>
+
+                        <div class="grid grid-cols-7 gap-1 text-center">
+                            ${['D','L','M','M','J','V','S'].map(d => `<p class="text-[9px] font-black text-white/20 pb-2">${d}</p>`).join('')}
+                            ${Array(firstDay).fill(0).map(() => `<div class="aspect-square opacity-0"></div>`).join('')}
+                            ${Array(daysInMonth).fill(0).map((_, i) => {
+                                const day = i + 1;
+                                const dateStr = `${currentCalYear}-${String(currentCalMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+                                const dayShifts = globalShifts.filter(s => s.shift_date === dateStr);
+                                const isToday = new Date().toISOString().split('T')[0] === dateStr;
+                                
+                                return `
+                                    <button onclick="openDayDetail('${dateStr}')" class="aspect-square rounded-xl border ${isToday ? 'border-gold' : 'border-white/5'} ${dayShifts.length > 0 ? 'bg-gold/10' : 'bg-white/5'} flex flex-col items-center justify-center gap-1 active:scale-90 transition-all">
+                                        <span class="text-xs font-bold ${isToday ? 'text-gold' : 'text-white/60'}">${day}</span>
+                                        ${dayShifts.length > 0 ? `<div class="w-1 h-1 rounded-full bg-gold"></div>` : ''}
+                                    </button>
+                                `;
+                            }).join('')}
+                        </div>
+                        
+                        <div class="p-4 bg-blue-500/5 border border-blue-500/10 rounded-2xl">
+                            <p class="text-[9px] text-blue-400 font-black uppercase text-center tracking-widest">Toca un día para ver disponibilidad y asignar turnos</p>
+                        </div>
+                    </div>
+                `;
+                content.innerHTML = html;
+            } catch (e) { console.error(e); }
+        }
+
+        window.openDayDetail = async function(dateStr) {
+            const content = document.getElementById('admin-modal-content');
+            const dateObj = new Date(dateStr + 'T12:00:00');
+            const dayOfWeek = dateObj.getDay();
+            const dateTitle = `${DAYS[dayOfWeek]} ${dateStr.split('-').reverse().slice(0,2).join('/')}`;
+
+            content.innerHTML = '<p class="text-center py-10 text-white/40"><i class="fas fa-spinner fa-spin mr-2"></i> Cargando día...</p>';
+
+            const scheduled = globalShifts.filter(s => s.shift_date === dateStr);
+            const scheduledIds = scheduled.map(s => s.employee_id);
+            
+            // Filter available people (who are NOT already scheduled)
+            const available = allEmployees.filter(e => {
+                if (scheduledIds.includes(e.id)) return false;
+                const avail = allStaffAvailability.find(a => a.employee_id === e.id && a.day_of_week === dayOfWeek);
+                return avail ? avail.is_available : true; // Assume available if not set
+            });
+
+            content.innerHTML = `
+                <div class="space-y-8">
+                    <div class="flex items-center gap-4">
+                        <button onclick="renderAdminCalendar()" class="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center text-white/40"><i class="fas fa-arrow-left"></i></button>
+                        <h3 class="text-xl font-black text-white">${dateTitle}</h3>
+                    </div>
+
+                    <!-- Scheduled Section -->
+                    <div class="space-y-3">
+                        <p class="text-[10px] font-black text-gold uppercase tracking-widest ml-2">Personal Asignado (${scheduled.length})</p>
+                        ${scheduled.length === 0 ? '<p class="text-center py-4 bg-white/5 rounded-2xl text-xs text-white/20 italic">Nadie asignado aún</p>' : 
+                            scheduled.map(s => `
+                                <div class="bg-charcoal p-4 rounded-2xl border border-gold/20 flex justify-between items-center">
+                                    <div>
+                                        <p class="font-bold text-sm text-white">${s.employees?.name || '---'}</p>
+                                        <p class="text-[10px] text-gold/60 font-black uppercase">${s.start_time.slice(0,5)} - ${s.end_time.slice(0,5)}</p>
+                                    </div>
+                                    <button onclick="deleteShift('${s.id}', '${dateStr}')" class="text-red-500/40 hover:text-red-500 p-2"><i class="fas fa-trash-alt"></i></button>
+                                </div>
+                            `).join('')
+                        }
+                    </div>
+
+                    <!-- Quick Add Section -->
+                    <div class="bg-white/5 p-6 rounded-3xl border border-white/10 space-y-4">
+                        <p class="text-[10px] font-black text-white/40 uppercase tracking-widest ml-2">Asignar Nuevo</p>
+                        <div class="space-y-3">
+                            <select id="quick-shift-emp" class="w-full bg-dark text-white p-4 rounded-2xl border border-white/10 text-sm font-bold outline-none">
+                                <option value="">Seleccionar...</option>
+                                <optgroup label="Disponibles">
+                                    ${available.map(e => `<option value="${e.id}">${e.name}</option>`).join('')}
+                                </optgroup>
+                                <optgroup label="Otros">
+                                    ${allEmployees.filter(e => !scheduledIds.includes(e.id) && !available.includes(e)).map(e => `<option value="${e.id}">${e.name}</option>`).join('')}
+                                </optgroup>
+                            </select>
+                            <div class="grid grid-cols-2 gap-3">
+                                <input type="time" id="quick-shift-start" class="bg-dark text-white p-4 rounded-2xl border border-white/10 text-sm font-bold" value="08:00">
+                                <input type="time" id="quick-shift-end" class="bg-dark text-white p-4 rounded-2xl border border-white/10 text-sm font-bold" value="16:00">
+                            </div>
+                            <button onclick="saveQuickShift('${dateStr}')" id="quick-save-btn" class="w-full py-4 bg-gold text-dark font-black rounded-2xl active:scale-95 transition-all">ASIGNAR TURNO</button>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        window.saveQuickShift = async function(dateStr) {
+            const empId = document.getElementById('quick-shift-emp').value;
+            const start = document.getElementById('quick-shift-start').value;
+            const end = document.getElementById('quick-shift-end').value;
+            if (!empId) return alert("Selecciona un empleado");
+
+            const btn = document.getElementById('quick-save-btn');
+            btn.disabled = true; btn.innerText = "ASIGNANDO...";
 
             try {
                 const adminParams = `adminId=${currentEmployee.id}&adminPin=${localStorage.getItem('ra_staff_pin')}`;
-                const res = await fetch(`/api/staff?action=admin_shift_assignments&startDate=${today}&endDate=${endDate}&${adminParams}`);
-                const data = await res.json();
-
-                if (data.length === 0) {
-                    container.innerHTML = '<p class="text-center py-10 opacity-30 text-xs italic">No hay turnos próximos.</p>';
-                    return;
-                }
-
-                // Group by date
-                const grouped = {};
-                data.forEach(s => {
-                    if (!grouped[s.shift_date]) grouped[s.shift_date] = [];
-                    grouped[s.shift_date].push(s);
+                const payload = {
+                    assignments: [{ employee_id: empId, shift_date: dateStr, start_time: start, end_time: end }]
+                };
+                const res = await fetch(`/api/staff?action=admin_shift_assignments&${adminParams}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
                 });
-
-                const sortedDates = Object.keys(grouped).sort();
-
-                container.innerHTML = `<p class="text-[10px] font-black text-white/30 uppercase tracking-widest mb-4">Agenda del Mes (30 días)</p>` + 
-                    sortedDates.map(date => {
-                        const dateObj = new Date(date + 'T12:00:00');
-                        const dateTitle = `${DAYS[dateObj.getDay()]} ${date.split('-').reverse().slice(0,2).join('/')}`;
-                        
-                        return `
-                        <div class="space-y-2 mb-6">
-                            <h4 class="text-[10px] font-black text-gold/60 uppercase ml-2">${dateTitle}</h4>
-                            <div class="space-y-1">
-                                ${grouped[date].map(s => `
-                                    <div class="bg-charcoal p-4 rounded-2xl border border-white/5 flex justify-between items-center">
-                                        <div>
-                                            <p class="font-bold text-sm text-white">${s.employees?.name || '---'}</p>
-                                            <p class="text-[10px] text-white/40 uppercase font-black tracking-widest">${s.start_time.slice(0,5)} - ${s.end_time.slice(0,5)}</p>
-                                        </div>
-                                        <button onclick="deleteShift('${s.id}')" class="text-red-500/30 hover:text-red-500 p-2 transition-colors"><i class="fas fa-trash-alt"></i></button>
-                                    </div>
-                                `).join('')}
-                            </div>
-                        </div>
-                        `;
-                    }).join('');
+                if (res.ok) {
+                    // Update globalShifts cache without full refresh
+                    const newShifts = await res.json();
+                    globalShifts = [...globalShifts, ...newShifts];
+                    openDayDetail(dateStr);
+                }
             } catch (e) { console.error(e); }
+            btn.disabled = false; btn.innerText = "ASIGNAR TURNO";
         }
 
         window.closeAdminModal = function() { document.getElementById('admin-modal').classList.add('hidden'); }
