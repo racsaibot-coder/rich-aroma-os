@@ -153,6 +153,7 @@
                             <th class="p-4">Name</th>
                             <th class="p-4">Role</th>
                             <th class="p-4">PIN</th>
+                            <th class="p-4 text-center">Hourly Rate</th>
                             <th class="p-4">Status</th>
                             <th class="p-4 text-right">Actions</th>
                         </tr>
@@ -433,6 +434,10 @@
                 <div>
                     <label class="block text-xs font-bold text-gray-500 uppercase mb-1">POS PIN (4 digits)</label>
                     <input type="text" id="new-emp-pin" maxlength="4" class="w-full border rounded-lg p-3 outline-none focus:border-blue-500 tracking-widest text-lg font-mono" placeholder="1234">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Hourly Rate (Lps/hr)</label>
+                    <input type="number" id="new-emp-rate" class="w-full border rounded-lg p-3 outline-none focus:border-blue-500 font-mono" placeholder="0.00">
                 </div>
             </div>
             <div class="flex gap-3 mt-6">
@@ -1632,10 +1637,16 @@
 
                     const deleteBtn = `<button onclick="deleteEmployee('${emp.id}', '${escapeHtml(emp.name)}')" class="text-gray-400 hover:text-red-600 text-sm font-bold"><i class="fas fa-trash"></i></button>`;
 
+                    const hourlyRate = parseFloat(emp.hourly_rate || 0).toFixed(2);
+
                     row.innerHTML = `
                         <td class="p-4 font-bold text-gray-800">${escapeHtml(emp.name)}</td>
                         <td class="p-4 text-gray-600 capitalize">${escapeHtml(emp.role)}</td>
                         <td class="p-4 font-mono text-gray-600 tracking-widest">${escapeHtml(emp.pin || '----')}</td>
+                        <td class="p-4 text-center font-mono font-bold text-blue-600">
+                            L ${hourlyRate}
+                            <button onclick="editHourlyRate('${emp.id}', '${escapeHtml(emp.name)}', ${hourlyRate})" class="ml-1 text-gray-300 hover:text-blue-500"><i class="fas fa-pencil-alt text-[10px]"></i></button>
+                        </td>
                         <td class="p-4">${statusBadge}</td>
                         <td class="p-4 text-right">${actionBtn}${deleteBtn}</td>
                     `;
@@ -1655,6 +1666,7 @@
                 name: document.getElementById('new-emp-name').value,
                 role: document.getElementById('new-emp-role').value,
                 pin: document.getElementById('new-emp-pin').value,
+                hourly_rate: parseFloat(document.getElementById('new-emp-rate').value) || 0,
                 active: true
             };
             
@@ -1669,6 +1681,7 @@
                     document.getElementById('add-emp-modal').classList.add('hidden');
                     document.getElementById('new-emp-name').value = '';
                     document.getElementById('new-emp-pin').value = '';
+                    document.getElementById('new-emp-rate').value = '';
                     loadEmployees();
                 } else {
                     alert("Error saving employee.");
@@ -1682,6 +1695,29 @@
             }
         }
         
+        async function editHourlyRate(id, name, currentRate) {
+            const newRate = prompt(`Update Hourly Rate for ${name} (Lps/hr):`, currentRate);
+            if (newRate === null || newRate === "") return;
+            
+            const rate = parseFloat(newRate);
+            if (isNaN(rate)) return alert("Invalid rate");
+
+            try {
+                const res = await fetch(`/api/admin/employees/${id}`, {
+                    method: 'PUT',
+                    headers: getHeaders(),
+                    body: JSON.stringify({ hourly_rate: rate })
+                });
+                if(res.ok) {
+                    loadEmployees();
+                } else {
+                    alert("Error updating rate.");
+                }
+            } catch(e) {
+                console.error(e);
+            }
+        }
+
         async function toggleEmployeeStatus(id, isActive) {
             if(!confirm(`Are you sure you want to ${isActive ? 'enable' : 'disable'} this employee?`)) return;
 
