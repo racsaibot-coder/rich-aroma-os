@@ -1451,12 +1451,16 @@
             }
 
             if (res.ok) {
-                // Auto-close store when shift ends
-                await fetch('/api/store/status', {
-                    method: 'PATCH',
-                    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer EMP-admin' },
-                    body: JSON.stringify({ isOpen: false })
-                });
+                const isFinalDay = confirm("🌙 ¿ES EL CIERRE FINAL DEL DÍA?\n\nSi selecciona OK, la tienda se marcará como CERRADA para pedidos en línea.\nSi selecciona CANCELAR (Cambio de Turno), la tienda seguirá ABIERTA.");
+                
+                if (isFinalDay) {
+                    // Auto-close store only if it's the final shift
+                    await fetch('/api/store/status', {
+                        method: 'PATCH',
+                        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer EMP-admin' },
+                        body: JSON.stringify({ isOpen: false })
+                    });
+                }
 
                 // Clear Local Session
                 localStorage.removeItem('pos_active_shift');
