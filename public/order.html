@@ -679,22 +679,32 @@
             };
 
             window.submitOrder = function() {
+                if (!currentCustomer) {
+                    var guestName = prompt("Para procesar tu orden, por favor ingresa tu nombre:");
+                    if (!guestName) return;
+                    var guestPhone = prompt("Ingresa tu número de teléfono (WhatsApp):");
+                    if (!guestPhone) return;
+
+                    // Set temporary guest info in payload notes
+                    var guestInfo = `[GUEST: ${guestName}] [TEL: ${guestPhone}]`;
+                }
+
                 var btn = document.querySelector('#checkout-options button');
                 var ogHtml = btn.innerHTML;
                 btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Procesando...';
                 btn.disabled = true;
 
                 var total = cart.reduce(function(s, i) { return s + i.finalPrice; }, 0);
-                var payload = { 
-                    items: cart, 
-                    total: total, 
-                    subtotal: total, 
-                    fulfillmentType: fulfillmentType, 
+                var payload = {
+                    items: cart,
+                    total: total,
+                    subtotal: total,
+                    fulfillmentType: fulfillmentType,
                     paymentMethod: 'cash',
                     customerId: currentCustomer ? currentCustomer.id : null,
-                    pin: localStorage.getItem('ra_customer_pin')
+                    pin: localStorage.getItem('ra_customer_pin'),
+                    notes: guestInfo || null
                 };
-
                 fetch('/api/orders', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
