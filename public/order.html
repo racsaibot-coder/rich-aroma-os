@@ -1093,6 +1093,14 @@
                 openCartModal();
             };
 
+            window.newOrder = function() {
+                activeOrder = null;
+                localStorage.removeItem('ra_active_order');
+                document.getElementById('order-qr-container').classList.remove('opacity-20');
+                if (trackingInterval) clearInterval(trackingInterval);
+                showMenuView();
+            };
+
             // --- INIT ---
             function loadMenu() {
                 fetch('/api/store?action=menu').then(function(r) { return r.json(); }).then(function(d) {
