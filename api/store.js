@@ -212,6 +212,14 @@ module.exports = async function handler(req, res) {
             return res.json({ success: true, isOpen: !!isOpen });
         }
 
+        if (action === 'track_order' && req.method === 'GET') {
+            const { id } = req.query;
+            if (!id) return res.status(400).json({ error: "Order ID required" });
+            const { data, error } = await supabase.from('orders').select('status').eq('id', id).single();
+            if (error) return res.status(404).json({ error: "Order not found" });
+            return res.json({ status: data.status });
+        }
+
         // CUSTOMER LOGIN
         if (action === 'customer_login' && req.method === 'POST') {
             const { phone, pin } = req.body;
