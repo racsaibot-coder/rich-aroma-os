@@ -903,6 +903,8 @@
             syncIdentity();
             loadMenu();
             fetchStatus();
+            // Poll status every 60 seconds
+            setInterval(fetchStatus, 60000);
             var saved = localStorage.getItem('ra_active_cart');
             if(saved) { try { cart = JSON.parse(saved); updateCartUI(); } catch(e) {} }
         })();

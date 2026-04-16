@@ -1451,6 +1451,13 @@
             }
 
             if (res.ok) {
+                // Auto-close store when shift ends
+                await fetch('/api/store/status', {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer EMP-admin' },
+                    body: JSON.stringify({ isOpen: false })
+                });
+
                 // Clear Local Session
                 localStorage.removeItem('pos_active_shift');
                 currentShiftId = null;
@@ -1459,7 +1466,8 @@
 
                 await fetchStoreStatus();
                 showShiftReport(data.report);
-            } else {
+            }
+ else {
                 alert("Error al cerrar caja: " + (data.error || text || "Error desconocido"));
             }
         } catch(e) { 
