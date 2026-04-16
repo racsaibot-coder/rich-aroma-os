@@ -952,6 +952,8 @@
                 updateNavActive('nav-profile');
             };
 
+            var trackingInterval = null;
+
             window.showTracking = function() {
                 if (!activeOrder) return showMenuView();
                 ['main-view', 'tracking-view', 'wallet-view', 'profile-view', 'fulfillment-selector'].forEach(id => {
@@ -971,8 +973,65 @@
                 qrImg.src = `https://chart.googleapis.com/chart?cht=qr&chs=300x300&chl=${encodeURIComponent(orderData)}&chld=M|0`;
                 qrId.innerText = activeOrder.id;
 
-                updateNavActive('nav-menu'); // Keep menu nav active or add a tracking one if needed
+                updateTrackingUI();
+                if (trackingInterval) clearInterval(trackingInterval);
+                trackingInterval = setInterval(trackOrder, 5000); // Check every 5 seconds
             };
+
+            async function trackOrder() {
+                if (!activeOrder) return;
+                try {
+                    const res = await fetch(`/api/store?action=track_order&id=${activeOrder.id}`);
+                    const data = await res.json();
+                    if (data && data.status) {
+                        activeOrder.status = data.status;
+                        updateTrackingUI();
+                        if (data.status === 'completed' || data.status === 'cancelled') {
+                            clearInterval(trackingInterval);
+                        }
+                    }
+                } catch(e) { console.error("Tracking error", e); }
+            }
+
+            function updateTrackingUI() {
+                const steps = document.getElementById('tracking-steps');
+                const status = activeOrder.status;
+                const type = activeOrder.fulfillmentType || 'pickup';
+                
+                document.getElementById('track-type').innerText = type === 'pickup' ? 'Para Llevar' : 'En Restaurante';
+
+                const workflow = [
+                    { key: 'pending', label: 'Orden Recibida', icon: 'fa-receipt' },
+                    { key: 'preparing', label: 'En Preparación', icon: 'fa-mug-hot' },
+                    { key: 'ready', label: '¡Lista para Entrega!', icon: 'fa-check-circle' }
+                ];
+
+                let currentIdx = workflow.findIndex(s => s.key === status);
+                if (status === 'paid' || status === 'pending_verification') currentIdx = 0;
+                if (status === 'preparing' || status === 'drinks_ready' || status === 'food_ready') currentIdx = 1;
+                if (status === 'ready' || status === 'completed') currentIdx = 2;
+
+                steps.innerHTML = workflow.map((s, idx) => {
+                    const isDone = idx <= currentIdx;
+                    const isCurrent = idx === currentIdx;
+                    return `
+                        <div class="flex items-center gap-4 ${isDone ? 'opacity-100' : 'opacity-20'}">
+                            <div class="w-10 h-10 rounded-full ${isCurrent ? 'bg-gold text-dark animate-pulse' : (isDone ? 'bg-green-500 text-white' : 'bg-white/10 text-white')} flex items-center justify-center text-sm">
+                                <i class="fas ${s.icon}"></i>
+                            </div>
+                            <div>
+                                <p class="font-bold text-sm ${isCurrent ? 'text-gold' : 'text-white'}">${s.label}</p>
+                                ${isCurrent ? '<p class="text-[10px] text-gold/60 font-black uppercase tracking-widest">En curso</p>' : ''}
+                            </div>
+                        </div>
+                    `;
+                }).join('<div class="w-0.5 h-6 bg-white/10 ml-5 my-1"></div>');
+
+                if (status === 'ready') {
+                    document.getElementById('track-status-title').innerText = '¡Tu Orden está Lista!';
+                    document.getElementById('track-status-desc').innerText = 'Por favor pasa por tu pedido.';
+                }
+            }
 
             function updateNavActive(activeId) {
                 ['nav-menu', 'nav-wallet', 'nav-profile'].forEach(id => {
