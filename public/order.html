@@ -966,11 +966,11 @@
                 document.getElementById('track-order-num').innerText = num;
                 document.getElementById('track-time').innerText = new Date(activeOrder.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
                 
-                // Generate QR Code using Google Charts API
+                // Generate QR Code using QuickChart API (more reliable than Google)
                 const qrImg = document.getElementById('order-qr-img');
                 const qrId = document.getElementById('order-qr-id');
                 const orderData = activeOrder.id; // Encode the full order ID
-                qrImg.src = `https://chart.googleapis.com/chart?cht=qr&chs=300x300&chl=${encodeURIComponent(orderData)}&chld=M|0`;
+                qrImg.src = `https://quickchart.io/qr?text=${encodeURIComponent(orderData)}&size=300&light=ffffff&dark=1e1610`;
                 qrId.innerText = activeOrder.id;
 
                 updateTrackingUI();
