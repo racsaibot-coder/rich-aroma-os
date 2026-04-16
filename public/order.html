@@ -755,6 +755,9 @@
 
             window.submitOrder = async function() {
                 let guestInfo = "";
+                let paymentMethod = "cash"; // default
+                let orderStatus = "pending";
+
                 if (!currentCustomer) {
                     const wantLogin = await showUIModal({
                         title: '¿Tienes cuenta?',
@@ -788,6 +791,22 @@
                     if (!guestPhone) return;
 
                     guestInfo = `[GUEST: ${guestName}] [TEL: ${guestPhone}]`;
+                } else {
+                    // Logged in user: Choose payment method
+                    const method = await showUIModal({
+                        title: 'Método de Pago',
+                        message: `Saldo Rico Cash: L ${parseFloat(currentCustomer.rico_balance || 0).toFixed(2)}\n\n¿Cómo deseas pagar?`,
+                        confirmText: 'Rico Cash',
+                        cancelText: 'Efectivo/Transfer'
+                    });
+                    
+                    if (method) {
+                        // User chose Rico Cash (Confirm)
+                        paymentMethod = "rico_balance";
+                    } else {
+                        // User chose Cash (Cancel button in modal)
+                        paymentMethod = "cash";
+                    }
                 }
 
                 var btn = document.querySelector('#checkout-options button');
@@ -806,7 +825,7 @@
                     total: total,
                     subtotal: total,
                     fulfillmentType: fulfillmentType,
-                    paymentMethod: 'cash',
+                    paymentMethod: paymentMethod,
                     customerId: currentCustomer ? currentCustomer.id : null,
                     pin: localStorage.getItem('ra_customer_pin'),
                     notes: finalNotes
