@@ -433,6 +433,12 @@
                     localStorage.setItem('ra_customer_pin', pin);
                     updateLoyaltyUI();
                     closeLoginModal();
+                    
+                    // Auto-resume order if we have items in cart
+                    if (cart.length > 0) {
+                        openCartModal();
+                        submitOrder();
+                    }
                 })
                 .catch(function(err) { alert(err.message); })
                 .finally(function() {
