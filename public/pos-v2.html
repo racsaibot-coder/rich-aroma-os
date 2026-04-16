@@ -761,14 +761,21 @@
             html += '        <span class="text-xs font-black text-blue-400 font-mono">L ' + (parseFloat(o.total) || 0).toFixed(2) + '</span>';
             html += '    </div>';
             html += '    <div class="flex gap-1 mt-2">';
+            
+            // 1. If it's a mobile order and unpaid, cashier MUST see "Cobrar"
             if (isUnpaidCashMobile) {
-                html += '        <button onclick="openVerifyModal()" class="flex-1 py-1.5 bg-green-600 text-white text-[10px] font-black uppercase rounded-lg hover:bg-green-500 transition-all">Cobrar L.' + o.total + '</button>';
-            } else if (isReady) {
-                html += '        <button onclick="deliverOrder(\'' + o.id + '\')" class="flex-1 py-2 bg-green-500 text-dark font-black text-[10px] uppercase rounded-lg shadow-lg hover:bg-green-400 transition-all">✅ ENTREGAR</button>';
+                html += '        <button onclick="openVerifyModal()" class="flex-1 py-1.5 bg-blue-600 text-white text-[10px] font-black uppercase rounded-lg hover:bg-blue-500 transition-all shadow-lg">💳 COBRAR L.' + o.total + '</button>';
+            } 
+            
+            // 2. If the order is marked "Ready" by KDS, only cashier can "Deliver" it to the customer
+            if (isReady) {
+                html += '        <button onclick="deliverOrder(\'' + o.id + '\')" class="flex-1 py-2 bg-green-500 text-dark font-black text-[10px] uppercase rounded-lg shadow-lg hover:bg-green-400 transition-all ring-2 ring-white/20">🎁 ENTREGAR</button>';
             }
             
             // Reject button for any active order
-            html += '        <button onclick="rejectOrder(\'' + o.id + '\', \'' + (o.order_number || '') + '\', \'' + (o.customers?.phone || '') + '\', \'' + (o.customers?.name || '') + '\')" class="px-3 bg-red-900/40 text-red-500 rounded-lg border border-red-900/60 hover:bg-red-900/60 transition-all"><i class="fas fa-times"></i></button>';
+            if (!isReady) {
+                html += '        <button onclick="rejectOrder(\'' + o.id + '\', \'' + (o.order_number || '') + '\', \'' + (o.customers?.phone || '') + '\', \'' + (o.customers?.name || '') + '\')" class="px-3 bg-red-900/40 text-red-500 rounded-lg border border-red-900/60 hover:bg-red-900/60 transition-all"><i class="fas fa-times"></i></button>';
+            }
             html += '    </div>';
             html += '</div>';
         });
