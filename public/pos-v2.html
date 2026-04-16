@@ -499,6 +499,54 @@
     let currentCustomerId = null;
     window.loadedCustomer = null;
 
+    // --- UI MODAL SYSTEM ---
+    function showUIModal({ title, message, showInput = false, inputPlaceholder = '', confirmText = 'Confirmar', cancelText = 'Cancelar' }) {
+        return new Promise((resolve) => {
+            const modal = document.getElementById('ui-modal');
+            const titleEl = document.getElementById('ui-modal-title');
+            const msgEl = document.getElementById('ui-modal-msg');
+            const inputContainer = document.getElementById('ui-modal-input-container');
+            const inputEl = document.getElementById('ui-modal-input');
+            const confirmBtn = document.getElementById('ui-modal-confirm');
+            const cancelBtn = document.getElementById('ui-modal-cancel');
+
+            titleEl.innerText = title;
+            msgEl.innerText = message;
+            confirmBtn.innerText = confirmText;
+            cancelBtn.innerText = cancelText;
+            
+            if (showInput) {
+                inputContainer.classList.remove('hidden');
+                inputEl.placeholder = inputPlaceholder;
+                inputEl.value = '';
+            } else {
+                inputContainer.classList.add('hidden');
+            }
+
+            modal.classList.remove('hidden');
+            if (showInput) setTimeout(() => inputEl.focus(), 100);
+
+            const handleConfirm = () => {
+                const val = showInput ? inputEl.value : true;
+                if (showInput && !val) return;
+                cleanup();
+                resolve(val);
+            };
+
+            const handleCancel = () => {
+                cleanup();
+                resolve(null);
+            };
+
+            const cleanup = () => {
+                modal.classList.add('hidden');
+            };
+
+            confirmBtn.onclick = handleConfirm;
+            cancelBtn.onclick = handleCancel;
+        });
+    }
+
     let isSoloMode = false;
     let currentQuantity = 1;
     let currentMods = {};
@@ -740,7 +788,13 @@
     }
 
     async function rejectOrder(id, num, phone, name) {
-        const reason = prompt(`Motivo de rechazo para orden #${num}:`, "Captura de pantalla no válida o transferencia no recibida.");
+        const reason = await showUIModal({
+            title: 'Rechazar Orden',
+            message: `Motivo de rechazo para orden #${num}:`,
+            showInput: true,
+            inputPlaceholder: 'Captura no válida o transferencia no recibida',
+            confirmText: 'Rechazar'
+        });
         if (reason === null) return;
         
         try {
@@ -757,7 +811,14 @@
                 if (phone) {
                     const message = `Hola ${name.split(' ')[0] || 'Cliente'}, tu solicitud de membresía #${num} fue rechazada por: ${reason}. Por favor intenta de nuevo con una captura válida.`;
                     const waUrl = `https://wa.me/${phone.replace(/\D/g, '')}?text=${encodeURIComponent(message)}`;
-                    if(confirm("Orden rechazada. ¿Deseas notificar al cliente vía WhatsApp?")) {
+                    
+                    const notify = await showUIModal({
+                        title: 'Notificar Cliente',
+                        message: 'Orden rechazada. ¿Deseas notificar al cliente vía WhatsApp?',
+                        confirmText: 'Si, Notificar',
+                        cancelText: 'No'
+                    });
+                    if(notify) {
                         window.open(waUrl, '_blank');
                     }
                 }
@@ -1208,7 +1269,15 @@
         const order = liveOrders.find(o => o.id === id);
         if (!order) return;
         
-        if (cart.length > 0 && !confirm("¿Vaciar carrito actual para recuperar esta orden?")) return;
+        if (cart.length > 0) {
+            const clear = await showUIModal({
+                title: 'Recuperar Orden',
+                message: '¿Deseas vaciar el carrito actual para recuperar esta orden?',
+                confirmText: 'Si, Vaciar',
+                cancelText: 'No'
+            });
+            if (!clear) return;
+        }
         
         // Reconstruct Cart
         cart = (order.items || []).map(i => ({
@@ -1429,7 +1498,13 @@
     async function endShift() {
         if (!currentShiftId) return alert("No hay una sesión activa para cerrar.");
         
-        const cash = prompt("💰 CIERRE DE CAJA\n\nIngrese el TOTAL DE EFECTIVO físico en caja\n(Incluyendo la base de L. " + startingCash + "):");
+        const cash = await showUIModal({
+            title: 'Cierre de Caja',
+            message: `Ingrese el TOTAL DE EFECTIVO físico en caja (Incluyendo la base de L. ${startingCash}):`,
+            showInput: true,
+            inputPlaceholder: '0.00',
+            confirmText: 'Siguiente'
+        });
         if (cash === null || cash === "") return;
         
         const amount = parseFloat(cash);
@@ -1452,7 +1527,12 @@
             }
 
             if (res.ok) {
-                const isFinalDay = confirm("🌙 ¿ES EL CIERRE FINAL DEL DÍA?\n\nSi selecciona OK, la tienda se marcará como CERRADA para pedidos en línea.\nSi selecciona CANCELAR (Cambio de Turno), la tienda seguirá ABIERTA.");
+                const isFinalDay = await showUIModal({
+                    title: 'Fin del Día',
+                    message: '¿Es este el CIERRE FINAL de la jornada? (Esto cerrará la tienda en línea)',
+                    confirmText: 'Si, Final de Día',
+                    cancelText: 'No, Cambio de Turno'
+                });
                 
                 if (isFinalDay) {
                     // Auto-close store only if it's the final shift
@@ -1777,7 +1857,24 @@
             </div>
         </div>
     </div>
-</div>
+    </div>
 
-</body>
-</html>
+    <!-- UI MODAL (SYSTEM PROMPT/CONFIRM REPLACEMENT) -->
+    <div id="ui-modal" class="hidden fixed inset-0 bg-black/70 backdrop-blur-sm z-[500] flex items-center justify-center p-6">
+    <div class="bg-white w-full max-w-sm rounded-[2rem] border-t-8 border-gold p-8 space-y-6 shadow-2xl">
+        <div class="text-center space-y-2">
+            <h3 id="ui-modal-title" class="text-2xl font-black text-dark uppercase tracking-tight">---</h3>
+            <p id="ui-modal-msg" class="text-gray-500 font-medium text-sm leading-relaxed">---</p>
+        </div>
+        <div id="ui-modal-input-container" class="hidden">
+            <input type="text" id="ui-modal-input" class="w-full bg-gray-50 border-2 border-gray-200 rounded-2xl p-4 text-dark font-bold focus:border-gold outline-none transition-all" placeholder="---">
+        </div>
+        <div class="grid grid-cols-1 gap-3">
+            <button id="ui-modal-confirm" class="w-full py-4 bg-dark text-white font-black rounded-2xl shadow-lg active:scale-95 transition-all uppercase tracking-widest text-sm">Aceptar</button>
+            <button id="ui-modal-cancel" class="w-full py-4 bg-gray-100 text-gray-400 font-bold rounded-2xl active:scale-95 transition-all text-sm uppercase">Cancelar</button>
+        </div>
+    </div>
+    </div>
+
+    </body>
+    </html>

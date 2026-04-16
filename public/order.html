@@ -303,6 +303,56 @@
             var activeOrder = null;
             var fulfillmentType = 'pickup';
 
+            // --- UI MODAL SYSTEM ---
+            window.showUIModal = function({ title, message, showInput = false, inputPlaceholder = '', confirmText = 'Confirmar', cancelText = 'Cancelar' }) {
+                return new Promise((resolve) => {
+                    const modal = document.getElementById('ui-modal');
+                    const titleEl = document.getElementById('ui-modal-title');
+                    const msgEl = document.getElementById('ui-modal-msg');
+                    const inputContainer = document.getElementById('ui-modal-input-container');
+                    const inputEl = document.getElementById('ui-modal-input');
+                    const confirmBtn = document.getElementById('ui-modal-confirm');
+                    const cancelBtn = document.getElementById('ui-modal-cancel');
+
+                    titleEl.innerText = title;
+                    msgEl.innerText = message;
+                    confirmBtn.innerText = confirmText;
+                    cancelBtn.innerText = cancelText;
+                    
+                    if (showInput) {
+                        inputContainer.classList.remove('hidden');
+                        inputEl.placeholder = inputPlaceholder;
+                        inputEl.value = '';
+                    } else {
+                        inputContainer.classList.add('hidden');
+                    }
+
+                    modal.classList.remove('hidden');
+                    if (showInput) setTimeout(() => inputEl.focus(), 100);
+
+                    const handleConfirm = () => {
+                        const val = showInput ? inputEl.value : true;
+                        if (showInput && !val) return; // Basic validation
+                        cleanup();
+                        resolve(val);
+                    };
+
+                    const handleCancel = () => {
+                        cleanup();
+                        resolve(null);
+                    };
+
+                    const cleanup = () => {
+                        modal.classList.add('hidden');
+                        confirmBtn.removeEventListener('click', handleConfirm);
+                        cancelBtn.removeEventListener('click', handleCancel);
+                    };
+
+                    confirmBtn.addEventListener('click', handleConfirm);
+                    cancelBtn.addEventListener('click', handleCancel);
+                });
+            };
+
             // --- IDENTITY & AUTH ---
             function syncIdentity() {
                 var cached = localStorage.getItem('ra_customer_data');
@@ -678,15 +728,28 @@
                 else openCartModal();
             };
 
-            window.submitOrder = function() {
+            window.submitOrder = async function() {
+                let guestInfo = null;
                 if (!currentCustomer) {
-                    var guestName = prompt("Para procesar tu orden, por favor ingresa tu nombre:");
+                    const guestName = await showUIModal({
+                        title: 'Tu Nombre',
+                        message: 'Para procesar tu orden, por favor ingresa tu nombre:',
+                        showInput: true,
+                        inputPlaceholder: 'Ej. Juan Perez',
+                        confirmText: 'Siguiente'
+                    });
                     if (!guestName) return;
-                    var guestPhone = prompt("Ingresa tu número de teléfono (WhatsApp):");
+
+                    const guestPhone = await showUIModal({
+                        title: 'WhatsApp',
+                        message: 'Ingresa tu número de teléfono para recibir actualizaciones:',
+                        showInput: true,
+                        inputPlaceholder: 'Ej. 99887766',
+                        confirmText: 'Finalizar'
+                    });
                     if (!guestPhone) return;
 
-                    // Set temporary guest info in payload notes
-                    var guestInfo = `[GUEST: ${guestName}] [TEL: ${guestPhone}]`;
+                    guestInfo = `[GUEST: ${guestName}] [TEL: ${guestPhone}]`;
                 }
 
                 var btn = document.querySelector('#checkout-options button');
@@ -965,6 +1028,22 @@
                 </div>
                 <div id="topup-status" class="hidden text-center text-sm font-bold"></div>
                 <button onclick="document.getElementById('topup-step-1').classList.remove('hidden'); document.getElementById('topup-step-2').classList.add('hidden');" class="w-full text-white/30 font-bold text-sm">Atrás</button>
+            </div>
+        </div>
+    </div>
+    <!-- UI MODAL (SYSTEM PROMPT/CONFIRM REPLACEMENT) -->
+    <div id="ui-modal" class="hidden fixed inset-0 bg-black/90 backdrop-blur-md z-[500] flex items-center justify-center p-6">
+        <div class="bg-dark w-full max-w-sm rounded-[2.5rem] border border-gold/20 p-8 space-y-6 shadow-2xl">
+            <div class="text-center space-y-2">
+                <h3 id="ui-modal-title" class="text-2xl font-display font-black text-white uppercase tracking-tight">---</h3>
+                <p id="ui-modal-msg" class="text-white/50 text-sm leading-relaxed">---</p>
+            </div>
+            <div id="ui-modal-input-container" class="hidden">
+                <input type="text" id="ui-modal-input" class="w-full bg-charcoal border-2 border-white/10 rounded-2xl p-4 text-white font-bold focus:border-gold/50 outline-none transition-all" placeholder="---">
+            </div>
+            <div class="grid grid-cols-1 gap-3">
+                <button id="ui-modal-confirm" class="w-full py-4 bg-gold text-dark font-black rounded-2xl shadow-lg active:scale-95 transition-all">CONFIRMAR</button>
+                <button id="ui-modal-cancel" class="w-full py-4 bg-white/5 text-white/40 font-bold rounded-2xl active:scale-95 transition-all text-sm">CANCELAR</button>
             </div>
         </div>
     </div>
