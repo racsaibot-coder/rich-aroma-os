@@ -691,9 +691,14 @@
                                 const isToday = new Date().toISOString().split('T')[0] === dateStr;
                                 
                                 return `
-                                    <button onclick="openDayDetail('${dateStr}')" class="aspect-square rounded-xl border ${isToday ? 'border-gold' : 'border-white/5'} ${dayShifts.length > 0 ? 'bg-gold/10' : 'bg-white/5'} flex flex-col items-center justify-center gap-1 active:scale-90 transition-all">
-                                        <span class="text-xs font-bold ${isToday ? 'text-gold' : 'text-white/60'}">${day}</span>
-                                        ${dayShifts.length > 0 ? `<div class="w-1 h-1 rounded-full bg-gold"></div>` : ''}
+                                    <button onclick="openDayDetail('${dateStr}')" class="aspect-square rounded-xl border ${isToday ? 'border-gold' : 'border-white/5'} ${dayShifts.length > 0 ? 'bg-gold/10' : 'bg-white/5'} flex flex-col items-center justify-start p-1.5 gap-1 active:scale-90 transition-all overflow-hidden">
+                                        <span class="text-[10px] font-bold ${isToday ? 'text-gold' : 'text-white/60'}">${day}</span>
+                                        <div class="w-full flex flex-col gap-0.5">
+                                            ${dayShifts.slice(0, 3).map(s => `
+                                                <div class="text-[7px] font-black text-gold uppercase truncate text-center leading-tight bg-gold/10 rounded-sm px-0.5">${s.employees?.name?.split(' ')[0] || '---'}</div>
+                                            `).join('')}
+                                            ${dayShifts.length > 3 ? `<div class="text-[6px] text-white/20 font-black">+${dayShifts.length - 3}</div>` : ''}
+                                        </div>
                                     </button>
                                 `;
                             }).join('')}
