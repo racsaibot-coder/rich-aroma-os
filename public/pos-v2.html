@@ -684,7 +684,8 @@
     async function fetchLiveOrders() {
         const statusEl = document.getElementById('hb-status');
         try {
-            const res = await fetch('/api/orders', {
+            const v = Date.now();
+            const res = await fetch(`/api/orders?v=${v}`, {
                 headers: { 'Authorization': 'Bearer EMP-admin' }
             });
             const data = await res.json();
