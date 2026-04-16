@@ -550,15 +550,6 @@
                     }
 
                     renderAdminCalendar();
-                }
-                            </div>
-
-                            <div id="admin-schedule-list" class="space-y-4">
-                                <p class="text-center py-10 opacity-30 text-xs italic">Cargando turnos próximos...</p>
-                            </div>
-                        </div>
-                    `;
-                    loadAdminSchedule();
                 } else if (type === 'live') {
                     title.innerText = "Estado en Tiempo Real";
                     content.innerHTML = '<p class="text-center py-10 text-white/40"><i class="fas fa-spinner fa-spin mr-2"></i> Consultando estados...</p>';
