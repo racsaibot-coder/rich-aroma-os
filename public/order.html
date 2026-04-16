@@ -758,7 +758,7 @@
                     });
 
                     if (wantLogin) {
-                        showView('profile-view');
+                        openLoginModal();
                         closeCartModal();
                         return;
                     }
@@ -884,12 +884,14 @@
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({
                             customerId: currentCustomer.id,
+                            phone: currentCustomer.phone,
                             amount: selectedTopupAmount,
                             bonus: selectedTopupBonus,
                             imageBase64: base64,
                             fileName: input.files[0].name
                         })
                     })
+
                     .then(function(res) { 
                         if(res.ok) { 
                             status.innerText = '¡Recibido! Procesaremos tu saldo en unos minutos.'; 
