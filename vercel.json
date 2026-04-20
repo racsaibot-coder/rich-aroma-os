@@ -16,6 +16,10 @@
   ],
   "routes": [
     {
+      "src": "/os/?",
+      "dest": "/public/os.html"
+    },
+    {
       "src": "/api/health",
       "dest": "/api/health.js"
     },
@@ -266,10 +270,6 @@
     {
       "src": "/owner",
       "dest": "/public/owner.html"
-    },
-    {
-      "src": "/os",
-      "dest": "/public/os.html"
     },
     {
       "src": "/alerts",

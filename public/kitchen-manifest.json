@@ -1,0 +1,22 @@
+{
+  "name": "Rich Aroma | Kitchen",
+  "short_name": "RA Kitchen",
+  "start_url": "/kitchen",
+  "display": "standalone",
+  "background_color": "#120C09",
+  "theme_color": "#120C09",
+  "icons": [
+    {
+      "src": "/rico-logo.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/rico-logo.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

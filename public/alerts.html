@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <link rel="icon" type="image/png" href="/favicon.png">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Rich Aroma | Alertas de Pedidos</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        gold: '#C9A66B',
+                        dark: '#120C09'
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap');
+        body { font-family: 'Inter', sans-serif; background-color: #120C09; color: white; overflow: hidden; }
+        .pulse-gold { animation: pulse 2s infinite; }
+        @keyframes pulse {
+            0% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.05); opacity: 0.8; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        .bell-ring { animation: ring 0.5s ease-in-out infinite; }
+        @keyframes ring {
+            0% { transform: rotate(0); }
+            25% { transform: rotate(15deg); }
+            50% { transform: rotate(-15deg); }
+            75% { transform: rotate(10deg); }
+            100% { transform: rotate(0); }
+        }
+    </style>
+</head>
+<body class="h-screen flex flex-col items-center justify-center p-6 text-center">
+
+    <!-- FAMILY STATUS BAR -->
+    <div id="family-status" class="fixed top-0 left-0 right-0 bg-white/5 backdrop-blur-md border-b border-white/10 p-3 flex justify-around items-center z-50">
+        <button onclick="window.location.href='/os'" class="w-8 h-8 rounded-lg bg-white/10 flex items-center justify-center text-white/40 ml-2 mr-4">
+            <i class="fas fa-home text-xs"></i>
+        </button>
+        <div class="text-center">
+            <p class="text-[8px] font-black text-white/30 uppercase">Órdenes Activas</p>
+            <p id="stat-count" class="text-sm font-black text-gold">0</p>
+        </div>
+        <div class="h-6 w-px bg-white/10"></div>
+        <div class="text-center">
+            <p class="text-[8px] font-black text-white/30 uppercase">Carga de Trabajo</p>
+            <p id="stat-load" class="text-sm font-black text-blue-400">Tranquilo</p>
+        </div>
+        <div class="h-6 w-px bg-white/10"></div>
+        <div class="text-center">
+            <p class="text-[8px] font-black text-white/30 uppercase">Espera Est.</p>
+            <p id="stat-wait" class="text-sm font-black text-green-500">5 min</p>
+        </div>
+    </div>
+
+    <!-- Status Indicator -->
+    <div id="status-container" class="space-y-8 mt-12">
+        <div id="icon-box" class="w-32 h-32 bg-gold/10 rounded-full flex items-center justify-center mx-auto border-4 border-gold/20 shadow-2xl shadow-gold/10">
+            <i id="main-icon" class="fas fa-satellite-dish text-4xl text-gold"></i>
+        </div>
+        
+        <div>
+            <h1 id="status-title" class="text-3xl font-black uppercase tracking-tighter mb-2">Monitor Activo</h1>
+            <p id="status-desc" class="text-white/40 font-bold text-sm uppercase tracking-widest">Escuchando órdenes nuevas...</p>
+        </div>
+
+        <div id="start-prompt" class="space-y-4">
+            <p class="text-gold font-bold text-xs uppercase tracking-widest bg-gold/10 py-3 px-6 rounded-full border border-gold/20">Toca el botón para activar sonido</p>
+            <button onclick="enableAudio()" class="w-full bg-gold text-dark py-5 rounded-3xl font-black text-xl shadow-xl shadow-gold/20 active:scale-95 transition-all">
+                ACTIVAR ALERTAS
+            </button>
+        </div>
+
+        <div id="monitoring-ui" class="hidden space-y-6">
+            <div class="flex items-center justify-center gap-3">
+                <span class="w-3 h-3 bg-green-500 rounded-full animate-pulse"></span>
+                <p class="text-[10px] font-black uppercase tracking-[0.3em] text-green-500">Live Sync</p>
+            </div>
+            <button onclick="testAlert()" class="text-white/20 text-[10px] font-bold uppercase tracking-widest underline">Probar Sonido</button>
+        </div>
+    </div>
+
+    <!-- Alert Modal (Incoming Order) -->
+    <div id="order-alert" class="hidden fixed inset-0 bg-gold z-[100] flex flex-col items-center justify-center p-8 text-dark animate-none">
+        <div class="bell-ring mb-8 text-8xl">
+            <i class="fas fa-bell"></i>
+        </div>
+        <h2 class="text-5xl font-black uppercase tracking-tighter mb-2">¡NUEVA ORDEN!</h2>
+        <p id="alert-order-num" class="text-7xl font-black mb-2">#--</p>
+        <p id="alert-customer" class="text-xl font-bold uppercase tracking-widest mb-6">Invitado</p>
+        
+        <!-- Order Items List -->
+        <div id="alert-items" class="w-full max-w-sm bg-dark/10 rounded-3xl p-6 mb-8 space-y-3 text-left max-h-[40vh] overflow-y-auto">
+            <!-- Items injected here -->
+        </div>
+        
+        <button onclick="silenceAlert()" class="w-full bg-dark text-white py-6 rounded-[2.5rem] font-black text-xl shadow-2xl active:scale-95 transition-all">
+            ENTENDIDO
+        </button>
+    </div>
+
+    <!-- Audio Element -->
+    <audio id="alert-sound" src="https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3" preload="auto" loop></audio>
+
+    <script>
+        let lastOrderId = null;
+        let audioEnabled = false;
+        let monitoringInterval = null;
+        let wakeLock = null;
+
+        async function requestWakeLock() {
+            try {
+                if ('wakeLock' in navigator) {
+                    wakeLock = await navigator.wakeLock.request('screen');
+                    console.log('✅ Screen Wake Lock is active');
+                }
+            } catch (err) {
+                console.error(`${err.name}, ${err.message}`);
+            }
+        }
+
+        function enableAudio() {
+            audioEnabled = true;
+            requestWakeLock(); // Prevent screen from sleeping
+            
+            document.getElementById('alert-sound').play().then(() => {
+                document.getElementById('alert-sound').pause();
+                document.getElementById('alert-sound').currentTime = 0;
+            });
+            
+            document.getElementById('start-prompt').classList.add('hidden');
+            document.getElementById('monitoring-ui').classList.remove('hidden');
+            document.getElementById('status-desc').innerText = "Sonido activado y monitoreando";
+            
+            startMonitoring();
+        }
+
+        async function startMonitoring() {
+            // Initial fetch to get latest ID
+            await checkNewOrders(true);
+            monitoringInterval = setInterval(checkNewOrders, 5000);
+        }
+
+        async function checkNewOrders(isInitial = false) {
+            try {
+                const res = await fetch('/api/orders?v=' + Date.now());
+                const data = await res.json();
+                const allOrders = data.orders || [];
+                
+                // Calculate Stats for Family
+                const active = allOrders.filter(o => ['pending', 'paid', 'preparing', 'ready', 'drinks_ready', 'food_ready'].includes(o.status));
+                const count = active.length;
+                document.getElementById('stat-count').innerText = count;
+                
+                let load = "Tranquilo";
+                let loadColor = "text-green-500";
+                if (count > 3) { load = "Ocupado"; loadColor = "text-orange-400"; }
+                if (count > 6) { load = "¡SATURADO!"; loadColor = "text-red-500"; }
+                
+                document.getElementById('stat-load').innerText = load;
+                document.getElementById('stat-load').className = `text-sm font-black ${loadColor}`;
+                document.getElementById('stat-wait').innerText = `${Math.max(5, count * 3)} min`;
+
+                if (allOrders.length > 0) {
+                    const latest = allOrders[0];
+                    
+                    if (isInitial) {
+                        lastOrderId = latest.id;
+                        return;
+                    }
+
+                    if (latest.id !== lastOrderId) {
+                        lastOrderId = latest.id;
+                        triggerAlert(latest);
+                        
+                        // Send OS Notification (Ping)
+                        if (Notification.permission === "granted") {
+                            new Notification("🦁 Rich Aroma: Nueva Orden", {
+                                body: `#${latest.order_number || '---'} - ${latest.customers?.name || 'Invitado'}`,
+                                icon: "/rico-logo.png"
+                            });
+                        }
+                    }
+                }
+            } catch (e) { console.error("Sync Error", e); }
+        }
+
+        function triggerAlert(order) {
+            if (!audioEnabled) return;
+
+            const audio = document.getElementById('alert-sound');
+            audio.currentTime = 0;
+            audio.play();
+
+            // Triple-Ping for family
+            let rings = 0;
+            const ringInterval = setInterval(() => {
+                if (rings >= 2) clearInterval(ringInterval);
+                audio.currentTime = 0;
+                audio.play();
+                rings++;
+            }, 2000);
+
+            // Request Notification Permission if not already asked
+            if (Notification.permission === "default") {
+                Notification.requestPermission();
+            }
+
+            const name = order.customers?.name || "Invitado";
+            const num = order.order_number || order.id.slice(-4);
+
+            document.getElementById('alert-order-num').innerText = `#${num}`;
+            document.getElementById('alert-customer').innerText = name;
+
+            const itemsContainer = document.getElementById('alert-items');
+            itemsContainer.innerHTML = (order.items || []).map(i => `
+                <div class="flex justify-between items-start gap-4 border-b border-dark/5 pb-2">
+                    <p class="font-black text-lg">${i.qty || 1}x ${i.name}</p>
+                    <p class="text-[10px] font-bold opacity-60 uppercase">${(i.mods || []).map(m => m.name).join(', ')}</p>
+                </div>
+            `).join('') || '<p class="text-center opacity-50 italic">Sin detalles</p>';
+            
+            const alertModal = document.getElementById('order-alert');
+            alertModal.classList.remove('hidden');
+            document.body.classList.add('overflow-hidden');
+        }
+
+        function silenceAlert() {
+            const audio = document.getElementById('alert-sound');
+            audio.pause();
+            audio.currentTime = 0;
+            document.getElementById('order-alert').classList.add('hidden');
+        }
+
+        function testAlert() {
+            triggerAlert({ id: 'test', order_number: '99', customers: { name: 'ORDEN DE PRUEBA' } });
+        }
+    </script>
+</body>
+</html>

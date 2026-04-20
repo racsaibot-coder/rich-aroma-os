@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <link rel="icon" type="image/png" href="/favicon.png">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Rich Aroma | OS Hub</title>
+    <link rel="manifest" href="/pos-manifest.json">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link rel="apple-touch-icon" href="/rico-logo.png">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: { gold: '#C9A66B', dark: '#120C09' }
+                }
+            }
+        }
+    </script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap');
+        body { font-family: 'Inter', sans-serif; background-color: #120C09; color: white; overflow-x: hidden; }
+        .glass { background: rgba(255, 255, 255, 0.03); backdrop-filter: blur(10px); border: 1px border-white/10; }
+        .animate-swing { animation: swing 2s infinite; }
+        @keyframes swing {
+            0% { transform: rotate(0); }
+            10% { transform: rotate(10deg); }
+            20% { transform: rotate(-10deg); }
+            30% { transform: rotate(5deg); }
+            40% { transform: rotate(-5deg); }
+            50% { transform: rotate(0); }
+        }
+    </style>
+</head>
+<body class="min-h-screen flex items-center justify-center p-6">
+
+    <div class="w-full max-w-sm text-center space-y-8 animate-in fade-in zoom-in duration-500">
+        <!-- Logo -->
+        <div class="relative inline-block">
+            <div class="w-24 h-24 bg-gold/10 rounded-[2.5rem] flex items-center justify-center mx-auto border border-gold/20 shadow-2xl">
+                <img src="/rico-logo.png" class="w-16 h-16 object-contain" alt="Logo">
+            </div>
+            <div class="absolute -bottom-2 -right-2 bg-gold text-dark text-[10px] font-black px-2 py-0.5 rounded-full shadow-lg">OS</div>
+        </div>
+
+        <div>
+            <h1 class="text-3xl font-black uppercase tracking-tighter">Rich Aroma</h1>
+            <p class="text-white/40 font-bold text-xs uppercase tracking-widest mt-1">Sistema Operativo Central</p>
+        </div>
+
+        <!-- PIN Input Area -->
+        <div id="login-section" class="space-y-6">
+            <div class="space-y-2">
+                <input type="password" id="os-pin" maxlength="4" inputmode="numeric" onkeyup="if(event.key==='Enter') handleOSLogin()" class="w-full bg-transparent border-b-4 border-white/10 text-center text-6xl font-black text-gold outline-none tracking-[0.5em] py-4 transition-all focus:border-gold" placeholder="****">
+                <p id="auth-status" class="text-[9px] text-white/20 uppercase font-black tracking-widest">Ingrese su PIN de acceso</p>
+            </div>
+
+            <button onclick="handleOSLogin()" id="login-btn" class="w-full bg-gold text-dark py-5 rounded-[2rem] font-black text-xl shadow-xl shadow-gold/20 active:scale-95 transition-all">
+                INGRESAR
+            </button>
+        </div>
+
+        <!-- Hidden Loading State -->
+        <div id="loading-section" class="hidden space-y-4">
+            <i class="fas fa-circle-notch fa-spin text-3xl text-gold"></i>
+            <p class="text-[10px] font-black uppercase tracking-widest text-white/40">Sincronizando Perfil...</p>
+        </div>
+
+        <!-- Master Menu Container -->
+        <div id="master-menu" class="hidden space-y-4 animate-in fade-in slide-in-from-bottom-8 duration-500 text-left">
+            <h2 id="menu-title" class="text-gold font-black uppercase tracking-widest text-xs mb-2 text-center">Panel de Control</h2>
+            
+            <div class="grid grid-cols-1 gap-3" id="menu-grid">
+                <!-- Buttons injected via JS -->
+            </div>
+            
+            <button onclick="logout()" class="w-full py-4 text-white/20 font-black text-[10px] uppercase tracking-widest mt-6">Cerrar Sesión</button>
+        </div>
+    </div>
+
+    <script>
+        async function handleOSLogin() {
+            const pin = document.getElementById('os-pin').value;
+            if (pin.length !== 4) return;
+
+            const btn = document.getElementById('login-btn');
+            const loginSec = document.getElementById('login-section');
+            const loadSec = document.getElementById('loading-section');
+            const status = document.getElementById('auth-status');
+
+            loginSec.classList.add('hidden');
+            loadSec.classList.remove('hidden');
+
+            try {
+                const res = await fetch('/api/cash/verify-pin', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ pin })
+                });
+                const data = await res.json();
+
+                if (!res.ok) throw new Error(data.error || "PIN Inválido");
+
+                // Save session
+                localStorage.setItem('ra_kitchen_emp', JSON.stringify(data.employee));
+                localStorage.setItem('ra_staff_pin', pin);
+
+                renderUnifiedMenu(data.employee);
+
+            } catch (err) {
+                status.innerText = err.message;
+                status.classList.remove('text-white/20');
+                status.classList.add('text-red-500');
+                loginSec.classList.remove('hidden');
+                loadSec.classList.add('hidden');
+                document.getElementById('os-pin').value = '';
+            }
+        }
+
+        function renderUnifiedMenu(emp) {
+            const loadSec = document.getElementById('loading-section');
+            const masterMenu = document.getElementById('master-menu');
+            const grid = document.getElementById('menu-grid');
+            const title = document.getElementById('menu-title');
+            
+            const role = (emp.role || '').toLowerCase();
+            const isAdmin = role === 'admin' || role === 'manager';
+            const isMobile = window.innerWidth < 1024;
+            
+            loadSec.classList.add('hidden');
+            masterMenu.classList.remove('hidden');
+            title.innerText = isAdmin ? "Panel de Administrador" : "Menú de Personal";
+
+            let html = '';
+
+            // 1. Owner Dashboard (Admin Only)
+            if (isAdmin) {
+                html += `
+                <button onclick="window.location.href='/owner'" class="glass p-5 rounded-[2rem] w-full flex items-center gap-4 active:scale-95 transition-all">
+                    <div class="w-12 h-12 bg-gold/20 rounded-2xl flex items-center justify-center text-gold border border-gold/30">
+                        <i class="fas fa-chart-line text-xl"></i>
+                    </div>
+                    <div class="text-left">
+                        <p class="font-black text-sm uppercase tracking-tight">Owner Dashboard</p>
+                        <p class="text-[9px] text-white/40 font-bold uppercase tracking-widest">Ventas y Métricas</p>
+                    </div>
+                </button>`;
+            }
+
+            // 2. POS Option (Cashiers or Admins or Desktop)
+            if (isAdmin || role.includes('caja') || role.includes('cashier') || !isMobile) {
+                html += `
+                <button onclick="window.location.href='/pos-v2.html'" class="glass p-5 rounded-[2rem] w-full flex items-center gap-4 active:scale-95 transition-all">
+                    <div class="w-12 h-12 bg-blue-500/20 rounded-2xl flex items-center justify-center text-blue-400 border border-blue-500/30">
+                        <i class="fas fa-cash-register text-xl"></i>
+                    </div>
+                    <div class="text-left">
+                        <p class="font-black text-sm uppercase tracking-tight">POS Command Center</p>
+                        <p class="text-[9px] text-white/40 font-bold uppercase tracking-widest">Caja y Registro</p>
+                    </div>
+                </button>`;
+            }
+
+            // 3. Kitchen Option (Cooks, Baristas or Admins)
+            if (isAdmin || role.includes('barista') || role.includes('cook') || role.includes('cocina')) {
+                html += `
+                <button onclick="window.location.href='/kitchen'" class="glass p-5 rounded-[2rem] w-full flex items-center gap-4 active:scale-95 transition-all">
+                    <div class="w-12 h-12 bg-orange-500/20 rounded-2xl flex items-center justify-center text-orange-400 border border-orange-500/30">
+                        <i class="fas fa-fire-alt text-xl"></i>
+                    </div>
+                    <div class="text-left">
+                        <p class="font-black text-sm uppercase tracking-tight">Kitchen Portal</p>
+                        <p class="text-[9px] text-white/40 font-bold uppercase tracking-widest">Pedidos Entrantes</p>
+                    </div>
+                </button>`;
+            }
+
+            // 4. Alerts (EVERYONE)
+            html += `
+            <button onclick="window.location.href='/alerts'" class="glass p-5 rounded-[2rem] w-full flex items-center gap-4 active:scale-95 transition-all ${isAdmin ? 'border-gold/30 bg-gold/5' : ''}">
+                <div class="w-12 h-12 bg-gold/20 rounded-2xl flex items-center justify-center text-gold border border-gold/30">
+                    <i class="fas fa-bell text-xl ${isAdmin ? 'animate-swing' : ''}"></i>
+                </div>
+                <div class="text-left">
+                    <p class="font-black text-sm uppercase tracking-tight">Alertas en Vivo</p>
+                    <p class="text-[9px] text-white/40 font-bold uppercase tracking-widest">Sonido de Pedidos</p>
+                </div>
+            </button>`;
+
+            grid.innerHTML = html;
+        }
+
+        function logout() {
+            localStorage.removeItem('ra_kitchen_emp');
+            localStorage.removeItem('ra_staff_pin');
+            location.reload();
+        }
+
+        window.onload = () => {
+            const savedEmp = localStorage.getItem('ra_kitchen_emp');
+            const savedPin = localStorage.getItem('ra_staff_pin');
+            if (savedEmp && savedPin) {
+                document.getElementById('login-section').classList.add('hidden');
+                renderUnifiedMenu(JSON.parse(savedEmp));
+            } else {
+                document.getElementById('os-pin').focus();
+            }
+        };
+    </script>
+</body>
+</html>
