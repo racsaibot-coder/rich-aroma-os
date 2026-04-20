@@ -260,110 +260,110 @@
             var menu = []; var modG = []; var modO = []; var itemModG = []; var cart = [];
             var currentI = null; var currentM = {}; var fulfillment = 'pickup'; var deliveryFee = 0; var zoneName = "";
             var currentCustomer = null; var isSubmitting = false; var paymentMethod = 'cash';
-L224- 
-L225-             window.onload = async () => {
-L226-                 try {
-L227-                     await fetchStatus();
-L228-                     await loadMenu();
-L229-                 } catch(e) { console.error("Initialization failed", e); }
-L230-                 initStickyCats();
-L231-                 syncUser();
-L232-                 generateSlots();
-L233-             };
-L234- 
-L235-             async function fetchStatus() {
-L236-                 try {
-L237-                     const r = await fetch('/api/store/status');
-L238-                     if (r.ok) {
-L239-                         const d = await r.json();
-L240-                         if (d.isOpen === false) document.getElementById('closed-overlay').classList.remove('hidden');
-L241-                         document.getElementById('store-status-text').innerText = d.isOpen ? 'Abierto Ahora' : 'Cerrado';
-L242-                     }
-L243-                 } catch(e) { console.error("Status check failed", e); }
-L244-             }
-L245- 
-L246-             async function loadMenu(retries = 3) {
-L247-                 try {
-L248-                     const r = await fetch('/api/menu', { cache: 'no-cache' });
-L249-                     if (!r.ok) throw new Error("Failed to load menu: " + r.status);
-L250-                     const d = await r.json();
-L251-                     menu = d.items || [];
-L252-                     modG = d.modGroups || [];
-L253-                     modO = d.modOptions || [];
-L254-                     itemModG = d.itemModGroups || [];
-L255-                     document.getElementById('loading-msg').style.display = 'none';
-L256-                     renderMenu();
-L257-                 } catch(e) {
-L258-                     console.error("Menu load failed: " + e.toString());
-L259-                     if (retries > 0) {
-L260-                         console.log(`Retrying menu load... (${retries} left)`);
-L261-                         setTimeout(() => loadMenu(retries - 1), 1000);
-L262-                     } else {
-L263-                         document.getElementById('loading-msg').innerText = "Error al cargar el menú. Por favor recarga la página.";
-L264-                     }
-L265-                 }
-L266-             }
-L267- 
-L268-             function syncUser() {
-L269-                 try {
-L270-                     const d = localStorage.getItem('ra_customer_data');
-L271-                     if (d) {
-L272-                         currentCustomer = JSON.parse(d);
-L273-                         if (currentCustomer && currentCustomer.name) {
-L274-                             document.getElementById('user-pill').classList.remove('hidden');
-L275-                             document.getElementById('login-btn').classList.add('hidden');
-L276-                             document.getElementById('user-first-name').innerText = currentCustomer.name.split(' ')[0];
-L277-                             document.getElementById('check-name').value = currentCustomer.name;
-L278-                             document.getElementById('check-phone').value = currentCustomer.phone.replace('+504','').replace('+1','');
-L279-                             document.getElementById('check-payment-ui').classList.remove('hidden');
-L280-                             document.getElementById('check-rico-val').innerText = 'L ' + (parseFloat(currentCustomer.rico_balance) || 0).toFixed(2);
-L281-                         }
-L282-                     }
-L283-                 } catch(e) { console.error("User sync failed", e); }
-L284-             }
-L285- 
-L286-             window.openLogin = () => {
-L287-                 document.getElementById('login-overlay').classList.remove('hidden');
-L288-                 setTimeout(() => { document.getElementById('login-overlay').style.opacity = '1'; document.getElementById('login-drawer').classList.add('active'); }, 10);
-L289-             };
-L290-             window.closeLogin = () => {
-L291-                 document.getElementById('login-overlay').style.opacity = '0';
-L292-                 document.getElementById('login-drawer').classList.remove('active');
-L293-                 setTimeout(() => document.getElementById('login-overlay').classList.add('hidden'), 400);
-L294-             };
-L295-             window.submitLogin = async () => {
-L296-                 const phone = document.getElementById('login-phone').value.trim();
-L297-                 const pin = document.getElementById('login-pin').value.trim();
-L298-                 const country = document.getElementById('login-country-code').value;
-L299-                 if (!phone || pin.length < 4) return alert("Ingresa tu teléfono y PIN de 4 dígitos");
-L300-                 
-L301-                 const btn = document.getElementById('auth-btn'); btn.innerText = "ENTRANDO..."; btn.disabled = true;
-L302-                 try {
-L303-                     const r = await fetch('/api/store?action=customer_login', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ phone: country + phone, pin }) });
-L304-                     const d = await r.json();
-L305-                     if (!r.ok) throw new Error(d.error || "Error al entrar");
-L306-                     localStorage.setItem('ra_customer_data', JSON.stringify(d.customer));
-L307-                     syncUser(); closeLogin();
-L308-                     alert("¡Bienvenido de vuelta, " + d.customer.name.split(' ')[0] + "!");
-L309-                 } catch(e) { alert(e.message); }
-L310-                 finally { btn.innerText = "Entrar a mi Cuenta"; btn.disabled = false; }
-L311-             };
-L312- 
-L313-             window.showPoints = () => {
-L314-                 if (!currentCustomer) return;
-L315-                 alert(`Hola ${currentCustomer.name}!\n\nPuntos acumulados: ${currentCustomer.points || 0}\nRico Cash: L ${(currentCustomer.rico_balance || 0).toFixed(2)}`);
-L316-             };
-L317- 
-L318-             window.setPayment = (type) => {
-L319-                 if (type === 'rico_balance' && (currentCustomer?.rico_balance || 0) < (cart.reduce((s,i)=>s+i.finalPrice,0) + deliveryFee)) {
-L320-                     return alert("Saldo de Rico Cash insuficiente para esta orden.");
-L321-                 }
-L322-                 paymentMethod = type;
-L323-                 document.getElementById('pbtn-cash').className = "p-4 rounded-2xl border border-white/5 bg-white/5 text-white/20 text-center space-y-1 flex flex-col items-center opacity-50";
-L324-                 document.getElementById('pbtn-rico').className = "p-4 rounded-2xl border border-white/5 bg-white/5 text-white/20 text-center space-y-1 flex flex-col items-center opacity-50";
-L325-                 document.getElementById('pbtn-' + (type === 'cash' ? 'cash' : 'rico')).className = "p-4 rounded-2xl border border-gold bg-gold/10 text-gold text-center space-y-1 flex flex-col items-center";
-L326-                 document.getElementById('pbtn-' + (type === 'cash' ? 'cash' : 'rico')).classList.remove('opacity-50');
-L327-             };
+
+            window.onload = async () => {
+                try {
+                    await fetchStatus();
+                    await loadMenu();
+                } catch(e) { console.error("Initialization failed", e); }
+                initStickyCats();
+                syncUser();
+                generateSlots();
+            };
+
+            async function fetchStatus() {
+                try {
+                    const r = await fetch('/api/store/status');
+                    if (r.ok) {
+                        const d = await r.json();
+                        if (d.isOpen === false) document.getElementById('closed-overlay').classList.remove('hidden');
+                        document.getElementById('store-status-text').innerText = d.isOpen ? 'Abierto Ahora' : 'Cerrado';
+                    }
+                } catch(e) { console.error("Status check failed", e); }
+            }
+
+            async function loadMenu(retries = 3) {
+                try {
+                    const r = await fetch('/api/menu', { cache: 'no-cache' });
+                    if (!r.ok) throw new Error("Failed to load menu: " + r.status);
+                    const d = await r.json();
+                    menu = d.items || [];
+                    modG = d.modGroups || [];
+                    modO = d.modOptions || [];
+                    itemModG = d.itemModGroups || [];
+                    document.getElementById('loading-msg').style.display = 'none';
+                    renderMenu();
+                } catch(e) {
+                    console.error("Menu load failed: " + e.toString());
+                    if (retries > 0) {
+                        console.log(`Retrying menu load... (${retries} left)`);
+                        setTimeout(() => loadMenu(retries - 1), 1000);
+                    } else {
+                        document.getElementById('loading-msg').innerText = "Error al cargar el menú. Por favor recarga la página.";
+                    }
+                }
+            }
+
+            function syncUser() {
+                try {
+                    const d = localStorage.getItem('ra_customer_data');
+                    if (d) {
+                        currentCustomer = JSON.parse(d);
+                        if (currentCustomer && currentCustomer.name) {
+                            document.getElementById('user-pill').classList.remove('hidden');
+                            document.getElementById('login-btn').classList.add('hidden');
+                            document.getElementById('user-first-name').innerText = currentCustomer.name.split(' ')[0];
+                            document.getElementById('check-name').value = currentCustomer.name;
+                            document.getElementById('check-phone').value = currentCustomer.phone.replace('+504','').replace('+1','');
+                            document.getElementById('check-payment-ui').classList.remove('hidden');
+                            document.getElementById('check-rico-val').innerText = 'L ' + (parseFloat(currentCustomer.rico_balance) || 0).toFixed(2);
+                        }
+                    }
+                } catch(e) { console.error("User sync failed", e); }
+            }
+
+            window.openLogin = () => {
+                document.getElementById('login-overlay').classList.remove('hidden');
+                setTimeout(() => { document.getElementById('login-overlay').style.opacity = '1'; document.getElementById('login-drawer').classList.add('active'); }, 10);
+            };
+            window.closeLogin = () => {
+                document.getElementById('login-overlay').style.opacity = '0';
+                document.getElementById('login-drawer').classList.remove('active');
+                setTimeout(() => document.getElementById('login-overlay').classList.add('hidden'), 400);
+            };
+            window.submitLogin = async () => {
+                const phone = document.getElementById('login-phone').value.trim();
+                const pin = document.getElementById('login-pin').value.trim();
+                const country = document.getElementById('login-country-code').value;
+                if (!phone || pin.length < 4) return alert("Ingresa tu teléfono y PIN de 4 dígitos");
+                
+                const btn = document.getElementById('auth-btn'); btn.innerText = "ENTRANDO..."; btn.disabled = true;
+                try {
+                    const r = await fetch('/api/store?action=customer_login', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ phone: country + phone, pin }) });
+                    const d = await r.json();
+                    if (!r.ok) throw new Error(d.error || "Error al entrar");
+                    localStorage.setItem('ra_customer_data', JSON.stringify(d.customer));
+                    syncUser(); closeLogin();
+                    alert("¡Bienvenido de vuelta, " + d.customer.name.split(' ')[0] + "!");
+                } catch(e) { alert(e.message); }
+                finally { btn.innerText = "Entrar a mi Cuenta"; btn.disabled = false; }
+            };
+
+            window.showPoints = () => {
+                if (!currentCustomer) return;
+                alert(`Hola ${currentCustomer.name}!\n\nPuntos acumulados: ${currentCustomer.points || 0}\nRico Cash: L ${(currentCustomer.rico_balance || 0).toFixed(2)}`);
+            };
+
+            window.setPayment = (type) => {
+                if (type === 'rico_balance' && (currentCustomer?.rico_balance || 0) < (cart.reduce((s,i)=>s+i.finalPrice,0) + deliveryFee)) {
+                    return alert("Saldo de Rico Cash insuficiente para esta orden.");
+                }
+                paymentMethod = type;
+                document.getElementById('pbtn-cash').className = "p-4 rounded-2xl border border-white/5 bg-white/5 text-white/20 text-center space-y-1 flex flex-col items-center opacity-50";
+                document.getElementById('pbtn-rico').className = "p-4 rounded-2xl border border-white/5 bg-white/5 text-white/20 text-center space-y-1 flex flex-col items-center opacity-50";
+                document.getElementById('pbtn-' + (type === 'cash' ? 'cash' : 'rico')).className = "p-4 rounded-2xl border border-gold bg-gold/10 text-gold text-center space-y-1 flex flex-col items-center";
+                document.getElementById('pbtn-' + (type === 'cash' ? 'cash' : 'rico')).classList.remove('opacity-50');
+            };
 
             function initStickyCats() {
                 const cats = [{id:'all', n:'Todo', i:'✨'}, {id:'Combos', n:'Combos', i:'🔥'}, {id:'Calientes', n:'Café', i:'☕'}, {id:'Heladas', n:'Heladas', i:'🥤'}, {id:'Comida', n:'Comida', i:'🥐'}, {id:'Repostería', n:'Postres', i:'🍰'}];
