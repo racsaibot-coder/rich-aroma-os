@@ -1,4 +1,4 @@
-const CACHE_NAME = 'rich-aroma-v2';
+const CACHE_NAME = 'rich-aroma-v3';
 const ASSETS = [
     '/',
     '/index.html',
@@ -46,31 +46,35 @@ self.addEventListener('activate', event => {
 
 // Fetch Event
 self.addEventListener('fetch', event => {
-    // API calls: Network First, then Offline (if GET)
+    // API calls: Network Only
     if (event.request.url.includes('/api/')) {
-        // We generally don't cache API POSTs, only GETs might be useful.
-        // But for this offline-first app, we handle data via offline-manager.js logic (IndexedDB).
-        // So we just let the fetch fail if offline, and the UI handles it.
         return; 
     }
 
-    // Static Assets: Cache First, then Network
+    // HTML files: Network First
+    if (event.request.headers.get('accept').includes('text/html')) {
+        event.respondWith(
+            fetch(event.request).then(networkResponse => {
+                return caches.open(CACHE_NAME).then(cache => {
+                    cache.put(event.request, networkResponse.clone());
+                    return networkResponse;
+                });
+            }).catch(() => caches.match(event.request))
+        );
+        return;
+    }
+
+    // Static Assets: Cache First
     event.respondWith(
         caches.match(event.request).then(cachedResponse => {
             return cachedResponse || fetch(event.request).then(networkResponse => {
                 return caches.open(CACHE_NAME).then(cache => {
-                    // Cache new static assets visited
                     if (event.request.method === 'GET' && networkResponse.status === 200) {
                         cache.put(event.request, networkResponse.clone());
                     }
                     return networkResponse;
                 });
             });
-        }).catch(() => {
-            // Fallback for HTML pages
-            if (event.request.headers.get('accept').includes('text/html')) {
-                return caches.match('/index.html');
-            }
         })
     );
 });
