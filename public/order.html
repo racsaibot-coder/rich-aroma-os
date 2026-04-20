@@ -296,7 +296,7 @@
                 const main = document.getElementById('menu-feed');
                 const sortRules = { 'Combos':['combo_1','combo_2','combo_3','combo_4'], 'Heladas':['cold_supreme_frappe','cold_fresa_frappe','cold_coffee_frappe','cold_french_vanilla','cold_caramel_iced'], 'Comida':['food_avocado_toast_huevo','food_banano_almond_toast','food_chicken_salad_bowl','food_baleadas','food_chicken_melt'] };
                 const cats = ['Combos', 'Calientes', 'Heladas', 'Comida', 'Repostería', 'Menú Secreto', 'Otros'];
-                cont.innerHTML = cats.map(cat => {
+                main.innerHTML = cats.map(cat => {
                     let items = menu.filter(i => getItemCat(i) === cat);
                     if (!items.length) return '';
                     const rule = sortRules[cat];
