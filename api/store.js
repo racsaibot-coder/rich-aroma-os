@@ -46,36 +46,135 @@ async function syncMembershipState(customer) {
     return customer;
 }
 
-function applyVipBenefits(orderItems, customer, paymentMethod) {
+async function syncDailyReload(customer) {
+    if (!customer || customer.customer_type !== 'employee') return customer;
+
+    const today = getHondurasDate();
+    const lastReload = customer.last_reload_at ? new Date(customer.last_reload_at).toISOString().split('T')[0] : null;
+
+    if (today !== lastReload) {
+        // SECURITY LOCK: Only reload if they have an active "in" punch today
+        const { data: punch } = await supabase.from('time_entries')
+            .select('*')
+            .eq('employee_id', customer.id) // Assuming customer ID matches employee ID or we can link them
+            .eq('type', 'in')
+            .gte('timestamp', today + 'T00:00:00Z')
+            .limit(1);
+
+        if (!punch || punch.length === 0) {
+            console.log(`[Reload Blocked] Employee ${customer.name} is not clocked in today.`);
+            return customer;
+        }
+
+        // Reload to 250 Lps
+        const { data, error } = await supabase.from('customers').update({
+            rico_balance: 250.00,
+            last_reload_at: new Date().toISOString()
+        }).eq('id', customer.id).select().single();
+        
+        if (data) {
+            await supabase.from('balance_history').insert({
+                customer_id: customer.id,
+                type: 'daily_employee_reload',
+                amount: 250.00,
+                notes: `Daily shift meal reload for ${today}`
+            });
+            return data;
+        }
+    }
+    return customer;
+}
+
+function applyOrderBenefits(orderItems, customer, paymentMethod) {
     const today = getHondurasDate();
     let freeDrinkClaimedThisOrder = false;
-    const isVip = customer.is_vip === true || (Array.isArray(customer.tags) && customer.tags.includes('VIP'));
+    
+    const isVip = customer?.is_vip === true || (Array.isArray(customer?.tags) && customer?.tags.includes('VIP'));
+    
+    // Check both column and tags for fallback support
+    let customerType = customer?.customer_type || 'regular';
+    if (customerType === 'regular' && Array.isArray(customer?.tags)) {
+        if (customer.tags.includes('employee')) customerType = 'employee';
+        else if (customer.tags.includes('senior')) customerType = 'senior';
+        else if (customer.tags.includes('senior_plus')) customerType = 'senior_plus';
+        else if (customer.tags.includes('hero')) customerType = 'hero';
+    }
+
+    // New specific percentages
+    const rolePcts = {
+        'senior': 0.25,        // Tercera Edad
+        'senior_plus': 0.35,   // Cuarta Edad
+        'hero': 0.15,          // Community Hero
+        'employee': 0.20       // Staff (standard 20%)
+    };
+
+    const isSpecificRole = ['senior', 'senior_plus', 'hero'].includes(customerType);
+    let discountedFoodId = null;
+    let discountedDrinkId = null;
+
     const canClaimFreeDrink = isVip && (customer.last_free_drink_date !== today);
 
+    // Sort items by price descending so we apply the discount to the most expensive eligible item
+    const sortedItems = [...(orderItems || [])].sort((a,b) => parseFloat(b.price) - parseFloat(a.price));
+    
+    // We need to keep track of applied discounts across multiple units of the same item
     const processedItems = (orderItems || []).map(item => {
         let finalPrice = parseFloat(item.price) || 0;
         let appliedDiscount = 0;
+        let itemQty = item.qty || 1;
+        let totalItemPrice = finalPrice * itemQty;
+        let totalItemDiscount = 0;
+
+        // 1. VIP Free Drink (100% off 1 unit of 1 eligible item)
         if (canClaimFreeDrink && !freeDrinkClaimedThisOrder && item.is_vip_free_eligible) {
-            appliedDiscount = finalPrice;
-            finalPrice = 0;
+            totalItemDiscount += finalPrice;
             freeDrinkClaimedThisOrder = true;
             item.is_free_benefit = true;
         }
-        if (isVip && paymentMethod === 'rico_balance' && item.is_house_made && finalPrice > 0) {
-            const discount = finalPrice * 0.10;
-            finalPrice -= discount;
-            appliedDiscount += discount;
+
+        // 2. Role-based Discounts
+        let discountPct = rolePcts[customerType] || 0;
+        
+        // standard VIP 10% on house-made items if paying with Rico Cash
+        if (discountPct === 0 && isVip && paymentMethod === 'rico_balance' && item.is_house_made) {
+            discountPct = 0.10;
         }
+
+        if (discountPct > 0) {
+            if (isSpecificRole) {
+                // Rule: One single food and one single beverage ONLY
+                let unitsToDiscount = 0;
+                if (isFood(item) && !discountedFoodId) {
+                    unitsToDiscount = 1;
+                    discountedFoodId = item.id;
+                } else if (isDrink(item) && !discountedDrinkId) {
+                    unitsToDiscount = 1;
+                    discountedDrinkId = item.id;
+                }
+                
+                if (unitsToDiscount > 0) {
+                    totalItemDiscount += (finalPrice * discountPct);
+                }
+            } else {
+                // Standard role discount (Employee or VIP) applies to ALL units
+                totalItemDiscount += (totalItemPrice - totalItemDiscount) * discountPct;
+            }
+        }
+
         return { 
             ...item, 
             finalPrice: parseFloat(finalPrice.toFixed(2)), 
-            appliedDiscount: parseFloat(appliedDiscount.toFixed(2)) 
+            totalDiscount: parseFloat(totalItemDiscount.toFixed(2)),
+            unitDiscount: parseFloat((totalItemDiscount / itemQty).toFixed(2)),
+            netTotal: parseFloat((totalItemPrice - totalItemDiscount).toFixed(2))
         };
     });
 
+    const finalTotal = processedItems.reduce((s,i) => s + i.netTotal, 0);
+
     return { 
         items: processedItems, 
-        total: parseFloat(processedItems.reduce((s,i) => s + (i.finalPrice * i.qty), 0).toFixed(2)), 
+        total: parseFloat(finalTotal.toFixed(2)), 
         freeDrinkClaimed: freeDrinkClaimedThisOrder 
     };
 }
@@ -137,6 +236,17 @@ async function deductInventory(order, supabase) {
     }
 }
 
+async function awardPoints(customerId, amount, supabase) {
+    if (!customerId || amount <= 0) return;
+    const { data: customer } = await supabase.from('customers').select('points').eq('id', customerId).single();
+    if (!customer) return;
+    
+    await supabase.from('customers').update({
+        points: (customer.points || 0) + Math.floor(amount)
+    }).eq('id', customerId);
+    console.log(`[Loyalty] Awarded ${Math.floor(amount)} points to ${customerId}`);
+}
+
 async function activateVip(id, supabase) {
     const { data: customer } = await supabase.from('customers').select('*').eq('id', id).single();
     if (!customer) return;
@@ -167,22 +277,41 @@ async function activateVip(id, supabase) {
 }
 
 function isDrink(item) {
-    const id = (item.id || '').toLowerCase();
+    if (!item) return false;
     const name = (item.name || '').toLowerCase();
+    const id = (item.id || '').toLowerCase();
     const cat = (item.category || '').toLowerCase();
-    return id.startsWith('hot_') || id.startsWith('cold_') || id.startsWith('frappe_') || 
-           name.includes('combo') || name.includes('latte') || name.includes('caf') || 
-           name.includes('jugo') || name.includes('frappe') || name.includes('tés') ||
+    if (id === 'vip_membership' || name.includes('membresía')) return false;
+
+    const hasDrinkKeyword = id.startsWith('hot_') || id.startsWith('cold_') || id.startsWith('frappe_') || 
+           name.includes('latte') || name.includes('brew') || name.includes('capp') || 
+           name.includes('tea') || name.includes('te ') || name.includes('icee') || 
+           name.includes('espresso') || name.includes('mocha') || name.includes('matcha') || 
+           name.includes('frappe') || name.includes('macchiato') || name.includes('jugo') || 
+           name.includes('licuado') || name.includes('granita') || name.includes('smoothie') || 
+           name.includes('caliente') || name.includes('helada') || name.includes('americano') ||
+           name.includes('chocolate') || name.includes('cafe') || name.includes('café') ||
            cat.includes('coffee') || cat.includes('drinks') || cat.includes('heladas');
+
+    if (id.startsWith('food_') && !name.includes('combo')) return false;
+    return hasDrinkKeyword || (name.includes('combo') && !id.startsWith('food_'));
 }
 
 function isFood(item) {
-    const id = (item.id || '').toLowerCase();
+    if (!item) return false;
     const name = (item.name || '').toLowerCase();
+    const id = (item.id || '').toLowerCase();
     const cat = (item.category || '').toLowerCase();
-    return id.startsWith('food_') || name.includes('baleada') || name.includes('sandwich') || 
-           name.includes('combo') || name.includes('crepa') || name.includes('toast') ||
+    if (id === 'vip_membership' || name.includes('membresía')) return false;
+
+    const hasFoodKeyword = id.startsWith('food_') || name.includes('baleada') || name.includes('sandwich') || 
+           name.includes('crepa') || name.includes('bowl') || name.includes('toast') || 
+           name.includes('melt') || name.includes('fries') || name.includes('papas') || 
+           name.includes('burger') || name.includes('hamburguesa') ||
            cat.includes('food') || cat.includes('comida');
+
+    if ((id.startsWith('hot_') || id.startsWith('cold_') || id.startsWith('frappe_')) && !name.includes('combo')) return false;
+    return hasFoodKeyword || (name.includes('combo') && !id.startsWith('hot_') && !id.startsWith('cold_') && !id.startsWith('frappe_'));
 }
 
 module.exports = async function handler(req, res) {
@@ -220,6 +349,79 @@ module.exports = async function handler(req, res) {
             return res.json({ status: data.status });
         }
 
+        // CUSTOMER PROFILE LOOKUP
+        if (action === 'customer_profile' && req.method === 'GET') {
+            const { phone } = req.query;
+            if (!phone) return res.status(400).json({ error: "Phone required" });
+            const cleanPhone = phone.replace(/[^\d+]/g, '');
+            const { data: customer, error } = await supabase.from('customers').select('*').eq('phone', cleanPhone).single();
+            if (error) return res.status(404).json({ error: "Customer not found" });
+            
+            let synced = await syncMembershipState(customer);
+            synced = await syncDailyReload(synced);
+            
+            return res.json(synced);
+        }
+
+        // CUSTOMER LOOKUP BY PHONE
+        if (action === 'customer_by_phone' && req.method === 'GET') {
+            const { query } = req.query;
+            if (!query) return res.status(400).json({ error: "Phone required" });
+            const cleanDigits = query.replace(/\D/g, '');
+            
+            // Try exact match first
+            let { data: customer, error } = await supabase.from('customers').select('*').eq('phone', query).single();
+            
+            // If not found, try a partial match on the last 10 digits
+            if (!customer) {
+                const search = '%' + cleanDigits.slice(-10);
+                const { data: partialData } = await supabase.from('customers').select('*').ilike('phone', search).limit(1).single();
+                customer = partialData;
+            }
+
+            if (error && error.code !== 'PGRST116' && !customer) throw error;
+            return res.json(customer || { id: null });
+        }
+
+        // CUSTOMER CREATE
+        if (action === 'customer_create' && req.method === 'POST') {
+            const { name, phone, pin, customer_type, dob } = req.body;
+            if (!name || !phone) return res.status(400).json({ error: "Nombre y teléfono requeridos" });
+            
+            const cleanPhone = phone.replace(/[^\d+]/g, '');
+            const id = 'CUST-' + Date.now().toString().slice(-6);
+
+            // FALLBACK: Use tags for customer_type and email for dob while columns are missing
+            const tags = ['New Member'];
+            if (customer_type && customer_type !== 'regular') tags.push(customer_type);
+
+            // New customers get 30 Lps welcome bonus in Rico Cash
+            const { data, error } = await supabase.from('customers').insert({
+                id,
+                name,
+                phone: cleanPhone,
+                pin: pin || '1234',
+                tags: tags,
+                email: dob || null, // Temporary place for DOB
+                rico_balance: 30.00
+            }).select().single();
+
+            if (error) {
+                if (error.code === '23505') return res.status(400).json({ error: "Este número ya está registrado" });
+                throw error;
+            }
+
+            // Log the bonus
+            await supabase.from('balance_history').insert({
+                customer_id: id,
+                type: 'welcome_bonus',
+                amount: 30.00,
+                notes: 'Welcome Offer Bonus'
+            });
+
+            return res.json(data);
+        }
+
         // CUSTOMER LOGIN
         if (action === 'customer_login' && req.method === 'POST') {
             const { phone, pin } = req.body;
@@ -228,7 +430,10 @@ module.exports = async function handler(req, res) {
             const { data: customer, error } = await supabase.from('customers').select('*').eq('phone', cleanPhone).single();
             if (error || !customer) return res.status(404).json({ error: "Usuario no encontrado" });
             if (customer.pin && customer.pin !== pin) return res.status(401).json({ error: "PIN incorrecto" });
-            const synced = await syncMembershipState(customer);
+            
+            let synced = await syncMembershipState(customer);
+            synced = await syncDailyReload(synced);
+            
             return res.json({ message: "Login successful", customer: synced });
         }
 
@@ -244,7 +449,14 @@ module.exports = async function handler(req, res) {
             ]);
 
             if (rItems.error) console.error("Items Error:", rItems.error);
-            const filteredItems = (rItems.data || []).filter(i => isAdmin || i.available !== false);
+            const filteredItems = (rItems.data || []).filter(i => isAdmin || i.available !== false).map(item => {
+                // Remove heavy base64 data only if it exceeds 50KB
+                const cleanItem = { ...item };
+                if (cleanItem.image_url && cleanItem.image_url.startsWith('data:') && cleanItem.image_url.length > 50000) {
+                    delete cleanItem.image_url;
+                }
+                return cleanItem;
+            });
 
             const categoryMeta = {
                 combos: { name: 'Combos', icon: '🔥' },
@@ -344,7 +556,18 @@ module.exports = async function handler(req, res) {
 
         // ORDERS POST
         if (action === 'orders' && req.method === 'POST') {
-            const { items, subtotal, total, customerId, paymentMethod, notes, fulfillmentType, status, scheduledFor } = req.body;
+            const { items, subtotal, total, customerId, paymentMethod, secondaryPaymentMethod, ricoAmount, notes, fulfillmentType, status, scheduledFor, shiftId } = req.body;
+            
+            // --- HARD LOCK: SHIFT VALIDATION ---
+            if (shiftId) {
+                const { data: shift } = await supabase.from('cash_shifts').select('status').eq('id', shiftId).single();
+                if (!shift || shift.status !== 'open') {
+                    return res.status(403).json({ 
+                        error: "TURNO CERRADO: No se pueden procesar órdenes en este turno.",
+                        code: 'SHIFT_CLOSED'
+                    });
+                }
+            }
             
             let customer = null;
             if (customerId) {
@@ -367,7 +590,7 @@ module.exports = async function handler(req, res) {
             let finalOrder = { items: itemsWithMeta, total: parseFloat(total) || 0, discount: 0 };
 
             if (customer) {
-                const calculation = applyVipBenefits(itemsWithMeta, customer, paymentMethod);
+                const calculation = applyOrderBenefits(itemsWithMeta, customer, paymentMethod);
                 finalOrder = calculation;
                 if (calculation.freeDrinkClaimed) {
                     await supabase.from('customers').update({ last_free_drink_date: getHondurasDate() }).eq('id', customer.id);
@@ -389,31 +612,82 @@ module.exports = async function handler(req, res) {
             let finalNotes = notes || '';
             if (fulfillmentType) finalNotes += ` [TYPE: ${fulfillmentType}]`;
             if (scheduledFor) finalNotes += ` [SCHEDULED: ${scheduledFor}]`;
+            if (secondaryPaymentMethod) finalNotes += ` [SPLIT: ${paymentMethod} & ${secondaryPaymentMethod}]`;
+
+            // --- AUTO-LINK TO ACTIVE SHIFT ---
+            let resolvedShiftId = req.body.shiftId;
+            if (!resolvedShiftId) {
+                const { data: activeShift } = await supabase.from('cash_shifts').select('id').eq('status', 'open').order('opened_at', {ascending:false}).limit(1).maybeSingle();
+                if (activeShift) resolvedShiftId = activeShift.id;
+            }
 
             const orderData = {
-                id: `ORD-${getHondurasDate()}-${Date.now().toString().slice(-4)}`,
+                id: `ORD-${Date.now()}-${Math.floor(Math.random() * 100000)}`,
                 order_number: orderNum,
                 items: finalOrder.items,
-                subtotal: parseFloat(subtotal) || 0,
+                subtotal: parseFloat(subtotal) || finalOrder.total,
                 discount: finalOrder.discount || 0,
-                total: finalOrder.total,
+                total: Math.round(finalOrder.total), // Round to nearest whole number for clean billing
                 status: status || 'pending',
                 payment_method: paymentMethod,
+                secondary_payment_method: secondaryPaymentMethod || null,
+                rico_amount_paid: (paymentMethod === 'rico_balance' || secondaryPaymentMethod === 'rico_balance') ? parseFloat(ricoAmount) : 0,
                 customer_id: customerId,
-                notes: finalNotes
+                notes: finalNotes,
+                shift_id: resolvedShiftId
             };
 
-            if (paymentMethod === 'rico_balance' && customer) {
+            // HANDLE RICO CASH DEDUCTION (Support for Split)
+            if ((paymentMethod === 'rico_balance' || secondaryPaymentMethod === 'rico_balance') && customer) {
                 const balance = parseFloat(customer.rico_balance) || 0;
-                if (balance >= orderData.total) {
-                    orderData.status = 'paid';
-                    await supabase.from('customers').update({ rico_balance: balance - orderData.total }).eq('id', customer.id);
+                const deduction = (secondaryPaymentMethod) ? parseFloat(ricoAmount) : orderData.total;
+                
+                if (balance >= deduction) {
+                    await supabase.from('customers').update({ rico_balance: balance - deduction }).eq('id', customer.id);
+                    // Log to balance history
+                    await supabase.from('balance_history').insert({
+                        customer_id: customer.id,
+                        type: 'purchase',
+                        amount: -deduction,
+                        notes: `Order #${orderNum}${secondaryPaymentMethod ? ' (Split)' : ''}`
+                    });
                 } else return res.status(400).json({ error: "Saldo insuficiente" });
             }
 
             const { data, error } = await supabase.from('orders').insert(orderData).select().single();
             if (error) throw error;
+
+            // 3. LOYALTY & VIP POST-PROCESSING
+            if (customerId && (paymentMethod === 'rico_balance' || secondaryPaymentMethod)) {
+                await awardPoints(customerId, orderData.total, supabase);
+                const hasMembership = orderData.items && orderData.items.some(i => i.id === 'vip_membership');
+                if (hasMembership) await activateVip(customerId, supabase);
+            }
+
             return res.json(data);
+        }
+
+        // TOGGLE INDIVIDUAL ITEM STATUS
+        if (action === 'toggle_item_ready' && req.method === 'PATCH') {
+            const { orderId, itemIdx, status } = req.body;
+            if (!orderId || itemIdx === undefined) return res.status(400).json({ error: "Missing data" });
+
+            const { data: order } = await supabase.from('orders').select('items, status').eq('id', orderId).single();
+            if (!order) return res.status(404).json({ error: "Order not found" });
+
+            const newItems = [...order.items];
+            if (newItems[itemIdx]) {
+                newItems[itemIdx].status = status; // 'ready' or null
+            }
+
+            // Check if ALL items are now ready
+            const allReady = newItems.every(i => i.status === 'ready');
+            const updates = { items: newItems };
+            if (allReady) updates.status = 'ready';
+
+            const { data: updated, error } = await supabase.from('orders').update(updates).eq('id', orderId).select().single();
+            if (error) throw error;
+            return res.json(updated);
         }
 
         // ORDER UPDATE
@@ -456,8 +730,9 @@ module.exports = async function handler(req, res) {
             const isPaidOrDone = ['paid', 'ready', 'completed'].includes(order.status);
             
             if (isPaidOrDone) {
-                // 1. VIP Activation
+                // 1. VIP Activation & Loyalty Points
                 if (order.customer_id) {
+                    await awardPoints(order.customer_id, order.total, supabase);
                     const hasMembership = order.items && order.items.some(i => i.id === 'vip_membership');
                     if (hasMembership) await activateVip(order.customer_id, supabase);
                 }

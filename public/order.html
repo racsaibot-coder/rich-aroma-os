@@ -36,6 +36,22 @@
         @keyframes bounce-in { 0% { transform: scale(0.5); opacity: 0; } 70% { transform: scale(1.1); } 100% { transform: scale(1); opacity: 1; } }
         .animate-bounce-in { animation: bounce-in 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
     </style>
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/sw-order.js').then(reg => {
+                    reg.onupdatefound = () => {
+                        const installingWorker = reg.installing;
+                        installingWorker.onstatechange = () => {
+                            if (installingWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                                if (confirm('Nueva versión disponible. ¿Recargar ahora?')) window.location.reload();
+                            }
+                        };
+                    };
+                });
+            });
+        }
+    </script>
 </head>
 <body class="min-h-screen">
 
@@ -273,8 +289,8 @@
             function renderMenu() {
                 const main = document.getElementById('menu-feed');
                 const sortRules = { 'Combos':['combo_1','combo_2','combo_3','combo_4'], 'Heladas':['cold_supreme_frappe','cold_fresa_frappe','cold_coffee_frappe','cold_french_vanilla','cold_caramel_iced'], 'Comida':['food_avocado_toast_huevo','food_banano_almond_toast','food_chicken_salad_bowl','food_baleadas','food_chicken_melt'] };
-                const cats = ['Combos', 'Calientes', 'Heladas', 'Comida', 'Repostería', 'Menú Secreto'];
-                main.innerHTML = cats.map(cat => {
+                const cats = ['Combos', 'Calientes', 'Heladas', 'Comida', 'Repostería', 'Menú Secreto', 'Otros'];
+                cont.innerHTML = cats.map(cat => {
                     let items = menu.filter(i => getItemCat(i) === cat);
                     if (!items.length) return '';
                     const rule = sortRules[cat];
