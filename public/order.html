@@ -4,7 +4,7 @@
     <link rel="icon" type="image/png" href="/favicon.png">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Rich Aroma | Ordenar</title>
+    <title>Rich Aroma | Pedir Online</title>
     <link rel="manifest" href="/order-manifest.json">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -15,1187 +15,486 @@
         tailwind.config = {
             theme: {
                 extend: {
-                    colors: {
-                        gold: '#C9A66B',
-                        dark: '#1E1610',
-                        charcoal: '#2C241E',
-                        cream: '#F5F5F0'
-                    },
-                    fontFamily: {
-                        sans: ['Inter', 'sans-serif'],
-                        display: ['Playfair Display', 'serif']
-                    }
+                    colors: { gold: '#C9A66B', dark: '#120C09', charcoal: '#1E1610', success: '#10B981', error: '#EF4444' },
+                    fontFamily: { sans: ['Inter', 'sans-serif'], display: ['Playfair Display', 'serif'] }
                 }
             }
         }
     </script>
     <style>
-        body { background-color: #1E1610; color: #F5F5F0; font-family: 'Inter', sans-serif; }
-        .gold-btn { background: linear-gradient(135deg, #C9A66B 0%, #B08D55 100%); color: #1E1610; }
-        .item-card { background: rgba(44, 36, 30, 0.6); border: 1px solid rgba(201, 166, 107, 0.1); backdrop-filter: blur(10px); }
-        .floating-cart { box-shadow: 0 -4px 20px rgba(0,0,0,0.4); }
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&family=Playfair+Display:wght@700;900&display=swap');
+        body { background-color: #120C09; color: #F5F5F0; font-family: 'Inter', sans-serif; -webkit-tap-highlight-color: transparent; overflow-x: hidden; }
+        .gold-gradient { background: linear-gradient(135deg, #C9A66B 0%, #A68A55 100%); }
+        .glass { background: rgba(30, 22, 16, 0.7); backdrop-filter: blur(15px); border: 1px solid rgba(201, 166, 107, 0.1); }
         .hide-scrollbar::-webkit-scrollbar { display: none; }
-        .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-        .secret-glow {
-            animation: secret-pulse 2s infinite;
-            border-color: rgba(201,166,107,0.4) !important;
-        }
-        @keyframes secret-pulse {
-            0% { box-shadow: 0 0 5px rgba(201,166,107,0.2); }
-            50% { box-shadow: 0 0 20px rgba(201,166,107,0.6); border-color: #C9A66B !important; }
-            100% { box-shadow: 0 0 5px rgba(201,166,107,0.2); }
-        }
+        .drawer { transition: transform 0.4s cubic-bezier(0.32, 0.72, 0, 1); transform: translateY(100%); }
+        .drawer.active { transform: translateY(0); }
+        .item-card { transition: all 0.3s ease; }
+        .item-card:active { transform: scale(0.96); opacity: 0.8; }
+        .category-pill { transition: all 0.2s ease; border: 1px solid rgba(255,255,255,0.1); }
+        .category-pill.active { background: #C9A66B; color: #120C09; border-color: #C9A66B; box-shadow: 0 4px 15px rgba(201,166,107,0.3); }
+        @keyframes bounce-in { 0% { transform: scale(0.5); opacity: 0; } 70% { transform: scale(1.1); } 100% { transform: scale(1); opacity: 1; } }
+        .animate-bounce-in { animation: bounce-in 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
     </style>
 </head>
-<body class="pb-24">
+<body class="min-h-screen">
 
-    <!-- Closed Overlay -->
-    <div id="closed-overlay" class="hidden fixed inset-0 bg-dark z-[200] flex flex-col items-center justify-center p-6 text-center backdrop-blur-md">
-        <div class="w-24 h-24 bg-red-500/20 text-red-500 rounded-full flex items-center justify-center text-4xl mb-6 shadow-[0_0_30px_rgba(239,68,68,0.2)]">
-            <i class="fas fa-clock"></i>
-        </div>
-        <h2 class="text-3xl font-display font-bold text-white mb-2">Rich Aroma está Cerrado</h2>
-        <div class="bg-white/5 border border-white/10 rounded-3xl p-6 mb-8 max-w-xs mx-auto text-center">
-            <p class="text-gold font-bold uppercase tracking-widest text-[10px] mb-3">Horario de Atención</p>
-            <div class="space-y-2">
-                <p class="text-white text-sm">Lunes a Sábado: <span class="font-black text-gold">7:00 AM - 7:00 PM</span></p>
-                <p class="text-white text-sm">Domingo: <span class="font-black text-gold">8:00 AM - 6:00 PM</span></p>
-            </div>
-        </div>
-        <p class="text-white/40 mb-8 text-sm italic">¡Vuelve pronto para disfrutar del mejor café!</p>
-        <div class="flex flex-col gap-3 w-full max-w-xs mx-auto">
-            <button onclick="document.getElementById('closed-overlay').classList.add('hidden')" class="px-8 py-4 bg-gold text-dark rounded-2xl font-black text-sm shadow-xl active:scale-95 transition-all">
-                Ver Menú (Solo Consulta)
-            </button>
-            <a href="https://www.instagram.com/richaromacoffee" target="_blank" class="px-8 py-4 bg-white/5 border border-white/10 rounded-2xl text-white font-bold text-sm flex items-center justify-center gap-2 hover:bg-white/10 transition-all active:scale-95">
-                <i class="fab fa-instagram text-pink-500"></i> Instagram
-            </a>
-        </div>
+    <!-- OVERLAYS -->
+    <div id="closed-overlay" class="hidden fixed inset-0 bg-dark/95 z-[500] flex flex-col items-center justify-center p-8 text-center backdrop-blur-xl">
+        <div class="w-24 h-24 bg-red-500/20 text-red-500 rounded-full flex items-center justify-center text-4xl mb-6 shadow-2xl border border-red-500/20 animate-pulse"><i class="fas fa-clock"></i></div>
+        <h2 class="text-3xl font-display font-bold text-white mb-2 uppercase tracking-tighter">Cerrado</h2>
+        <button onclick="document.getElementById('closed-overlay').classList.add('hidden')" class="px-10 py-4 bg-gold text-dark rounded-2xl font-black text-xs uppercase">Ver Menú de Consulta</button>
     </div>
 
-    <!-- Header -->
-    <header class="sticky top-0 z-50 bg-dark/95 backdrop-blur-md border-b border-white/5 px-6 py-4 flex justify-between items-center">
+    <!-- HEADER -->
+    <header class="sticky top-0 z-[100] bg-dark/95 backdrop-blur-md border-b border-white/5 px-6 py-4 flex justify-between items-center shadow-xl">
         <div class="flex items-center gap-3">
-            <img src="/rico-logo.png" alt="Rich Aroma" class="w-10 h-10 rounded-full border border-gold/20 object-cover">
+            <img src="/rico-logo.png" class="w-10 h-10 rounded-full border border-gold/20 object-cover" alt="RA">
             <div>
-                <h1 class="font-display text-xl text-gold font-bold tracking-wide leading-none uppercase">Rich Aroma</h1>
-                <div id="user-header-status" class="mt-1">
-                    <p class="text-[10px] text-white/30 tracking-widest uppercase">Quimistán, HN</p>
-                </div>
+                <h1 class="font-display text-lg text-gold font-bold tracking-tight uppercase leading-none">Rich Aroma</h1>
+                <p id="store-status-text" class="text-[9px] text-white/30 tracking-[0.2em] uppercase mt-1">Abierto</p>
             </div>
         </div>
-        <div class="flex items-center gap-3">
-            <div id="loyalty-badge" class="hidden animate-in fade-in zoom-in duration-500">
-                <div class="flex flex-col items-end">
-                    <span id="badge-name" class="text-[10px] font-bold text-gold uppercase tracking-tighter">---</span>
-                    <div class="flex items-center gap-1">
-                        <span class="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse"></span>
-                        <span id="badge-tier" class="text-[9px] text-white/50 font-black uppercase">GOLD TIER</span>
-                    </div>
-                </div>
-            </div>
-            <div id="tracking-icon-container" class="hidden w-10 h-10 rounded-full bg-gold/10 flex items-center justify-center cursor-pointer" onclick="showTracking()">
-                <i class="fas fa-receipt text-gold text-sm" id="header-icon"></i>
-            </div>
+        <div id="user-pill" class="hidden flex items-center gap-2 bg-white/5 pl-3 pr-1 py-1 rounded-full border border-white/10" onclick="alert('Puntos: ' + currentCustomer.points)">
+            <span id="user-first-name" class="text-[9px] font-black text-gold uppercase tracking-widest">---</span>
+            <div class="w-6 h-6 bg-gold text-dark rounded-full flex items-center justify-center text-[10px]"><i class="fas fa-user"></i></div>
         </div>
     </header>
 
-    <!-- Fulfillment Type -->
-    <div class="flex gap-3 p-4 bg-dark border-b border-white/5 overflow-x-auto hide-scrollbar" id="fulfillment-selector">
-        <button id="btn-pickup" class="fulfillment-btn px-5 py-2 rounded-full border border-gold bg-gold text-dark text-sm font-bold whitespace-nowrap" onclick="setFulfillment('pickup')">
-            <i class="fas fa-walking mr-1"></i> Para Llevar
-        </button>
-        <button id="btn-dinein" class="fulfillment-btn px-5 py-2 rounded-full border border-white/20 text-white/70 text-sm font-bold whitespace-nowrap" onclick="setFulfillment('dinein')">
-            <i class="fas fa-utensils mr-1"></i> En Restaurante
-        </button>
-    </div>
+    <!-- STICKY CATEGORIES -->
+    <nav id="sticky-cats" class="sticky top-[68px] z-50 bg-dark/80 backdrop-blur-sm border-b border-white/5 flex gap-2 overflow-x-auto p-4 hide-scrollbar"></nav>
 
-    <!-- Main View: Menu -->
-    <div id="main-view" class="pb-32">
-        <!-- Category Filter -->
-        <div class="px-4 py-3 overflow-x-auto hide-scrollbar border-b border-white/5 bg-dark sticky top-[73px] z-40">
-            <div class="flex gap-2 min-w-max" id="category-filters">
-                <button class="cat-btn px-6 py-2 rounded-full border border-white/10 bg-white/5 text-white/70 text-sm font-bold hover:bg-white/10 transition-colors" onclick="filterCategory('Favorites', this)">⭐ Favoritos</button>
-                <button class="cat-btn px-6 py-2 rounded-full border border-gold bg-gold text-dark text-sm font-bold shadow-lg" onclick="filterCategory('Combos', this)">🔥 Combos</button>
-                <button class="cat-btn px-6 py-2 rounded-full border border-white/10 bg-white/5 text-white/70 text-sm font-bold hover:bg-white/10 transition-colors" onclick="filterCategory('Calientes', this)">☕ Calientes</button>
-                <button class="cat-btn px-6 py-2 rounded-full border border-white/10 bg-white/5 text-white/70 text-sm font-bold hover:bg-white/10 transition-colors" onclick="filterCategory('Heladas', this)">🥤 Heladas</button>
-                <button class="cat-btn px-6 py-2 rounded-full border border-white/10 bg-white/5 text-white/70 text-sm font-bold hover:bg-white/10 transition-colors" onclick="filterCategory('Comida', this)">🥐 Comida</button>
-                <button class="cat-btn px-6 py-2 rounded-full border border-white/10 bg-white/5 text-white/70 text-sm font-bold hover:bg-white/10 transition-colors" onclick="filterCategory('Repostería', this)">🍰 Repostería</button>
-                <button class="cat-btn px-6 py-2 rounded-full border border-white/10 bg-white/5 text-white/70 text-sm font-bold hover:bg-white/10 transition-colors" onclick="filterCategory('Acompañamientos', this)">🍟 Sides</button>
-                <button class="cat-btn secret-glow px-6 py-2 rounded-full border border-white/10 bg-white/5 text-white/70 text-sm font-bold hover:bg-white/10 transition-colors" onclick="filterCategory('Menú Secreto', this)">🤫 Secreto</button>
-            </div>
-        </div>
-        <main class="px-4 py-6 space-y-8" id="menu-container">
-            <p class="text-center text-white/50 py-10" id="loading-msg">Cargando menú...</p>
-        </main>
-    </div>
+    <!-- MENU FEED -->
+    <main id="menu-feed" class="px-6 space-y-12 pb-48 pt-6">
+        <div id="loading-msg" class="py-20 text-center text-white/20 italic animate-pulse">Sincronizando el menú...</div>
+    </main>
 
-    <!-- Active Order / Tracking View -->
-    <div id="tracking-view" class="hidden px-4 py-8 max-w-md mx-auto pb-32">
-        <div class="text-center mb-8">
-            <div class="w-20 h-20 bg-gold/20 text-gold rounded-full flex items-center justify-center text-3xl mx-auto mb-4 animate-pulse">
-                <i class="fas fa-clock"></i>
-            </div>
-            <h2 class="text-2xl font-display font-bold text-white mb-2" id="track-status-title">Preparando tu Orden</h2>
-            <p class="text-white/50 text-sm" id="track-status-desc">Orden #<span id="track-order-num">---</span> • <span id="track-time">00:00</span></p>
-        </div>
-        <div class="bg-charcoal rounded-3xl p-6 border border-white/10 mb-6">
-            <div class="flex justify-between items-center mb-6">
-                <h3 class="font-bold text-white">Estado de la Orden</h3>
-                <span class="text-xs bg-gold/20 text-gold px-3 py-1 rounded-full font-bold" id="track-type">Para Llevar</span>
-            </div>
-            <div class="space-y-6" id="tracking-steps">
-                <!-- Steps here -->
-            </div>
-        </div>
-
-        <!-- QR Code Section -->
-        <div id="order-qr-container" class="bg-white p-6 rounded-3xl mb-6 flex flex-col items-center justify-center gap-3 shadow-2xl ring-4 ring-gold/20">
-            <p class="text-[10px] font-black text-dark/40 uppercase tracking-widest">Escanea en Caja</p>
-            <img id="order-qr-img" src="" class="w-48 h-48">
-            <p id="order-qr-id" class="text-[10px] font-mono font-bold text-dark/30 uppercase tracking-tighter">---</p>
-        </div>
-
-        <button onclick="newOrder()" class="w-full bg-white/5 border border-white/10 text-white py-4 rounded-2xl font-bold shadow hover:bg-white/10 transition mt-4">Hacer Otra Orden</button>
-    </div>
-
-    <!-- Wallet View -->
-    <div id="wallet-view" class="hidden px-6 py-10 max-w-md mx-auto pb-32 space-y-10">
-        <div class="text-center">
-            <h2 class="text-3xl font-display font-bold text-white mb-2">Mi Billetera</h2>
-            <p class="text-gold/60 text-[10px] font-black uppercase tracking-[0.3em]">Membresía VIP</p>
-        </div>
-        <div id="vip-gold-card" class="bg-gradient-to-br from-gold to-[#B08D55] p-8 rounded-[2.5rem] shadow-2xl flex flex-col justify-between h-56 text-dark border border-gold/30">
-            <div class="flex justify-between items-start">
-                <div class="space-y-1">
-                    <p class="text-dark/40 text-[9px] font-black uppercase tracking-widest">Socio Fundador</p>
-                    <h3 id="card-name" class="text-2xl font-display font-black tracking-tight uppercase">---</h3>
-                </div>
-                <img id="card-photo" src="/rico-logo.png" class="w-16 h-16 rounded-full border-4 border-dark/10 object-cover">
-            </div>
-            <div class="grid grid-cols-2 gap-4">
-                <div class="space-y-0.5">
-                    <p class="text-dark/40 text-[8px] font-black uppercase tracking-widest">Rico Cash</p>
-                    <p id="card-balance" class="text-3xl font-mono font-black">L 0.00</p>
-                </div>
-                <div class="space-y-0.5 text-right">
-                    <p class="text-dark/40 text-[8px] font-black uppercase tracking-widest">Rico Points</p>
-                    <p id="card-points" class="text-3xl font-mono font-black">0</p>
+    <!-- CART BAR -->
+    <div id="cart-bar" class="fixed bottom-8 left-6 right-6 z-[200] transform translate-y-[200%] opacity-0 transition-all duration-500">
+        <div class="gold-gradient p-5 rounded-[2rem] flex justify-between items-center shadow-2xl" onclick="openCheckout()">
+            <div class="flex items-center gap-4">
+                <div class="w-12 h-12 bg-dark rounded-2xl flex items-center justify-center text-gold shadow-xl"><i class="fas fa-shopping-bag text-lg"></i></div>
+                <div>
+                    <p id="cart-count-text" class="text-[10px] font-black text-dark/40 uppercase tracking-widest leading-none">0 Items</p>
+                    <p id="cart-total-text" class="text-xl font-black text-dark leading-tight mt-1">L 0.00</p>
                 </div>
             </div>
+            <div class="font-black text-dark text-xs uppercase tracking-widest">Ver Bolsa <i class="fas fa-chevron-right ml-1"></i></div>
         </div>
-        <button onclick="openTopupModal()" class="w-full py-5 rounded-[2rem] bg-gold text-dark font-black text-xs uppercase tracking-[0.2em] shadow-xl">Recargar Rico Cash</button>
     </div>
 
-    <!-- Profile View -->
-    <div id="profile-view" class="hidden px-6 py-10 max-w-md mx-auto pb-32 space-y-8">
-        <div id="profile-content" class="hidden space-y-8">
-            <div class="text-center space-y-4">
-                <div class="w-24 h-24 bg-gold/10 rounded-full flex items-center justify-center text-4xl text-gold mx-auto border-2 border-gold/20 shadow-2xl">
-                    <i class="fas fa-user-circle"></i>
-                </div>
-                <h2 id="profile-name" class="text-3xl font-display font-bold text-white">---</h2>
-                <p id="profile-phone" class="text-gold font-mono text-sm opacity-60">---</p>
+    <!-- MODIFIER DRAWER -->
+    <div id="mod-overlay" class="hidden fixed inset-0 bg-black/80 z-[300] backdrop-blur-sm opacity-0 transition-opacity duration-300" onclick="closeModifier()"></div>
+    <div id="mod-drawer" class="drawer fixed bottom-0 left-0 right-0 z-[310] bg-dark rounded-t-[3rem] max-h-[92vh] flex flex-col border-t border-white/10 shadow-2xl">
+        <div class="flex justify-between items-center px-6 pt-4 shrink-0">
+            <button onclick="closeModifier()" class="w-12 h-12 rounded-full bg-white/5 flex items-center justify-center text-white/60 text-xl border border-white/5 active:scale-90 transition-all"><i class="fas fa-times"></i></button>
+            <div class="w-12 h-1.5 bg-white/10 rounded-full"></div>
+            <div class="w-12"></div> <!-- Spacer -->
+        </div>
+        
+        <div class="flex-1 overflow-y-auto px-8 pb-40 space-y-8 hide-scrollbar pt-2">
+            <div id="mod-image" class="w-full h-48 rounded-[2rem] overflow-hidden border border-white/5 bg-charcoal"></div>
+            <div class="space-y-1">
+                <h2 id="mod-name" class="text-3xl font-display font-black text-white uppercase tracking-tighter leading-tight">---</h2>
+                <p id="mod-price" class="text-gold font-black text-lg">L 0.00</p>
             </div>
+            <div id="mod-groups" class="space-y-10"></div>
+            <div class="space-y-4 pt-4">
+                <p class="text-[10px] font-black text-white/30 uppercase tracking-[0.2em]">Instrucciones Especiales</p>
+                <textarea id="mod-note" placeholder="¿Sin frijoles? ¿Doble queso?..." class="w-full bg-white/5 border border-white/10 p-5 rounded-3xl text-white outline-none focus:border-gold min-h-[100px]"></textarea>
+            </div>
+        </div>
+        <div class="absolute bottom-0 left-0 right-0 p-6 bg-dark/95 backdrop-blur-xl border-t border-white/5 flex flex-col gap-4">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center gap-4 bg-white/5 p-1 rounded-2xl border border-white/10">
+                    <button onclick="changeQty(-1)" class="w-12 h-12 flex items-center justify-center text-gold"><i class="fas fa-minus"></i></button>
+                    <span id="mod-qty" class="text-xl font-black min-w-[30px] text-center">1</span>
+                    <button onclick="changeQty(1)" class="w-12 h-12 flex items-center justify-center text-gold"><i class="fas fa-plus"></i></button>
+                </div>
+                <div class="text-right">
+                    <p class="text-[9px] font-black text-white/30 uppercase">Subtotal</p>
+                    <p id="mod-subtotal" class="text-2xl font-black text-white">L 0.00</p>
+                </div>
+            </div>
+            <button onclick="addToCart()" class="w-full gold-gradient py-5 rounded-[2rem] font-black text-sm uppercase tracking-widest text-dark shadow-2xl active:scale-95 transition-all">Agregar a la Bolsa</button>
+        </div>
+    </div>
+
+    <!-- CHECKOUT DRAWER -->
+    <div id="check-overlay" class="hidden fixed inset-0 bg-black/90 z-[400] backdrop-blur-md opacity-0 transition-opacity duration-300" onclick="closeCheckout()"></div>
+    <div id="check-drawer" class="drawer fixed bottom-0 left-0 right-0 z-[410] bg-dark rounded-t-[3rem] h-[92vh] flex flex-col border-t border-white/10 shadow-2xl">
+        <div class="p-6 flex justify-between items-center shrink-0 border-b border-white/5">
+            <h3 class="text-2xl font-display font-black text-white uppercase tracking-tight">Finalizar Pedido</h3>
+            <button onclick="closeCheckout()" class="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center text-white/40"><i class="fas fa-times"></i></button>
+        </div>
+        <div class="flex-1 overflow-y-auto px-8 space-y-10 pb-48 pt-6 hide-scrollbar">
+            <div id="check-items" class="space-y-4"></div>
             <div class="space-y-4">
-                <h3 class="text-xs font-black uppercase tracking-widest text-white/30">Historial de Órdenes</h3>
-                <div id="past-orders-list" class="space-y-3"></div>
-            </div>
-            <button onclick="logout()" class="w-full py-5 rounded-[2rem] bg-red-500/10 border border-red-500/30 text-red-500 font-black text-xs uppercase">Cerrar Sesión</button>
-        </div>
-        <div id="profile-login-prompt" class="text-center py-20 space-y-6">
-            <i class="fas fa-user-lock text-6xl text-white/10"></i>
-            <p class="text-white/50">Inicia sesión para ver tu historial y favoritos.</p>
-            <button onclick="openLoginModal()" class="gold-btn px-10 py-4 rounded-2xl font-bold">Acceder</button>
-        </div>
-    </div>
-
-    <!-- BOTTOM NAVIGATION -->
-    <nav class="fixed bottom-0 left-0 right-0 z-[200] bg-dark/80 backdrop-blur-xl border-t border-white/5 px-4 pb-8 pt-3 flex justify-around items-center safe-area-inset-bottom shadow-[0_-10px_40px_rgba(0,0,0,0.5)]">
-        <a href="#" class="flex flex-col items-center gap-1 text-gold" id="nav-menu" onclick="showMenuView(); return false;">
-            <div class="w-10 h-10 rounded-2xl bg-gold/10 flex items-center justify-center transition-colors">
-                <i class="fas fa-mug-hot"></i>
-            </div>
-            <span class="text-[10px] font-black uppercase tracking-widest">Menú</span>
-        </a>
-        <a href="#" id="nav-wallet" class="flex flex-col items-center gap-1 text-white/40 hover:text-gold transition-colors" onclick="showWalletView(); return false;">
-            <div class="w-10 h-10 rounded-2xl hover:bg-gold/10 flex items-center justify-center transition-colors">
-                <i class="fas fa-wallet"></i>
-            </div>
-            <span class="text-[10px] font-bold uppercase tracking-widest">Billetera</span>
-        </a>
-        <a href="#" id="nav-profile" class="flex flex-col items-center gap-1 text-white/40 hover:text-gold transition-colors" onclick="showProfileView(); return false;">
-            <div class="w-10 h-10 rounded-2xl hover:bg-gold/10 flex items-center justify-center transition-colors">
-                <i class="fas fa-user-circle"></i>
-            </div>
-            <span class="text-[10px] font-bold uppercase tracking-widest">Perfil</span>
-        </a>
-    </nav>
-
-    <!-- MODIFIER MODAL -->
-    <div id="modifier-modal" class="hidden fixed inset-0 bg-black/80 backdrop-blur-sm z-[250] flex flex-col justify-end">
-        <div class="bg-dark w-full max-h-[85vh] rounded-t-3xl border-t border-gold/20 p-6 space-y-6 overflow-hidden flex flex-col">
-            <div class="flex justify-between items-center">
-                <h2 class="text-2xl font-bold text-white font-display" id="mod-item-name">---</h2>
-                <button onclick="closeModal()" class="w-10 h-10 rounded-full bg-white/10 text-white flex items-center justify-center"><i class="fas fa-times"></i></button>
-            </div>
-            <div class="flex-1 overflow-y-auto space-y-6 py-2" id="mod-dynamic-container"></div>
-            <div class="pt-4 border-t border-white/5 space-y-4">
-                <div class="flex items-center gap-4">
-                    <div class="flex items-center bg-white/5 rounded-2xl border border-white/10 p-1">
-                        <button onclick="changeQuantity(-1)" class="w-10 h-10 flex items-center justify-center text-gold"><i class="fas fa-minus"></i></button>
-                        <span id="mod-quantity" class="font-bold text-xl text-white px-4">1</span>
-                        <button onclick="changeQuantity(1)" class="w-10 h-10 flex items-center justify-center text-gold"><i class="fas fa-plus"></i></button>
-                    </div>
-                    <button onclick="confirmItem()" class="flex-1 gold-btn py-4 rounded-2xl font-bold text-lg flex justify-between items-center px-6">
-                        <span>Agregar</span>
-                        <span id="mod-final-price" class="font-mono"></span>
+                <p class="text-[10px] font-black text-gold uppercase tracking-[0.3em]">Tipo de Entrega</p>
+                <div class="grid grid-cols-3 gap-2">
+                    <button onclick="setFulfill('pickup')" id="fbtn-pickup" class="p-4 rounded-2xl border transition-all text-center space-y-2 flex flex-col items-center">
+                        <i class="fas fa-walking text-lg"></i><span class="text-[9px] font-black uppercase">Llevar</span>
+                    </button>
+                    <button onclick="setFulfill('dinein')" id="fbtn-dinein" class="p-4 rounded-2xl border transition-all text-center space-y-2 flex flex-col items-center">
+                        <i class="fas fa-utensils text-lg"></i><span class="text-[9px] font-black uppercase">Aquí</span>
+                    </button>
+                    <button onclick="setFulfill('delivery')" id="fbtn-delivery" class="p-4 rounded-2xl border transition-all text-center space-y-2 flex flex-col items-center">
+                        <i class="fas fa-motorcycle text-lg"></i><span class="text-[9px] font-black uppercase">Domicilio</span>
                     </button>
                 </div>
             </div>
-        </div>
-    </div>
-
-    <!-- CART MODAL -->
-    <div id="cart-modal" class="hidden fixed inset-0 bg-black/80 backdrop-blur-sm z-[250] flex flex-col justify-end">
-        <div class="bg-dark w-full max-h-[92vh] rounded-t-3xl border-t border-gold/20 p-5 space-y-5 flex flex-col">
-            <div class="flex justify-between items-center"><h2 class="text-xl font-black text-white uppercase">Tu Orden</h2><button onclick="closeCartModal()" class="w-10 h-10 rounded-full bg-white/10 text-white flex items-center justify-center"><i class="fas fa-times"></i></button></div>
-            <div id="cart-review-items" class="flex-1 overflow-y-auto space-y-3"></div>
-            <div id="guest-info-section" class="hidden space-y-3">
-                <input type="text" id="guest-name" placeholder="Tu Nombre" class="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white">
-                <input type="tel" id="guest-phone" placeholder="WhatsApp" class="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white">
-            </div>
-            <div class="border-t border-white/10 pt-4 flex justify-between items-end">
-                <div><p class="text-[10px] text-white/30 uppercase">Subtotal</p><p class="text-sm font-bold text-white/70" id="review-subtotal">L 0.00</p></div>
-                <div class="text-right"><p class="text-[10px] text-gold uppercase">Total</p><p class="text-3xl font-black text-white font-mono" id="review-total">L 0.00</p></div>
-            </div>
-            <div id="checkout-options" class="pt-2"></div>
-        </div>
-    </div>
-
-    <!-- INLINE LOGIN MODAL -->
-    <div id="login-modal" class="hidden fixed inset-0 bg-black/90 backdrop-blur-sm z-[300] flex items-center justify-center p-6" onclick="if(event.target === this) closeLoginModal()">
-        <div class="bg-dark w-full max-w-sm rounded-3xl border border-gold/20 p-8 text-center space-y-6" onclick="event.stopPropagation()">
-            <h3 class="text-2xl font-bold text-white font-display">Acceder</h3>
-            <p class="text-white/50 text-sm">Ingresa tu número y PIN para continuar.</p>
-            <div class="space-y-4">
-                <div class="flex gap-2">
-                    <select id="login-country-code" class="bg-white/5 border border-white/10 text-white rounded-xl px-2 font-bold text-sm outline-none focus:border-gold">
-                        <option value="+504">🇭🇳 +504</option>
-                        <option value="+1">🇺🇸 +1</option>
-                    </select>
-                    <input type="tel" id="login-phone" placeholder="9999-9999" class="flex-1 p-4 bg-white/5 border border-white/10 text-white rounded-2xl text-center text-xl font-bold tracking-widest focus:outline-none focus:border-gold transition-colors">
+            <div class="space-y-6">
+                <p class="text-[10px] font-black text-gold uppercase tracking-[0.3em]">Programación</p>
+                <div class="grid grid-cols-1 gap-4">
+                    <div class="space-y-2">
+                        <p class="text-[8px] font-bold text-white/30 uppercase px-1">¿Para qué hora?</p>
+                        <select id="check-schedule" class="w-full bg-white/5 border border-white/10 p-5 rounded-[1.5rem] text-white text-sm font-bold outline-none focus:border-gold"></select>
+                    </div>
+                    <div class="space-y-2">
+                        <p class="text-[8px] font-bold text-white/30 uppercase px-1">Código de Grupo</p>
+                        <input type="text" id="check-group" placeholder="Ej: HIBS" class="w-full bg-white/5 border border-white/10 p-5 rounded-[1.5rem] text-white text-sm font-bold outline-none focus:border-gold uppercase">
+                    </div>
                 </div>
-                <input type="password" id="login-pin" maxlength="4" placeholder="••••" class="w-full p-4 bg-white/5 border border-white/10 text-white rounded-2xl text-center text-3xl font-bold tracking-[1rem] focus:outline-none focus:border-gold transition-colors">
             </div>
-            <button onclick="handleInlineAuth()" id="inline-login-btn" class="w-full gold-btn py-4 rounded-2xl font-bold text-lg shadow-xl shadow-gold/20 mt-4 active:scale-95 transition-transform">Ingresar</button>
-            <button onclick="closeLoginModal()" class="w-full text-white/30 font-bold text-sm">Cancelar</button>
+            <div id="check-delivery-ui" class="hidden space-y-6">
+                <div class="grid grid-cols-2 gap-3">
+                    <button onclick="setZone(35, 'Quimistan')" id="zbtn-35" class="p-4 rounded-2xl border border-white/10 bg-white/5 text-left"><p class="text-xs font-black">Quimistán</p><p class="text-[10px] text-gold font-bold">L 35.00</p></button>
+                    <button onclick="setZone(70, 'Pinalejo')" id="zbtn-70" class="p-4 rounded-2xl border border-white/10 bg-white/5 text-left"><p class="text-xs font-black">Pinalejo</p><p class="text-[10px] text-gold font-bold">L 70.00</p></button>
+                </div>
+                <textarea id="check-address" placeholder="Dirección exacta..." class="w-full bg-white/5 border border-white/10 p-5 rounded-3xl text-white outline-none focus:border-gold"></textarea>
+            </div>
+            <div class="space-y-4">
+                <p class="text-[10px] font-black text-gold uppercase tracking-[0.3em]">Tu Información</p>
+                <input type="text" id="check-name" placeholder="Nombre Completo" class="w-full bg-white/5 border border-white/10 p-5 rounded-[1.5rem] text-white outline-none focus:border-gold">
+                <div class="flex gap-2">
+                    <select id="check-country-code" class="bg-white/5 border border-white/10 p-5 rounded-[1.5rem] text-xs font-bold text-white/40 outline-none focus:border-gold">
+                        <option value="+504">+504</option>
+                        <option value="+1">+1</option>
+                    </select>
+                    <input type="tel" id="check-phone" placeholder="WhatsApp (Opcional si hay grupo)" class="flex-1 bg-white/5 border border-white/10 p-5 rounded-[1.5rem] text-white outline-none focus:border-gold">
+                </div>
+            </div>
+        </div>
+        <div class="absolute bottom-0 left-0 right-0 p-8 bg-dark/98 backdrop-blur-xl border-t border-white/5">
+            <div class="flex justify-between items-end mb-4">
+                <div><p class="text-[10px] font-black text-white/30 uppercase tracking-widest leading-none mb-1">Total a Pagar</p><p id="check-total" class="text-3xl font-black text-white">L 0.00</p></div>
+                <div class="text-right text-[8px] font-black text-success uppercase">Pago contra entrega</div>
+            </div>
+            <button onclick="submitFinalOrder()" id="final-btn" class="w-full gold-gradient py-5 rounded-[2rem] font-black text-sm uppercase tracking-widest text-dark shadow-2xl active:scale-95 transition-all">Enviar Pedido Ahora 🚀</button>
         </div>
     </div>
 
-    <!-- Floating Cart Bar -->
-    <div id="cart-bar" class="fixed bottom-24 left-4 right-4 bg-gold rounded-2xl p-4 flex justify-between items-center transform translate-y-[150%] transition-transform duration-300 z-50 shadow-2xl">
-        <div class="flex flex-col cursor-pointer" onclick="openCartModal()">
-            <span id="cart-count" class="text-dark font-bold text-xs uppercase">0 Items</span>
-            <span id="cart-total" class="text-dark font-black text-xl leading-tight">L 0.00</span>
+    <!-- TRACKING MODAL -->
+    <div id="track-modal" class="hidden fixed inset-0 bg-dark z-[1000] flex flex-col p-8 items-center justify-center text-center animate-in fade-in duration-500">
+        <div class="w-20 h-20 bg-success/20 text-success rounded-full flex items-center justify-center text-3xl mb-8 animate-bounce-in"><i class="fas fa-check"></i></div>
+        <h2 class="text-4xl font-display font-black text-white mb-2 uppercase tracking-tighter">¡Recibido!</h2>
+        <p class="text-white/40 text-sm mb-12 max-w-xs leading-relaxed">Tu pedido ha sido enviado. Prepárate para el mejor sabor.</p>
+        <div class="glass w-full max-w-xs p-8 rounded-[3rem] space-y-6 relative mb-12">
+            <p class="text-[10px] font-black text-gold uppercase tracking-[0.4em]">Orden Confirmada</p>
+            <div id="receipt-qr" class="w-48 h-48 bg-white p-4 rounded-[2rem] mx-auto flex items-center justify-center"></div>
+            <h3 id="receipt-num" class="text-4xl font-black text-white tracking-tighter">#--</h3>
         </div>
-        <button onclick="openCartModal()" class="bg-dark text-gold px-6 py-3 rounded-xl font-bold text-sm">Ver Orden</button>
+        <button onclick="location.reload()" class="px-12 py-5 bg-white/5 text-white/40 rounded-[2rem] font-black text-[10px] uppercase">Nuevo Pedido</button>
     </div>
 
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <script>
-        // Version: 2.1.0-LIVE-READINESS
         (function() {
-            var menuItems = [];
-            var modGroups = [];
-            var modOptions = [];
-            var itemModGroups = [];
-            var currentItem = null;
-            var currentMods = {};
-            var activeCategory = 'Combos';
-            var storeIsOpen = true;
-            var cart = [];
-            var currentCustomer = null;
-            var activeOrder = null;
-            var fulfillmentType = 'pickup';
+            var menu = []; var modG = []; var modO = []; var itemModG = []; var cart = [];
+            var currentI = null; var currentM = {}; var fulfillment = 'pickup'; var deliveryFee = 0; var zoneName = "";
+            var currentCustomer = null; var isSubmitting = false;
 
-            // --- UI MODAL SYSTEM ---
-            window.showUIModal = function({ title, message, showInput = false, inputPlaceholder = '', confirmText = 'Confirmar', cancelText = 'Cancelar' }) {
-                return new Promise((resolve) => {
-                    const modal = document.getElementById('ui-modal');
-                    const titleEl = document.getElementById('ui-modal-title');
-                    const msgEl = document.getElementById('ui-modal-msg');
-                    const inputContainer = document.getElementById('ui-modal-input-container');
-                    const inputEl = document.getElementById('ui-modal-input');
-                    const confirmBtn = document.getElementById('ui-modal-confirm');
-                    const cancelBtn = document.getElementById('ui-modal-cancel');
-
-                    titleEl.innerText = title;
-                    msgEl.innerText = message;
-                    confirmBtn.innerText = confirmText;
-                    cancelBtn.innerText = cancelText;
-                    
-                    if (showInput) {
-                        inputContainer.classList.remove('hidden');
-                        inputEl.placeholder = inputPlaceholder;
-                        inputEl.value = '';
-                    } else {
-                        inputContainer.classList.add('hidden');
-                    }
-
-                    modal.classList.remove('hidden');
-                    if (showInput) setTimeout(() => inputEl.focus(), 100);
-
-                    const handleConfirm = () => {
-                        const val = showInput ? inputEl.value : true;
-                        if (showInput && !val) return; // Basic validation
-                        cleanup();
-                        resolve(val);
-                    };
-
-                    const handleCancel = () => {
-                        cleanup();
-                        resolve(null);
-                    };
-
-                    const cleanup = () => {
-                        modal.classList.add('hidden');
-                        confirmBtn.removeEventListener('click', handleConfirm);
-                        cancelBtn.removeEventListener('click', handleCancel);
-                    };
-
-                    confirmBtn.addEventListener('click', handleConfirm);
-                    cancelBtn.addEventListener('click', handleCancel);
-                });
+            window.onload = async () => {
+                try {
+                    await fetchStatus();
+                    await loadMenu();
+                } catch(e) { console.error("Initialization failed", e); }
+                initStickyCats();
+                syncUser();
+                generateSlots();
             };
 
-            // --- IDENTITY & AUTH ---
-            function syncIdentity() {
-                var cached = localStorage.getItem('ra_customer_data');
-                if (cached) {
-                    try {
-                        currentCustomer = JSON.parse(cached);
-                        updateLoyaltyUI();
-                    } catch(e) { currentCustomer = null; }
+            async function fetchStatus() {
+                try {
+                    const r = await fetch('/api/store/status');
+                    if (r.ok) {
+                        const d = await r.json();
+                        if (d.isOpen === false) document.getElementById('closed-overlay').classList.remove('hidden');
+                        document.getElementById('store-status-text').innerText = d.isOpen ? 'Abierto Ahora' : 'Cerrado';
+                    }
+                } catch(e) { console.error("Status check failed", e); }
+            }
+
+            async function loadMenu() {
+                try {
+                    const r = await fetch('/api/menu');
+                    if (!r.ok) throw new Error("Failed to load menu");
+                    const d = await r.json();
+                    menu = d.items || [];
+                    modG = d.modGroups || [];
+                    modO = d.modOptions || [];
+                    itemModG = d.itemModGroups || [];
+                    document.getElementById('loading-msg').style.display = 'none';
+                    renderMenu();
+                } catch(e) { 
+                    console.error("Menu load failed", e);
+                    document.getElementById('loading-msg').innerText = "Error al cargar el menú. Por favor recarga la página.";
                 }
             }
 
-            function updateLoyaltyUI() {
-                if (!currentCustomer) {
-                    document.getElementById('loyalty-badge').classList.add('hidden');
-                    document.getElementById('profile-content').classList.add('hidden');
-                    document.getElementById('profile-login-prompt').classList.remove('hidden');
-                    return;
-                }
-
-                document.getElementById('loyalty-badge').classList.remove('hidden');
-                document.getElementById('badge-name').innerText = currentCustomer.name.split(' ')[0].toUpperCase();
-                document.getElementById('badge-tier').innerText = (currentCustomer.tier || 'BRONZE') + ' TIER';
-                
-                document.getElementById('profile-content').classList.remove('hidden');
-                document.getElementById('profile-login-prompt').classList.add('hidden');
-                document.getElementById('profile-name').innerText = currentCustomer.name;
-                document.getElementById('profile-phone').innerText = currentCustomer.phone;
-
-                document.getElementById('card-name').innerText = currentCustomer.name;
-                document.getElementById('card-balance').innerText = 'L ' + (parseFloat(currentCustomer.rico_balance) || 0).toFixed(2);
-                document.getElementById('card-points').innerText = currentCustomer.points || 0;
-                
-                loadPastOrders();
+            function syncUser() {
+                try {
+                    const d = localStorage.getItem('ra_customer_data');
+                    if (d) {
+                        currentCustomer = JSON.parse(d);
+                        if (currentCustomer && currentCustomer.name) {
+                            document.getElementById('user-pill').classList.remove('hidden');
+                            document.getElementById('user-first-name').innerText = currentCustomer.name.split(' ')[0];
+                            document.getElementById('check-name').value = currentCustomer.name;
+                        }
+                        if (currentCustomer && currentCustomer.phone) {
+                            document.getElementById('check-phone').value = currentCustomer.phone.replace('+504','').replace('+1','');
+                        }
+                    }
+                } catch(e) { console.error("User sync failed", e); }
             }
 
-            window.openLoginModal = function() { document.getElementById('login-modal').classList.remove('hidden'); };
-            window.closeLoginModal = function() { document.getElementById('login-modal').classList.add('hidden'); };
+            function initStickyCats() {
+                const cats = [{id:'all', n:'Todo', i:'✨'}, {id:'Combos', n:'Combos', i:'🔥'}, {id:'Calientes', n:'Café', i:'☕'}, {id:'Heladas', n:'Heladas', i:'🥤'}, {id:'Comida', n:'Comida', i:'🥐'}, {id:'Repostería', n:'Postres', i:'🍰'}];
+                document.getElementById('sticky-cats').innerHTML = cats.map(c => `<button onclick="scrollToCat('${c.id}', this)" class="category-pill flex items-center gap-2 px-6 py-2.5 rounded-full text-xs font-black uppercase whitespace-nowrap bg-white/5 text-white/40 ${c.id === 'all' ? 'active' : ''}"><span>${c.i}</span> <span>${c.n}</span></button>`).join('');
+            }
 
-            window.handleInlineAuth = function() {
-                var code = document.getElementById('login-country-code').value;
-                var phoneInput = document.getElementById('login-phone').value.trim();
-                var pin = document.getElementById('login-pin').value.trim();
-                
-                if (!phoneInput || pin.length < 4) return alert('Ingresa tu teléfono y PIN');
-                
-                // Combine code and phone
-                var phone = code + phoneInput.replace(/\D/g, '');
-
-                var btn = document.getElementById('inline-login-btn');
-                btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Accediendo...';
-                btn.disabled = true;
-
-                fetch('/api/store?action=customer_login', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ phone: phone, pin: pin })
-                })
-                .then(function(r) { return r.json(); })
-                .then(function(data) {
-                    if (data.error) throw new Error(data.error);
-                    currentCustomer = data.customer;
-                    localStorage.setItem('ra_customer_data', JSON.stringify(currentCustomer));
-                    localStorage.setItem('ra_customer_phone', currentCustomer.phone);
-                    localStorage.setItem('ra_customer_pin', pin);
-                    updateLoyaltyUI();
-                    closeLoginModal();
-                    
-                    // Auto-resume order if we have items in cart
-                    if (cart.length > 0) {
-                        openCartModal();
-                        submitOrder();
-                    }
-                })
-                .catch(function(err) { alert(err.message); })
-                .finally(function() {
-                    btn.innerHTML = 'Ingresar';
-                    btn.disabled = false;
-                });
+            window.scrollToCat = (id, btn) => {
+                document.querySelectorAll('.category-pill').forEach(p => p.classList.remove('active')); btn.classList.add('active');
+                if (id === 'all') { window.scrollTo({ top:0, behavior:'smooth' }); return; }
+                const el = document.getElementById('section-' + id); if (el) window.scrollTo({ top: el.offsetTop - 120, behavior:'smooth' });
             };
 
-            window.logout = function() {
-                localStorage.removeItem('ra_customer_data');
-                localStorage.removeItem('ra_customer_phone');
-                localStorage.removeItem('ra_customer_pin');
-                location.reload();
-            };
+            function renderMenu() {
+                const main = document.getElementById('menu-feed');
+                const sortRules = { 'Combos':['combo_1','combo_2','combo_3','combo_4'], 'Heladas':['cold_supreme_frappe','cold_fresa_frappe','cold_coffee_frappe','cold_french_vanilla','cold_caramel_iced'], 'Comida':['food_avocado_toast_huevo','food_banano_almond_toast','food_chicken_salad_bowl','food_baleadas','food_chicken_melt'] };
+                const cats = ['Combos', 'Calientes', 'Heladas', 'Comida', 'Repostería', 'Menú Secreto'];
+                main.innerHTML = cats.map(cat => {
+                    let items = menu.filter(i => getItemCat(i) === cat);
+                    if (!items.length) return '';
+                    const rule = sortRules[cat];
+                    if (rule) items.sort((a,b) => (rule.indexOf(a.id) === -1 ? 99 : rule.indexOf(a.id)) - (rule.indexOf(b.id) === -1 ? 99 : rule.indexOf(b.id)));
+                    return `<section id="section-${cat}" class="space-y-6"><h2 class="text-gold text-[10px] font-black uppercase tracking-[0.4em] flex items-center gap-4"><span>${cat}</span> <div class="h-px bg-white/5 flex-1"></div></h2><div class="grid grid-cols-2 gap-4">
+                        ${items.map(i => {
+                            const img = i.image_url || i.image;
+                            return `<div class="item-card glass p-4 rounded-[2.5rem] space-y-4" onclick="window.openModifier('${i.id}')">
+                                <div class="h-32 bg-charcoal rounded-[2rem] overflow-hidden border border-white/5">${img ? `<img src="${img}" class="w-full h-full object-cover">` : '<div class="w-full h-full flex items-center justify-center opacity-10"><i class="fas fa-mug-hot text-4xl"></i></div>'}</div>
+                                <div class="space-y-1"><h3 class="text-[11px] font-black uppercase leading-tight line-clamp-2 min-h-[2.2rem]">${i.name}</h3><p class="text-gold font-black text-sm">L ${parseFloat(i.price).toFixed(0)}</p></div>
+                                <button type="button" onclick="event.stopPropagation(); window.openModifier('${i.id}')" class="w-full py-2.5 bg-gold border border-gold rounded-2xl text-[10px] font-black uppercase text-dark shadow-lg active:scale-95 transition-all">+ AGREGAR</button>
+                            </div>`;
+                        }).join('')}
+                    </div></section>`;
+                }).join('');
+            }
 
-            // --- MENU LOGIC ---
-            function getItemCategory(item) {
-                var cat = (item.category || '').toLowerCase();
-                var name = (item.name || '').toLowerCase();
-                var id = (item.id || '').toLowerCase();
-                if (cat.includes('secret') || id.startsWith('secret_')) return 'Menú Secreto';
-                if (id.startsWith('combo_') || name.includes('combo')) return 'Combos';
-                if (cat.includes('hot') || cat.includes('coffee') || cat.includes('caliente')) return 'Calientes';
-                
-                // Heladas: Remove 'Te' from Heladas unless it's a frappe
-                if (cat.includes('cold') || cat.includes('drink') || cat.includes('helada') || cat.includes('frappe') || cat.includes('granita')) {
-                    if (name.includes('te') && !name.includes('frappe')) return 'Otros';
-                    return 'Heladas';
-                }
-                
-                if (cat.includes('pastry') || cat.includes('cake') || cat.includes('reposteria')) return 'Repostería';
-                if (cat.includes('side') || cat.includes('acompañamiento')) return 'Acompañamientos';
-                
-                if (cat.includes('food') || cat.includes('comida')) {
-                    if (id.startsWith('combo_') || name.includes('combo')) return 'Combos';
-                    return 'Comida';
-                }
+            function getItemCat(i) {
+                const c = (i.category || '').toLowerCase(); const n = (i.name || '').toLowerCase(); const id = (i.id || '').toLowerCase();
+                if (c.includes('secret') || id.startsWith('secret_')) return 'Menú Secreto';
+                if (id.startsWith('combo_') || n.includes('combo')) return 'Combos';
+                if (c === 'coffee' || c.includes('hot') || n.includes('latte') || n.includes('cappuccino')) return 'Calientes';
+                if (c === 'drinks' || c.includes('cold') || c.includes('helada') || c.includes('frappe') || n.includes('iced') || n.includes('granita')) return 'Heladas';
+                if (c === 'food' || c.includes('comida') || n.includes('baleada') || n.includes('sandwich')) return 'Comida';
+                if (c === 'pastry' || c.includes('reposteria') || c.includes('cake')) return 'Repostería';
                 return 'Otros';
             }
 
-            function renderMenu() {
-                var container = document.getElementById('menu-container');
-                if (!container) return;
-                var categories = {};
-                var filtered = menuItems.filter(function(i) { 
-                    if (activeCategory === 'Favorites') {
-                        var favs = currentCustomer ? currentCustomer.favorites || [] : [];
-                        return favs.includes(i.id);
+            window.openModifier = (id) => {
+                currentI = menu.find(i => i.id === id); 
+                if(!currentI) return;
+                
+                document.getElementById('mod-name').innerText = currentI.name;
+                document.getElementById('mod-price').innerText = `L ${parseFloat(currentI.price).toFixed(0)}`;
+                document.getElementById('mod-qty').innerText = '1';
+                
+                const modImg = document.getElementById('mod-image');
+                if (modImg) {
+                    const img = currentI.image_url || currentI.image;
+                    if (img) {
+                        modImg.innerHTML = `<img src="${img}" class="w-full h-full object-cover">`;
+                        modImg.classList.remove('hidden');
+                    } else {
+                        modImg.innerHTML = '<div class="w-full h-full flex items-center justify-center opacity-10 bg-dark"><i class="fas fa-mug-hot text-5xl"></i></div>';
+                        modImg.classList.remove('hidden');
                     }
-                    return activeCategory === 'all' || getItemCategory(i) === activeCategory; 
-                });
-
-                filtered.forEach(function(item) {
-                    var cat = getItemCategory(item);
-                    if (!categories[cat]) categories[cat] = [];
-                    categories[cat].push(item);
-                });
-
-                // Custom sort functions for specific categories
-                var categorySortOrders = {
-                    'Combos': ['combo_1', 'combo_2', 'combo_3', 'combo_4'],
-                    'Heladas': ['cold_supreme_frappe', 'cold_fresa_frappe', 'cold_coffee_frappe', 'cold_french_vanilla', 'cold_caramel_iced'],
-                    'Comida': [
-                        'food_avocado_toast_huevo',
-                        'food_banano_almond_toast',
-                        'food_chicken_salad_bowl',
-                        'food_baleadas',
-                        'food_chicken_melt',
-                        'food_grill_cheese_jamon',
-                        'food_grill_cheese',
-                        'food_papas',
-                        'food_crepas_3',
-                        'food_crepas_1'
-                    ]
-                };
-
-                Object.keys(categories).forEach(function(cat) {
-                    var sortOrder = categorySortOrders[cat];
-                    if (sortOrder) {
-                        categories[cat].sort(function(a, b) {
-                            var indexA = sortOrder.indexOf(a.id);
-                            var indexB = sortOrder.indexOf(b.id);
-                            if (indexA !== -1 && indexB !== -1) return indexA - indexB;
-                            if (indexA !== -1) return -1;
-                            if (indexB !== -1) return 1;
-                            return 0;
-                        });
-                    }
-                });
-
-                var order = ['Combos', 'Calientes', 'Heladas', 'Comida', 'Repostería', 'Acompañamientos', 'Menú Secreto', 'Otros'];
-                var html = '';
-                var sortedCats = Object.keys(categories).sort(function(a, b) {
-                    var idxA = order.indexOf(a);
-                    var idxB = order.indexOf(b);
-                    return (idxA === -1 ? 99 : idxA) - (idxB === -1 ? 99 : idxB);
-                });
-
-                if (filtered.length === 0) {
-                    html = '<div class="py-20 text-center opacity-30"><i class="fas fa-search text-4xl mb-4"></i><p>No se encontraron productos.</p></div>';
-                } else {
-                    sortedCats.forEach(function(cat) {
-                        html += '<div class="mb-8"><h2 class="text-gold text-xs font-black uppercase tracking-[0.2em] mb-4 border-l-4 border-gold pl-3">' + cat + '</h2><div class="grid grid-cols-2 md:grid-cols-3 gap-4">';
-                        categories[cat].forEach(function(item) {
-                            var isFav = (currentCustomer && currentCustomer.favorites || []).includes(item.id);
-                            html += '<div class="item-card p-4 rounded-3xl flex flex-col gap-3 cursor-pointer group active:scale-95 transition-transform" onclick="openModifier(\'' + item.id + '\')">';
-                            html += '<div class="h-32 bg-charcoal rounded-2xl overflow-hidden shadow-inner relative">';
-                            html += '<img src="' + (item.image_url || '/rico-logo.png') + '" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500">';
-                            html += '<button onclick="toggleFavorite(event, \'' + item.id + '\')" class="absolute top-2 right-2 w-8 h-8 rounded-full bg-black/40 backdrop-blur-md flex items-center justify-center text-xs transition-all ' + (isFav ? 'text-red-500 bg-white' : 'text-white/70 hover:text-white') + '"><i class="' + (isFav ? 'fas' : 'far') + ' fa-heart"></i></button>';
-                            html += '</div>';
-                            html += '<div><p class="font-bold text-sm leading-tight mb-1">' + item.name + '</p><p class="text-gold font-black text-sm">L ' + parseFloat(item.price || 0).toFixed(2) + '</p></div>';
-                            html += '<button class="w-full py-2 bg-gold text-dark rounded-xl font-black text-[10px] uppercase shadow-lg">+ AGREGAR</button></div>';
-                        });
-                        html += '</div></div>';
-                    });
                 }
-                container.innerHTML = html;
+                
+                document.getElementById('mod-note').value = "";
+                currentM = {};
+                const cont = document.getElementById('mod-groups');
+                const rel = itemModG.filter(img => img.item_id === id).map(img => img.group_id);
+                cont.innerHTML = rel.map(gid => {
+                    const g = modG.find(group => group.id === gid); if(!g) return '';
+                    const opts = modO.filter(o => o.group_id === gid);
+                    const def = opts.find(o => o.is_default) || opts[0];
+                    if (g.required && def) currentM[gid] = [def.id];
+                    return `<div class="space-y-4"><div class="flex justify-between items-end"><p class="text-[10px] font-black text-white/30 uppercase tracking-[0.2em]">${g.name}</p>${g.required ? '<span class="text-[8px] font-black text-gold border border-gold/30 px-1.5 py-0.5 rounded">OBLIGATORIO</span>':''}</div><div class="grid grid-cols-1 gap-2">${opts.map(o => `<button id="mbtn-${o.id}" onclick="toggleM('${gid}', '${o.id}', ${g.max_selections||1}, ${g.required})" class="p-5 rounded-[1.5rem] border transition-all flex justify-between items-center ${currentM[gid]?.includes(o.id) ? 'bg-gold/10 border-gold text-gold shadow-lg' : 'bg-white/5 border-white/5 text-white/40'}"><span>${o.name}</span>${parseFloat(o.price_adjustment)>0 ? `<span class="text-[10px] opacity-60">+L ${o.price_adjustment}</span>`:''}</button>`).join('')}</div></div>`;
+                }).join('');
+                updateModTotal();
+                document.getElementById('mod-overlay').classList.remove('hidden');
+                setTimeout(() => { document.getElementById('mod-overlay').style.opacity = '1'; document.getElementById('mod-drawer').classList.add('active'); }, 10);
+            };
+
+            window.toggleM = (gid, oid, max, req) => {
+                let s = currentM[gid] || [];
+                if (s.includes(oid)) { if (!req || s.length > 1) s = s.filter(x => x !== oid); }
+                else { if (max === 1) s = [oid]; else if (s.length < max) s.push(oid); }
+                currentM[gid] = s;
+                const opts = modO.filter(o => o.group_id === gid);
+                opts.forEach(o => {
+                    const btn = document.getElementById('mbtn-' + o.id);
+                    if (btn) btn.className = `p-5 rounded-[1.5rem] border transition-all flex justify-between items-center ${s.includes(o.id) ? 'bg-gold/10 border-gold text-gold shadow-lg' : 'bg-white/5 border-white/5 text-white/40'}`;
+                });
+                updateModTotal();
+            };
+
+            function updateModTotal() {
+                let t = parseFloat(currentI.price);
+                Object.keys(currentM).forEach(g => currentM[g].forEach(o => { const opt = modO.find(mo => mo.id === o); if (opt) t += (parseFloat(opt.price_adjustment) || 0); }));
+                const q = parseInt(document.getElementById('mod-qty').innerText);
+                document.getElementById('mod-subtotal').innerText = 'L ' + (t * q).toFixed(2);
             }
 
-            window.filterCategory = function(cat, btnEl) {
-                activeCategory = cat;
-                var btns = document.querySelectorAll('.cat-btn');
-                for(var i=0; i<btns.length; i++) { btns[i].className = "cat-btn px-6 py-2 rounded-full border border-white/10 bg-white/5 text-white/70 text-sm font-bold hover:bg-white/10 transition-colors"; }
-                if(btnEl) btnEl.className = "cat-btn px-6 py-2 rounded-full border border-gold bg-gold text-dark text-sm font-bold shadow-lg";
-                renderMenu();
-            };
+            window.changeQty = (v) => { let q = parseInt(document.getElementById('mod-qty').innerText) + v; if (q < 1) q = 1; document.getElementById('mod-qty').innerText = q; updateModTotal(); };
+            window.closeModifier = () => { document.getElementById('mod-overlay').style.opacity = '0'; document.getElementById('mod-drawer').classList.remove('active'); setTimeout(() => document.getElementById('mod-overlay').classList.add('hidden'), 400); };
 
-            window.toggleFavorite = function(e, itemId) {
-                if (e) e.stopPropagation();
-                if (!currentCustomer) {
-                    alert("Por favor inicia sesión para guardar favoritos.");
-                    return;
-                }
-                
-                var btn = e.currentTarget;
-                btn.classList.add('animate-ping');
-
-                fetch('/api/store?action=customer_toggle_favorite', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ customerId: currentCustomer.id, itemId: itemId })
-                })
-                .then(function(r) { return r.json(); })
-                .then(function(data) {
-                    currentCustomer.favorites = data.favorites;
-                    localStorage.setItem('ra_customer_data', JSON.stringify(currentCustomer));
-                    renderMenu();
-                })
-                .catch(function(err) { console.error("Error toggling favorite", err); })
-                .finally(function() {
-                    btn.classList.remove('animate-ping');
-                });
-            };
-
-            // --- MODIFIER LOGIC ---
-            window.openModifier = function(id) {
-                currentItem = menuItems.find(function(i) { return i.id === id; });
-                if(!currentItem) return;
-                
-                document.getElementById('mod-item-name').innerText = currentItem.name;
-                document.getElementById('mod-quantity').innerText = '1';
-                
-                currentMods = {};
-                var container = document.getElementById('mod-dynamic-container');
-                var relevantGroups = itemModGroups.filter(img => img.item_id === id).map(img => img.group_id);
-                
-                let html = '';
-                relevantGroups.forEach(groupId => {
-                    const group = modGroups.find(g => g.id === groupId);
-                    if (group) {
-                        const options = modOptions.filter(o => o.group_id === groupId);
-                        // Default logic
-                        const def = options.find(o => o.is_default);
-                        if (def) currentMods[groupId] = [def.id];
-                        else if (group.required) currentMods[groupId] = [options[0].id];
-
-                        html += `<div class="mb-6"><h3 class="text-white/40 text-[10px] uppercase font-black tracking-widest mb-3 flex justify-between"><span>${group.name}</span> ${group.required ? '<span class="text-gold">REQUERIDO</span>' : ''}</h3><div class="grid grid-cols-2 gap-2">`;
-                        options.forEach(opt => {
-                            const isSelected = (currentMods[groupId] || []).includes(opt.id);
-                            const selClass = isSelected ? 'border-2 border-gold bg-gold/10 text-gold' : 'border border-white/10 bg-white/5 text-white/60';
-                            html += `<button onclick="toggleMod('${groupId}', '${opt.id}', ${group.max_selections || 1})" id="mod-btn-${opt.id}" class="p-4 rounded-2xl text-xs font-bold transition-all text-left flex justify-between items-center ${selClass}">
-                                <span>${opt.name}</span>
-                                ${parseFloat(opt.price_adjustment) > 0 ? `<span class="text-[9px] opacity-60">+L.${opt.price_adjustment}</span>` : ''}
-                            </button>`;
-                        });
-                        html += `</div></div>`;
-                    }
-                });
-                
-                container.innerHTML = html || '<div class="py-10 text-center opacity-30 text-sm">Este producto no tiene opciones adicionales.</div>';
-                updateModPrice();
-                document.getElementById('modifier-modal').classList.remove('hidden');
-            };
-
-            window.toggleMod = function(groupId, optId, max) {
-                let selected = currentMods[groupId] || [];
-                if (selected.includes(optId)) {
-                    if (selected.length > 1 || !modGroups.find(g=>g.id===groupId).required) {
-                        selected = selected.filter(id => id !== optId);
-                    }
-                } else {
-                    if (max === 1) selected = [optId];
-                    else if (selected.length < max) selected.push(optId);
-                }
-                currentMods[groupId] = selected;
-                
-                // Update UI
-                const options = modOptions.filter(o => o.group_id === groupId);
-                options.forEach(opt => {
-                    const btn = document.getElementById(`mod-btn-${opt.id}`);
-                    if (btn) {
-                        const isSelected = selected.includes(opt.id);
-                        btn.className = `p-4 rounded-2xl text-xs font-bold transition-all text-left flex justify-between items-center ${isSelected ? 'border-2 border-gold bg-gold/10 text-gold' : 'border border-white/10 bg-white/5 text-white/60'}`;
-                    }
-                });
-                updateModPrice();
-            };
-
-            function updateModPrice() {
-                let total = parseFloat(currentItem.price);
-                Object.keys(currentMods).forEach(gid => {
-                    currentMods[gid].forEach(oid => {
-                        const opt = modOptions.find(o => o.id === oid);
-                        if (opt) total += (parseFloat(opt.price_adjustment) || 0);
+            window.addToCart = () => {
+                try {
+                    if (!currentI) return;
+                    console.log("Adding to cart...", currentI);
+                    const q = parseInt(document.getElementById('mod-qty').innerText) || 1; 
+                    const ms = [];
+                    Object.keys(currentM).forEach(g => {
+                        if (Array.isArray(currentM[g])) {
+                            currentM[g].forEach(o => { 
+                                const opt = modO.find(mo => mo.id === o); 
+                                if (opt) ms.push({ id: opt.id, name: opt.name, price: opt.price_adjustment }); 
+                            });
+                        }
                     });
-                });
-                const qty = parseInt(document.getElementById('mod-quantity').innerText);
-                document.getElementById('mod-final-price').innerText = 'L ' + (total * qty).toFixed(2);
-            }
-
-            window.closeModal = function() { document.getElementById('modifier-modal').classList.add('hidden'); };
-            
-            window.changeQuantity = function(d) { 
-                let q = parseInt(document.getElementById('mod-quantity').innerText) + d; 
-                if (q < 1) q = 1; 
-                document.getElementById('mod-quantity').innerText = q; 
-                updateModPrice();
-            };
-
-            window.confirmItem = function() {
-                const qty = parseInt(document.getElementById('mod-quantity').innerText);
-                const mods = [];
-                Object.keys(currentMods).forEach(gid => {
-                    currentMods[gid].forEach(oid => {
-                        const opt = modOptions.find(o => o.id === oid);
-                        if (opt) mods.push({ name: opt.name, price: opt.price_adjustment });
+                    let tp = parseFloat(currentI.price) || 0; 
+                    ms.forEach(m => tp += (parseFloat(m.price) || 0));
+                    cart.push({ 
+                        id: currentI.id, 
+                        name: currentI.name, 
+                        mods: ms, 
+                        qty: q, 
+                        finalPrice: tp * q, 
+                        note: document.getElementById('mod-note').value 
                     });
-                });
-
-                let totalPerItem = parseFloat(currentItem.price);
-                mods.forEach(m => totalPerItem += (parseFloat(m.price) || 0));
-
-                cart.push({
-                    id: currentItem.id,
-                    name: currentItem.name,
-                    price: parseFloat(currentItem.price),
-                    mods: mods,
-                    qty: qty,
-                    finalPrice: totalPerItem * qty
-                });
-                
-                localStorage.setItem('ra_active_cart', JSON.stringify(cart));
-                updateCartUI();
-                closeModal();
+                    console.log("Cart updated:", cart);
+                    updateCartUI(); 
+                    window.closeModifier();
+                } catch(e) {
+                    console.error("Add to cart failed", e);
+                    alert("Error al agregar al carrito: " + e.message);
+                }
             };
 
             function updateCartUI() {
-                const total = cart.reduce(function(s, i) { return s + i.finalPrice; }, 0);
-                document.getElementById('cart-total').innerText = 'L ' + total.toFixed(2);
-                document.getElementById('cart-count').innerText = cart.length + ' Items';
-                document.getElementById('cart-bar').classList.toggle('translate-y-[150%]', cart.length === 0);
-            }
-
-            // --- CART & ORDERING ---
-            window.openCartModal = function() {
-                var html = cart.map(function(i, idx) {
-                    return `
-                    <div class="flex justify-between items-center bg-white/5 p-4 rounded-2xl border border-white/5">
-                        <div class="flex-1 min-w-0 pr-4">
-                            <p class="text-sm font-bold text-white truncate">${i.qty}x ${i.name}</p>
-                            ${i.mods.length ? `<p class="text-[9px] text-white/30 truncate">${i.mods.map(m=>m.name).join(', ')}</p>` : ''}
-                            <p class="text-[10px] text-gold font-black mt-1">L ${i.finalPrice.toFixed(2)}</p>
-                        </div>
-                        <button onclick="removeItem(${idx})" class="w-10 h-10 rounded-full bg-red-500/10 text-red-500/50 flex items-center justify-center"><i class="fas fa-trash-alt"></i></button>
-                    </div>`;
-                }).join('');
-                
-                document.getElementById('cart-review-items').innerHTML = html || '<div class="py-10 text-center opacity-30 italic">Tu carrito está vacío</div>';
-                
-                var total = cart.reduce(function(s, i) { return s + i.finalPrice; }, 0);
-                document.getElementById('review-subtotal').innerText = 'L ' + total.toFixed(2);
-                document.getElementById('review-total').innerText = 'L ' + total.toFixed(2);
-                
-                var checkout = document.getElementById('checkout-options');
-                if (!storeIsOpen) { 
-                    checkout.innerHTML = '<div class="bg-red-500/10 text-red-500 py-4 rounded-2xl font-black text-center text-xs uppercase border border-red-500/20">Tienda Cerrada</div>'; 
-                } else if (cart.length === 0) {
-                    checkout.innerHTML = '<button disabled class="w-full bg-white/5 text-white/20 py-4 rounded-2xl font-bold">Carrito Vacío</button>';
-                } else { 
-                    checkout.innerHTML = '<button onclick="submitOrder()" class="w-full gold-btn py-4 rounded-2xl font-black text-lg shadow-xl shadow-gold/20 active:scale-95 transition-all">CONFIRMAR ORDEN</button>'; 
-                }
-                document.getElementById('cart-modal').classList.remove('hidden');
-            };
-
-            window.closeCartModal = function() { document.getElementById('cart-modal').classList.add('hidden'); };
-            
-            window.removeItem = function(idx) {
-                cart.splice(idx, 1);
-                localStorage.setItem('ra_active_cart', JSON.stringify(cart));
-                updateCartUI();
-                if(cart.length === 0) closeCartModal();
-                else openCartModal();
-            };
-
-            window.submitOrder = async function() {
-                let guestInfo = "";
-                let paymentMethod = "cash"; // default
-                let orderStatus = "pending";
-
-                if (!currentCustomer) {
-                    const wantLogin = await showUIModal({
-                        title: '¿Tienes cuenta?',
-                        message: 'Inicia sesión para acumular puntos y pagar con Rico Cash.',
-                        confirmText: 'Iniciar Sesión',
-                        cancelText: 'Seguir como Invitado'
-                    });
-
-                    if (wantLogin) {
-                        openLoginModal();
-                        closeCartModal();
-                        return;
-                    }
-
-                    const guestName = await showUIModal({
-                        title: 'Tu Nombre',
-                        message: 'Para procesar tu orden, por favor ingresa tu nombre:',
-                        showInput: true,
-                        inputPlaceholder: 'Ej. Juan Perez',
-                        confirmText: 'Siguiente'
-                    });
-                    if (!guestName) return;
-
-                    const guestPhone = await showUIModal({
-                        title: 'WhatsApp',
-                        message: 'Ingresa tu número de teléfono para recibir actualizaciones:',
-                        showInput: true,
-                        inputPlaceholder: 'Ej. 99887766',
-                        confirmText: 'Finalizar'
-                    });
-                    if (!guestPhone) return;
-
-                    guestInfo = `[GUEST: ${guestName}] [TEL: ${guestPhone}]`;
+                const sub = cart.reduce((s, i) => s + i.finalPrice, 0); const total = sub + deliveryFee;
+                document.getElementById('cart-total-text').innerText = 'L ' + total.toFixed(2);
+                document.getElementById('cart-count-text').innerText = cart.length + ' Items';
+                const cartBar = document.getElementById('cart-bar');
+                if (cart.length > 0) {
+                    cartBar.style.transform = 'translateY(0)';
+                    cartBar.style.opacity = '1';
+                    cartBar.style.pointerEvents = 'auto';
                 } else {
-                    // Logged in user: Choose payment method
-                    const method = await showUIModal({
-                        title: 'Método de Pago',
-                        message: `Saldo Rico Cash: L ${parseFloat(currentCustomer.rico_balance || 0).toFixed(2)}\n\n¿Cómo deseas pagar?`,
-                        confirmText: 'Rico Cash',
-                        cancelText: 'Efectivo/Transfer'
-                    });
-                    
-                    if (method) {
-                        // User chose Rico Cash (Confirm)
-                        paymentMethod = "rico_balance";
-                    } else {
-                        // User chose Cash (Cancel button in modal)
-                        paymentMethod = "cash";
-                    }
+                    cartBar.style.transform = 'translateY(200%)';
+                    cartBar.style.opacity = '0';
+                    cartBar.style.pointerEvents = 'none';
                 }
+            }
 
-                var btn = document.querySelector('#checkout-options button');
-                var ogHtml = btn.innerHTML;
-                btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Procesando...';
-                btn.disabled = true;
+            window.openCheckout = () => {
+                document.getElementById('check-items').innerHTML = cart.map((i, idx) => `<div class="glass p-5 rounded-[2rem] flex justify-between items-center"><div class="flex-1 min-w-0 pr-4"><h4 class="font-black text-xs uppercase text-white truncate">${i.qty}x ${i.name}</h4>${i.mods.length ? `<p class="text-[9px] text-white/30 uppercase mt-1">${i.mods.map(m=>m.name).join(', ')}</p>` : ''}</div><button onclick="window.remove(${idx})" class="w-10 h-10 rounded-xl bg-error/10 text-error/40 flex items-center justify-center"><i class="fas fa-trash-alt text-xs"></i></button></div>`).join('');
+                window.setFulfill(fulfillment);
+                document.getElementById('check-total').innerText = 'L ' + (cart.reduce((s,i)=>s+i.finalPrice,0) + deliveryFee).toFixed(2);
+                document.getElementById('check-overlay').classList.remove('hidden');
+                setTimeout(() => { document.getElementById('check-overlay').style.opacity = '1'; document.getElementById('check-drawer').classList.add('active'); }, 10);
+            };
 
-                var total = cart.reduce(function(s, i) { return s + i.finalPrice; }, 0);
+            window.setFulfill = (type) => {
+                fulfillment = type;
+                document.querySelectorAll('[id^="fbtn-"]').forEach(b => b.className = "p-4 rounded-2xl border border-white/5 bg-white/5 text-white/20 transition-all text-center space-y-2 flex flex-col items-center");
+                document.getElementById('fbtn-' + type).className = "p-4 rounded-2xl border-gold bg-gold/10 text-gold transition-all text-center space-y-2 shadow-lg flex flex-col items-center";
+                document.getElementById('check-delivery-ui').classList.toggle('hidden', type !== 'delivery');
+                if (type !== 'delivery') deliveryFee = 0;
+                document.getElementById('check-total').innerText = 'L ' + (cart.reduce((s,i)=>s+i.finalPrice,0) + deliveryFee).toFixed(2);
+            };
+
+            window.setZone = (fee, name) => {
+                deliveryFee = fee; zoneName = name;
+                document.querySelectorAll('[id^="zbtn-"]').forEach(b => b.className = "p-4 rounded-2xl border border-white/10 bg-white/5 text-left");
+                document.getElementById('zbtn-' + fee).className = "p-4 rounded-2xl border-2 border-gold bg-gold/10 text-left shadow-lg";
+                document.getElementById('check-total').innerText = 'L ' + (cart.reduce((s,i)=>s+i.finalPrice,0) + deliveryFee).toFixed(2);
+            };
+
+            window.remove = (idx) => { cart.splice(idx, 1); updateCartUI(); if (!cart.length) closeCheckout(); else openCheckout(); };
+            window.closeCheckout = () => { document.getElementById('check-overlay').style.opacity = '0'; document.getElementById('check-drawer').classList.remove('active'); setTimeout(() => document.getElementById('check-overlay').classList.add('hidden'), 400); };
+
+            window.submitFinalOrder = async function() {
+                if (isSubmitting) return;
+                const name = document.getElementById('check-name').value.trim();
+                const phone = document.getElementById('check-phone').value.trim();
+                const group = document.getElementById('check-group').value.trim().toUpperCase();
+                const country = document.getElementById('check-country-code').value;
+
+                if (!name) return alert("Por favor ingresa tu nombre");
+                if (!group && !phone) return alert("Por favor ingresa tu WhatsApp");
+                if (fulfillment === 'delivery' && (deliveryFee === 0 || !document.getElementById('check-address').value)) return alert("Completa el envío");
+
+                isSubmitting = true;
+                const btn = document.getElementById('final-btn'); btn.innerText = "ENVIANDO..."; btn.disabled = true;
+                const sched = document.getElementById('check-schedule').value;
                 
-                // Add "Mobile Order" tag to notes so POS tracks it correctly
-                let finalNotes = `Mobile Order (${fulfillmentType === 'pickup' ? 'Llevar' : 'Aquí'})`;
-                if (guestInfo) finalNotes += ` ${guestInfo}`;
+                let notes = `Mobile Order (${fulfillment})`;
+                if (sched !== 'asap') notes += ` [SCHEDULED: ${sched}]`;
+                if (group) notes += ` [GROUP: ${group}]`;
+                if (fulfillment === 'delivery') notes += ` [ENTREGA: ${zoneName}] [DIR: ${document.getElementById('check-address').value}]`;
+                notes += ` [GUEST: ${name}]`;
+                if (phone) notes += ` [TEL: ${country}${phone}]`;
 
-                var payload = {
-                    items: cart,
-                    total: total,
-                    subtotal: total,
-                    fulfillmentType: fulfillmentType,
-                    paymentMethod: paymentMethod,
-                    customerId: currentCustomer ? currentCustomer.id : null,
-                    pin: localStorage.getItem('ra_customer_pin'),
-                    notes: finalNotes
-                };
-                fetch('/api/orders', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
-                })
-                .then(function(res) {
-                    if (res.ok) return res.json();
-                    return res.json().then(d => { throw new Error(d.error || 'Error al enviar'); });
-                })
-                .then(function(saved) {
-                    alert('🚀 ¡Orden enviada con éxito!');
-                    cart = [];
-                    localStorage.removeItem('ra_active_cart');
-                    updateCartUI();
-                    closeCartModal();
-                    activeOrder = saved;
-                    showTracking();
-                })
-                .catch(function(err) {
-                    alert(err.message);
-                    btn.innerHTML = ogHtml;
-                    btn.disabled = false;
-                });
-            };
-
-            // --- VIEW SWITCHING ---
-            window.showMenuView = function() {
-                ['main-view', 'tracking-view', 'wallet-view', 'profile-view', 'fulfillment-selector'].forEach(id => {
-                    const el = document.getElementById(id);
-                    if (el) el.classList.add('hidden');
-                });
-                document.getElementById('main-view').classList.remove('hidden');
-                document.getElementById('fulfillment-selector').classList.remove('hidden');
-                updateNavActive('nav-menu');
-            };
-
-            // --- TOPUP LOGIC ---
-            var selectedTopupAmount = 0;
-            var selectedTopupBonus = 0;
-
-            window.openTopupModal = function() {
-                if (!currentCustomer) return openLoginModal();
-                document.getElementById('topup-modal').classList.remove('hidden');
-                document.getElementById('topup-step-1').classList.remove('hidden');
-                document.getElementById('topup-step-2').classList.add('hidden');
-            };
-
-            window.closeTopupModal = function() { document.getElementById('topup-modal').classList.add('hidden'); };
-
-            window.selectTopup = function(amount, bonus) {
-                selectedTopupAmount = amount;
-                selectedTopupBonus = bonus;
-                document.getElementById('topup-transfer-amount').innerText = 'L ' + amount;
-                document.getElementById('topup-step-1').classList.add('hidden');
-                document.getElementById('topup-step-2').classList.remove('hidden');
-            };
-
-            window.copyBankInfo = function(bank) {
-                var text = bank === 'bac' ? '746123456' : '210009876';
-                navigator.clipboard.writeText(text).then(function() { alert('Copiado: ' + text); });
-            };
-
-            window.uploadTopupReceipt = function() {
-                var input = document.getElementById('topup-receipt');
-                var status = document.getElementById('topup-status');
-                if (!input.files || !input.files[0]) return;
-
-                status.classList.remove('hidden');
-                status.innerText = 'Subiendo...';
-                status.className = 'text-gold font-bold';
-
-                var reader = new FileReader();
-                reader.onloadend = function() {
-                    var base64 = reader.result;
-                    fetch('/api/topup', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            customerId: currentCustomer.id,
-                            phone: currentCustomer.phone,
-                            amount: selectedTopupAmount,
-                            bonus: selectedTopupBonus,
-                            imageBase64: base64,
-                            fileName: input.files[0].name
-                        })
-                    })
-
-                    .then(function(res) { 
-                        if(res.ok) { 
-                            status.innerText = '¡Recibido! Procesaremos tu saldo en unos minutos.'; 
-                            status.className = 'text-green-500 font-bold'; 
-                            setTimeout(closeTopupModal, 3000); 
-                        } else { 
-                            throw new Error('Error al subir'); 
-                        } 
-                    })
-                    .catch(function(e) { 
-                        status.innerText = e.message; 
-                        status.className = 'text-red-500 font-bold'; 
-                    });
-                };
-                reader.readAsDataURL(input.files[0]);
-            };
-
-            window.showWalletView = function() {
-                ['main-view', 'tracking-view', 'wallet-view', 'profile-view', 'fulfillment-selector'].forEach(id => {
-                    const el = document.getElementById(id);
-                    if (el) el.classList.add('hidden');
-                });
-                document.getElementById('wallet-view').classList.remove('hidden');
-                updateNavActive('nav-wallet');
-            };
-
-            window.showProfileView = function() {
-                ['main-view', 'tracking-view', 'wallet-view', 'profile-view', 'fulfillment-selector'].forEach(id => {
-                    const el = document.getElementById(id);
-                    if (el) el.classList.add('hidden');
-                });
-                document.getElementById('profile-view').classList.remove('hidden');
-                updateNavActive('nav-profile');
-            };
-
-            var trackingInterval = null;
-
-            window.showTracking = function() {
-                if (!activeOrder) return showMenuView();
-                ['main-view', 'tracking-view', 'wallet-view', 'profile-view', 'fulfillment-selector'].forEach(id => {
-                    const el = document.getElementById(id);
-                    if (el) el.classList.add('hidden');
-                });
-                document.getElementById('tracking-view').classList.remove('hidden');
-                
-                const num = activeOrder.order_number || activeOrder.id.slice(-4);
-                document.getElementById('track-order-num').innerText = num;
-                document.getElementById('track-time').innerText = new Date(activeOrder.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
-                
-                // Generate QR Code using QuickChart API (more reliable than Google)
-                const qrImg = document.getElementById('order-qr-img');
-                const qrId = document.getElementById('order-qr-id');
-                const orderData = activeOrder.id; // Encode the full order ID
-                qrImg.src = `https://quickchart.io/qr?text=${encodeURIComponent(orderData)}&size=300&light=ffffff&dark=1e1610`;
-                qrId.innerText = activeOrder.id;
-
-                updateTrackingUI();
-                if (trackingInterval) clearInterval(trackingInterval);
-                trackingInterval = setInterval(trackOrder, 5000); // Check every 5 seconds
-            };
-
-            async function trackOrder() {
-                if (!activeOrder) return;
                 try {
-                    const res = await fetch(`/api/store?action=track_order&id=${activeOrder.id}`);
-                    const data = await res.json();
-                    if (data && data.status) {
-                        activeOrder.status = data.status;
-                        updateTrackingUI();
-                        if (data.status === 'completed' || data.status === 'cancelled') {
-                            clearInterval(trackingInterval);
-                        }
+                    const res = await fetch('/api/orders', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ items: cart, total: cart.reduce((s,i)=>s+i.finalPrice,0)+deliveryFee, subtotal: cart.reduce((s,i)=>s+i.finalPrice,0), paymentMethod:'cash', notes, scheduledFor: sched==='asap'?null:sched }) });
+                    const saved = await res.json();
+                    if (!res.ok) {
+                        throw new Error(saved.error || "Error al enviar el pedido");
                     }
-                } catch(e) { console.error("Tracking error", e); }
-            }
-
-            function updateTrackingUI() {
-                const steps = document.getElementById('tracking-steps');
-                const status = activeOrder.status;
-                const type = activeOrder.fulfillmentType || 'pickup';
-                
-                document.getElementById('track-type').innerText = type === 'pickup' ? 'Para Llevar' : 'En Restaurante';
-
-                const workflow = [
-                    { key: 'pending', label: 'Orden Recibida', icon: 'fa-receipt' },
-                    { key: 'preparing', label: 'En Preparación', icon: 'fa-mug-hot' },
-                    { key: 'ready', label: '¡Lista para Entrega!', icon: 'fa-check-circle' }
-                ];
-
-                let currentIdx = workflow.findIndex(s => s.key === status);
-                if (status === 'paid' || status === 'pending_verification') currentIdx = 0;
-                if (status === 'preparing' || status === 'drinks_ready' || status === 'food_ready') currentIdx = 1;
-                if (status === 'ready') currentIdx = 2;
-                if (status === 'completed') currentIdx = 3; // Beyond the last index to make all green
-
-                steps.innerHTML = workflow.map((s, idx) => {
-                    const isDone = idx < currentIdx || status === 'completed';
-                    const isCurrent = idx === currentIdx && status !== 'completed';
-                    return `
-                        <div class="flex items-center gap-4 ${isDone || isCurrent ? 'opacity-100' : 'opacity-20'}">
-                            <div class="w-10 h-10 rounded-full ${isCurrent ? 'bg-gold text-dark animate-pulse' : (isDone ? 'bg-green-500 text-white' : 'bg-white/10 text-white')} flex items-center justify-center text-sm">
-                                <i class="fas ${s.icon}"></i>
-                            </div>
-                            <div>
-                                <p class="font-bold text-sm ${isCurrent ? 'text-gold' : 'text-white'}">${s.label}</p>
-                                ${isCurrent ? '<p class="text-[10px] text-gold/60 font-black uppercase tracking-widest">En curso</p>' : ''}
-                                ${isDone && idx === 2 ? '<p class="text-[10px] text-green-500 font-black uppercase tracking-widest">Entregada</p>' : ''}
-                            </div>
-                        </div>
-                    `;
-                }).join('<div class="w-0.5 h-6 bg-white/10 ml-5 my-1"></div>');
-
-                if (status === 'ready') {
-                    document.getElementById('track-status-title').innerText = '¡Tu Orden está Lista!';
-                    document.getElementById('track-status-desc').innerText = 'Por favor pasa por tu pedido.';
-                }
-                if (status === 'completed') {
-                    document.getElementById('track-status-title').innerText = '¡Orden Entregada!';
-                    document.getElementById('track-status-desc').innerText = '¡Gracias por tu visita! 🦁';
-                    document.getElementById('order-qr-container').classList.add('opacity-20'); // Dim QR once done
-                }
-            }
-
-            function updateNavActive(activeId) {
-                ['nav-menu', 'nav-wallet', 'nav-profile'].forEach(id => {
-                    const el = document.getElementById(id);
-                    if (el) {
-                        el.classList.remove('text-gold');
-                        el.classList.add('text-white/40');
-                        el.querySelector('div').classList.remove('bg-gold/10');
+                    console.log("Order saved:", saved);
+                    document.getElementById('receipt-num').innerText = '#' + (saved.order_number || '---');
+                    if (window.QRCode) {
+                        new QRCode(document.getElementById('receipt-qr'), { text: saved.id, width: 160, height: 160, colorDark: "#120C09" });
                     }
-                });
-                const active = document.getElementById(activeId);
-                if (active) {
-                    active.classList.add('text-gold');
-                    active.classList.remove('text-white/40');
-                    active.querySelector('div').classList.add('bg-gold/10');
+                    document.getElementById('track-modal').classList.remove('hidden');
+                } catch(e) { 
+                    console.error("Order submission failed", e);
+                    alert(e.message); 
+                    btn.innerText = "Enviar Pedido Ahora 🚀"; 
+                    btn.disabled = false; 
                 }
-            }
-
-            // --- HISTORY ---
-            async function loadPastOrders() {
-                if (!currentCustomer) return;
-                const container = document.getElementById('past-orders-list');
-                try {
-                    const res = await fetch(`/api/store?action=customer_past_orders&id=${currentCustomer.id}`);
-                    const data = await res.json();
-                    if (data.orders && data.orders.length > 0) {
-                        container.innerHTML = data.orders.map(o => `
-                            <div class="p-5 bg-white/5 border border-white/5 rounded-[2rem] space-y-4">
-                                <div class="flex justify-between items-start">
-                                    <div>
-                                        <p class="text-[10px] font-black text-gold uppercase tracking-widest mb-1">Orden #${o.order_number || o.id.slice(-4)}</p>
-                                        <p class="text-xs text-white/40">${new Date(o.created_at).toLocaleDateString()}</p>
-                                    </div>
-                                    <p class="text-sm font-black font-mono text-white">L ${parseFloat(o.total).toFixed(2)}</p>
-                                </div>
-                                <p class="text-xs text-white/60 line-clamp-1">${o.items.map(i=>i.name).join(', ')}</p>
-                                <button onclick='reorder(${JSON.stringify(o.items).replace(/'/g, "&apos;")})' class="w-full py-3 rounded-xl bg-gold/10 border border-gold/20 text-gold text-[10px] font-black uppercase tracking-widest active:scale-95 transition-all">🚀 Repetir Orden</button>
-                            </div>
-                        `).join('');
-                    } else {
-                        container.innerHTML = '<p class="text-center text-white/20 text-xs py-10 italic">Aún no tienes órdenes previas.</p>';
-                    }
-                } catch(e) { console.error(e); }
-            }
-
-            window.reorder = function(items) {
-                cart = items.map(i => ({ ...i, qty: i.qty || 1, finalPrice: (parseFloat(i.price) || 0) * (i.qty || 1) }));
-                localStorage.setItem('ra_active_cart', JSON.stringify(cart));
-                updateCartUI();
-                showMenuView();
-                openCartModal();
+                finally { isSubmitting = false; }
             };
 
-            window.newOrder = function() {
-                activeOrder = null;
-                localStorage.removeItem('ra_active_order');
-                document.getElementById('order-qr-container').classList.remove('opacity-20');
-                if (trackingInterval) clearInterval(trackingInterval);
-                showMenuView();
-            };
-
-            // --- INIT ---
-            function loadMenu() {
-                fetch('/api/store?action=menu').then(function(r) { return r.json(); }).then(function(d) {
-                    if(d && d.items) { 
-                        menuItems = d.items; 
-                        modGroups = d.modGroups || [];
-                        modOptions = d.modOptions || [];
-                        itemModGroups = d.itemModGroups || [];
-                        var msg = document.getElementById('loading-msg');
-                        if(msg) msg.style.display = 'none';
-                        renderMenu(); 
-                    }
-                }).catch(function(e) { console.error('Menu Error:', e); });
+            function generateSlots() {
+                const sel = document.getElementById('check-schedule'); const now = new Date(); const day = now.getDay();
+                let hS = (day===0)?8:7; let hE = (day===0)?18:19;
+                let html = '<option value="asap">Lo antes posible (ASAP)</option>';
+                for (let h=hS; h<hE; h++) { for (let m=0; m<60; m+=15) {
+                    const slot = new Date(); slot.setHours(h,m,0,0);
+                    if (slot.getTime() > (now.getTime() + 20*60000)) html += `<option value="${h}:${m.toString().padStart(2,'0')}">${(h%12||12)}:${m.toString().padStart(2,'0')} ${(h>=12?'PM':'AM')} (Hoy)</option>`;
+                }}
+                for (let h=hS; h<hE; h++) { for (let m=0; m<60; m+=15) {
+                    html += `<option value="${h}:${m.toString().padStart(2,'0')}">${(h%12||12)}:${m.toString().padStart(2,'0')} ${(h>=12?'PM':'AM')} (Mañana)</option>`;
+                }}
+                sel.innerHTML = html;
             }
-
-            function fetchStatus() {
-                fetch('/api/store/status').then(function(r) { return r.json(); }).then(function(d) {
-                    storeIsOpen = d.isOpen;
-                    if(!d.isOpen) document.getElementById('closed-overlay').classList.remove('hidden');
-                }).catch(function(e) { console.error('Status Error:', e); });
-            }
-
-            syncIdentity();
-            loadMenu();
-            fetchStatus();
-            // Poll status every 60 seconds
-            setInterval(fetchStatus, 60000);
-            var saved = localStorage.getItem('ra_active_cart');
-            if(saved) { try { cart = JSON.parse(saved); updateCartUI(); } catch(e) {} }
         })();
     </script>
-    <!-- TOPUP MODAL -->
-    <div id="topup-modal" class="hidden fixed inset-0 bg-black/90 backdrop-blur-sm z-[300] flex items-center justify-center p-6">
-        <div class="bg-dark w-full max-w-sm rounded-3xl border border-gold/20 p-8 space-y-6 overflow-y-auto max-h-[90vh]">
-            <div id="topup-step-1" class="space-y-6">
-                <div class="text-center">
-                    <h3 class="text-2xl font-bold text-white font-display">Recargar Rico Cash</h3>
-                    <p class="text-white/50 text-sm">Selecciona el monto a recargar</p>
-                </div>
-                <div class="grid grid-cols-1 gap-3">
-                    <button onclick="selectTopup(200, 20)" class="p-4 bg-white/5 border border-white/10 rounded-2xl text-left flex justify-between items-center hover:border-gold/50 transition-all group">
-                        <div><p class="text-white font-bold">L 200</p><p class="text-[10px] text-white/40 uppercase font-black">+L 20 GRATIS</p></div>
-                        <i class="fas fa-chevron-right text-gold/20 group-hover:text-gold transition-colors"></i>
-                    </button>
-                    <button onclick="selectTopup(500, 60)" class="p-4 bg-white/5 border border-white/10 rounded-2xl text-left flex justify-between items-center hover:border-gold/50 transition-all group border-gold/30">
-                        <div><p class="text-white font-bold">L 500</p><p class="text-[10px] text-gold uppercase font-black tracking-widest">+L 60 GRATIS</p></div>
-                        <i class="fas fa-chevron-right text-gold transition-colors"></i>
-                    </button>
-                    <button onclick="selectTopup(1000, 150)" class="p-4 bg-white/5 border border-white/10 rounded-2xl text-left flex justify-between items-center hover:border-gold/50 transition-all group">
-                        <div><p class="text-white font-bold">L 1,000</p><p class="text-[10px] text-white/40 uppercase font-black">+L 150 GRATIS</p></div>
-                        <i class="fas fa-chevron-right text-gold/20 group-hover:text-gold transition-colors"></i>
-                    </button>
-                </div>
-                <button onclick="closeTopupModal()" class="w-full text-white/30 font-bold text-sm">Cancelar</button>
-            </div>
-
-            <div id="topup-step-2" class="hidden space-y-6">
-                <div class="text-center">
-                    <h3 class="text-xl font-bold text-white font-display">Paso Final</h3>
-                    <p class="text-white/50 text-sm">Transfiere <span id="topup-transfer-amount" class="text-gold font-bold">L 0.00</span> y sube tu comprobante</p>
-                </div>
-                <div class="bg-white/5 p-4 rounded-2xl border border-white/10 space-y-4">
-                    <div class="flex justify-between items-center">
-                        <span class="text-[10px] font-black text-white/40 uppercase">BAC HONDURAS</span>
-                        <button onclick="copyBankInfo('bac')" class="text-gold text-[10px] font-black uppercase">Copiar <i class="fas fa-copy ml-1"></i></button>
-                    </div>
-                    <div class="flex justify-between items-center">
-                        <span class="text-[10px] font-black text-white/40 uppercase">BANPAÍS</span>
-                        <button onclick="copyBankInfo('banpais')" class="text-gold text-[10px] font-black uppercase">Copiar <i class="fas fa-copy ml-1"></i></button>
-                    </div>
-                </div>
-                <div class="space-y-2">
-                    <label class="text-[10px] text-white/40 uppercase font-black tracking-widest block">Comprobante de Pago</label>
-                    <input type="file" id="topup-receipt" accept="image/*" class="w-full text-sm text-white/50 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-semibold file:bg-gold file:text-dark hover:file:bg-gold/80 cursor-pointer" onchange="uploadTopupReceipt()">
-                </div>
-                <div id="topup-status" class="hidden text-center text-sm font-bold"></div>
-                <button onclick="document.getElementById('topup-step-1').classList.remove('hidden'); document.getElementById('topup-step-2').classList.add('hidden');" class="w-full text-white/30 font-bold text-sm">Atrás</button>
-            </div>
-        </div>
-    </div>
-    <!-- UI MODAL (SYSTEM PROMPT/CONFIRM REPLACEMENT) -->
-    <div id="ui-modal" class="hidden fixed inset-0 bg-black/90 backdrop-blur-md z-[500] flex items-center justify-center p-6">
-        <div class="bg-dark w-full max-w-sm rounded-[2.5rem] border border-gold/20 p-8 space-y-6 shadow-2xl">
-            <div class="text-center space-y-2">
-                <h3 id="ui-modal-title" class="text-2xl font-display font-black text-white uppercase tracking-tight">---</h3>
-                <p id="ui-modal-msg" class="text-white/50 text-sm leading-relaxed">---</p>
-            </div>
-            <div id="ui-modal-input-container" class="hidden">
-                <input type="text" id="ui-modal-input" class="w-full bg-charcoal border-2 border-white/10 rounded-2xl p-4 text-white font-bold focus:border-gold/50 outline-none transition-all" placeholder="---">
-            </div>
-            <div class="grid grid-cols-1 gap-3">
-                <button id="ui-modal-confirm" class="w-full py-4 bg-gold text-dark font-black rounded-2xl shadow-lg active:scale-95 transition-all">CONFIRMAR</button>
-                <button id="ui-modal-cancel" class="w-full py-4 bg-white/5 text-white/40 font-bold rounded-2xl active:scale-95 transition-all text-sm">CANCELAR</button>
-            </div>
-        </div>
-    </div>
 </body>
 </html>

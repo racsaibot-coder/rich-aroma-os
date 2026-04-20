@@ -1,6 +1,29 @@
 {
   "orders": [
     {
+      "id": "ORD-1776697598241",
+      "order_number": 7697598,
+      "items": [
+        {
+          "id": "combo_1",
+          "name": "Combo 1: Chicken Salad Bowl + Jugo",
+          "mods": [],
+          "qty": 1,
+          "finalPrice": 200,
+          "note": "",
+          "is_house_made": false,
+          "is_vip_free_eligible": false
+        }
+      ],
+      "subtotal": 200,
+      "tax": 0,
+      "discount": 0,
+      "total": 200,
+      "status": "pending",
+      "payment_method": "cash",
+      "notes": "Mobile Order (pickup) [GUEST: Test User] [TEL: +50499999999]"
+    },
+    {
       "id": "ORD-${Date.now()}",
       "order_number": 6883831,
       "items": [],

@@ -919,7 +919,7 @@ app.get('/api/menu', async (req, res) => {
         const isAdmin = req.query.admin === 'true';
         
         const { data: items, error: e1 } = await supabase.from('menu_items').select('*').order('name');
-        const { data: modGroups, error: e2 } = await supabase.from('modifier_groups').select('*').order('display_order');
+        const { data: modGroups, error: e2 } = await supabase.from('modifier_groups').select('*').order('name');
         const { data: modOptions, error: e3 } = await supabase.from('modifier_options').select('*').order('name');
         const { data: itemModGroups, error: e4 } = await supabase.from('item_modifier_groups').select('*');
 
@@ -1053,7 +1053,7 @@ app.post('/api/orders', async (req, res) => {
         }
 
         const orderData = {
-            id: 'ORD-' + Date.now(),
+            id: 'ORD-' + Date.now() + '-' + Math.floor(Math.random() * 10000),
             order_number: orderNum,
             items: finalOrderData.items,
             subtotal: finalOrderData.subtotal,
