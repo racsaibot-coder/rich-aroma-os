@@ -477,10 +477,10 @@
                 <span id="cart-total">L. 0.00</span>
             </div>
             <div class="grid grid-cols-2 gap-2 mt-2">
-                <button onclick="openDiscountModal()" class="bg-white border border-gray-200 text-gray-500 py-2 rounded-lg font-black text-[9px] uppercase hover:bg-gray-50 transition-all flex items-center justify-center gap-1">
-                    <i class="fas fa-tag"></i> Desc.
+                <button onclick="window.openDiscountModal()" class="bg-white border-2 border-blue-100 text-blue-600 py-3 rounded-xl font-black text-[10px] uppercase hover:bg-blue-50 transition-all flex items-center justify-center gap-2 shadow-sm">
+                    <i class="fas fa-tag"></i> Descuento
                 </button>
-                <button onclick="submitPendingOrder()" class="bg-white border border-gray-200 text-gray-600 py-2 rounded-lg font-black text-[9px] uppercase hover:bg-gray-50 transition-all">
+                <button onclick="submitPendingOrder()" class="bg-white border border-gray-200 text-gray-600 py-3 rounded-xl font-black text-[10px] uppercase hover:bg-gray-50 transition-all">
                     A Cocina
                 </button>
             </div>
@@ -1431,21 +1431,21 @@
         renderCart();
     }
 
-    function openDiscountModal() {
+    window.openDiscountModal = function() {
         document.getElementById('discount-modal').classList.remove('hidden');
     }
-    function closeDiscountModal() {
+    window.closeDiscountModal = function() {
         document.getElementById('discount-modal').classList.add('hidden');
     }
-    function applyManualDiscount(name, pct, applyRule = false) {
-        if (!pct || isNaN(pct)) return alert("Porcentaje inválido");
+    window.applyManualDiscount = function(name, pct, applyRule = false) {
+        if (pct === '' || isNaN(pct)) return alert("Porcentaje inválido");
         manualDiscount = { name, pct: parseFloat(pct), applyRule: applyRule };
-        closeDiscountModal();
+        window.closeDiscountModal();
         renderCart();
     }
-    function clearDiscount() {
+    window.clearDiscount = function() {
         manualDiscount = null;
-        closeDiscountModal();
+        window.closeDiscountModal();
         renderCart();
     }
 
@@ -2435,19 +2435,19 @@
             </div>
             
             <div class="grid grid-cols-1 gap-3">
-                <button onclick="applyManualDiscount('Tercera Edad', 25, true)" class="w-full py-4 bg-gray-50 border-2 border-gray-100 rounded-2xl text-dark font-black hover:border-blue-500 transition-all flex justify-between px-6">
+                <button onclick="window.applyManualDiscount('Tercera Edad', 25, true)" class="w-full py-4 bg-gray-50 border-2 border-gray-100 rounded-2xl text-dark font-black hover:border-blue-500 transition-all flex justify-between px-6">
                     <span>👵 Tercera Edad</span>
                     <span class="text-blue-600">25%</span>
                 </button>
-                <button onclick="applyManualDiscount('Cuarta Edad', 35, true)" class="w-full py-4 bg-gray-50 border-2 border-gray-100 rounded-2xl text-dark font-black hover:border-blue-500 transition-all flex justify-between px-6">
+                <button onclick="window.applyManualDiscount('Cuarta Edad', 35, true)" class="w-full py-4 bg-gray-50 border-2 border-gray-100 rounded-2xl text-dark font-black hover:border-blue-500 transition-all flex justify-between px-6">
                     <span>👴 Cuarta Edad</span>
                     <span class="text-blue-600">35%</span>
                 </button>
-                <button onclick="applyManualDiscount('Hero', 15, true)" class="w-full py-4 bg-gray-50 border-2 border-gray-100 rounded-2xl text-dark font-black hover:border-blue-500 transition-all flex justify-between px-6">
+                <button onclick="window.applyManualDiscount('Hero', 15, true)" class="w-full py-4 bg-gray-50 border-2 border-gray-100 rounded-2xl text-dark font-black hover:border-blue-500 transition-all flex justify-between px-6">
                     <span>🚑 Community Hero</span>
                     <span class="text-blue-600">15%</span>
                 </button>
-                <button onclick="applyManualDiscount('Employee', 20)" class="w-full py-4 bg-gray-50 border-2 border-gray-100 rounded-2xl text-dark font-black hover:border-blue-500 transition-all flex justify-between px-6">
+                <button onclick="window.applyManualDiscount('Employee', 20)" class="w-full py-4 bg-gray-50 border-2 border-gray-100 rounded-2xl text-dark font-black hover:border-blue-500 transition-all flex justify-between px-6">
                     <span>☕️ Staff (Extra)</span>
                     <span class="text-blue-600">20%</span>
                 </button>
@@ -2456,14 +2456,14 @@
                     <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest text-center">Descuento Personalizado (%)</p>
                     <div class="flex gap-2">
                         <input type="number" id="custom-discount-pct" placeholder="0" class="w-full bg-gray-50 border-2 border-gray-100 rounded-xl p-3 text-center font-black">
-                        <button onclick="applyManualDiscount('Custom', document.getElementById('custom-discount-pct').value)" class="bg-blue-600 text-white px-6 rounded-xl font-black">OK</button>
+                        <button onclick="window.applyManualDiscount('Custom', document.getElementById('custom-discount-pct').value)" class="bg-blue-600 text-white px-6 rounded-xl font-black">OK</button>
                     </div>
                 </div>
             </div>
 
             <div class="grid grid-cols-1 gap-3 pt-2">
-                <button onclick="clearDiscount()" class="w-full py-3 text-red-500 font-bold text-xs uppercase tracking-widest">Remover Descuento</button>
-                <button onclick="closeDiscountModal()" class="w-full py-4 bg-gray-100 text-gray-400 font-bold rounded-2xl text-sm uppercase">Cerrar</button>
+                <button onclick="window.clearDiscount()" class="w-full py-3 text-red-500 font-bold text-xs uppercase tracking-widest">Remover Descuento</button>
+                <button onclick="window.closeDiscountModal()" class="w-full py-4 bg-gray-100 text-gray-400 font-bold rounded-2xl text-sm uppercase">Cerrar</button>
             </div>
         </div>
     </div>

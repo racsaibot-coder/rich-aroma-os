@@ -204,6 +204,10 @@
       "dest": "/public/kitchen.html"
     },
     {
+      "src": "/pos-v2",
+      "dest": "/public/pos-v2.html"
+    },
+    {
       "src": "/order",
       "dest": "/public/order.html"
     },
