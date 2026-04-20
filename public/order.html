@@ -254,7 +254,7 @@
                     document.getElementById('loading-msg').style.display = 'none';
                     renderMenu();
                 } catch(e) { 
-                    console.error("Menu load failed", e);
+                    console.error("Menu load failed", e.message, e.stack);
                     if (retries > 0) {
                         console.log(`Retrying menu load... (${retries} left)`);
                         setTimeout(() => loadMenu(retries - 1), 1000);
