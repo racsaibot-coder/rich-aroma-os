@@ -24,7 +24,7 @@
       "notes": "Mobile Order (pickup) [GUEST: Test User] [TEL: +50499999999]"
     },
     {
-      "id": "ORD-${Date.now()}",
+      "id": "ORD-1688383100000",
       "order_number": 6883831,
       "items": [],
       "subtotal": 0,

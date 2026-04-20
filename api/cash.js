@@ -132,12 +132,23 @@ export default async function handler(req, res) {
         
         const { data: orders } = await supabase
             .from('orders')
-            .select('total')
-            .eq('payment_method', 'cash')
+            .select('total, payment_method, secondary_payment_method, rico_amount_paid, shift_id, created_at')
             .gte('created_at', shift.opened_at)
             .not('status', 'eq', 'cancelled');
             
-        const cashSales = (orders || []).reduce((sum, o) => sum + (parseFloat(o.total) || 0), 0);
+        // CRITICAL FIX: Only include orders that BELONG to this shift ID 
+        // OR are "Floating" (null shift_id) but happened during this shift's time.
+        // This prevents today's 4pm shift from including orders from the 8am shift.
+        const shiftOrders = (orders || []).filter(o => o.shift_id === shiftId || !o.shift_id);
+
+        const cashSales = (shiftOrders || []).reduce((sum, o) => {
+            const total = parseFloat(o.total) || 0;
+            const ricoPaid = parseFloat(o.rico_amount_paid) || 0;
+            const otherPaid = total - ricoPaid;
+            const method = o.secondary_payment_method || o.payment_method;
+            if (method === 'cash') return sum + otherPaid;
+            return sum;
+        }, 0);
         
         const { data: txns } = await supabase
             .from('cash_transactions')

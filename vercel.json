@@ -36,6 +36,10 @@
       "dest": "/api/admin.js?action=menu"
     },
     {
+      "src": "/api/admin/menu/(.*)/modifiers",
+      "dest": "/api/admin.js?action=menu_modifiers_update&id=$1"
+    },
+    {
       "src": "/api/admin/menu/(.*)",
       "dest": "/api/admin.js?action=menu_update&id=$1"
     },
@@ -254,6 +258,22 @@
     {
       "src": "/team",
       "dest": "/public/team.html"
+    },
+    {
+      "src": "/owner",
+      "dest": "/public/owner.html"
+    },
+    {
+      "src": "/os",
+      "dest": "/public/os.html"
+    },
+    {
+      "src": "/alerts",
+      "dest": "/public/alerts.html"
+    },
+    {
+      "src": "/api/orders",
+      "dest": "/api/store.js?action=orders"
     },
     {
       "src": "/api/staff",

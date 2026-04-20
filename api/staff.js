@@ -1,6 +1,20 @@
 // api/staff.js
 const { supabase } = require('./lib/supabase');
 
+const HONDURAS_TZ = 'America/Tegucigalpa';
+function getHondurasDate() {
+    try {
+        return new Intl.DateTimeFormat('en-CA', { 
+            timeZone: HONDURAS_TZ, 
+            year: 'numeric', 
+            month: '2-digit', 
+            day: '2-digit' 
+        }).format(new Date());
+    } catch(e) {
+        return new Date().toISOString().split('T')[0];
+    }
+}
+
 module.exports = async function handler(req, res) {
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'GET,POST,PATCH,PUT,DELETE,OPTIONS');
@@ -205,11 +219,207 @@ module.exports = async function handler(req, res) {
                     return {
                         id: emp.id,
                         name: emp.name,
-                        hours: hrs.toFixed(2),
-                        pay: (hrs * parseFloat(emp.hourly_rate || 0)).toFixed(2)
+                        hours: hrs.toFixed(1),
+                        pay: (hrs * parseFloat(emp.hourly_rate || 0)).toFixed(0)
                     };
                 });
                 return res.json(report);
+            }
+
+            if (action === 'staff_time_off_request' && req.method === 'POST') {
+                const { employee_id, startDate, endDate, reason } = req.body;
+                const { data, error } = await supabase.from('time_off_requests').insert({
+                    employee_id,
+                    start_date: startDate,
+                    end_date: endDate,
+                    reason,
+                    status: 'pending'
+                }).select().single();
+                if (error) throw error;
+                return res.json(data);
+            }
+
+            if (action === 'admin_reports') {
+                const todayDate = new Date();
+                const today = getHondurasDate();
+                const startDay = today + 'T00:00:00-06:00';
+                const endDay = today + 'T23:59:59-06:00';
+
+                // --- PAYROLL DATE LOGIC ---
+                // Pay week is Sunday - Saturday. Today is Sunday (Day 0).
+                const dayOfWeek = todayDate.getDay(); 
+                
+                // 1. Current Week (Starts Today/Sunday)
+                const currentSun = new Date(todayDate);
+                currentSun.setDate(todayDate.getDate() - dayOfWeek);
+                const currentWeekStart = currentSun.toISOString().split('T')[0] + 'T00:00:00-06:00';
+
+                // 2. Last Week (The one to be paid today)
+                const lastSun = new Date(currentSun);
+                lastSun.setDate(currentSun.getDate() - 7);
+                const lastWeekStart = lastSun.toISOString().split('T')[0] + 'T00:00:00-06:00';
+                const lastWeekEnd = currentSun.toISOString().split('T')[0] + 'T00:00:00-06:00'; // Today's start
+
+                // Fetch Data
+                const [rOrders, rEntries, rEmps, rCurrentWEntries, rLastWEntries] = await Promise.all([
+                    supabase.from('orders').select('*').gte('created_at', startDay).lte('created_at', endDay).not('status', 'eq', 'cancelled'),
+                    supabase.from('time_entries').select('*, employees(name)').gte('timestamp', startDay).lte('timestamp', endDay),
+                    supabase.from('employees').select('*').eq('active', true),
+                    supabase.from('time_entries').select('*, employees(name)').gte('timestamp', currentWeekStart).lte('timestamp', endDay),
+                    supabase.from('time_entries').select('*, employees(name)').gte('timestamp', lastWeekStart).lt('timestamp', lastWeekEnd)
+                ]);
+
+                const orders = rOrders.data || [];
+                const entries = rEntries.data || [];
+                const emps = rEmps.data || [];
+                const currentWeekEntries = rCurrentWEntries.data || [];
+                const lastWeekEntries = rLastWEntries.data || [];
+
+                // Helper to calc sales breakdown
+                const calcBreakdown = (orderList) => {
+                    const stats = { total: 0, cash: 0, card: 0, rico: 0, transfer: 0, count: orderList.length };
+                    orderList.forEach(o => {
+                        const t = parseFloat(o.total) || 0;
+                        const rp = parseFloat(o.rico_amount_paid) || 0;
+                        stats.total += t;
+                        stats.rico += rp;
+                        const method = o.secondary_payment_method || o.payment_method;
+                        if (method === 'cash') stats.cash += (t - rp);
+                        else if (method === 'card') stats.card += (t - rp);
+                        else if (method === 'transfer') stats.transfer += (t - rp);
+                    });
+                    return stats;
+                };
+
+                const sales = calcBreakdown(orders);
+
+                // Helper to calc earnings
+                const calcEarnings = (empEntries, hourlyRate, includeLive = false) => {
+                    let ms = 0; let curIn = null;
+                    empEntries.sort((a,b) => new Date(a.timestamp) - new Date(b.timestamp)).forEach(e => {
+                        if (e.type === 'in') curIn = new Date(e.timestamp);
+                        else if (e.type === 'out' && curIn) { ms += (new Date(e.timestamp) - curIn); curIn = null; }
+                    });
+                    if (includeLive && curIn) ms += (new Date() - curIn);
+                    const hrs = ms / (1000 * 60 * 60);
+                    return { hours: hrs.toFixed(1), earnings: (hrs * hourlyRate).toFixed(0) };
+                };
+
+                // Labor Detail (Daily + Weekly)
+                const labor = await Promise.all(emps.map(async (emp) => {
+                    const empToday = entries.filter(e => e.employee_id === emp.id);
+                    const empCurrW = currentWeekEntries.filter(e => e.employee_id === emp.id);
+                    const empLastW = lastWeekEntries.filter(e => e.employee_id === emp.id);
+                    
+                    const rate = parseFloat(emp.hourly_rate || 0);
+                    const daily = calcEarnings(empToday, rate, true);
+                    const currW = calcEarnings(empCurrW, rate, true);
+                    const lastW = calcEarnings(empLastW, rate, false);
+
+                    const { data: schedule } = await supabase.from('shift_assignments')
+                        .select('start_time, end_time, notes')
+                        .eq('employee_id', emp.id)
+                        .eq('shift_date', today)
+                        .maybeSingle();
+
+                    const lastPunch = empToday.length > 0 ? empToday.sort((a,b) => new Date(b.timestamp) - new Date(a.timestamp))[0] : null;
+
+                    return {
+                        id: emp.id, name: emp.name, role: emp.role, schedule,
+                        currentStatus: lastPunch ? lastPunch.type : 'out',
+                        totalHours: daily.hours,
+                        payToday: daily.earnings,
+                        payLastWeek: lastW.earnings,
+                        payCurrentWeek: currW.earnings,
+                        punches: empToday.map(e => ({ type: e.type, time: e.timestamp }))
+                    };
+                }));
+
+                const totalPayoutToday = labor.reduce((s,l) => s + parseFloat(l.payLastWeek), 0);
+
+                // --- WEEKLY SALES & PROFITS ---
+                const { data: rWeeklyOrders } = await supabase.from('orders')
+                    .select('*')
+                    .gte('created_at', currentWeekStart)
+                    .lte('created_at', endDay)
+                    .not('status', 'eq', 'cancelled');
+                
+                const weeklySales = calcBreakdown(rWeeklyOrders || []);
+                const weeklyLabor = labor.map(l => ({ id: l.id, name: l.name, hours: l.totalHours, earnings: l.payCurrentWeek }));
+
+                // Profit Estimates
+                const COGS_PCT = 0.40;
+                const FIXED_DAILY = 200;
+                const laborCostDay = labor.reduce((s,l) => s + parseFloat(l.payToday || 0), 0);
+                const laborCostWeek = labor.reduce((s,l) => s + parseFloat(l.payCurrentWeek || 0), 0);
+                
+                const dayGrossProfit = sales.total * (1 - COGS_PCT);
+                const dayNetProfit = dayGrossProfit - laborCostDay - FIXED_DAILY;
+
+                const weekGrossProfit = weeklySales.total * (1 - COGS_PCT);
+                const weekNetProfit = weekGrossProfit - laborCostWeek - (FIXED_DAILY * 7);
+
+                // 2. Top Items
+                const itemMap = {};
+                orders.forEach(o => {
+                    (o.items || []).forEach(i => {
+                        const name = i.name || 'Unknown';
+                        itemMap[name] = (itemMap[name] || 0) + (i.qty || 1);
+                    });
+                });
+                const topItems = Object.entries(itemMap).map(([name, qty]) => ({ name, qty })).sort((a,b) => b.qty - a.qty).slice(0, 5);
+
+                return res.json({ 
+                    sales, 
+                    weeklySales,
+                    labor, 
+                    weeklyLabor,
+                    payoutToday: totalPayoutToday.toFixed(0),
+                    topItems,
+                    orders: orders.map(o => ({
+                        id: o.id, order_number: o.order_number, total: o.total, payment_method: o.payment_method, notes: o.notes, created_at: o.created_at, status: o.status
+                    })),
+                    profits: { 
+                        day: dayNetProfit.toFixed(0), 
+                        week: weekNetProfit.toFixed(0) 
+                    },
+                    metrics: { 
+                        avgSpeed: 0, 
+                        completed: orders.filter(o => o.status === 'completed').length 
+                    } 
+                });
+            }
+
+            if (action === 'admin_time_entries') {
+                if (req.method === 'GET') {
+                    const { employeeId, startDate, endDate } = req.query;
+                    let query = supabase.from('time_entries').select('*, employees(name)').order('timestamp', { ascending: false });
+                    if (employeeId) query = query.eq('employee_id', employeeId);
+                    if (startDate) query = query.gte('timestamp', startDate);
+                    if (endDate) query = query.lte('timestamp', endDate);
+                    
+                    const { data, error } = await query;
+                    if (error) throw error;
+                    return res.json(data);
+                }
+                if (req.method === 'POST') {
+                    const { employee_id, type, timestamp } = req.body;
+                    const { data, error } = await supabase.from('time_entries').insert({ employee_id, type, timestamp }).select().single();
+                    if (error) throw error;
+                    return res.json(data);
+                }
+                if (req.method === 'PUT') {
+                    const { id, type, timestamp } = req.body;
+                    const { data, error } = await supabase.from('time_entries').update({ type, timestamp }).eq('id', id).select().single();
+                    if (error) throw error;
+                    return res.json(data);
+                }
+                if (req.method === 'DELETE') {
+                    const { id } = req.body;
+                    const { error } = await supabase.from('time_entries').delete().eq('id', id);
+                    if (error) throw error;
+                    return res.json({ success: true });
+                }
             }
 
             if (action === 'admin_shift_assignments') {
