@@ -428,6 +428,9 @@
                     <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Role</label>
                     <select id="new-emp-role" class="w-full border rounded-lg p-3 outline-none focus:border-blue-500">
                         <option value="barista">Barista / Operator</option>
+                        <option value="barista_cashier">Barista / Caja</option>
+                        <option value="cook">Cocinero (Cook)</option>
+                        <option value="barista_cook">Barista / Cocina</option>
                         <option value="admin">Manager / Admin</option>
                     </select>
                 </div>
@@ -1156,7 +1159,7 @@
             const id = document.getElementById('edit-item-id').value;
             const btn = document.getElementById('update-menu-item-btn');
             const data = {
-                name: document.getElementById('edit-item-name').value,
+                name: document.getElementById('edit-item-name').value.trim(),
                 category: document.getElementById('edit-item-category').value,
                 price: parseFloat(document.getElementById('edit-item-price').value),
                 description: document.getElementById('edit-item-desc').value,
@@ -1174,10 +1177,12 @@
                     document.getElementById('edit-menu-item-modal').classList.add('hidden');
                     loadMenu();
                 } else {
-                    alert("Error updating item");
+                    const err = await res.json();
+                    alert("Error updating item: " + (err.error || "Unknown error"));
                 }
             } catch(e) {
                 console.error(e);
+                alert("Request failed: " + e.message);
             } finally {
                 btn.disabled = false; btn.innerText = 'Save';
             }
@@ -1448,11 +1453,11 @@
         }
 
         async function saveMenuItem() {
-            const name = document.getElementById('new-menu-name').value;
+            const name = document.getElementById('new-menu-name').value.trim();
             const category = document.getElementById('new-menu-category').value;
             const price = parseFloat(document.getElementById('new-menu-price').value);
             const desc = document.getElementById('new-menu-desc').value;
-            
+
             if (!name || isNaN(price)) return alert("Name and Price are required");
 
             const btn = document.getElementById('save-menu-item-btn');
@@ -1466,17 +1471,18 @@
                 });
                 if (res.ok) {
                     document.getElementById('create-menu-item-modal').classList.add('hidden');
-                    switchTab('menu'); // refresh table
+                    loadMenu();
                 } else {
-                    alert("Failed to create menu item");
+                    const err = await res.json();
+                    alert("Failed to create menu item: " + (err.error || "Unknown error"));
                 }
             } catch (e) {
                 console.error(e);
+                alert("Request failed: " + e.message);
             } finally {
                 btn.disabled = false; btn.innerText = 'Create';
             }
         }
-
         async function loadData() {
             try {
                 const res = await fetch('/api/admin/leads', { headers: getHeaders() });
@@ -1518,10 +1524,18 @@
                 });
 
                 // Load Orders
-                const ordersRes = await fetch('/api/orders', { headers: getHeaders() });
+                const ordersRes = await fetch('/api/orders?v=' + Date.now(), { headers: getHeaders() });
                 if (ordersRes.ok) {
                     const ordersData = await ordersRes.json();
-                    const orders = ordersData.orders || [];
+                    const allOrders = ordersData.orders || [];
+                    
+                    // Filter for today's orders in Honduras
+                    const hnDate = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Tegucigalpa', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date());
+                    const orders = allOrders.filter(o => {
+                        const d = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Tegucigalpa', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date(o.created_at));
+                        return d === hnDate;
+                    });
+
                     document.getElementById('totalOrders').innerText = orders.length;
                     
                     const ordersTbody = document.getElementById('ordersTable');

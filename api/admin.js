@@ -43,8 +43,19 @@ module.exports = async function handler(req, res) {
 
     // MENU MANAGER (GET ALL, PATCH, POST)
     if (action === 'menu' && req.method === 'GET') {
-        const { data } = await supabase.from('menu_items').select('*').order('category', { ascending: true });
-        return res.json({ items: data });
+        const [rItems, rModGroups, rModOptions, rItemModGroups] = await Promise.all([
+            supabase.from('menu_items').select('*').order('category', { ascending: true }),
+            supabase.from('modifier_groups').select('*'),
+            supabase.from('modifier_options').select('*').order('name', { ascending: true }),
+            supabase.from('item_modifier_groups').select('*')
+        ]);
+        
+        return res.json({ 
+            items: rItems.data || [],
+            modGroups: rModGroups.data || [],
+            modOptions: rModOptions.data || [],
+            itemModGroups: rItemModGroups.data || []
+        });
     }
 
     if (action === 'menu' && req.method === 'POST') {
@@ -59,13 +70,20 @@ module.exports = async function handler(req, res) {
     }
 
     if (action === 'menu_update' && (req.method === 'PATCH' || req.method === 'PUT')) {
-        const { id, price, available, image_url, name, category, modifier_groups, base_recipe } = req.body;
-        const updateData = { price, available, image_url };
+        const { id, price, available, image_url, name, category, modifier_groups, base_recipe, description } = req.body;
+        
+        const updateData = {};
+        if (price !== undefined) updateData.price = price;
+        if (available !== undefined) updateData.available = available;
+        if (image_url !== undefined) updateData.image_url = image_url;
+        if (name !== undefined) updateData.name = name;
+        if (category !== undefined) updateData.category = category;
         if (base_recipe !== undefined) updateData.base_recipe = base_recipe;
-        if (name) updateData.name = name;
-        if (category) updateData.category = category;
+        if (description !== undefined) updateData.description = description;
         
         const itemId = req.query.id || id;
+        if (!itemId) return res.status(400).json({ error: "Item ID required" });
+
         const { data, error } = await supabase.from('menu_items')
             .update(updateData)
             .eq('id', itemId)
@@ -87,6 +105,20 @@ module.exports = async function handler(req, res) {
         return res.json(data);
     }
 
+    if (action === 'menu_modifiers_update' && req.method === 'POST') {
+        if (!isAdmin) return res.status(403).json({ error: "Admin access required" });
+        const { group_ids } = req.body;
+        const itemId = req.query.id;
+        if (!itemId) return res.status(400).json({ error: "Item ID required" });
+        await supabase.from('item_modifier_groups').delete().eq('item_id', itemId);
+        if (group_ids && group_ids.length > 0) {
+            const inserts = group_ids.map(gid => ({ item_id: itemId, group_id: gid }));
+            const { error } = await supabase.from('item_modifier_groups').insert(inserts);
+            if (error) return res.status(500).json({ error: error.message });
+        }
+        return res.json({ success: true });
+    }
+
     if (action === 'menu_update' && req.method === 'DELETE') {
         if (!isAdmin) return res.status(403).json({ error: "Admin access required" });
         const itemId = req.query.id;
@@ -103,12 +135,16 @@ module.exports = async function handler(req, res) {
         if (!imageBase64) return res.status(400).json({ error: "Missing image data" });
 
         const buffer = Buffer.from(imageBase64.split(',')[1], 'base64');
-        const path = `uploads/${Date.now()}_${fileName || 'image.png'}`;
+        // Sanitize filename: remove non-alphanumeric except dots/dashes, replace spaces with underscores
+        const safeFileName = (fileName || 'image.png').replace(/\s+/g, '_').replace(/[^a-z0-9\._-]/gi, '');
+        const path = `uploads/${Date.now()}_${safeFileName}`;
+
+        const contentType = imageBase64.split(';')[0].split(':')[1] || 'image/png';
 
         const { data, error } = await supabase.storage
             .from('menu-images')
             .upload(path, buffer, {
-                contentType: 'image/png',
+                contentType,
                 upsert: true
             });
 
