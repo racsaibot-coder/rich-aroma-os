@@ -776,6 +776,32 @@ module.exports = async function handler(req, res) {
             return res.json(data);
         }
 
+        // CUSTOMER VIP PURCHASE
+        if (action === 'purchase_membership' && req.method === 'POST') {
+            const customerId = req.query.id;
+            if (!customerId) return res.status(400).json({ error: "Customer ID required" });
+
+            const { data: customer, error: fetchErr } = await supabase.from('customers').select('*').eq('id', customerId).single();
+            if (fetchErr || !customer) return res.status(404).json({ error: "Customer not found" });
+
+            const VIP_PRICE = 250;
+            if ((customer.rico_balance || 0) < VIP_PRICE) {
+                return res.status(400).json({ error: "Saldo Rico Cash insuficiente (L 250 requeridos)" });
+            }
+
+            const { data: updated, error: updateErr } = await supabase.from('customers')
+                .update({ 
+                    is_vip: true, 
+                    rico_balance: customer.rico_balance - VIP_PRICE,
+                    vip_expiry: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString()
+                })
+                .eq('id', customerId)
+                .select().single();
+
+            if (updateErr) throw updateErr;
+            return res.json({ success: true, customer: updated });
+        }
+
         return res.status(404).json({ error: 'Action not found' });
 
     } catch (e) {

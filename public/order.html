@@ -491,17 +491,19 @@
                 if (!currentCustomer) return window.openLogin();
                 const btn = document.querySelector('#vip-promo button');
                 btn.innerText = "PROCESANDO..."; btn.disabled = true;
-
+                
                 try {
-                    const r = await fetch(`/api/customers/${currentCustomer.id}/purchase-membership`, { method:'POST', headers: {'Content-Type':'application/json'} });
-                    if (!r.ok) throw new Error("Error en la compra");
+                    const r = await fetch(`/api/store?action=purchase_membership&id=${currentCustomer.id}`, { 
+                        method:'POST', 
+                        headers: {'Content-Type':'application/json'} 
+                    });
                     const d = await r.json();
-
+                    if (!r.ok) throw new Error(d.error || "Error en la compra");
+                    
                     // Update local storage and UI
-                    currentCustomer.is_vip = true;
-                    currentCustomer.rico_balance = d.customer.rico_balance;
+                    currentCustomer = d.customer;
                     localStorage.setItem('ra_customer_data', JSON.stringify(currentCustomer));
-
+                    
                     alert("¡Felicidades! Ahora eres Miembro VIP.");
                     window.openProfile();
                 } catch(e) { alert(e.message); }
