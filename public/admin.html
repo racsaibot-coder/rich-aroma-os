@@ -1066,7 +1066,7 @@
                         <td class="p-4 text-center">${availabilityBtn}</td>
                         <td class="p-4 text-center">
                             <div class="flex flex-col gap-1">
-                                <button onclick="openEditItemModal('${item.id}', '${escapeHtml(item.name).replace(/'/g, "\\'")}', '${escapeHtml(item.category)}', ${item.price}, '${escapeHtml(item.description || '').replace(/'/g, "\\'")}', '${escapeHtml(item.image_url || '').replace(/'/g, "\\'")}')" class="text-blue-600 hover:text-blue-800 text-xs font-bold flex items-center gap-1 justify-center"><i class="fas fa-edit"></i> Item</button>
+                                <button onclick="openEditItemModal('${item.id}', '${escapeHtml(item.name).replace(/'/g, "\\'")}', '${escapeHtml(item.category)}', ${item.price}, '${escapeHtml(item.name_es || '').replace(/'/g, "\\'")}', '${escapeHtml(item.image_url || '').replace(/'/g, "\\'")}')" class="text-blue-600 hover:text-blue-800 text-xs font-bold flex items-center gap-1 justify-center"><i class="fas fa-edit"></i> Item</button>
                                 <button onclick="openBaseRecipeModal('${item.id}', '${escapeHtml(item.name).replace(/'/g, "\\'")}')" class="text-green-600 hover:text-green-800 text-xs font-bold flex items-center gap-1 justify-center"><i class="fas fa-blender"></i> Base</button>
                                 <button onclick="openIngredientsModal('${item.id}', '${escapeHtml(item.name).replace(/'/g, "\\'")}')" class="text-purple-600 hover:text-purple-800 text-xs font-bold flex items-center gap-1 justify-center"><i class="fas fa-seedling"></i> Ingredients</button>
                             </div>
