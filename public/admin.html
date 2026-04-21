@@ -130,6 +130,7 @@
                             <th class="p-4">Phone</th>
                             <th class="p-4">Submitted</th>
                             <th class="p-4">Tags</th>
+                            <th class="p-4 text-right">Actions</th>
                         </tr>
                     </thead>
                     <tbody id="leadsTable" class="divide-y divide-gray-100 text-sm">
@@ -1483,6 +1484,27 @@
                 btn.disabled = false; btn.innerText = 'Create';
             }
         }
+        async function deleteLead(id) {
+            if (!confirm("¿Está seguro de que desea eliminar este lead? Esta acción no se puede deshacer.")) return;
+
+            try {
+                const res = await fetch(`/api/admin?action=leads&id=${id}`, {
+                    method: 'DELETE',
+                    headers: getHeaders()
+                });
+
+                if (res.ok) {
+                    loadData();
+                } else {
+                    const data = await res.json();
+                    alert("Error: " + (data.error || "No se pudo eliminar el lead"));
+                }
+            } catch (e) {
+                console.error(e);
+                alert("Error de conexión");
+            }
+        }
+
         async function loadData() {
             try {
                 const res = await fetch('/api/admin/leads', { headers: getHeaders() });
@@ -1519,6 +1541,11 @@
                         </td>
                         <td class="p-4 text-gray-500 text-xs">${new Date(lead.created_at || Date.now()).toLocaleDateString()}</td>
                         <td class="p-4">${tagsHtml}</td>
+                        <td class="p-4 text-right">
+                            <button onclick="deleteLead('${lead.id}')" class="text-red-600 hover:text-red-800 transition-colors">
+                                <i class="fas fa-trash-alt"></i>
+                            </button>
+                        </td>
                     `;
                     tbody.appendChild(row);
                 });

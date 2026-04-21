@@ -454,6 +454,7 @@ module.exports = async function handler(req, res) {
         const leads = (customers || []).map(c => {
             const sub = submissions.find(s => s.phone === c.phone);
             return {
+                id: c.id,
                 name: c.name,
                 phone: c.phone,
                 kidName: sub?.kidName || null,
@@ -464,6 +465,17 @@ module.exports = async function handler(req, res) {
         });
         
         return res.json(leads);
+    }
+
+    if (action === 'leads' && req.method === 'DELETE') {
+        if (!isAdmin) return res.status(403).json({ error: "Admin access required" });
+        const leadId = req.query.id;
+        if (!leadId) return res.status(400).json({ error: "Lead ID required" });
+
+        const { error } = await supabase.from('customers').delete().eq('id', leadId);
+        if (error) return res.status(500).json({ error: error.message });
+        
+        return res.json({ success: true });
     }
 
     if (action === 'inventory' && req.method === 'GET') {
