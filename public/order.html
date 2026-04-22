@@ -200,7 +200,7 @@
     <nav id="sticky-cats" class="sticky top-[68px] z-50 bg-dark/80 backdrop-blur-sm border-b border-white/5 flex gap-2 overflow-x-auto p-4 hide-scrollbar"></nav>
 
     <!-- MENU FEED -->
-    <main id="menu-feed" class="px-6 space-y-12 pb-48 pt-6">
+    <main id="menu-feed" class="px-6 space-y-12 pb-[80vh] pt-6">
         <div id="loading-msg" class="py-20 text-center text-white/20 italic animate-pulse">Sincronizando el menú...</div>
     </main>
 
@@ -360,9 +360,11 @@
                 syncUser();
                 generateSlots();
 
-                // Set Secret Menu as default
-                const secretBtn = document.querySelector('button[onclick*="Menú Secreto"]');
-                if (secretBtn) scrollToCat('Menú Secreto', secretBtn);
+                // Set Secret Menu as default with a small timeout to ensure layout is stable
+                setTimeout(() => {
+                    const secretBtn = document.querySelector('button[onclick*="Menú Secreto"]');
+                    if (secretBtn) scrollToCat('Menú Secreto', secretBtn);
+                }, 300);
             };
 
             async function fetchStatus() {
@@ -600,8 +602,8 @@
                     btn.classList.add('active');
                     btn.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
                 }
-                const el = document.getElementById('section-' + id); 
-                if (el) window.scrollTo({ top: el.offsetTop - 120, behavior:'smooth' });
+                const el = document.getElementById('section-' + id.replace(/\s+/g, '')); 
+                if (el) el.scrollIntoView({ behavior: 'smooth' });
             };
 
             function renderMenu() {
@@ -613,7 +615,7 @@
                     if (!items.length) return '';
                     const rule = sortRules[cat];
                     if (rule) items.sort((a,b) => (rule.indexOf(a.id) === -1 ? 99 : rule.indexOf(a.id)) - (rule.indexOf(b.id) === -1 ? 99 : rule.indexOf(b.id)));
-                    return `<section id="section-${cat}" class="space-y-6"><h2 class="text-gold text-[10px] font-black uppercase tracking-[0.4em] flex items-center gap-4"><span>${cat}</span> <div class="h-px bg-white/5 flex-1"></div></h2><div class="grid grid-cols-2 gap-4">
+                    return `<section id="section-${cat.replace(/\s+/g, '')}" style="scroll-margin-top: 140px" class="space-y-6"><h2 class="text-gold text-[10px] font-black uppercase tracking-[0.4em] flex items-center gap-4"><span>${cat}</span> <div class="h-px bg-white/5 flex-1"></div></h2><div class="grid grid-cols-2 gap-4">
                         ${items.map(i => {
                             const img = i.image_url || i.image;
                             const isFav = JSON.parse(localStorage.getItem('ra_favorites') || '[]').includes(i.id);
