@@ -789,11 +789,14 @@ module.exports = async function handler(req, res) {
                 return res.status(400).json({ error: "Saldo Rico Cash insuficiente (L 1,500 requeridos)" });
             }
 
+            const expiryDate = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
+
             const { data: updated, error: updateErr } = await supabase.from('customers')
                 .update({ 
                     is_vip: true, 
                     rico_balance: (customer.rico_balance || 0) - VIP_PRICE + 500, // Pay 1500, get 500 back as bonus
-                    vip_expiry: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString()
+                    vip_expiry: expiryDate,
+                    rico_balance_expires_at: expiryDate
                 })
                 .eq('id', customerId)
                 .select().single();

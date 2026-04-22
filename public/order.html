@@ -175,7 +175,7 @@
                     <h4 class="text-2xl font-display font-black text-white">Hazte Miembro VIP</h4>
                 </div>
                 <ul class="space-y-2">
-                    <li class="flex items-center gap-2 text-[10px] text-white/60 font-bold"><i class="fas fa-gift text-gold"></i> L 500 Rico Cash de Regalo</li>
+                    <li class="flex items-center gap-2 text-[10px] text-white/60 font-bold"><i class="fas fa-gift text-gold"></i> L 500 Rico Cash (Expira en 30 días)</li>
                     <li class="flex items-center gap-2 text-[10px] text-white/60 font-bold"><i class="fas fa-coffee text-gold"></i> 1 Bebida Gratis (Cap/Latte/Ame)</li>
                     <li class="flex items-center gap-2 text-[10px] text-white/60 font-bold"><i class="fas fa-percent text-gold"></i> 20% Desc. en Repostería</li>
                     <li class="flex items-center gap-2 text-[10px] text-white/60 font-bold"><i class="fas fa-star text-gold"></i> Puntos Dobles en cada compra</li>
@@ -461,6 +461,11 @@
                 document.getElementById('prof-initial').innerText = currentCustomer.name.charAt(0).toUpperCase();
                 document.getElementById('prof-points').innerText = currentCustomer.points || 0;
                 document.getElementById('prof-balance').innerText = 'L ' + (parseFloat(currentCustomer.rico_balance) || 0).toFixed(2);
+                
+                if (currentCustomer.rico_balance_expires_at) {
+                    const exp = new Date(currentCustomer.rico_balance_expires_at);
+                    document.getElementById('prof-balance').innerHTML += `<p class="text-[8px] font-bold text-error/60 uppercase mt-1">Expira: ${exp.toLocaleDateString()}</p>`;
+                }
 
                 const isVIP = currentCustomer.is_vip === true;
                 document.getElementById('prof-vip-badge').classList.toggle('hidden', !isVIP);
