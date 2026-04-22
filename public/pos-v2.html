@@ -530,6 +530,7 @@
     let currentOrderStatus = null; // Track original status when recalled
     let currentCustomerId = null;
     let manualDiscount = null; // { name, pct }
+    let recalledItemsJson = ""; // Track original items to detect changes
     window.loadedCustomer = null;
 
     // --- UI MODAL SYSTEM ---
@@ -1590,7 +1591,13 @@
         }
 
         const total = subtotal - discount;
-        
+
+        const isModified = currentOrderId && recalledItemsJson !== JSON.stringify(cart);
+        let newStatus = 'pending';
+        if (currentOrderId && !isModified && currentOrderStatus) {
+            newStatus = currentOrderStatus;
+        }
+
         const payload = {
             items: cart,
             subtotal,
@@ -1600,10 +1607,9 @@
             customerId: currentCustomerId,
             shiftId: currentShiftId,
             fulfillmentType: fulfillmentType,
-            status: 'pending',
+            status: newStatus,
             notes: (document.getElementById('guest-name-input').value.trim() ? `[CLIENTE: ${document.getElementById('guest-name-input').value.trim()}]` : '') + (discountName ? ` [DISCOUNT: ${discountName}]` : '')
         };
-
         try {
             const url = currentOrderId ? `/api/orders/${currentOrderId}?v=${Date.now()}` : `/api/orders?v=${Date.now()}`;
             const method = currentOrderId ? 'PATCH' : 'POST';
@@ -1679,6 +1685,7 @@
         currentOrderId = order.id;
         currentOrderStatus = order.status;
         currentCustomerId = order.customer_id;
+        recalledItemsJson = JSON.stringify(cart);
 
         // Restore Manual Discount if it was applied
         if (order.discount > 0) {
@@ -1739,11 +1746,18 @@
         }
 
         // Determine new status: 
-        // If it was already ready, payment makes it complete (Paid & Ready = Done)
-        // If it was pending/preparing, payment makes it 'paid'
+        const isModified = currentOrderId && recalledItemsJson !== JSON.stringify(cart);
         let newStatus = 'paid';
-        if (currentOrderStatus === 'ready') newStatus = 'completed';
-        if (['drinks_ready', 'food_ready'].includes(currentOrderStatus)) newStatus = 'paid';
+
+        if (currentOrderId && !isModified) {
+            // No new items added: settlement only - maintain or upgrade status
+            if (['ready', 'completed'].includes(currentOrderStatus)) newStatus = 'completed';
+            else if (currentOrderStatus) newStatus = currentOrderStatus;
+        } else {
+            // New order or items changed: trigger kitchen flow
+            if (currentOrderStatus === 'ready') newStatus = 'completed';
+            if (['drinks_ready', 'food_ready'].includes(currentOrderStatus)) newStatus = 'paid';
+        }
 
         const payload = {
             items: cart,
