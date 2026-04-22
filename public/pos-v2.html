@@ -966,7 +966,7 @@
                             </button>
                         ` : ''}
                         
-                        ${isReady ? `
+                        ${(isReady || o.status === 'paid') ? `
                             <button onclick="deliverOrder('${o.id}')" class="flex-1 py-2.5 bg-green-500 text-dark font-black text-[10px] uppercase rounded-xl shadow-lg hover:bg-green-400 transition-all ring-2 ring-white/20">
                                 <i class="fas fa-check-circle mr-1"></i> ENTREGAR
                             </button>
@@ -1883,7 +1883,8 @@
 
         if (currentOrderId && !isModified) {
             // No new items added: settlement only - maintain or upgrade status
-            if (['ready', 'completed'].includes(currentOrderStatus)) newStatus = 'completed';
+            if (['ready', 'completed', 'paid'].includes(currentOrderStatus)) newStatus = 'completed';
+            else if (currentOrderStatus === 'pending') newStatus = 'paid';
             else if (currentOrderStatus) newStatus = currentOrderStatus;
         } else {
             // New order or items changed: trigger kitchen flow
