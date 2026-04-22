@@ -175,11 +175,12 @@
                     <h4 class="text-2xl font-display font-black text-white">Hazte Miembro VIP</h4>
                 </div>
                 <ul class="space-y-2">
-                    <li class="flex items-center gap-2 text-[10px] text-white/60 font-bold"><i class="fas fa-check text-gold"></i> Café GRATIS cada mes</li>
-                    <li class="flex items-center gap-2 text-[10px] text-white/60 font-bold"><i class="fas fa-check text-gold"></i> 20% de descuento en Repostería</li>
-                    <li class="flex items-center gap-2 text-[10px] text-white/60 font-bold"><i class="fas fa-check text-gold"></i> Puntos Dobles en cada compra</li>
+                    <li class="flex items-center gap-2 text-[10px] text-white/60 font-bold"><i class="fas fa-gift text-gold"></i> L 500 Rico Cash de Regalo</li>
+                    <li class="flex items-center gap-2 text-[10px] text-white/60 font-bold"><i class="fas fa-coffee text-gold"></i> 1 Bebida Gratis (Cap/Latte/Ame)</li>
+                    <li class="flex items-center gap-2 text-[10px] text-white/60 font-bold"><i class="fas fa-percent text-gold"></i> 20% Desc. en Repostería</li>
+                    <li class="flex items-center gap-2 text-[10px] text-white/60 font-bold"><i class="fas fa-star text-gold"></i> Puntos Dobles en cada compra</li>
                 </ul>
-                <button onclick="window.buyVIP()" class="w-full bg-gold text-dark py-4 rounded-2xl font-black text-xs uppercase tracking-widest shadow-xl active:scale-95 transition-all mt-4">Comprar Membresía L 250/mes</button>
+                <button onclick="window.buyVIP()" class="w-full bg-gold text-dark py-4 rounded-2xl font-black text-xs uppercase tracking-widest shadow-xl active:scale-95 transition-all mt-4">Comprar Membresía L 1,500</button>
             </div>
 
             <!-- Favorites -->
@@ -507,7 +508,7 @@
                     alert("¡Felicidades! Ahora eres Miembro VIP.");
                     window.openProfile();
                 } catch(e) { alert(e.message); }
-                finally { btn.innerText = "Comprar Membresía L 250/mes"; btn.disabled = false; }
+                finally { btn.innerText = "Comprar Membresía L 1,500"; btn.disabled = false; }
             };
 
             function renderFavorites() {

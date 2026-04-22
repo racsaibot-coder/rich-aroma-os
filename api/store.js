@@ -784,21 +784,30 @@ module.exports = async function handler(req, res) {
             const { data: customer, error: fetchErr } = await supabase.from('customers').select('*').eq('id', customerId).single();
             if (fetchErr || !customer) return res.status(404).json({ error: "Customer not found" });
 
-            const VIP_PRICE = 250;
+            const VIP_PRICE = 1500;
             if ((customer.rico_balance || 0) < VIP_PRICE) {
-                return res.status(400).json({ error: "Saldo Rico Cash insuficiente (L 250 requeridos)" });
+                return res.status(400).json({ error: "Saldo Rico Cash insuficiente (L 1,500 requeridos)" });
             }
 
             const { data: updated, error: updateErr } = await supabase.from('customers')
                 .update({ 
                     is_vip: true, 
-                    rico_balance: customer.rico_balance - VIP_PRICE,
+                    rico_balance: (customer.rico_balance || 0) - VIP_PRICE + 500, // Pay 1500, get 500 back as bonus
                     vip_expiry: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString()
                 })
                 .eq('id', customerId)
                 .select().single();
 
             if (updateErr) throw updateErr;
+
+            // Log the bonus to balance history
+            await supabase.from('balance_history').insert({
+                customer_id: customerId,
+                type: 'vip_bonus',
+                amount: 500,
+                notes: 'Bono de bienvenida Miembro VIP'
+            });
+
             return res.json({ success: true, customer: updated });
         }
 
