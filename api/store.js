@@ -776,6 +776,15 @@ module.exports = async function handler(req, res) {
             return res.json(data);
         }
 
+        // CUSTOMER UPDATE DOB
+        if (action === 'customer_update_dob' && req.method === 'POST') {
+            const { id, dob } = req.body;
+            if (!id || !dob) return res.status(400).json({ error: "ID and DOB required" });
+            const { data, error } = await supabase.from('customers').update({ dob }).eq('id', id).select().single();
+            if (error) throw error;
+            return res.json(data);
+        }
+
         // CUSTOMER VIP PURCHASE
         if (action === 'purchase_membership' && req.method === 'POST') {
             const customerId = req.query.id;

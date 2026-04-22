@@ -532,8 +532,9 @@
     let currentOrderId = null; // Track if we are editing an existing order
     let currentOrderStatus = null; // Track original status when recalled
     let currentCustomerId = null;
-    let manualDiscount = null; // { name, pct }
+    let manualDiscount = null; // { name, pct, applyRule, selectedItemIds }
     let recalledItemsJson = ""; // Track original items to detect changes
+    let pendingDiscount = null; // Temp state during selection
     window.loadedCustomer = null;
 
     // --- UI MODAL SYSTEM ---
@@ -1332,51 +1333,54 @@
         let discountPct = 0;
         let discountName = "";
         let applyRule = false;
-
-        const roleData = {
-            'senior': { pct: 25, name: 'TERCERA EDAD', rule: true },
-            'senior_plus': { pct: 35, name: 'CUARTA EDAD', rule: true },
-            'hero': { pct: 15, name: 'COMMUNITY HERO', rule: true },
-            'employee': { pct: 20, name: 'STAFF', rule: false }
-        };
-
-        if (window.loadedCustomer && roleData[window.loadedCustomer.customer_type]) {
-            const r = roleData[window.loadedCustomer.customer_type];
-            discountPct = r.pct;
-            discountName = r.name;
-            applyRule = r.rule;
-        }
+        let selectedItemIds = [];
 
         if (manualDiscount) {
             discountPct = manualDiscount.pct;
             discountName = manualDiscount.name.toUpperCase();
             applyRule = manualDiscount.applyRule || false;
+            selectedItemIds = manualDiscount.selectedItemIds || [];
+        } else if (window.loadedCustomer) {
+            const roleData = {
+                'senior': { pct: 25, name: 'TERCERA EDAD', rule: true },
+                'senior_plus': { pct: 35, name: 'CUARTA EDAD', rule: true },
+                'hero': { pct: 15, name: 'COMMUNITY HERO', rule: true },
+                'employee': { pct: 20, name: 'STAFF', rule: false }
+            };
+            const r = roleData[window.loadedCustomer.customer_type];
+            if (r) {
+                discountPct = r.pct;
+                discountName = r.name;
+                applyRule = r.rule;
+            }
         }
 
         let discountAmt = 0;
 
         if (discountPct > 0) {
             if (applyRule) {
-                // Apply ONLY to 1 single food and 1 single beverage
-                let foodDiscounted = false;
-                let drinkDiscounted = false;
-                
-                // Sort by price desc to discount most expensive items
-                const sorted = [...cart].sort((a,b) => parseFloat(b.finalPrice) - parseFloat(a.finalPrice));
-                
-                sorted.forEach(item => {
-                    let itemDiscount = 0;
-                    if (isFood(item) && !foodDiscounted) {
-                        itemDiscount = (parseFloat(item.finalPrice) * (discountPct / 100));
-                        foodDiscounted = true;
-                    } else if (isDrink(item) && !drinkDiscounted) {
-                        itemDiscount = (parseFloat(item.finalPrice) * (discountPct / 100));
-                        drinkDiscounted = true;
-                    }
-                    discountAmt += itemDiscount;
-                });
+                if (selectedItemIds.length > 0) {
+                    // Use manually selected items
+                    selectedItemIds.forEach(idx => {
+                        const item = cart[idx];
+                        if (item) discountAmt += (parseFloat(item.finalPrice) * (discountPct / 100));
+                    });
+                } else {
+                    // Fallback to auto-select most expensive 1 drink + 1 food
+                    let foodDiscounted = false;
+                    let drinkDiscounted = false;
+                    const sorted = [...cart].sort((a,b) => parseFloat(b.finalPrice) - parseFloat(a.finalPrice));
+                    sorted.forEach(item => {
+                        if (isFood(item) && !foodDiscounted) {
+                            discountAmt += (parseFloat(item.finalPrice) * (discountPct / 100));
+                            foodDiscounted = true;
+                        } else if (isDrink(item) && !drinkDiscounted) {
+                            discountAmt += (parseFloat(item.finalPrice) * (discountPct / 100));
+                            drinkDiscounted = true;
+                        }
+                    });
+                }
             } else {
-                // Standard discount on subtotal
                 discountAmt = subtotal * (discountPct / 100);
             }
         }
@@ -1385,7 +1389,7 @@
         const roundedTotal = Math.round(rawTotal / 5) * 5;
         const finalDiscount = subtotal - roundedTotal;
 
-        return { subtotal, total: roundedTotal, discount: finalDiscount, name: discountName };
+        return { subtotal, total: roundedTotal, discount: finalDiscount, name: discountName, pct: discountPct, applyRule, selectedItemIds };
     }
 
     function renderCart() {
@@ -1422,7 +1426,11 @@
             // Add a small hint about the rule
             const hint = document.createElement('p');
             hint.className = "text-[8px] text-green-700 font-bold uppercase tracking-tighter mt-1";
-            hint.innerText = "* Aplicado a 1 bebida y 1 comida máx.";
+            if (calc.selectedItemIds && calc.selectedItemIds.length > 0) {
+                hint.innerText = "* Aplicado a artículos seleccionados.";
+            } else {
+                hint.innerText = "* Aplicado a 1 bebida y 1 comida máx.";
+            }
             document.getElementById('discount-display').appendChild(hint);
         } else {
             document.getElementById('discount-display').classList.add('hidden');
@@ -1438,27 +1446,118 @@
     }
 
     window.openDiscountModal = function() {
+        window.showDiscountStep(1);
         document.getElementById('discount-modal').classList.remove('hidden');
     }
-    window.closeDiscountModal = function() {
-        document.getElementById('discount-modal').classList.add('hidden');
-    }
-    window.applyManualDiscount = function(name, pct, applyRule = false) {
+
+    window.showDiscountStep = (step) => {
+        document.getElementById('discount-step-1').classList.toggle('hidden', step !== 1);
+        document.getElementById('discount-step-2').classList.toggle('hidden', step !== 2);
+        document.getElementById('discount-modal-footer').classList.toggle('hidden', step !== 1);
+    };
+
+    window.prepareManualDiscount = (name, pct, applyRule = false) => {
+        if (cart.length === 0) return alert("Agrega artículos al carrito primero");
+        
+        pendingDiscount = { name, pct, applyRule, selectedItemIds: [] };
+        
+        const isSenior = name.includes('Edad');
+        const needsDOB = isSenior && window.loadedCustomer && !window.loadedCustomer.dob;
+        
+        document.getElementById('discount-dob-section').classList.toggle('hidden', !needsDOB);
+        
+        if (applyRule) {
+            // Populate item list
+            const list = document.getElementById('discount-item-list');
+            list.innerHTML = cart.map((item, idx) => {
+                const type = isDrink(item) ? 'Bebida' : (isFood(item) ? 'Comida' : 'Otro');
+                const canSelect = type !== 'Otro';
+                return `
+                    <label class="flex items-center justify-between p-4 rounded-xl bg-gray-50 border-2 border-gray-100 cursor-pointer hover:border-blue-200 transition-all ${!canSelect ? 'opacity-40 grayscale' : ''}">
+                        <div class="flex items-center gap-3">
+                            <input type="checkbox" 
+                                   ${!canSelect ? 'disabled' : ''} 
+                                   onchange="window.toggleDiscountItem('${idx}', this.checked)"
+                                   class="w-5 h-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                            <div>
+                                <p class="text-[11px] font-black uppercase text-dark">${item.qty}x ${item.name}</p>
+                                <p class="text-[8px] font-bold text-gray-400 uppercase">${type}</p>
+                            </div>
+                        </div>
+                        <p class="text-xs font-mono font-bold text-dark">L. ${parseFloat(item.finalPrice * item.qty).toFixed(0)}</p>
+                    </label>
+                `;
+            }).join('');
+            window.showDiscountStep(2);
+        } else {
+            window.applyManualDiscount(name, pct, false);
+        }
+    };
+
+    window.toggleDiscountItem = (idx, checked) => {
+        idx = parseInt(idx);
+        const item = cart[idx];
+        if (checked) {
+            // Check limits
+            const isD = isDrink(item);
+            const isF = isFood(item);
+            
+            const selectedItems = pendingDiscount.selectedItemIds.map(i => cart[i]);
+            if (isD && selectedItems.some(x => isDrink(x))) {
+                alert("Solo se puede aplicar a 1 bebida por orden");
+                event.target.checked = false; return;
+            }
+            if (isF && selectedItems.some(x => isFood(x))) {
+                alert("Solo se puede aplicar a 1 comida por orden");
+                event.target.checked = false; return;
+            }
+            pendingDiscount.selectedItemIds.push(idx);
+        } else {
+            pendingDiscount.selectedItemIds = pendingDiscount.selectedItemIds.filter(i => i !== idx);
+        }
+    };
+
+    window.finishManualDiscount = async () => {
+        const dob = document.getElementById('discount-dob-input').value;
+        const isSenior = pendingDiscount.name.includes('Edad');
+        
+        if (isSenior && window.loadedCustomer && !window.loadedCustomer.dob) {
+            if (!dob) return alert("Se requiere la fecha de nacimiento para descuentos de la tercera edad");
+            // Update customer DOB in background
+            try {
+                await fetch('/api/store?action=customer_update_dob', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ id: window.loadedCustomer.id, dob })
+                });
+                window.loadedCustomer.dob = dob;
+            } catch(e) { console.error("DOB Update failed", e); }
+        }
+        
+        window.applyManualDiscount(pendingDiscount.name, pendingDiscount.pct, pendingDiscount.applyRule, pendingDiscount.selectedItemIds);
+    };
+
+    window.applyManualDiscount = function(name, pct, applyRule = false, selectedItemIds = []) {
         if (pct === '' || isNaN(pct)) return alert("Porcentaje inválido");
-        manualDiscount = { name, pct: parseFloat(pct), applyRule: applyRule };
+        manualDiscount = { name, pct: parseFloat(pct), applyRule, selectedItemIds };
         window.closeDiscountModal();
         renderCart();
     }
+
     window.clearDiscount = function() {
         manualDiscount = null;
         window.closeDiscountModal();
         renderCart();
     }
 
+    window.closeDiscountModal = function() {
+        document.getElementById('discount-modal').classList.add('hidden');
+    }
+
     function openTenderModal() {
         if (cart.length === 0) return;
-        const total = cart.reduce((sum, item) => sum + (parseFloat(item.finalPrice || 0) * item.qty), 0);
-        document.getElementById('tender-due').innerText = `L. ${total.toFixed(2)}`;
+        const calc = calculateTotalWithRule();
+        document.getElementById('tender-due').innerText = `L. ${calc.total.toFixed(2)}`;
         document.getElementById('tender-received').value = '';
         document.getElementById('tender-change').innerText = 'L. 0.00';
         
@@ -1611,7 +1710,9 @@
             shiftId: currentShiftId,
             fulfillmentType: fulfillmentType,
             status: newStatus,
-            notes: (document.getElementById('guest-name-input').value.trim() ? `[CLIENTE: ${document.getElementById('guest-name-input').value.trim()}]` : '') + (discountName ? ` [DISCOUNT: ${discountName}]` : '')
+            notes: (document.getElementById('guest-name-input').value.trim() ? `[CLIENTE: ${document.getElementById('guest-name-input').value.trim()}]` : '') + 
+                   (discountName ? ` [DISCOUNT: ${discountName}]` : '') +
+                   (manualDiscount ? ` [DISC_META:${JSON.stringify({ n: manualDiscount.name, p: manualDiscount.pct, r: manualDiscount.applyRule, i: manualDiscount.selectedItemIds })}]` : '')
         };
         try {
             const url = currentOrderId ? `/api/orders/${currentOrderId}?v=${Date.now()}` : `/api/orders?v=${Date.now()}`;
@@ -1709,11 +1810,20 @@
         currentCustomerId = order.customer_id;
         recalledItemsJson = JSON.stringify(cart);
 
-        // Restore Manual Discount if it was applied
-        if (order.discount > 0) {
+        // Restore Discount state from metadata if present
+        if (order.notes && order.notes.includes('[DISC_META:')) {
+            try {
+                const metaMatch = order.notes.match(/\[DISC_META:\s*({[^\]]+})\]/);
+                if (metaMatch) {
+                    const d = JSON.parse(metaMatch[1]);
+                    manualDiscount = { name: d.n, pct: d.p, applyRule: d.r, selectedItemIds: d.i };
+                }
+            } catch(e) { console.error("Discount Meta Restore Error", e); }
+        } else if (order.discount > 0) {
+            // Legacy/Fallback restoration
             const sub = (parseFloat(order.subtotal) || 0);
             const pct = Math.round((parseFloat(order.discount) / sub) * 100);
-            manualDiscount = { name: 'Restored', pct: pct };
+            manualDiscount = { name: 'Restored', pct: pct, applyRule: false, selectedItemIds: [] };
         } else {
             manualDiscount = null;
         }
@@ -1793,7 +1903,9 @@
             fulfillmentType: fulfillmentType,
             status: newStatus,
             shiftId: currentShiftId,
-            notes: (document.getElementById('guest-name-input').value.trim() ? `[CLIENTE: ${document.getElementById('guest-name-input').value.trim()}]` : '') + (discountName ? ` [DISCOUNT: ${discountName}]` : '')
+            notes: (document.getElementById('guest-name-input').value.trim() ? `[CLIENTE: ${document.getElementById('guest-name-input').value.trim()}]` : '') + 
+                   (discountName ? ` [DISCOUNT: ${discountName}]` : '') +
+                   (manualDiscount ? ` [DISC_META:${JSON.stringify({ n: manualDiscount.name, p: manualDiscount.pct, r: manualDiscount.applyRule, i: manualDiscount.selectedItemIds })}]` : '')
         };
 
         const confirmBtn = document.getElementById('confirm-tender-btn');
@@ -2471,25 +2583,26 @@
                 <h3 class="text-2xl font-black text-dark uppercase tracking-tight">Aplicar Descuento</h3>
                 <p class="text-gray-400 text-xs font-bold uppercase tracking-widest">Selecciona una opción</p>
             </div>
-            
-            <div class="grid grid-cols-1 gap-3">
-                <button onclick="window.applyManualDiscount('Tercera Edad', 25, true)" class="w-full py-4 bg-gray-50 border-2 border-gray-100 rounded-2xl text-dark font-black hover:border-blue-500 transition-all flex justify-between px-6">
+
+            <!-- STEP 1: SELECT TYPE -->
+            <div id="discount-step-1" class="grid grid-cols-1 gap-3">
+                <button onclick="window.prepareManualDiscount('Tercera Edad', 25, true)" class="w-full py-4 bg-gray-50 border-2 border-gray-100 rounded-2xl text-dark font-black hover:border-blue-500 transition-all flex justify-between px-6">
                     <span>👵 Tercera Edad</span>
                     <span class="text-blue-600">25%</span>
                 </button>
-                <button onclick="window.applyManualDiscount('Cuarta Edad', 35, true)" class="w-full py-4 bg-gray-50 border-2 border-gray-100 rounded-2xl text-dark font-black hover:border-blue-500 transition-all flex justify-between px-6">
+                <button onclick="window.prepareManualDiscount('Cuarta Edad', 35, true)" class="w-full py-4 bg-gray-50 border-2 border-gray-100 rounded-2xl text-dark font-black hover:border-blue-500 transition-all flex justify-between px-6">
                     <span>👴 Cuarta Edad</span>
                     <span class="text-blue-600">35%</span>
                 </button>
-                <button onclick="window.applyManualDiscount('Hero', 15, true)" class="w-full py-4 bg-gray-50 border-2 border-gray-100 rounded-2xl text-dark font-black hover:border-blue-500 transition-all flex justify-between px-6">
+                <button onclick="window.prepareManualDiscount('Hero', 15, true)" class="w-full py-4 bg-gray-50 border-2 border-gray-100 rounded-2xl text-dark font-black hover:border-blue-500 transition-all flex justify-between px-6">
                     <span>🚑 Community Hero</span>
                     <span class="text-blue-600">15%</span>
                 </button>
-                <button onclick="window.applyManualDiscount('Employee', 20)" class="w-full py-4 bg-gray-50 border-2 border-gray-100 rounded-2xl text-dark font-black hover:border-blue-500 transition-all flex justify-between px-6">
+                <button onclick="window.prepareManualDiscount('Employee', 20)" class="w-full py-4 bg-gray-50 border-2 border-gray-100 rounded-2xl text-dark font-black hover:border-blue-500 transition-all flex justify-between px-6">
                     <span>☕️ Staff (Extra)</span>
                     <span class="text-blue-600">20%</span>
                 </button>
-                
+
                 <div class="pt-4 border-t border-gray-100 space-y-2">
                     <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest text-center">Descuento Personalizado (%)</p>
                     <div class="flex gap-2">
@@ -2499,13 +2612,32 @@
                 </div>
             </div>
 
-            <div class="grid grid-cols-1 gap-3 pt-2">
+            <!-- STEP 2: DOB & ITEM SELECTION (Dynamic) -->
+            <div id="discount-step-2" class="hidden space-y-6">
+                <!-- DOB Input (Only for Seniors without DOB) -->
+                <div id="discount-dob-section" class="hidden space-y-2">
+                    <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest">Fecha de Nacimiento</p>
+                    <input type="date" id="discount-dob-input" class="w-full bg-gray-50 border-2 border-gray-100 rounded-xl p-4 font-bold outline-none focus:border-blue-500">
+                </div>
+
+                <!-- Item selection list -->
+                <div class="space-y-3">
+                    <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest">Seleccionar Artículos (Máx 1 Bebida / 1 Comida)</p>
+                    <div id="discount-item-list" class="space-y-2 max-h-60 overflow-y-auto pr-2 custom-scrollbar">
+                        <!-- Items go here -->
+                    </div>
+                </div>
+
+                <button onclick="window.finishManualDiscount()" class="w-full bg-blue-600 text-white py-4 rounded-2xl font-black text-xs uppercase tracking-widest shadow-xl active:scale-95 transition-all">Aplicar Descuento</button>
+                <button onclick="window.showDiscountStep(1)" class="w-full text-gray-400 font-bold text-[10px] uppercase">Atrás</button>
+            </div>
+
+            <div id="discount-modal-footer" class="grid grid-cols-1 gap-3 pt-2">
                 <button onclick="window.clearDiscount()" class="w-full py-3 text-red-500 font-bold text-xs uppercase tracking-widest">Remover Descuento</button>
                 <button onclick="window.closeDiscountModal()" class="w-full py-4 bg-gray-100 text-gray-400 font-bold rounded-2xl text-sm uppercase">Cerrar</button>
             </div>
         </div>
     </div>
-
     <!-- QR SCANNER MODAL -->
     <div id="qr-modal" class="hidden fixed inset-0 bg-black/95 z-[600] flex flex-col items-center justify-center p-6">
         <div class="w-full max-w-sm space-y-6">
