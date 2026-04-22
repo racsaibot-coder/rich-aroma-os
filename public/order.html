@@ -360,13 +360,15 @@
                 syncUser();
                 generateSlots();
 
-                // Set Secret Menu as default with a small timeout to ensure layout is stable
+                // Set Default Category (URL param 'cat' or 'Menú Secreto')
+                const urlParams = new URLSearchParams(window.location.search);
+                const defaultCat = urlParams.get('cat') || 'Menú Secreto';
+
                 setTimeout(() => {
-                    const secretBtn = document.querySelector('button[onclick*="Menú Secreto"]');
-                    if (secretBtn) scrollToCat('Menú Secreto', secretBtn);
+                    const targetBtn = document.querySelector(`button[onclick*="${defaultCat}"]`);
+                    if (targetBtn) scrollToCat(defaultCat, targetBtn);
                 }, 300);
             };
-
             async function fetchStatus() {
                 try {
                     const r = await fetch('/api/store/status');

@@ -65,7 +65,7 @@
             <span class="font-bold text-gold tracking-widest uppercase text-xs">Rich Aroma</span>
         </div>
         <div class="flex items-center gap-4">
-            <a href="/order" class="text-[10px] font-black uppercase tracking-widest text-white/60 hover:text-gold transition-colors hidden md:block">Menu</a>
+            <a href="/order?cat=Combos" class="text-[10px] font-black uppercase tracking-widest text-white/60 hover:text-gold transition-colors hidden md:block">Menu</a>
             <a href="/membership" class="bg-gold/10 border border-gold/30 px-4 py-2 rounded-full text-gold text-[10px] font-black uppercase tracking-widest shadow-xl hover:bg-gold/20 transition-all"><i class="fas fa-crown mr-1"></i> VIP Club</a>
         </div>
     </nav>
@@ -83,7 +83,7 @@
                 Olvídate de las filas. Pide en línea, pasa recogiendo por nuestra barra o disfruta en mesa.
             </p>
             <div class="flex flex-col gap-4 pt-4">
-                <a href="/order" class="gold-btn px-10 py-5 rounded-2xl font-black text-lg shadow-[0_0_40px_rgba(201,166,107,0.2)] hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-3">
+                <a href="/order?cat=Combos" class="gold-btn px-10 py-5 rounded-2xl font-black text-lg shadow-[0_0_40px_rgba(201,166,107,0.2)] hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-3">
                     <i class="fas fa-shopping-bag text-sm"></i> Pedir Ahora
                 </a>
             </div>
@@ -166,9 +166,10 @@
                     <li class="flex items-center gap-3"><i class="fas fa-check-circle text-gold"></i> Acceso a eventos exclusivos</li>
                 </ul>
 
-                <a href="/membership" class="inline-flex gold-btn px-12 py-5 rounded-2xl font-black text-sm uppercase tracking-widest shadow-2xl hover:scale-[1.05] transition-all">
-                    Unirme al Club VIP
+                <a href="/order?action=signup&redirect=membership" class="inline-flex gold-btn px-12 py-5 rounded-2xl font-black text-sm uppercase tracking-widest shadow-2xl hover:scale-[1.05] transition-all">
+                   Unirme al Club VIP
                 </a>
+
             </div>
         </div>
     </section>
@@ -201,7 +202,7 @@
                 <div class="text-4xl">🎉</div>
                 <h3 class="text-xl font-bold text-white">¡Cuenta Activada!</h3>
                 <p class="text-white/60 text-sm">Tus L. 30 ya están vinculados a tu número. Se aplicarán automáticamente al finalizar tu primera orden en línea.</p>
-                <a href="/order" class="inline-block gold-btn px-8 py-4 rounded-xl font-black text-[10px] uppercase tracking-widest">Pedir Ahora</a>
+                <a href="/order?cat=Combos" class="inline-block gold-btn px-8 py-4 rounded-xl font-black text-[10px] uppercase tracking-widest">Pedir Ahora</a>
             </div>
         </div>
     </section>
@@ -218,7 +219,7 @@
         </div>
 
         <div class="mt-12 text-center">
-            <a href="/order" class="text-gold font-black text-xs uppercase tracking-[0.3em] border-b-2 border-gold/20 pb-2 hover:border-gold transition-all">Explorar Menú Completo <i class="fas fa-arrow-right ml-2"></i></a>
+            <a href="/order?cat=Combos" class="text-gold font-black text-xs uppercase tracking-[0.3em] border-b-2 border-gold/20 pb-2 hover:border-gold transition-all">Explorar Menú Completo <i class="fas fa-arrow-right ml-2"></i></a>
         </div>
     </section>
 
@@ -250,8 +251,8 @@
                     const selection = items.slice(0, 4);
                     
                     container.innerHTML = selection.map(item => `
-                        <a href="/order" class="flex gap-5 p-5 rounded-3xl bg-charcoal border border-white/5 hover:border-gold/30 transition-all group shadow-xl">
-                            <img src="${item.image_url || 'https://images.unsplash.com/photo-1510591509098-f4fdc6d0ff04?w=400&q=80'}" class="w-24 h-24 rounded-2xl object-cover shrink-0 group-hover:scale-105 transition-transform">
+                        <a href="/order?cat=Combos" class="flex gap-5 p-5 rounded-3xl bg-charcoal border border-white/5 hover:border-gold/30 transition-all group shadow-xl">
+                            ${item.image_url ? `<img src="${item.image_url}" class="w-24 h-24 rounded-2xl object-cover shrink-0 group-hover:scale-105 transition-transform">` : ''}
                             <div class="flex-1 flex flex-col justify-center">
                                 <div class="flex justify-between items-start mb-1">
                                     <h3 class="font-bold text-white text-base">${item.name}</h3>
@@ -288,7 +289,7 @@
                     const data = await res.json();
                     if (data && data.id) {
                         alert("Este número ya está registrado. Por favor inicia sesión.");
-                        window.location.href = '/order';
+                        window.location.href = '/order?cat=Combos';
                         return;
                     }
                 }
