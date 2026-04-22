@@ -416,7 +416,10 @@
         
         <!-- Customer Info -->
         <div class="p-4 border-b border-gray-200 bg-gray-50">
-            <label class="text-[10px] font-black uppercase text-gray-400 tracking-widest mb-2 block">Customer Identification / Cliente</label>
+            <div class="flex justify-between items-center mb-2">
+                <label class="text-[10px] font-black uppercase text-gray-400 tracking-widest block">Customer Identification / Cliente</label>
+                <button onclick="window.clearOrderState()" class="text-[9px] font-black uppercase text-red-500 hover:text-red-700 transition-colors">Clear / New</button>
+            </div>
             
             <div id="cust-lookup-ui">
                 <div class="flex gap-1.5 mb-1.5">
@@ -1637,7 +1640,9 @@
         }
     }
 
-    function clearOrderState() {
+    window.clearOrderState = function() {
+        if (cart.length > 0 && !confirm("¿Vaciar carrito y cancelar edición?")) return;
+        
         cart = [];
         currentOrderId = null;
         currentOrderStatus = null;
@@ -1645,6 +1650,7 @@
         manualDiscount = null;
         window.loadedCustomer = null;
         secondaryTenderMethod = null;
+        recalledItemsJson = "";
         
         // Reset Inputs
         document.getElementById('guest-name-input').value = "";
@@ -1659,6 +1665,8 @@
         renderCart();
         saveCartState();
     }
+
+    function clearOrderState() { window.clearOrderState(); }
 
     async function recallOrder(id) {
         let order = liveOrders.find(o => o.id === id);
