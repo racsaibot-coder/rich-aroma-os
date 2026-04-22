@@ -201,7 +201,7 @@
     },
     {
       "src": "/pos",
-      "dest": "/public/drive-thru.html"
+      "dest": "/public/pos-v2.html"
     },
     {
       "src": "/kitchen",

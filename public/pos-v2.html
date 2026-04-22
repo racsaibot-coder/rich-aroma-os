@@ -1809,8 +1809,22 @@
         
         currentOrderId = order.id;
         currentOrderStatus = order.status;
-        currentCustomerId = order.customer_id;
         recalledItemsJson = JSON.stringify(cart);
+
+        // AUTO-LOAD CUSTOMER
+        if (order.customer_id) {
+            console.log("👤 Order has customer. Loading profile...");
+            try {
+                const res = await fetch(`/api/store?action=customer_profile&id=${order.customer_id}`, {
+                    headers: { 'Authorization': 'Bearer EMP-admin' }
+                });
+                const custData = await res.json();
+                if (custData && custData.id) loadCustomerProfile(custData);
+            } catch(e) { console.error("Auto customer load failed", e); }
+        } else {
+            currentCustomerId = null;
+            window.loadedCustomer = null;
+        }
 
         // Restore Discount state from metadata if present
         if (order.notes && order.notes.includes('[DISC_META:')) {
@@ -1844,7 +1858,10 @@
         alert("✅ Orden Recuperada - Puedes agregar más o cobrar.");
     }
 
+    let isProcessingCharge = false;
     async function processCobrar() {
+        if (isProcessingCharge) return;
+        
         // --- AUTO-FIX SHIFT ID ---
         if (!currentShiftId) {
             console.log("⚠️ Shift ID missing in checkout. Attempting emergency re-sync...");
@@ -1859,6 +1876,7 @@
         const discountName = calc.name;
 
         // SECURITY LOCK: RICO CASH VERIFICATION
+        isProcessingCharge = true;
         let ricoAmountToDeduct = total;
         if (currentTenderMethod === 'rico_balance') {
             if (!window.loadedCustomer) return alert("Debes cargar un cliente para usar Rico Cash");
@@ -1943,6 +1961,8 @@
             alert("Error de Conexión: " + e.message); 
             confirmBtn.disabled = false;
             confirmBtn.innerText = "Cobrar";
+        } finally {
+            isProcessingCharge = false;
         }
     }
 
@@ -1979,17 +1999,18 @@
     }
 
     function loadCustomerProfile(data) {
+        if (!data || !data.id) return;
         currentCustomerId = data.id;
         window.loadedCustomer = data;
         document.getElementById('cust-lookup-ui').classList.add('hidden');
         const profile = document.getElementById('cust-profile');
         profile.innerHTML = `
             <div class="bg-blue-50 p-4 rounded-2xl border border-blue-100 flex justify-between items-center shadow-sm">
-                <div>
-                    <div class="font-black text-blue-900">👑 ${data.name}</div>
+                <div class="overflow-hidden mr-2">
+                    <div class="font-black text-blue-900 truncate">👑 ${data.name || 'Cliente'}</div>
                     <div class="text-[10px] font-bold text-blue-600">Balance: L. ${(parseFloat(data.rico_balance) || 0).toFixed(2)}</div>
                 </div>
-                <button onclick="clearCustomer()" class="text-xs font-bold text-gray-400">Clear</button>
+                <button onclick="clearCustomer()" class="text-xs font-bold text-gray-400 shrink-0">Clear</button>
             </div>
         `;
         profile.classList.remove('hidden');
@@ -2002,6 +2023,8 @@
         const input = document.getElementById('cust-id');
         let query = input.value.trim();
 
+        if (!query) return;
+
         // --- SMART DETECT: ORDER ID ---
         if (query.startsWith('ORD-')) {
             console.log("📄 Order ID detected. Recalling order...");
@@ -2011,19 +2034,20 @@
         }
 
         // --- SMART DETECT: CUSTOMER ID (from Member QR) ---
-        if (query.startsWith('C0')) {
+        if (query.startsWith('CUST-') || query.startsWith('C0')) {
              console.log("👤 Customer ID detected. Fetching profile...");
              try {
                 const res = await fetch(`/api/store?action=customer_profile&id=${query}`, {
                     headers: { 'Authorization': 'Bearer EMP-admin' }
                 });
                 const data = await res.json();
-                if (data && data.id) { loadCustomerProfile(data); return; }
-             } catch(e) {}
+                if (data && data.id) { loadCustomerProfile(data); input.value = ""; return; }
+             } catch(e) { console.error("Customer ID lookup failed", e); }
         }
 
         // --- DEFAULT: PHONE NUMBER LOOKUP ---
         let cleanPhone = query.replace(/\D/g, '');
+        if (cleanPhone.length < 8) return; // Wait for full number
         if (!cleanPhone.startsWith('+') && cleanPhone.length > 0) cleanPhone = country + cleanPhone;
 
         try {
@@ -2031,14 +2055,8 @@
                 headers: { 'Authorization': 'Bearer EMP-admin' }
             });
             
-            if (!res.ok) return;
-
-            const data = await res.json();
-            
-            if (data && data.id) {
-                loadCustomerProfile(data);
-            } else {
-                // NOT FOUND -> Show Quick create UI
+            if (!res.ok) {
+                // If not found, show quick create
                 document.getElementById('cust-profile').innerHTML = `
                     <div class="bg-orange-50 p-4 rounded-2xl border border-orange-200">
                         <p class="text-orange-800 font-bold text-xs mb-2 italic">New Customer?</p>
@@ -2060,6 +2078,13 @@
                 `;
                 document.getElementById('cust-profile').classList.remove('hidden');
                 document.getElementById('cust-lookup-ui').classList.add('hidden');
+                return;
+            }
+
+            const data = await res.json();
+            if (data && data.id) {
+                loadCustomerProfile(data);
+                input.value = "";
             }
         } catch(e) {}
     }

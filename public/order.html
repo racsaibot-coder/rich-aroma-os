@@ -165,6 +165,13 @@
                 </div>
             </div>
 
+            <!-- Member QR Section -->
+            <div class="bg-white p-6 rounded-[2.5rem] flex flex-col items-center gap-4 shadow-xl">
+                <p class="text-[10px] font-black text-dark/40 uppercase tracking-[0.3em]">Mi QR de Miembro</p>
+                <div id="prof-qr" class="w-40 h-40 flex items-center justify-center"></div>
+                <p class="text-[9px] font-black text-gold uppercase tracking-widest">Escanea para Puntos y Pagos</p>
+            </div>
+
             <!-- VIP Section -->
             <div id="vip-promo" class="bg-gradient-to-br from-[#1A1410] to-[#120C09] p-8 rounded-[3rem] border border-gold/20 space-y-4 relative overflow-hidden">
                 <div class="absolute top-0 right-0 p-8 opacity-5">
@@ -489,6 +496,12 @@
                 const isVIP = currentCustomer.is_vip === true;
                 document.getElementById('prof-vip-badge').classList.toggle('hidden', !isVIP);
                 document.getElementById('vip-promo').classList.toggle('hidden', isVIP);
+
+                // Generate Member QR
+                document.getElementById('prof-qr').innerHTML = "";
+                if (window.QRCode) {
+                    new QRCode(document.getElementById('prof-qr'), { text: currentCustomer.id, width: 160, height: 160, colorDark: "#120C09" });
+                }
 
                 renderFavorites();
 
