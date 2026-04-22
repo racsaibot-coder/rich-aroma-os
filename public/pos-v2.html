@@ -909,12 +909,17 @@
                 borderClass = "border-green-500 ring-2 ring-green-500/20";
             }
 
-            // RECALL LOGIC: Now allowed on ANY order from today (including completed/paid) 
-            // to allow fixing mistakes or charging orders that were delivered first.
+            // ACTION BUTTONS
+            let actionsHtml = '';
             if (o.status !== 'cancelled') {
-                recallBtn = `<button onclick="recallOrder('${o.id}')" class="ml-auto bg-amber-500 text-white px-2 py-1 rounded text-[8px] font-black uppercase tracking-widest hover:bg-amber-600 transition-all">Recuperar</button>`;
+                actionsHtml = `
+                    <div class="flex gap-2 ml-auto">
+                        <button onclick="window.viewOrder('${o.id}')" class="bg-white/10 text-white/60 p-2 rounded-lg hover:bg-white/20 transition-all" title="Ver Detalles"><i class="fas fa-eye text-[10px]"></i></button>
+                        <button onclick="recallOrder('${o.id}')" class="bg-amber-500 text-white px-2 py-1 rounded text-[8px] font-black uppercase tracking-widest hover:bg-amber-600 transition-all">Recuperar</button>
+                    </div>
+                `;
             }
-            
+
             let name = "Walk-in";
             if (o.customers && o.customers.name) {
                 name = o.customers.name;
@@ -935,7 +940,7 @@
                             <span class="text-[11px] font-black text-white/20">#${o.order_number?.toString().padStart(2, '0') || '--'}</span>
                             <span class="text-[9px] px-2 py-1 rounded-lg font-black uppercase ${statusColor} tracking-widest">${statusLabel}</span>
                         </div>
-                        ${recallBtn}
+                        ${actionsHtml}
                     </div>
                     
                     <div class="flex items-center justify-between mb-2">
@@ -983,6 +988,71 @@
         });
         container.innerHTML = html;
     }
+
+    window.viewOrder = async function(id) {
+        let order = liveOrders.find(o => o.id === id);
+
+        // If not in live feed, try to fetch directly from server
+        if (!order) {
+            console.log("🔍 Order not in local feed, fetching from server...");
+            try {
+                const res = await fetch(`/api/orders/${id}`, {
+                    headers: { 'Authorization': 'Bearer EMP-admin' }
+                });
+                if (res.ok) {
+                    order = await res.json();
+                }
+            } catch (e) { console.error("View Order Fetch Error", e); }
+        }
+
+        if (!order) return alert("❌ No se encontró la orden.");
+
+        document.getElementById('view-order-num').innerText = `#${order.order_number || '--'}`;
+        
+        let name = "Invitado";
+        if (order.customers?.name) name = order.customers.name;
+        else if (order.notes) {
+            const m = order.notes.match(/\[CLIENTE:\s*([^\]]+)\]/) || order.notes.match(/\[GUEST:\s*([^|\]]+)/);
+            if (m) name = m[1].trim();
+        }
+        document.getElementById('view-order-customer').innerText = name;
+        document.getElementById('view-order-total').innerText = `L. ${(parseFloat(order.total) || 0).toFixed(2)}`;
+
+        const content = document.getElementById('view-order-content');
+        content.innerHTML = `
+            <div class="space-y-4">
+                ${(order.items || []).map(i => `
+                    <div class="bg-white/5 p-5 rounded-[2rem] border border-white/5">
+                        <div class="flex justify-between items-start">
+                            <h4 class="font-black text-sm uppercase text-white/90">${i.qty || i.quantity || 1}x ${i.name}</h4>
+                            <span class="font-mono text-xs text-gold font-bold">L. ${(parseFloat(i.finalPrice || i.price) * (i.qty || i.quantity || 1)).toFixed(0)}</span>
+                        </div>
+                        ${(i.mods || []).length ? `<p class="text-[9px] text-white/30 uppercase mt-1 font-bold tracking-wider">${i.mods.map(m=>m.name).join(', ')}</p>` : ''}
+                        ${i.note ? `<p class="text-[10px] italic text-blue-400 mt-2"><i class="fas fa-comment-dots mr-1"></i> ${i.note}</p>` : ''}
+                    </div>
+                `).join('')}
+            </div>
+            ${order.notes ? `
+                <div class="pt-4 border-t border-white/5">
+                    <p class="text-[9px] font-black text-white/20 uppercase tracking-[0.2em] mb-2">Notas / Metadatos</p>
+                    <p class="text-[11px] text-white/40 leading-relaxed">${order.notes}</p>
+                </div>
+            ` : ''}
+        `;
+
+        const actions = document.getElementById('view-order-actions');
+        if (order.status !== 'cancelled' && order.status !== 'completed') {
+            actions.innerHTML = `<button onclick="window.closeViewOrder(); recallOrder('${order.id}')" class="bg-amber-500 text-white px-6 py-3 rounded-2xl font-black text-[10px] uppercase tracking-widest shadow-lg shadow-amber-500/20 active:scale-95 transition-all">Editar / Cobrar</button>`;
+        } else {
+            actions.innerHTML = `<p class="text-[10px] font-black text-white/10 uppercase italic">Orden Finalizada</p>`;
+        }
+
+        document.getElementById('view-order-modal').classList.remove('hidden');
+    };
+
+    window.closeViewOrder = function() {
+        document.getElementById('view-order-modal').classList.add('hidden');
+    };
 
     async function deliverOrder(id) {
         try {
@@ -2027,8 +2097,8 @@
 
         // --- SMART DETECT: ORDER ID ---
         if (query.startsWith('ORD-')) {
-            console.log("📄 Order ID detected. Recalling order...");
-            await recallOrder(query);
+            console.log("📄 Order ID detected. Viewing order details...");
+            await viewOrder(query);
             input.value = ""; // Clear for next scan
             return;
         }
@@ -2666,6 +2736,31 @@
             </div>
         </div>
     </div>
+    <!-- ORDER VIEW MODAL -->
+    <div id="view-order-modal" class="hidden fixed inset-0 bg-black/90 z-[700] backdrop-blur-md flex items-center justify-center p-6">
+        <div class="bg-dark w-full max-w-lg rounded-[3rem] border border-white/10 flex flex-col max-h-[85vh] overflow-hidden shadow-2xl">
+            <div class="p-8 border-b border-white/5 flex justify-between items-center shrink-0">
+                <div>
+                    <h3 id="view-order-num" class="text-3xl font-black text-gold tracking-tighter">ORDEN #--</h3>
+                    <p id="view-order-customer" class="text-white/40 text-xs font-bold uppercase tracking-widest mt-1">Cliente</p>
+                </div>
+                <button onclick="window.closeViewOrder()" class="w-12 h-12 rounded-full bg-white/5 flex items-center justify-center text-white/60 hover:text-white border border-white/5"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="flex-1 overflow-y-auto p-8 space-y-6 hide-scrollbar" id="view-order-content">
+                <!-- Items injected here -->
+            </div>
+            <div class="p-8 border-t border-white/5 bg-black/20 flex justify-between items-center shrink-0">
+                <div>
+                    <p class="text-[10px] font-black text-white/20 uppercase tracking-widest">Total de Orden</p>
+                    <p id="view-order-total" class="text-2xl font-black text-white">L. 0.00</p>
+                </div>
+                <div id="view-order-actions">
+                    <!-- Dynamic button (Recall if needed) -->
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- QR SCANNER MODAL -->
     <div id="qr-modal" class="hidden fixed inset-0 bg-black/95 z-[600] flex flex-col items-center justify-center p-6">
         <div class="w-full max-w-sm space-y-6">
