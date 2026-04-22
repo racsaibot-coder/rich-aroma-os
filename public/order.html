@@ -333,17 +333,28 @@
 
     <!-- TRACKING MODAL -->
     <div id="track-modal" class="hidden fixed inset-0 bg-dark z-[1000] flex flex-col p-8 items-center justify-center text-center animate-in fade-in duration-500">
-        <div class="w-20 h-20 bg-success/20 text-success rounded-full flex items-center justify-center text-3xl mb-8 animate-bounce-in"><i class="fas fa-check"></i></div>
-        <h2 class="text-4xl font-display font-black text-white mb-2 uppercase tracking-tighter">¡Recibido!</h2>
-        <p class="text-white/40 text-sm mb-12 max-w-xs leading-relaxed">Tu pedido ha sido enviado. Prepárate para el mejor sabor.</p>
-        <div class="glass w-full max-w-xs p-8 rounded-[3rem] space-y-6 relative mb-12">
-            <p class="text-[10px] font-black text-gold uppercase tracking-[0.4em]">Orden Confirmada</p>
-            <div id="receipt-qr" class="w-48 h-48 bg-white p-4 rounded-[2rem] mx-auto flex items-center justify-center"></div>
-            <h3 id="receipt-num" class="text-4xl font-black text-white tracking-tighter">#--</h3>
-        </div>
-        <button onclick="location.reload()" class="px-12 py-5 bg-white/5 text-white/40 rounded-[2rem] font-black text-[10px] uppercase">Nuevo Pedido</button>
-    </div>
+        <div id="track-icon" class="w-20 h-20 bg-success/20 text-success rounded-full flex items-center justify-center text-3xl mb-8 animate-bounce-in"><i class="fas fa-check"></i></div>
+        <h2 id="track-title" class="text-4xl font-display font-black text-white mb-2 uppercase tracking-tighter">¡Recibido!</h2>
+        <p id="track-msg" class="text-white/40 text-sm mb-12 max-w-xs leading-relaxed">Tu pedido ha sido enviado. Prepárate para el mejor sabor.</p>
 
+        <div class="glass w-full max-w-xs p-8 rounded-[3rem] space-y-6 relative mb-12 overflow-hidden">
+            <div class="space-y-1">
+                <p class="text-[10px] font-black text-gold uppercase tracking-[0.4em]">Estado del Pedido</p>
+                <div id="track-status-badge" class="inline-block px-4 py-1.5 rounded-full bg-white/5 border border-white/10 text-[10px] font-black uppercase text-white/60 tracking-widest mt-2">Sincronizando...</div>
+            </div>
+
+            <div id="receipt-qr" class="w-48 h-48 bg-white p-4 rounded-[2rem] mx-auto flex items-center justify-center"></div>
+            <div class="space-y-1">
+                <p class="text-[10px] font-black text-white/20 uppercase tracking-[0.4em]">Número de Orden</p>
+                <h3 id="receipt-num" class="text-4xl font-black text-white tracking-tighter">#--</h3>
+            </div>
+        </div>
+
+        <div class="flex flex-col gap-3 w-full max-w-xs">
+            <button onclick="location.reload()" class="w-full py-5 bg-gold text-dark rounded-[2rem] font-black text-xs uppercase tracking-widest shadow-xl active:scale-95 transition-all">Pedir Algo Más</button>
+            <p class="text-[9px] text-white/20 uppercase font-bold tracking-widest">Rich Aroma OS v2.0</p>
+        </div>
+    </div>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <script>
         (function() {
@@ -822,6 +833,7 @@
                         new QRCode(document.getElementById('receipt-qr'), { text: saved.id, width: 160, height: 160, colorDark: "#120C09" });
                     }
                     document.getElementById('track-modal').classList.remove('hidden');
+                    startStatusPolling(saved.id);
                 } catch(e) { 
                     console.error("Order submission failed", e);
                     alert(e.message); 
@@ -830,6 +842,52 @@
                 }
                 finally { isSubmitting = false; }
             };
+
+            function startStatusPolling(orderId) {
+                const poll = async () => {
+                    try {
+                        const res = await fetch(`/api/orders/${orderId}?v=${Date.now()}`);
+                        if (!res.ok) return;
+                        const order = await res.json();
+                        updateTrackingUI(order);
+                        
+                        // Stop polling if completed or cancelled
+                        if (['completed', 'cancelled', 'ready'].includes(order.status)) {
+                            // If ready, we might want to keep polling until fully completed, 
+                            // but usually 'ready' is enough for the customer.
+                        } else {
+                            setTimeout(poll, 5000);
+                        }
+                    } catch(e) {}
+                };
+                poll();
+            }
+
+            function updateTrackingUI(order) {
+                const badge = document.getElementById('track-status-badge');
+                const title = document.getElementById('track-title');
+                const msg = document.getElementById('track-msg');
+                const icon = document.getElementById('track-icon');
+                
+                const states = {
+                    'pending': { t: '¡Recibido!', m: 'Tu pedido está en fila. En un momento empezamos a prepararlo.', c: 'bg-white/5 text-white/40', i: 'fa-check' },
+                    'paid': { t: 'Confirmado', m: 'Pago confirmado. Estamos asignando tu orden a la cocina.', c: 'bg-blue-500/20 text-blue-400', i: 'fa-wallet' },
+                    'preparing': { t: 'Preparando', m: 'El barista está preparando tu orden con mucho amor. ¡Ya casi!', c: 'bg-gold/20 text-gold animate-pulse', i: 'fa-fire-alt' },
+                    'ready': { t: '¡Listo!', m: 'Tu orden está lista en barra. Puedes pasar a recogerla con tu número.', c: 'bg-success/20 text-success animate-bounce', i: 'fa-mug-hot' },
+                    'completed': { t: 'Entregado', m: '¡Gracias por visitarnos! Esperamos que disfrutes tu orden.', c: 'bg-success text-dark', i: 'fa-heart' },
+                    'cancelled': { t: 'Cancelado', m: 'Tu orden ha sido cancelada. Si tienes dudas contacta a soporte.', c: 'bg-error/20 text-error', i: 'fa-times' }
+                };
+                
+                const s = states[order.status] || states['pending'];
+                badge.innerText = s.t;
+                badge.className = `inline-block px-4 py-1.5 rounded-full border border-white/10 text-[10px] font-black uppercase tracking-widest mt-2 ${s.c}`;
+                title.innerText = s.t;
+                msg.innerText = s.m;
+                icon.innerHTML = `<i class="fas ${s.i}"></i>`;
+                if (order.status === 'ready') {
+                    if ("vibrate" in navigator) navigator.vibrate([200, 100, 200]);
+                }
+            }
 
             function generateSlots() {
                 const sel = document.getElementById('check-schedule'); const now = new Date(); const day = now.getDay();

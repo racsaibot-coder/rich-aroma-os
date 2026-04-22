@@ -1661,8 +1661,22 @@
     }
 
     async function recallOrder(id) {
-        const order = liveOrders.find(o => o.id === id);
-        if (!order) return;
+        let order = liveOrders.find(o => o.id === id);
+        
+        // If not in live feed, try to fetch directly from server (e.g. if POS hasn't polled yet)
+        if (!order) {
+            console.log("🔍 Order not in local feed, fetching from server...");
+            try {
+                const res = await fetch(`/api/orders/${id}`, {
+                    headers: { 'Authorization': 'Bearer EMP-admin' }
+                });
+                if (res.ok) {
+                    order = await res.json();
+                }
+            } catch (e) { console.error("Recall Fetch Error", e); }
+        }
+
+        if (!order) return alert("❌ No se encontró la orden. Intenta de nuevo en unos segundos.");
         
         if (cart.length > 0) {
             const clear = await showUIModal({
