@@ -359,6 +359,10 @@
                 initStickyCats();
                 syncUser();
                 generateSlots();
+
+                // Set Secret Menu as default
+                const secretBtn = document.querySelector('button[onclick*="Menú Secreto"]');
+                if (secretBtn) scrollToCat('Menú Secreto', secretBtn);
             };
 
             async function fetchStatus() {
@@ -383,7 +387,7 @@
                     itemModG = d.itemModGroups || [];
                     document.getElementById('loading-msg').style.display = 'none';
                     renderMenu();
-                } catch(e) {
+                } catch(e) { 
                     console.error("Menu load failed: " + e.toString());
                     if (retries > 0) {
                         console.log(`Retrying menu load... (${retries} left)`);
@@ -461,7 +465,7 @@
                 document.getElementById('prof-initial').innerText = currentCustomer.name.charAt(0).toUpperCase();
                 document.getElementById('prof-points').innerText = currentCustomer.points || 0;
                 document.getElementById('prof-balance').innerText = 'L ' + (parseFloat(currentCustomer.rico_balance) || 0).toFixed(2);
-                
+
                 if (currentCustomer.rico_balance_expires_at) {
                     const exp = new Date(currentCustomer.rico_balance_expires_at);
                     document.getElementById('prof-balance').innerHTML += `<p class="text-[8px] font-bold text-error/60 uppercase mt-1">Expira: ${exp.toLocaleDateString()}</p>`;
@@ -497,7 +501,7 @@
                 if (!currentCustomer) return window.openLogin();
                 const btn = document.querySelector('#vip-promo button');
                 btn.innerText = "PROCESANDO..."; btn.disabled = true;
-                
+
                 try {
                     const r = await fetch(`/api/store?action=purchase_membership&id=${currentCustomer.id}`, { 
                         method:'POST', 
@@ -505,11 +509,11 @@
                     });
                     const d = await r.json();
                     if (!r.ok) throw new Error(d.error || "Error en la compra");
-                    
+
                     // Update local storage and UI
                     currentCustomer = d.customer;
                     localStorage.setItem('ra_customer_data', JSON.stringify(currentCustomer));
-                    
+
                     alert("¡Felicidades! Ahora eres Miembro VIP.");
                     window.openProfile();
                 } catch(e) { alert(e.message); }
@@ -566,6 +570,7 @@
             window.showPoints = () => {
                 window.openProfile();
             };
+
             window.setPayment = (type) => {
                 if (type === 'rico_balance' && (currentCustomer?.rico_balance || 0) < (cart.reduce((s,i)=>s+i.finalPrice,0) + deliveryFee)) {
                     return alert("Saldo de Rico Cash insuficiente para esta orden.");
@@ -578,14 +583,25 @@
             };
 
             function initStickyCats() {
-                const cats = [{id:'all', n:'Todo', i:'✨'}, {id:'Combos', n:'Combos', i:'🔥'}, {id:'Calientes', n:'Café', i:'☕'}, {id:'Heladas', n:'Heladas', i:'🥤'}, {id:'Comida', n:'Comida', i:'🥐'}, {id:'Repostería', n:'Postres', i:'🍰'}];
-                document.getElementById('sticky-cats').innerHTML = cats.map(c => `<button onclick="scrollToCat('${c.id}', this)" class="category-pill flex items-center gap-2 px-6 py-2.5 rounded-full text-xs font-black uppercase whitespace-nowrap bg-white/5 text-white/40 ${c.id === 'all' ? 'active' : ''}"><span>${c.i}</span> <span>${c.n}</span></button>`).join('');
+                const cats = [
+                    {id:'Combos', n:'Combos', i:'🔥'}, 
+                    {id:'Calientes', n:'Café', i:'☕'}, 
+                    {id:'Heladas', n:'Heladas', i:'🥤'}, 
+                    {id:'Comida', n:'Comida', i:'🥐'}, 
+                    {id:'Repostería', n:'Postres', i:'🍰'},
+                    {id:'Menú Secreto', n:'Secreto', i:'🤫'}
+                ];
+                document.getElementById('sticky-cats').innerHTML = cats.map(c => `<button onclick="scrollToCat('${c.id}', this)" class="category-pill flex items-center gap-2 px-6 py-2.5 rounded-full text-xs font-black uppercase whitespace-nowrap bg-white/5 text-white/40"><span>${c.i}</span> <span>${c.n}</span></button>`).join('');
             }
 
             window.scrollToCat = (id, btn) => {
-                document.querySelectorAll('.category-pill').forEach(p => p.classList.remove('active')); btn.classList.add('active');
-                if (id === 'all') { window.scrollTo({ top:0, behavior:'smooth' }); return; }
-                const el = document.getElementById('section-' + id); if (el) window.scrollTo({ top: el.offsetTop - 120, behavior:'smooth' });
+                document.querySelectorAll('.category-pill').forEach(p => p.classList.remove('active')); 
+                if (btn) {
+                    btn.classList.add('active');
+                    btn.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+                }
+                const el = document.getElementById('section-' + id); 
+                if (el) window.scrollTo({ top: el.offsetTop - 120, behavior:'smooth' });
             };
 
             function renderMenu() {
