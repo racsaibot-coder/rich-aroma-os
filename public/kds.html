@@ -260,6 +260,10 @@
             const id = (item.id || '').toLowerCase();
             const cat = (item.category || '').toLowerCase();
             if (id === 'vip_membership' || name.includes('membresía')) return false;
+
+            // Dubai items are food/chocolate items, not drinks
+            if (name.includes('dubai')) return false;
+
             return id.startsWith('hot_') || id.startsWith('cold_') || id.startsWith('frappe_') || 
                    name.includes('latte') || name.includes('brew') || name.includes('capp') || 
                    name.includes('tea') || name.includes('te ') || name.includes('icee') || 
@@ -321,10 +325,20 @@
             activeOrders.forEach(order => {
                 // Filter Items based on Mode
                 const relevantItems = (order.items || []).filter(item => {
+                    if (item.is_old && !item.is_addon) {
+                        // If it's old and not an addon, only show if we want full history, 
+                        // but for production KDS we primarily want to hide redundant items.
+                        // We'll keep them but mark them as dimmed below.
+                    }
                     if(currentMode === 'drinks') return isDrinkItem(item) || isComboItem(item.name);
                     if(currentMode === 'food') return isFoodItem(item);
                     return true;
                 });
+
+                // Optimization: If all items in this ticket for this station are "is_old", 
+                // it means the kitchen already did them. Hide the ticket to avoid clutter.
+                const hasNewWork = relevantItems.some(i => i.is_addon || !i.is_old);
+                if (!hasNewWork && relevantItems.length > 0) return;
 
                 if(relevantItems.length === 0) return; // Skip ticket if nothing for this station
                 
@@ -419,13 +433,14 @@
                             }
 
                             return `
-                            <div class="p-3 bg-white/5 rounded-xl border border-white/5">
+                            <div class="p-3 bg-white/5 rounded-xl border border-white/5 ${i.is_old ? 'opacity-30' : ''}">
                                 <div class="flex justify-between items-start text-lg ${i.is_addon ? 'text-yellow-400 font-bold bg-yellow-500/10 p-2 rounded-lg' : ''}">
                                     <div class="flex gap-3">
                                         <span class="font-bold text-gold bg-gold/10 px-2 py-0.5 rounded h-min">${i.quantity || i.qty || 1}x</span>
                                         <div class="flex flex-col">
-                                            <span class="${i.is_addon ? 'text-yellow-400' : 'text-white/90'} leading-tight">${displayName}</span>
+                                            <span class="${i.is_addon ? 'text-yellow-400' : (i.is_old ? 'text-white/40' : 'text-white/90')} leading-tight">${displayName}</span>
                                             ${i.is_addon ? '<span class="text-[10px] bg-yellow-500 text-dark px-1.5 py-0.5 rounded w-max mt-1">NUEVO ADD-ON</span>' : ''}
+                                            ${i.is_old ? '<span class="text-[8px] text-white/20 uppercase font-bold mt-1">Ya Entregado</span>' : ''}
                                         </div>
                                     </div>
                                 </div>

@@ -4,247 +4,261 @@
     <link rel="icon" type="image/png" href="/favicon.png">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Rich Aroma | Kitchen Mobile</title>
+    <title>Rich Aroma | Kitchen Mobile v2.5</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <script>
         tailwind.config = {
             theme: {
                 extend: {
-                    colors: {
-                        gold: '#C9A66B',
-                        dark: '#120C09',
-                        charcoal: '#1E1610',
-                        success: '#10B981',
-                        danger: '#EF4444',
-                        warning: '#F59E0B'
-                    }
+                    colors: { gold: '#C9A66B', dark: '#120C09', charcoal: '#1E1610', success: '#10B981', error: '#EF4444' },
+                    fontFamily: { sans: ['Inter', 'sans-serif'], display: ['Playfair Display', 'serif'] }
                 }
             }
         }
     </script>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap');
-        body { font-family: 'Inter', sans-serif; background-color: #120C09; color: white; -webkit-tap-highlight-color: transparent; }
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&family=Playfair+Display:wght@700;900&display=swap');
+        body { background-color: #120C09; color: #F5F5F0; font-family: 'Inter', sans-serif; -webkit-tap-highlight-color: transparent; overflow-x: hidden; }
         .hide-scrollbar::-webkit-scrollbar { display: none; }
-        .order-card { transition: transform 0.2s active:scale-95; }
-        .status-badge { font-size: 9px; font-weight: 900; letter-spacing: 0.1em; }
-        header { pointer-events: auto !important; }
-        button { pointer-events: auto !important; position: relative; z-index: 70; }
+        #main-content.locked { filter: blur(20px); pointer-events: none; }
+        
+        /* ITEM STATES */
+        .state-pending { border-left: 4px solid #444; }
+        .state-preparing { border-left: 4px solid #C9A66B; background: rgba(201, 166, 107, 0.05); }
+        .state-ready { border-left: 4px solid #10B981; opacity: 0.4; }
+        .item-ready-text { text-decoration: line-through; color: rgba(255,255,255,0.2); }
+        
+        .order-card { transition: all 0.3s ease; }
+        .timer-urgent { color: #EF4444; font-weight: 900; animation: blink 1s infinite; }
+        @keyframes blink { 50% { opacity: 0.3; } }
     </style>
 </head>
 <body class="min-h-screen flex flex-col">
 
-    <!-- MOBILE KDS HEADER -->
-    <header class="bg-dark/95 backdrop-blur-md p-4 sticky top-0 z-[60] flex justify-between items-center border-b border-white/5 shadow-2xl shrink-0">
-        <div class="flex items-center gap-3">
-            <div class="w-10 h-10 bg-gold/20 rounded-xl flex items-center justify-center text-gold border border-gold/30">
-                <i class="fas fa-fire-alt"></i>
-            </div>
-            <div>
-                <h1 class="text-sm font-black tracking-widest uppercase text-white/90">Kitchen Mobile</h1>
-                <p id="sync-status" class="text-[8px] text-white/30 font-bold uppercase tracking-widest">Iniciando...</p>
-            </div>
-        </div>
-        
-        <!-- Mode Toggle -->
-        <div class="flex bg-white/5 rounded-full p-1 border border-white/10 relative z-[70]">
-            <button onclick="setMode('drinks')" id="btn-drinks" class="px-4 py-1.5 rounded-full text-[9px] font-black uppercase transition-all bg-gold text-dark pointer-events-auto">Barista</button>
-            <button onclick="setMode('food')" id="btn-food" class="px-4 py-1.5 rounded-full text-[9px] font-black uppercase transition-all text-white/40 pointer-events-auto">Cocina</button>
-        </div>
-    </header>
+    <!-- LOGIN OVERLAY -->
+    <div id="login-modal" class="fixed inset-0 bg-dark/95 z-[500] flex flex-col items-center justify-center p-8 text-center backdrop-blur-xl">
+        <div class="w-24 h-24 bg-gold/10 text-gold rounded-[2.5rem] flex items-center justify-center text-4xl mb-6 shadow-2xl border border-gold/20 animate-bounce-in"><i class="fas fa-fire-alt"></i></div>
+        <h2 class="text-3xl font-display font-bold text-white mb-2 uppercase tracking-tighter">Acceso de Cocina</h2>
+        <p class="text-white/40 text-sm mb-8">Ingresa tu PIN de empleado</p>
+        <input type="password" id="login-pin" maxlength="4" inputmode="numeric" onkeyup="if(event.key==='Enter') handleLogin()" class="w-full max-w-xs bg-transparent border-b-4 border-white/10 text-center text-6xl font-black text-gold outline-none tracking-[0.5em] py-4 mb-8" placeholder="****">
+        <button onclick="handleLogin()" id="login-btn" class="w-full max-w-xs bg-gold text-dark py-5 rounded-[2rem] font-black text-xl shadow-xl active:scale-95 transition-all">INGRESAR</button>
+    </div>
 
-    <!-- LIVE ORDERS LIST -->
-    <main class="flex-1 p-4 space-y-4 pb-20" id="kds-container">
-        <div class="py-20 text-center space-y-4 opacity-20">
-            <i class="fas fa-circle-notch fa-spin text-3xl"></i>
-            <p class="text-[10px] font-black uppercase tracking-widest">Esperando Órdenes...</p>
+    <div id="main-content" class="locked flex-1 flex flex-col">
+        <!-- Production Summary Bar -->
+        <div class="bg-gold text-dark px-6 py-3 flex gap-6 overflow-x-auto hide-scrollbar border-b border-gold/20 z-50 sticky top-0 shadow-lg">
+            <p class="text-[10px] font-black uppercase tracking-widest shrink-0 flex items-center gap-2"><i class="fas fa-layer-group"></i> Total Pendiente:</p>
+            <div id="prod-summary" class="flex gap-4 text-[11px] font-black whitespace-nowrap"></div>
         </div>
-    </main>
+
+        <header class="bg-dark/95 backdrop-blur-md p-4 flex justify-between items-center border-b border-white/5 shadow-2xl shrink-0">
+            <div class="flex items-center gap-3">
+                <button onclick="window.location.href='/os'" class="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center text-white/40 hover:bg-white/10 transition-all"><i class="fas fa-home"></i></button>
+                <div>
+                    <h1 class="text-sm font-black tracking-widest uppercase text-white/90">Kitchen Mobile</h1>
+                    <p id="sync-status" class="text-[8px] text-white/30 font-bold uppercase tracking-widest">Sincronizando...</p>
+                </div>
+            </div>
+            
+            <div class="flex items-center gap-2">
+                <div class="flex bg-white/5 rounded-full p-1 border border-white/10">
+                    <button onclick="setMode('drinks')" id="btn-drinks" class="px-5 py-2 rounded-full text-[10px] font-black uppercase transition-all bg-gold text-dark">Barista</button>
+                    <button onclick="setMode('food')" id="btn-food" class="px-5 py-2 rounded-full text-[10px] font-black uppercase transition-all text-white/40">Cocina</button>
+                </div>
+                <button onclick="logout()" class="text-white/20 text-lg p-2 ml-1"><i class="fas fa-sign-out-alt"></i></button>
+            </div>
+        </header>
+
+        <main class="flex-1 p-4 space-y-6 pb-32 overflow-y-auto" id="kds-container"></main>
+    </div>
 
     <script>
         let orders = [];
-        let currentMode = 'drinks'; 
+        let currentMode = 'drinks';
+        let currentEmployee = null;
 
         window.onload = () => {
-            fetchOrders();
-            setInterval(fetchOrders, 5000);
+            const savedPin = localStorage.getItem('ra_staff_pin');
+            if (savedPin) { document.getElementById('login-pin').value = savedPin; handleLogin(); }
+            else { document.getElementById('login-pin').focus(); }
         };
+
+        async function handleLogin() {
+            const pin = document.getElementById('login-pin').value;
+            if (pin.length !== 4) return;
+            try {
+                const res = await fetch('/api/cash/verify-pin', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ pin }) });
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.error);
+                currentEmployee = data.employee;
+                document.getElementById('login-modal').classList.add('hidden');
+                document.getElementById('main-content').classList.remove('locked');
+                startSync();
+            } catch (e) { alert(e.message); document.getElementById('login-pin').value = ''; }
+        }
+
+        function startSync() {
+            fetchOrders();
+            setInterval(fetchOrders, 4000);
+        }
 
         async function fetchOrders() {
             try {
-                const res = await fetch('/api/orders');
+                const res = await fetch('/api/orders?v=' + Date.now());
                 const data = await res.json();
                 orders = data.orders || [];
                 renderKDS();
-                document.getElementById('sync-status').innerText = 'Sync: ' + new Date().toLocaleTimeString();
-            } catch (e) {
-                console.error("KDS Fetch Error:", e);
-                document.getElementById('sync-status').innerText = 'Error Sync';
-            }
+                renderProductionSummary();
+                document.getElementById('sync-status').innerText = 'Synced ' + new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit', second:'2-digit'});
+            } catch (e) { console.error(e); }
         }
 
         function setMode(mode) {
             currentMode = mode;
-            const btnDrinks = document.getElementById('btn-drinks');
-            const btnFood = document.getElementById('btn-food');
-            if (mode === 'drinks') {
-                btnDrinks.className = "px-4 py-1.5 rounded-full text-[9px] font-black uppercase transition-all bg-gold text-dark";
-                btnFood.className = "px-4 py-1.5 rounded-full text-[9px] font-black uppercase transition-all text-white/40";
-            } else {
-                btnDrinks.className = "px-4 py-1.5 rounded-full text-[9px] font-black uppercase transition-all text-white/40";
-                btnFood.className = "px-4 py-1.5 rounded-full text-[9px] font-black uppercase transition-all bg-gold text-dark";
-            }
+            document.getElementById('btn-drinks').className = mode === 'drinks' ? "px-5 py-2 rounded-full text-[10px] font-black uppercase bg-gold text-dark" : "px-5 py-2 rounded-full text-[10px] font-black uppercase text-white/40";
+            document.getElementById('btn-food').className = mode === 'food' ? "px-5 py-2 rounded-full text-[10px] font-black uppercase bg-gold text-dark" : "px-5 py-2 rounded-full text-[10px] font-black uppercase text-white/40";
             renderKDS();
         }
 
-        function isDrink(item) {
-            if (!item) return false;
-            const name = (item.name || '').toLowerCase();
-            const id = (item.id || '').toLowerCase();
-            if (id === 'vip_membership' || name.includes('membresía')) return false;
-            return id.startsWith('hot_') || id.startsWith('cold_') || id.startsWith('frappe_') || 
-                   name.includes('latte') || name.includes('brew') || name.includes('capp') || 
-                   name.includes('tea') || name.includes('te ') || name.includes('icee') || 
-                   name.includes('espresso') || name.includes('mocha') || name.includes('matcha') || 
-                   name.includes('frappe') || name.includes('macchiato') || name.includes('jugo') || 
-                   name.includes('licuado') || name.includes('granita') || name.includes('smoothie') || 
-                   name.includes('caliente') || name.includes('helada') || name.includes('americano') ||
-                   name.includes('chocolate') || name.includes('cafe') || name.includes('café') ||
-                   name.includes('combo');
+        function isDrinkItem(i) {
+            const name = (i.name || '').toLowerCase();
+            const id = (i.id || '').toLowerCase();
+            if (name.includes('dubai')) return false;
+            return id.startsWith('hot_') || id.startsWith('cold_') || id.startsWith('frappe_') || name.includes('latte') || name.includes('brew') || name.includes('capp') || name.includes('frappe') || name.includes('smoothie') || name.includes('tea') || name.includes('combo');
         }
 
-        function isFood(item) {
-            if (!item) return false;
-            const name = (item.name || '').toLowerCase();
-            const id = (item.id || '').toLowerCase();
-            if (id === 'vip_membership' || name.includes('membresía')) return false;
-            return id.startsWith('food_') || name.includes('baleada') || name.includes('sandwich') || 
-                   name.includes('crepa') || name.includes('bowl') || name.includes('toast') || 
-                   name.includes('melt') || name.includes('fries') || name.includes('papas') || 
-                   name.includes('burger') || name.includes('hamburguesa') || name.includes('combo');
+        function isFoodItem(i) {
+            const name = (i.name || '').toLowerCase();
+            const id = (i.id || '').toLowerCase();
+            return id.startsWith('food_') || name.includes('baleada') || name.includes('crepa') || name.includes('sandwich') || name.includes('toast') || name.includes('combo');
         }
 
-        function getDisplayName(order) {
-            if (order.customers?.name) return order.customers.name;
-            if (order.notes) {
-                const clientMatch = order.notes.match(/\[CLIENTE:\s*([^\]]+)\]/);
-                if (clientMatch) return clientMatch[1].trim();
-                const guestMatch = order.notes.match(/\[GUEST:\s*([^|\]]+)/);
-                if (guestMatch) return guestMatch[1].trim();
-            }
-            return 'Invitado';
+        function renderProductionSummary() {
+            const summary = {};
+            orders.filter(o => ['pending', 'paid', 'preparing', 'drinks_ready', 'food_ready'].includes(o.status)).forEach(o => {
+                (o.items || []).forEach(i => {
+                    if (i.status === 'ready') return;
+                    if (currentMode === 'drinks' && !isDrinkItem(i)) return;
+                    if (currentMode === 'food' && !isFoodItem(i)) return;
+                    summary[i.name] = (summary[i.name] || 0) + (i.qty || 1);
+                });
+            });
+            document.getElementById('prod-summary').innerHTML = Object.entries(summary).map(([name, qty]) => `
+                <div class="flex items-center gap-1">
+                    <span class="bg-dark/20 px-1.5 py-0.5 rounded">${qty}</span>
+                    <span class="uppercase">${name}</span>
+                </div>
+            `).join('<span class="opacity-10">/</span>');
         }
 
         function renderKDS() {
             const container = document.getElementById('kds-container');
             
             const activeOrders = orders.filter(o => {
-                if (['completed', 'cancelled', 'ready'].includes(o.status)) return false;
-                
-                // Approve logic: Hide pending cash/transfer orders until approved/paid
-                if (o.status === 'pending' && (o.payment_method === 'cash' || o.payment_method === 'transfer')) return false;
-
-                if (currentMode === 'drinks' && o.status === 'drinks_ready') return false;
-                if (currentMode === 'food' && o.status === 'food_ready') return false;
-
-                const items = o.items || [];
-                return items.some(i => currentMode === 'drinks' ? isDrink(i) : isFood(i));
-            });
-
+                if (['completed', 'cancelled'].includes(o.status)) return false;
+                if (o.status === 'ready') {
+                    const readyTime = new Date(o.completed_at || o.created_at);
+                    return (new Date() - readyTime) < (5 * 60000);
+                }
+                return true;
+            }).sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
+            
             if (activeOrders.length === 0) {
-                container.innerHTML = '<div class="py-20 text-center opacity-20"><p class="text-[10px] font-black uppercase tracking-widest">Sin órdenes pendientes</p></div>';
+                container.innerHTML = '<div class="py-20 text-center text-white/10 uppercase font-black tracking-widest">Cero Pedidos Activos</div>';
                 return;
             }
 
             container.innerHTML = activeOrders.map(o => {
-                const items = (o.items || []).filter(i => currentMode === 'drinks' ? isDrink(i) : isFood(i));
-                const isPrep = o.status === 'preparing';
-                const orderNum = o.order_number ? o.order_number.toString().padStart(2, '0') : '---';
-                const custName = getDisplayName(o);
-                const status = o.status || 'pending';
-                
-                let typeText = '🍽️ AQUÍ';
-                if (o.notes && o.notes.includes('[TYPE: pickup]')) typeText = '🛍️ LLEVAR';
-                if (o.notes && o.notes.includes('[TYPE: delivery]')) typeText = '🚗 DELIVERY';
+                const items = (o.items || []).filter(i => {
+                    const matchesMode = currentMode === 'drinks' ? isDrinkItem(i) : isFoodItem(i);
+                    if (!matchesMode) return false;
+                    // If it's an old item and not an addon, it's already done
+                    if (i.is_old && !i.is_addon) return false;
+                    return true;
+                });
+                if (items.length === 0) return '';
+
+                const orderTime = new Date(o.created_at);
+                const elapsed = Math.floor((new Date() - orderTime) / 60000);
+                const isUrgent = elapsed > 10;
+                const isScheduled = o.notes && o.notes.includes('[SCHEDULED:');
+                const groupMatch = o.notes ? o.notes.match(/\[GROUP:\s*([^\]]+)\]/) : null;
+                const groupCode = groupMatch ? groupMatch[1] : null;
 
                 return `
-                    <div class="bg-white/5 border border-white/10 rounded-[2rem] p-6 space-y-4 shadow-xl order-card ${isPrep ? 'border-orange-500/30 bg-orange-500/5' : ''}">
-                        <div class="flex justify-between items-start gap-4">
-                            <div class="flex items-start gap-3 overflow-hidden">
-                                <span class="bg-gold text-dark px-3 py-2 rounded-xl font-black text-lg shadow-lg shadow-gold/20 shrink-0">#${orderNum}</span>
-                                <div class="overflow-hidden">
-                                    <h2 class="font-black text-sm uppercase truncate tracking-tight text-white/90">${custName}</h2>
-                                    <span class="bg-white/5 text-gold border border-white/5 px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-widest mt-1.5 inline-block">${typeText}</span>
+                <div class="bg-charcoal border ${isScheduled ? 'border-blue-500/40' : 'border-white/5'} rounded-[2.5rem] p-6 space-y-5 shadow-2xl order-card ${o.status === 'ready' ? 'opacity-50 grayscale' : ''}">
+                    <div class="flex justify-between items-start">
+                        <div class="flex items-center gap-3">
+                            <span class="${groupCode ? 'bg-orange-500' : 'bg-gold'} text-dark w-12 h-12 rounded-2xl flex items-center justify-center font-black text-xl shadow-lg shadow-gold/20">#${o.order_number || '---'}</span>
+                            <div>
+                                <h2 class="font-black text-base uppercase leading-none">${o.customers?.name || 'Invitado'}</h2>
+                                <div class="flex gap-2 mt-1">
+                                    <p class="text-[9px] font-bold text-white/30 uppercase tracking-widest">${o.fulfillment_type || 'Aquí'}</p>
+                                    ${groupCode ? `<span class="text-[9px] font-black text-orange-500 uppercase tracking-widest">[GRUPO: ${groupCode}]</span>` : ''}
                                 </div>
                             </div>
-                            <div class="text-right shrink-0">
-                                <p class="text-[10px] font-black text-white/30">${new Date(o.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</p>
-                                <span class="status-badge ${isPrep ? 'text-orange-500' : 'text-blue-500'} animate-pulse uppercase">${status}</span>
-                            </div>
                         </div>
-
-                        <div class="space-y-3 py-2">
-                            ${items.map(i => `
-                                <div class="flex gap-3">
-                                    <span class="font-black text-gold text-sm">${i.qty || i.quantity || 1}x</span>
-                                    <div>
-                                        <p class="font-bold text-sm uppercase leading-tight">${i.name}</p>
-                                        <p class="text-[10px] text-white/40 mt-1 font-medium">${(i.mods || []).map(m => m.name).join(', ')}</p>
-                                    </div>
-                                </div>
-                            `).join('')}
-                        </div>
-
-                        <div class="pt-2">
-                            ${!isPrep ? 
-                                `<button onclick="updateStatus('${o.id}', 'preparing')" class="w-full bg-blue-600 text-white py-4 rounded-2xl font-black text-xs uppercase tracking-widest shadow-lg shadow-blue-900/20 active:scale-95 transition-all">Empezar</button>` :
-                                `<button onclick="completeOrder('${o.id}')" class="w-full bg-success text-dark py-4 rounded-2xl font-black text-xs uppercase tracking-widest shadow-lg shadow-green-900/20 active:scale-95 transition-all">Listo</button>`
-                            }
+                        <div class="text-right">
+                            ${isScheduled ? `<p class="text-[10px] font-black text-blue-400 uppercase tracking-widest animate-pulse"><i class="fas fa-clock"></i> ${o.notes.match(/\[SCHEDULED:\s*([^\]]+)\]/)[1]}</p>` : `<p class="text-[10px] font-black uppercase tracking-widest ${isUrgent ? 'timer-urgent' : 'text-success'}">${elapsed} min</p>`}
+                            <p class="text-[8px] font-bold text-white/20 uppercase mt-0.5">${o.status}</p>
                         </div>
                     </div>
-                `;
+
+                    <div class="space-y-2">
+                        ${o.items.map((i, idx) => {
+                            const relevant = currentMode === 'drinks' ? isDrinkItem(i) : isFoodItem(i);
+                            if (!relevant) return '';
+                            
+                            // Optimization: Hide already prepared items in kitchen view to focus on new work
+                            if (i.is_old && !i.is_addon) return '';
+
+                            const isReady = i.status === 'ready';
+                            const isPreparing = i.status === 'preparing';
+                            const stateClass = isReady ? 'state-ready' : (isPreparing ? 'state-preparing' : 'state-pending');
+
+                            return `
+                            <div onclick="cycleItemState('${o.id}', ${idx}, '${i.status || ''}')" class="p-4 rounded-2xl bg-white/5 border border-white/5 flex items-center justify-between gap-4 active:scale-95 transition-all cursor-pointer ${stateClass}">
+                                <div class="flex-1">
+                                    <p class="font-black text-sm uppercase ${isReady ? 'item-ready-text' : 'text-white/90'}">${i.qty}x ${i.name}</p>
+                                    ${i.mods?.length ? `<p class="text-[9px] font-bold text-white/30 uppercase mt-0.5">${i.mods.map(m=>m.name).join(', ')}</p>` : ''}
+                                    ${i.note ? `<p class="text-[10px] font-black text-blue-400 uppercase mt-1 italic"><i class="fas fa-comment-dots mr-1"></i> ${i.note}</p>` : ''}
+                                </div>
+                                <div class="w-8 h-8 rounded-full flex items-center justify-center border-2 ${isReady ? 'bg-success border-success text-dark' : (isPreparing ? 'border-gold text-gold' : 'border-white/10 text-white/10')}">
+                                    <i class="fas ${isReady ? 'fa-check' : (isPreparing ? 'fa-fire-alt' : 'fa-clock')}"></i>
+                                </div>
+                            </div>`;
+                        }).join('')}
+                    </div>
+
+                    ${o.notes && o.notes.includes('[DIRECCIÓN:') ? `
+                        <div class="p-4 rounded-2xl bg-blue-500/10 border border-blue-500/20 text-blue-400">
+                            <p class="text-[8px] font-black uppercase tracking-widest mb-1 opacity-60">Dirección de Entrega</p>
+                            <p class="text-xs font-bold leading-snug">${o.notes.match(/\[DIRECCIÓN:\s*([^\]]+)\]/)?.[1] || 'Ver POS'}</p>
+                        </div>
+                    ` : ''}
+
+                    <div class="flex gap-2">
+                        <button onclick="updateOrderStatus('${o.id}', 'ready')" class="flex-1 py-4 bg-success text-dark font-black rounded-2xl text-xs uppercase tracking-widest shadow-lg active:scale-95 transition-all">LISTO PARA ENTREGA</button>
+                    </div>
+                </div>`;
             }).join('');
         }
 
-        async function completeOrder(id) {
-            const order = orders.find(o => o.id === id);
-            if (!order) return;
-
-            let hasDrinks = (order.items || []).some(i => isDrink(i));
-            let hasFood = (order.items || []).some(i => isFood(i));
-
-            let newStatus = 'ready'; // Default
-
-            if (hasDrinks && hasFood) {
-                if (currentMode === 'drinks') {
-                    newStatus = (order.status === 'food_ready') ? 'ready' : 'drinks_ready';
-                } else if (currentMode === 'food') {
-                    newStatus = (order.status === 'drinks_ready') ? 'ready' : 'food_ready';
-                }
-            }
-
-            await updateStatus(id, newStatus);
+        async function cycleItemState(orderId, itemIdx, currentStatus) {
+            let nextStatus = 'preparing';
+            if (currentStatus === 'preparing') nextStatus = 'ready';
+            if (currentStatus === 'ready') nextStatus = null;
+            await fetch('/api/store?action=toggle_item_ready', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ orderId, itemIdx, status: nextStatus }) });
+            fetchOrders();
         }
 
-        async function updateStatus(id, status) {
-            try {
-                const res = await fetch('/api/orders/' + id, {
-                    method: 'PATCH',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ status })
-                });
-                if (res.ok) {
-                    await fetchOrders();
-                } else {
-                    const err = await res.json();
-                    alert("Error: " + (err.error || "No se pudo actualizar"));
-                }
-            } catch (e) { 
-                console.error("KDS Update Error:", e);
-                alert("Error de conexión al actualizar");
-            }
+        async function updateOrderStatus(id, status) {
+            await fetch('/api/orders/' + id, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ status }) });
+            fetchOrders();
         }
+
+        function logout() { localStorage.removeItem('ra_staff_pin'); location.reload(); }
     </script>
 </body>
 </html>

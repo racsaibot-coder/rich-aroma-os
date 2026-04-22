@@ -1318,7 +1318,8 @@
             qty: currentQuantity, 
             mods, 
             note,
-            finalPrice: parseFloat(document.getElementById('mod-final-price').innerText.replace('L. ', '')) / currentQuantity 
+            finalPrice: parseFloat(document.getElementById('mod-final-price').innerText.replace('L. ', '')) / currentQuantity,
+            is_addon: currentOrderId ? true : false // Flag as new item for existing order
         };
         cart.push(item);
         saveCartState();
@@ -1801,8 +1802,9 @@
         cart = (order.items || []).map(i => ({
             ...i,
             qty: i.qty || i.quantity || 1,
-            finalPrice: i.finalPrice || i.price, // Use the actual calculated price from the order
-            mods: i.mods || []
+            finalPrice: i.finalPrice || i.price, 
+            mods: i.mods || [],
+            is_old: true // Mark as previously sent to kitchen
         }));
         
         currentOrderId = order.id;
