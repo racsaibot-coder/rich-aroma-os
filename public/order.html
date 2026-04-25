@@ -814,14 +814,18 @@
                 const phone = document.getElementById('login-phone').value.replace(/\D/g, '');
                 const pin = document.getElementById('login-pin').value;
                 if (phone.length < 8 || pin.length < 4) return alert("Ingresa datos válidos");
-                
+
                 const btn = document.getElementById('auth-btn'); btn.innerText = "ENTRANDO..."; btn.disabled = true;
                 try {
                     const r = await fetch('/api/customer/login', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ phone, pin }) });
                     const d = await r.json();
                     if (!r.ok) throw new Error(d.error || "Error de login");
-                    localStorage.setItem('ra_customer_phone', d.customer.phone);
-                    localStorage.setItem('ra_customer_data', JSON.stringify(d.customer));
+
+                    const user = d.user || d.customer;
+                    if (!user) throw new Error("Datos de usuario no encontrados");
+
+                    localStorage.setItem('ra_customer_phone', user.phone);
+                    localStorage.setItem('ra_customer_data', JSON.stringify(user));
                     window.closeLogin(); syncUser();
                 } catch(e) { alert(e.message); } finally { btn.innerText = "Entrar a mi Cuenta"; btn.disabled = false; }
             };
@@ -837,12 +841,15 @@
                     const r = await fetch('/api/auth/register', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ name, phone, pin }) });
                     const d = await r.json();
                     if (!r.ok) throw new Error(d.error || "Error al crear cuenta");
-                    localStorage.setItem('ra_customer_phone', d.customer.phone);
-                    localStorage.setItem('ra_customer_data', JSON.stringify(d.customer));
+
+                    const user = d.user || d.customer;
+                    if (!user) throw new Error("Datos de usuario no encontrados");
+
+                    localStorage.setItem('ra_customer_phone', user.phone);
+                    localStorage.setItem('ra_customer_data', JSON.stringify(user));
                     window.closeLogin(); syncUser();
                 } catch(e) { alert(e.message); } finally { btn.innerText = "Crear mi Cuenta"; btn.disabled = false; }
             };
-
             window.openProfile = () => {
                 if (!currentCustomer) return window.openLogin();
                 
