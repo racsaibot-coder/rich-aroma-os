@@ -639,8 +639,11 @@ module.exports = async function handler(req, res) {
             
             const orderNum = (maxOrder?.[0]?.order_number || 0) + 1;
 
-            // Inject fulfillment type and schedule into notes since columns might be missing
+            // Inject guest info, fulfillment type and schedule into notes since columns might be missing
             let finalNotes = notes || '';
+            if (!customerId && req.body.customer_name) {
+                finalNotes = `[GUEST: ${req.body.customer_name}] [PHONE: ${req.body.customer_phone || 'N/A'}] ` + finalNotes;
+            }
             if (fulfillmentType) finalNotes += ` [TYPE: ${fulfillmentType}]`;
             if (scheduledFor) finalNotes += ` [SCHEDULED: ${scheduledFor}]`;
             if (secondaryPaymentMethod) finalNotes += ` [SPLIT: ${paymentMethod} & ${secondaryPaymentMethod}]`;

@@ -1086,7 +1086,7 @@ app.post('/api/orders', async (req, res) => {
             payment_method: paymentMethod,
             customer_id: req.body.customerId,
             discount_code: req.body.discountCode,
-            notes: req.body.notes
+            notes: (req.body.customerId ? '' : `[GUEST: ${req.body.customer_name || 'N/A'}] [PHONE: ${req.body.customer_phone || 'N/A'}] `) + (req.body.notes || '')
         };
 
         // 4. Handle Rico Balance Deduction
