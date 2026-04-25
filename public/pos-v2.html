@@ -2421,7 +2421,7 @@
         });
         const data = await res.json();
         pendingVerifications = data.orders.filter(o => {
-            if (o.status === 'pending_verification') return true;
+            if (o.status === 'pending_verification' || o.status === 'pending_transfer') return true;
             // Include membership transfer requests
             if (o.payment_method === 'transfer' && o.status === 'pending') return true;
             if (o.payment_method === 'cash' && o.notes?.includes('Mobile Order')) {
@@ -2429,7 +2429,7 @@
             }
             return false;
         });
-        
+
         const btn = document.getElementById('verifyPaymentAlert');
         btn.classList.toggle('hidden', pendingVerifications.length === 0);
         document.getElementById('verifyCount').innerText = pendingVerifications.length;
@@ -2445,25 +2445,47 @@
     function renderVerifyModal() {
         const container = document.getElementById('verifyContent');
         if (pendingVerifications.length === 0) return closeVerifyModal();
-        
+
         const o = pendingVerifications[0];
         const isCash = o.payment_method === 'cash';
-        const isMembership = o.items && o.items.some(i => i.id === 'vip_membership');
-        
+        const isMembership = (o.items && o.items.some(i => i.id === 'vip_membership')) || o.notes?.includes('[VIP_PURCHASE]');
+
+        // Extract receipt URL from notes if present
+        const receiptMatch = o.notes ? o.notes.match(/\[COMPROBANTE:\s*([^\]]+)\]/) : null;
+        const receiptUrl = receiptMatch ? receiptMatch[1].trim() : null;
+
         container.innerHTML = `
-            <div class="text-center">
+            <div class="text-center space-y-4">
                 <h4 class="text-2xl font-bold">${isCash ? 'Cobro en Efectivo' : (isMembership ? '👑 Membresía VIP' : 'Verificar Pago')}</h4>
-                <p class="text-4xl font-black my-4">L. ${o.total}</p>
-                ${isCash ? '' : `<div class="bg-gray-100 p-4 rounded mb-4 italic text-sm">Verifica la transferencia en tu banca móvil...</div>`}
-                <div class="flex gap-4">
-                    <button onclick="approveTransfer('${o.id}')" class="flex-1 bg-green-600 text-white font-bold py-4 rounded-xl shadow-lg hover:bg-green-700 transition-all">Aprobar</button>
-                    <button onclick="rejectOrder('${o.id}', '${o.order_number}', '${o.customers?.phone || ''}', '${o.customers?.name || ''}')" class="flex-1 bg-red-100 text-red-600 font-bold py-4 rounded-xl border border-red-200 hover:bg-red-200 transition-all">Rechazar</button>
+                <div class="bg-gray-50 p-4 rounded-2xl">
+                    <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest">Monto a Cobrar</p>
+                    <p class="text-4xl font-black text-blue-600">L. ${o.total}</p>
+                    <p class="text-[10px] text-gray-500 font-bold mt-1">${o.customers?.name || 'Cliente'} (${o.customers?.phone || 'Guest'})</p>
                 </div>
-                <button onclick="closeVerifyModal()" class="w-full mt-4 text-gray-400 font-bold py-2">Cerrar</button>
+
+                ${receiptUrl ? `
+                    <div class="space-y-2">
+                        <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest text-left">Comprobante de Transferencia:</p>
+                        <a href="${receiptUrl}" target="_blank" class="block rounded-xl overflow-hidden border-2 border-blue-100 hover:border-blue-400 transition-colors">
+                            <img src="${receiptUrl}" class="w-full h-48 object-cover">
+                            <div class="bg-blue-50 py-2 text-[9px] font-black text-blue-600 uppercase">Click para ampliar <i class="fas fa-external-link-alt ml-1"></i></div>
+                        </a>
+                    </div>
+                ` : (isCash ? '' : `<div class="bg-amber-50 text-amber-700 p-4 rounded-xl italic text-sm border border-amber-100">Verifica la transferencia en tu banca móvil...</div>`)}
+
+                <div class="flex gap-4 pt-4">
+                    <button onclick="approveTransfer('${o.id}')" class="flex-1 bg-green-600 text-white font-bold py-4 rounded-xl shadow-lg hover:bg-green-700 transition-all flex flex-col items-center justify-center">
+                        <span>APROBAR</span>
+                        <span class="text-[8px] opacity-60">Acreditar saldo/VIP</span>
+                    </button>
+                    <button onclick="rejectOrder('${o.id}', '${o.order_number}', '${o.customers?.phone || ''}', '${o.customers?.name || ''}')" class="flex-1 bg-red-100 text-red-600 font-bold py-4 rounded-xl border border-red-200 hover:bg-red-200 transition-all">
+                        RECHAZAR
+                    </button>
+                </div>
+                <button onclick="closeVerifyModal()" class="w-full text-gray-400 font-bold py-2 text-xs uppercase tracking-widest">Cerrar</button>
             </div>
         `;
     }
-
     async function approveTransfer(id) {
         try {
             const res = await fetch(`/api/orders/${id}`, {
