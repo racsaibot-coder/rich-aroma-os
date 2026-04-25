@@ -142,7 +142,8 @@ async function syncStoreStatus() {
 }
 syncStoreStatus();
 
-app.get('/api/store/status', (req, res) => {
+app.get('/api/store/status', async (req, res) => {
+    await syncStoreStatus();
     res.json({ isOpen: storeIsOpen, manualOverride: storeManualOverride });
 });
 
