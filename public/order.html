@@ -71,10 +71,13 @@
         <div class="w-24 h-24 bg-red-500/10 text-red-500 rounded-full flex items-center justify-center text-4xl mb-6 shadow-2xl border border-red-500/20 animate-pulse"><i class="fas fa-clock"></i></div>
         <h2 class="text-3xl font-display font-bold text-white mb-2 uppercase tracking-tighter">Cerrado</h2>
         <p class="text-white/40 text-sm max-w-xs leading-relaxed mb-8">Estamos preparando el mejor café para ti. Volveremos pronto dentro de nuestro horario habitual.</p>
-        <div class="glass p-6 rounded-[2rem] w-full max-w-xs space-y-2">
-            <p class="text-[10px] font-black text-gold uppercase tracking-widest">Horario Normal</p>
-            <p class="text-xs text-white/60 font-bold">Lun - Sáb: 7am - 7pm</p>
-            <p class="text-xs text-white/60 font-bold">Dom: 8am - 6pm</p>
+        <div class="glass p-6 rounded-[2rem] w-full max-w-xs space-y-4">
+            <div class="space-y-2">
+                <p class="text-[10px] font-black text-gold uppercase tracking-widest">Horario Normal</p>
+                <p class="text-xs text-white/60 font-bold">Lun - Sáb: 7am - 7pm</p>
+                <p class="text-xs text-white/60 font-bold">Dom: 8am - 6pm</p>
+            </div>
+            <button onclick="document.getElementById('closed-overlay').classList.add('hidden')" class="w-full py-4 bg-white/5 border border-white/10 rounded-2xl text-[10px] font-black text-white uppercase tracking-widest active:scale-95 transition-all">Ver el Menú</button>
         </div>
     </div>
 
@@ -85,7 +88,7 @@
             <div>
                 <div class="flex items-center gap-2">
                     <h1 class="font-display text-lg text-gold font-bold tracking-tight uppercase leading-none">Rich Aroma</h1>
-                    <span class="text-[7px] bg-gold/10 text-gold/40 px-1.5 py-0.5 rounded-full border border-gold/10">v2.6.0</span>
+                    <span class="text-[7px] bg-gold/10 text-gold/40 px-1.5 py-0.5 rounded-full border border-gold/10">v2.6.1</span>
                 </div>
                 <div class="flex items-center gap-2 mt-1">
                     <p id="store-status-text" class="text-[9px] text-white/30 tracking-[0.2em] uppercase">Cargando...</p>
@@ -254,6 +257,12 @@
 
     <!-- MENU FEED -->
     <main id="menu-feed" class="px-6 space-y-12 pb-[80vh] pt-6">
+        <!-- CLOSED BANNER (Persistent) -->
+        <div id="closed-banner" class="hidden bg-error/10 border border-error/20 rounded-[2.5rem] p-6 text-center shadow-xl mb-8">
+            <p class="text-[10px] font-black text-error uppercase tracking-[0.4em] mb-1">Tienda Cerrada</p>
+            <h4 class="text-lg font-display font-black text-white italic tracking-tight leading-tight">Actualmente no aceptamos pedidos online. ¡Te esperamos pronto!</h4>
+        </div>
+
         <!-- LOYALTY MOTIVATION CARD (High Impact) -->
         <div id="guest-welcome" class="bg-gradient-to-br from-[#1A1410] to-[#120C09] border border-gold/20 rounded-[3rem] p-8 relative overflow-hidden shadow-2xl animate-bounce-in">
             <div class="absolute -right-6 -top-6 opacity-5 text-[8rem] text-gold rotate-12"><i class="fas fa-crown"></i></div>
@@ -514,6 +523,7 @@
             var menu = []; var modG = []; var modO = []; var itemModG = []; var cart = [];
             var currentI = null; var currentM = {}; var fulfillment = 'pickup'; var deliveryFee = 0; var zoneName = "";
             var currentCustomer = null; var isSubmitting = false; var paymentMethod = 'cash';
+            var isStoreClosed = false;
 
             window.onload = async () => {
                 // Startup in parallel to speed up load time
@@ -562,12 +572,15 @@
                         const d = await r.json();
                         const statusTxt = document.getElementById('store-status-text');
                         // Compatibility with both isOpen and status properties
-                        const isClosed = d.status === 'closed' || d.isOpen === false;
-                        if (isClosed) {
+                        isStoreClosed = d.status === 'closed' || d.isOpen === false;
+                        if (isStoreClosed) {
                             document.getElementById('closed-overlay').classList.remove('hidden');
+                            document.getElementById('closed-banner').classList.remove('hidden');
+                        } else {
+                            document.getElementById('closed-banner').classList.add('hidden');
                         }
                         if (statusTxt) {
-                            const open = !isClosed;
+                            const open = !isStoreClosed;
                             statusTxt.innerText = open ? 'Abierto' : 'Cerrado';
                             statusTxt.className = open ? 'text-[9px] text-success tracking-[0.2em] uppercase mt-1' : 'text-[9px] text-error tracking-[0.2em] uppercase mt-1';
                         }
@@ -725,6 +738,10 @@
             };
 
             window.add = () => {
+                if (isStoreClosed) {
+                    alert("Lo sentimos, la tienda está cerrada y no puede recibir pedidos en este momento.");
+                    return;
+                }
                 try {
                     let q = parseInt(document.getElementById('mod-qty').innerText);
                     let ms = [];
