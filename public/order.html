@@ -1073,17 +1073,34 @@
                             title.innerText = "¡ORDEN LISTA! ☕";
                             title.classList.add('text-gold');
                             msg.innerText = "Tu pedido está listo para ser retirado en barra. ¡Que lo disfrutes!";
-                            msg.className = "text-gold font-bold text-sm mb-12 max-w-xs leading-relaxed animate-pulse";
+                            msg.className = "text-gold font-black text-sm mb-12 max-w-xs leading-relaxed animate-pulse";
                             icon.innerHTML = '<i class="fas fa-mug-hot"></i>';
                             icon.className = "w-20 h-20 bg-gold text-dark rounded-full flex items-center justify-center text-3xl mb-8 animate-bounce";
+                        } else if (d.status === 'preparing' || d.status === 'preparing_food' || d.status === 'preparing_drinks') {
+                            title.innerText = "PREPARANDO... 🔥";
+                            title.classList.remove('text-gold');
+                            msg.innerText = "Estamos preparando tu pedido con mucho amor. Casi listo...";
+                            icon.innerHTML = '<i class="fas fa-fire-alt"></i>';
+                            icon.className = "w-20 h-20 bg-orange-500/20 text-orange-500 rounded-full flex items-center justify-center text-3xl mb-8 animate-pulse";
+                        } else if (d.status === 'drinks_ready' || d.status === 'food_ready') {
+                            title.innerText = "¡AVANZANDO! ✨";
+                            msg.innerText = "Parte de tu pedido ya está listo. ¡Ya casi terminamos!";
+                            icon.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+                            icon.className = "w-20 h-20 bg-blue-500/20 text-blue-500 rounded-full flex items-center justify-center text-3xl mb-8";
                         } else if (d.status === 'completed') {
                             clearInterval(interval);
                             localStorage.removeItem('ra_active_order');
                             alert("¡Gracias por tu compra! Esperamos verte pronto.");
                             location.href = '/order';
+                        } else {
+                            // Default: Pending / Paid
+                            title.innerText = "¡ORDEN RECIBIDA! ✅";
+                            msg.innerText = "Tu pedido ha sido enviado. Prepárate para el mejor sabor.";
+                            icon.innerHTML = '<i class="fas fa-check"></i>';
+                            icon.className = "w-20 h-20 bg-success/20 text-success rounded-full flex items-center justify-center text-3xl mb-8 animate-bounce-in";
                         }
                     } catch (e) { console.error("Polling error", e); }
-                }, 5000); // Poll every 5s for better responsiveness
+                }, 5000); 
             }
 
         })();
