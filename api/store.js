@@ -373,11 +373,17 @@ module.exports = async function handler(req, res) {
         }
 
         if (action === 'track_order' && req.method === 'GET') {
-            const { id } = req.query;
-            if (!id) return res.status(400).json({ error: "Order ID required" });
-            const { data, error } = await supabase.from('orders').select('status').eq('id', id).single();
-            if (error) return res.status(404).json({ error: "Order not found" });
-            return res.json({ status: data.status });
+            const { id, number } = req.query;
+            if (!id && !number) return res.status(400).json({ error: "Order identifier required" });
+
+            let query = supabase.from('orders').select('id, order_number, status, items, customer_name');
+
+            if (id) query = query.eq('id', id);
+            else query = query.eq('order_number', parseInt(number));
+
+            const { data, error } = await query.single();
+            if (error || !data) return res.status(404).json({ error: "Order not found" });
+            return res.json(data);
         }
 
         // CUSTOMER PROFILE LOOKUP
