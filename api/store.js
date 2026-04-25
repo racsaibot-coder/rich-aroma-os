@@ -331,9 +331,35 @@ module.exports = async function handler(req, res) {
     try {
         // STORE STATUS
         if (action === 'store_status' && req.method === 'GET') {
-            const { data, error } = await supabase.from('system_settings').select('value').eq('key', 'store_is_open').single();
-            if (error) return res.json({ isOpen: true });
-            return res.json({ isOpen: data?.value?.isOpen ?? true });
+            // 1. Check for Active Shifts (Real-time POS status)
+            const { data: shifts, error: shiftErr } = await supabase
+                .from('cash_shifts')
+                .select('id')
+                .eq('status', 'open')
+                .limit(1);
+            
+            const hasOpenShift = !shiftErr && shifts && shifts.length > 0;
+
+            // 2. Check for Manual Overrides in Settings
+            const { data: settings } = await supabase
+                .from('system_settings')
+                .select('value')
+                .eq('key', 'store_is_open')
+                .single();
+            
+            // Priority: Manual Override (if exists) > Shift Status
+            let isOpen = hasOpenShift;
+            if (settings && settings.value && typeof settings.value.isOpen !== 'undefined') {
+                // If there's an explicit setting, let it override or combine
+                // For now, let's say if shift is closed, store is closed, unless specifically forced open
+                isOpen = hasOpenShift || settings.value.isOpen;
+            }
+
+            return res.json({ 
+                isOpen: !!isOpen, 
+                hasActiveShift: hasOpenShift,
+                lastChecked: new Date().toISOString()
+            });
         }
 
         if (action === 'store_status' && req.method === 'PATCH') {

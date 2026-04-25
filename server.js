@@ -143,8 +143,24 @@ async function syncStoreStatus() {
 syncStoreStatus();
 
 app.get('/api/store/status', async (req, res) => {
-    await syncStoreStatus();
-    res.json({ isOpen: storeIsOpen, manualOverride: storeManualOverride });
+    // 1. Check for Active Shifts (Real-time POS status)
+    const { data: shifts, error: shiftErr } = await supabase
+        .from('cash_shifts')
+        .select('id')
+        .eq('status', 'open')
+        .limit(1);
+    
+    const hasOpenShift = !shiftErr && shifts && shifts.length > 0;
+
+    // 2. Check for Manual Overrides (Local variable or DB)
+    let isOpen = (storeManualOverride !== null) ? storeManualOverride : hasOpenShift;
+
+    res.json({ 
+        isOpen: !!isOpen, 
+        hasActiveShift: hasOpenShift,
+        manualOverride: storeManualOverride,
+        lastChecked: new Date().toISOString()
+    });
 });
 
 app.patch('/api/store/status', (req, res) => {
