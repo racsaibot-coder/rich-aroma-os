@@ -813,23 +813,49 @@
             window.submitLogin = async () => {
                 const phone = document.getElementById('login-phone').value.replace(/\D/g, '');
                 const pin = document.getElementById('login-pin').value;
-                if (phone.length < 8 || pin.length < 4) return alert("Ingresa datos válidos");
+                if (phone.length < 8) return alert("Ingresa un número válido");
 
-                const btn = document.getElementById('auth-btn'); btn.innerText = "ENTRANDO..."; btn.disabled = true;
+                const btn = document.getElementById('auth-btn'); 
+                const originalText = btn.innerText;
+                btn.innerText = "VERIFICANDO..."; btn.disabled = true;
+
                 try {
+                    // Step 1: Attempt Login
                     const r = await fetch('/api/customer/login', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ phone, pin }) });
                     const d = await r.json();
-                    if (!r.ok) throw new Error(d.error || "Error de login");
+
+                    if (!r.ok) {
+                        // SPECIAL CASE: If account exists but has no PIN (Ghost Account)
+                        if (d.code === 'NO_PIN_SET') {
+                            const newPin = prompt("¡Bienvenido! Tu cuenta fue creada en caja. Por seguridad, crea tu PIN de 4 dígitos ahora:");
+                            if (!newPin || newPin.length !== 4 || isNaN(newPin)) {
+                                alert("El PIN debe ser de 4 números.");
+                                return;
+                            }
+
+                            // Set the PIN via update
+                            const upR = await fetch('/api/auth/register', { 
+                                method:'POST', 
+                                headers:{'Content-Type':'application/json'}, 
+                                body:JSON.stringify({ phone, pin: newPin, action: 'set_ghost_pin' }) 
+                            });
+
+                            if (upR.ok) {
+                                alert("¡PIN creado con éxito! Ya puedes entrar.");
+                                document.getElementById('login-pin').value = newPin;
+                                window.submitLogin(); // Retry with the new PIN
+                                return;
+                            }
+                        }
+                        throw new Error(d.error || "Error de login");
+                    }
 
                     const user = d.user || d.customer;
-                    if (!user) throw new Error("Datos de usuario no encontrados");
-
                     localStorage.setItem('ra_customer_phone', user.phone);
                     localStorage.setItem('ra_customer_data', JSON.stringify(user));
                     window.closeLogin(); syncUser();
-                } catch(e) { alert(e.message); } finally { btn.innerText = "Entrar a mi Cuenta"; btn.disabled = false; }
+                } catch(e) { alert(e.message); } finally { btn.innerText = originalText; btn.disabled = false; }
             };
-
             window.submitRegister = async () => {
                 const name = document.getElementById('reg-name').value;
                 const phone = document.getElementById('reg-phone').value.replace(/\D/g, '');

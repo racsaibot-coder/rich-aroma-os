@@ -18,7 +18,18 @@ export default async function handler(req, res) {
             if (type === 'phone') {
                 const phone = identifier.replace(/\D/g, '');
                 const { data } = await supabase.from('customers').select('*').eq('phone', phone).single();
-                if (!data || data.pin !== secret) return res.status(401).json({ error: 'Invalid credentials' });
+                
+                if (!data) return res.status(404).json({ error: 'Customer not found' });
+                
+                // If they have no PIN set yet (Ghost Account)
+                if (!data.pin) {
+                    return res.status(403).json({ 
+                        error: 'Security PIN not set', 
+                        code: 'NO_PIN_SET' 
+                    });
+                }
+
+                if (data.pin !== secret) return res.status(401).json({ error: 'Invalid credentials' });
                 user = data;
             } else {
                 const email = identifier.toLowerCase();
@@ -30,8 +41,19 @@ export default async function handler(req, res) {
         }
 
         if (action === 'register') {
-            const { name, phone, email, secret, type } = req.body; 
+            const { name, phone, email, secret, type, action: subAction, pin } = req.body; 
             const cleanPhone = phone ? phone.replace(/\D/g, '') : null;
+
+            // SPECIAL CASE: Setting PIN for an existing staff-created account
+            if (subAction === 'set_ghost_pin') {
+                const { data, error } = await supabase.from('customers')
+                    .update({ pin: pin })
+                    .eq('phone', cleanPhone)
+                    .select().single();
+                if (error) throw error;
+                return res.json({ success: true, user: data });
+            }
+
             const cleanEmail = email ? email.toLowerCase() : null;
 
             if (cleanPhone) {
