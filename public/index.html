@@ -238,21 +238,31 @@
 
     <script>
         // Version 2.0.1 - Conversion Overhaul
+        function optimizeImg(url) {
+            if (!url) return "";
+            if (url.includes('supabase.co') && url.includes('/object/public/')) {
+                return url.replace('/object/public/', '/render/image/public/') + '?width=400&quality=75&format=webp';
+            }
+            return url;
+        }
+
         async function loadFavorites() {
             const container = document.getElementById('favorites-container');
             try {
                 const res = await fetch('/api/menu');
                 const data = await res.json();
                 if (data && data.items && data.items.length > 0) {
-                    let items = data.items.filter(i => i.image_url && i.image_url.startsWith('http') && i.available !== false);
+                    let items = data.items.filter(i => (i.image_url || i.image) && (i.image_url || i.image).startsWith('http') && i.available !== false);
                     if (items.length < 4) items = data.items.filter(i => i.available !== false);
                     
                     items.sort(() => Math.random() - 0.5);
                     const selection = items.slice(0, 4);
                     
-                    container.innerHTML = selection.map(item => `
+                    container.innerHTML = selection.map(item => {
+                        const img = optimizeImg(item.image_url || item.image);
+                        return `
                         <a href="/order?cat=Combos" class="flex gap-5 p-5 rounded-3xl bg-charcoal border border-white/5 hover:border-gold/30 transition-all group shadow-xl">
-                            ${item.image_url ? `<img src="${item.image_url}" class="w-24 h-24 rounded-2xl object-cover shrink-0 group-hover:scale-105 transition-transform">` : ''}
+                            ${img ? `<img src="${img}" class="w-24 h-24 rounded-2xl object-cover shrink-0 group-hover:scale-105 transition-transform" loading="lazy" decoding="async">` : ''}
                             <div class="flex-1 flex flex-col justify-center">
                                 <div class="flex justify-between items-start mb-1">
                                     <h3 class="font-bold text-white text-base">${item.name}</h3>
@@ -262,7 +272,8 @@
                                 <span class="text-[10px] text-gold font-bold flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">Pedir ahora <i class="fas fa-plus"></i></span>
                             </div>
                         </a>
-                    `).join('');
+                        `;
+                    }).join('');
                 }
             } catch(e) { console.error('Error loading favorites', e); }
         }

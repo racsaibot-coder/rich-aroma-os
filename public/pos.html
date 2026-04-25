@@ -562,7 +562,7 @@
                     category: i.category || 'Otros',
                     available: i.available !== false,
                     base_recipe: i.base_recipe || null,
-                    image: i.image_url || i.image || "https://images.unsplash.com/photo-1510591509098-f4fdc6d0ff04?w=400&q=80"
+                    image: i.image_url || i.image || null
                 }));
                 modGroups = data.modGroups || [];
                 modOptions = data.modOptions || [];
@@ -573,8 +573,8 @@
             console.error("❌ Menu fetch failed", e);
             // Fallback Menu
             menu = [
-                { id: 'hot_latte', name: 'Latte', price: 55, category: 'coffee', image: 'https://images.unsplash.com/photo-1570968992272-1512fdad694d?w=400&q=80', available: true },
-                { id: 'hot_americano', name: 'Americano', price: 40, category: 'coffee', image: 'https://images.unsplash.com/photo-1510591509098-f4fdc6d0ff04?w=400&q=80', available: true }
+                { id: 'hot_latte', name: 'Latte', price: 55, category: 'coffee', image: null, available: true },
+                { id: 'hot_americano', name: 'Americano', price: 40, category: 'coffee', image: null, available: true }
             ];
         }
     }
@@ -645,18 +645,20 @@
     async function fetchLiveOrders() {
         const statusEl = document.getElementById('hb-status');
         try {
-            const res = await fetch('/api/orders', {
+            const v = Date.now();
+            const res = await fetch(`/api/orders?v=${v}`, {
                 headers: { 'Authorization': 'Bearer EMP-admin' }
             });
             const data = await res.json();
             const allOrders = data.orders || [];
             
-            const todayStr = new Date().toDateString();
+            const now = new Date();
             liveOrders = allOrders.filter(o => {
                 if (!o.created_at) return false;
                 const orderDate = new Date(o.created_at);
-                return orderDate.toDateString() === todayStr && 
-                       ['pending', 'paid', 'preparing', 'ready', 'pending_verification'].includes(o.status);
+                const hoursOld = (now - orderDate) / (1000 * 60 * 60);
+                return hoursOld < 20 && 
+                       ['pending', 'paid', 'preparing', 'ready', 'drinks_ready', 'food_ready', 'pending_verification'].includes(o.status);
             }).sort((a,b) => new Date(b.created_at) - new Date(a.created_at));
 
             renderLiveFeed();
@@ -805,7 +807,9 @@
             
             html += '<div ' + clickAction + ' class="bg-white rounded-xl shadow flex flex-col h-48 overflow-hidden relative ' + (isDisabled ? 'opacity-50 grayscale' : 'cursor-pointer hover:shadow-md border border-gray-100 group') + '">';
             html += '    <div class="h-32 w-full overflow-hidden bg-gray-100">';
-            html += '        <img src="' + (item.image || '') + '" class="w-full h-full object-cover group-hover:scale-110 transition duration-500">';
+            if (item.image) {
+                html += '        <img src="' + item.image + '" class="w-full h-full object-cover group-hover:scale-110 transition duration-500">';
+            }
             html += '    </div>';
             html += '    <div class="p-3 flex justify-between items-center bg-white flex-1">';
             html += '        <div class="font-bold text-gray-800 leading-tight text-sm">' + item.name + '</div>';
@@ -1227,6 +1231,7 @@
             total,
             paymentMethod: currentTenderMethod,
             customerId: currentCustomerId,
+            shiftId: currentShiftId,
             fulfillmentType: fulfillmentType,
             status: 'pending',
             notes: document.getElementById('guest-name-input').value.trim() ? `[CLIENTE: ${document.getElementById('guest-name-input').value.trim()}]` : null
@@ -1316,6 +1321,7 @@
             total,
             paymentMethod: currentTenderMethod,
             customerId: currentCustomerId,
+            shiftId: currentShiftId,
             fulfillmentType: fulfillmentType,
             status: 'paid',
             notes: guestName ? `[CLIENTE: ${guestName}]${isSplitMode ? ' [SPLIT]' : ''}` : (isSplitMode ? '[SPLIT]' : null)

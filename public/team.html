@@ -163,12 +163,25 @@
                     </div>
                     <p class="font-bold text-sm">Planear Turnos</p>
                 </button>
-                <button onclick="openAdminModal('live')" class="bg-charcoal border border-white/5 p-6 rounded-3xl text-left space-y-3 active:scale-95 transition-all col-span-2">
+                <button onclick="openAdminModal('live')" class="bg-charcoal border border-white/5 p-6 rounded-3xl text-left space-y-3 active:scale-95 transition-all">
                     <div class="w-10 h-10 rounded-2xl bg-blue-500/10 flex items-center justify-center text-blue-400">
                         <i class="fas fa-users"></i>
                     </div>
                     <p class="font-bold text-sm">Personal en Turno (Live)</p>
                 </button>
+                <button onclick="openAdminModal('punches')" class="bg-charcoal border border-white/5 p-6 rounded-3xl text-left space-y-3 active:scale-95 transition-all">
+                    <div class="w-10 h-10 rounded-2xl bg-orange-500/10 flex items-center justify-center text-orange-400">
+                        <i class="fas fa-fingerprint"></i>
+                    </div>
+                    <p class="font-bold text-sm">Corregir Marcajes</p>
+                </button>
+                <button onclick="openTimeOffModal()" class="bg-charcoal border border-white/5 p-6 rounded-3xl text-left space-y-3 active:scale-95 transition-all">
+                    <div class="w-10 h-10 rounded-2xl bg-red-500/10 flex items-center justify-center text-red-400">
+                        <i class="fas fa-notes-medical"></i>
+                    </div>
+                    <p class="font-bold text-sm">Reportar Falta / Enfermo</p>
+                </button>
+
             </div>
         </div>
     </div>
@@ -196,6 +209,18 @@
         let currentCalYear = new Date().getFullYear();
 
         const DAYS = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
+
+        function formatTime12h(timeStr) {
+            if (!timeStr) return '---';
+            if (timeStr.includes(':') && !timeStr.includes(' ')) {
+                const [h, m] = timeStr.split(':');
+                const hrs = parseInt(h);
+                const ampm = hrs >= 12 ? 'PM' : 'AM';
+                const h12 = hrs % 12 || 12;
+                return `${h12}:${m} ${ampm}`;
+            }
+            return timeStr; // Return as is if already formatted or invalid
+        }
 
         async function login() {
             const pin = document.getElementById('staff-pin').value;
@@ -282,7 +307,7 @@
                     document.getElementById('clock-status').innerText = 'En Turno';
                     
                     const startDisp = document.getElementById('clock-start-display');
-                    const entryTime = clockStartTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                    const entryTime = clockStartTime.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', hour12: true });
                     startDisp.innerText = `Entrada: ${entryTime}`;
                     startDisp.classList.remove('hidden');
 
@@ -453,15 +478,30 @@
                 const data = await res.json();
                 const container = document.getElementById('my-schedule-list');
                 if (data.length === 0) { container.innerHTML = '<p class="text-center text-white/20 py-10 italic">No hay turnos programados.</p>'; return; }
-                container.innerHTML = data.map(s => `
-                    <div class="bg-charcoal border border-white/5 p-6 rounded-3xl flex justify-between items-center">
-                        <div>
-                            <p class="text-[10px] font-black text-gold uppercase tracking-widest mb-1">${DAYS[new Date(s.shift_date + 'T12:00:00').getDay()]} ${s.shift_date.split('-').slice(1).reverse().join('/')}</p>
-                            <p class="text-lg font-black">${s.start_time.slice(0,5)} - ${s.end_time.slice(0,5)}</p>
+                container.innerHTML = data.map(s => {
+                    const hasSplit = s.notes && s.notes.toLowerCase().includes('split');
+                    let timeDisplay = '';
+                    
+                    if (hasSplit) {
+                        // Attempt to format split times if they are in 24h
+                        timeDisplay = s.notes.replace('Split:', '').trim().split('&').map(part => {
+                            return part.split('-').map(t => formatTime12h(t.trim())).join('-');
+                        }).join(' & ');
+                    } else {
+                        timeDisplay = `${formatTime12h(s.start_time.slice(0,5))} - ${formatTime12h(s.end_time.slice(0,5))}`;
+                    }
+                    
+                    return `
+                        <div class="bg-charcoal border border-white/5 p-6 rounded-3xl flex justify-between items-center">
+                            <div>
+                                <p class="text-[10px] font-black text-gold uppercase tracking-widest mb-1">${DAYS[new Date(s.shift_date + 'T12:00:00').getDay()]} ${s.shift_date.split('-').slice(1).reverse().join('/')}</p>
+                                <p class="${hasSplit ? 'text-sm' : 'text-lg'} font-black">${timeDisplay}</p>
+                                ${hasSplit ? `<p class="text-[9px] text-white/20 mt-1 uppercase font-black tracking-widest">Turno Dividido</p>` : ''}
+                            </div>
+                            <i class="fas fa-clock text-white/10 text-2xl"></i>
                         </div>
-                        <i class="fas fa-clock text-white/10 text-2xl"></i>
-                    </div>
-                `).join('');
+                    `;
+                }).join('');
             } catch (e) { console.error(e); }
         }
 
@@ -557,40 +597,85 @@
                     title.innerText = "Estado en Tiempo Real";
                     content.innerHTML = '<p class="text-center py-10 text-white/40"><i class="fas fa-spinner fa-spin mr-2"></i> Consultando estados...</p>';
 
-                    const res = await fetch(`/api/staff?action=admin_live_status&${adminParams}`);
-                    const data = await res.json();
+                    const [statusRes, ordersRes] = await Promise.all([
+                        fetch(`/api/staff?action=admin_live_status&${adminParams}`),
+                        fetch(`/api/store?action=orders&admin=true`)
+                    ]);
+
+                    const data = await statusRes.json();
+                    const ordersData = await ordersRes.json();
+                    const activeOrders = (ordersData.orders || []).filter(o => 
+                        ['pending', 'paid', 'preparing', 'ready', 'drinks_ready', 'food_ready'].includes(o.status)
+                    );
+
+                    const watchdogHtml = await renderAttendanceWatchdog(data);
 
                     content.innerHTML = `
-                        <div class="space-y-4">
-                            <div class="bg-blue-500/10 p-4 rounded-2xl border border-blue-500/20 text-center">
-                                <p class="text-[10px] font-black text-blue-400 uppercase tracking-widest mb-1">Resumen Actual</p>
-                                <p class="text-xs text-white/60">${data.filter(e => e.status === 'in').length} En Turno • ${data.filter(e => e.status === 'break').length} En Descanso</p>
-                            </div>
-                            <div class="space-y-2">
-                                ${data.map(emp => {
-                                    let statusColor = "text-white/20";
-                                    let statusLabel = "Fuera";
-                                    let badgeColor = "bg-white/5";
+                        <div class="space-y-6">
+                            ${watchdogHtml}
 
-                                    if (emp.status === 'in') { statusColor = "text-green-400"; statusLabel = "EN TURNO"; badgeColor = "bg-green-500/10"; }
-                                    if (emp.status === 'break') { statusColor = "text-orange-400"; statusLabel = "DESCANSO"; badgeColor = "bg-orange-500/10"; }
+                            <!-- Personal Section -->
+                            <div class="space-y-3">
 
-                                    return `
-                                        <div class="bg-charcoal p-5 rounded-3xl border border-white/5 flex justify-between items-center">
-                                            <div>
-                                                <p class="font-bold text-white">${emp.name}</p>
-                                                <p class="text-[9px] text-white/40 uppercase font-black tracking-widest mt-0.5">Último: ${emp.last_punch ? new Date(emp.last_punch).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}) : '---'}</p>
+                                <div class="flex justify-between items-center px-2">
+                                    <p class="text-[10px] font-black text-gold uppercase tracking-widest">Personal</p>
+                                    <p class="text-[10px] text-white/20 uppercase font-black tracking-widest">${data.filter(e => e.status === 'in').length} En Turno</p>
+                                </div>
+                                <div class="space-y-2">
+                                    ${data.map(emp => {
+                                        let statusColor = "text-white/20";
+                                        let statusLabel = "Fuera";
+                                        let badgeColor = "bg-white/5";
+                                        if (emp.status === 'in') { statusColor = "text-green-400"; statusLabel = "EN TURNO"; badgeColor = "bg-green-500/10"; }
+                                        if (emp.status === 'break') { statusColor = "text-orange-400"; statusLabel = "DESCANSO"; badgeColor = "bg-orange-500/10"; }
+
+                                        return `
+                                            <div class="bg-charcoal p-4 rounded-2xl border border-white/5 flex justify-between items-center">
+                                                <div>
+                                                    <p class="font-bold text-white text-sm">${emp.name}</p>
+                                                    <p class="text-[9px] text-white/40 uppercase font-black tracking-widest mt-0.5">Último: ${emp.last_punch ? formatTime12h(new Date(emp.last_punch).toISOString().split('T')[1].slice(0,5)) : '---'}</p>
+                                                </div>
+                                                <div class="px-3 py-1.5 rounded-full ${badgeColor} border border-white/5">
+                                                    <p class="text-[10px] font-black ${statusColor} tracking-widest">${statusLabel}</p>
+                                                </div>
                                             </div>
-                                            <div class="px-3 py-1.5 rounded-full ${badgeColor} border border-white/5">
-                                                <p class="text-[10px] font-black ${statusColor} tracking-widest">${statusLabel}</p>
-                                            </div>
-                                        </div>
-                                    `;
-                                }).join('')}
+                                        `;
+                                    }).join('')}
+                                </div>
                             </div>
+
+                            <!-- Orders Section -->
+                            <div class="space-y-3">
+                                <div class="flex justify-between items-center px-2 pt-4 border-t border-white/5">
+                                    <p class="text-[10px] font-black text-gold uppercase tracking-widest">Órdenes Activas</p>
+                                    <p class="text-[10px] text-white/20 uppercase font-black tracking-widest">${activeOrders.length} Pendientes</p>
+                                </div>
+                                <div class="space-y-2">
+                                    ${activeOrders.length === 0 ? '<p class="text-center py-6 text-white/10 text-xs italic">No hay órdenes activas</p>' : activeOrders.map(o => {
+                                        let statusColor = "text-amber-500";
+                                        if (o.status === 'ready') statusColor = "text-green-500";
+                                        if (o.status === 'preparing') statusColor = "text-orange-400";
+
+                                        return `
+                                            <div class="bg-white/5 p-4 rounded-2xl border border-white/5 flex justify-between items-center">
+                                                <div>
+                                                    <p class="font-bold text-white text-sm">#${o.order_number || o.id.slice(-4)}</p>
+                                                    <p class="text-[9px] text-white/40 uppercase font-black tracking-widest mt-0.5">${o.customers?.name || 'Invitado'} • ${o.payment_method}</p>
+                                                </div>
+                                                <p class="text-[10px] font-black uppercase ${statusColor} tracking-widest">${o.status}</p>
+                                            </div>
+                                        `;
+                                    }).join('')}
+                                </div>
+                            </div>
+
                             <button onclick="closeAdminModal()" class="w-full py-5 bg-white/5 border border-white/10 rounded-2xl text-white/60 font-black text-sm uppercase tracking-widest mt-4">Cerrar</button>
                         </div>
                     `;
+
+                } else if (type === 'punches') {
+                    title.innerText = "Corregir Marcajes";
+                    renderPunchesAdmin();
                 }
             } catch(e) {
                 console.error("Modal Load Error:", e);
@@ -636,6 +721,86 @@
             btn.innerText = "GUARDAR TURNO";
         }
 
+        window.openTimeOffModal = function() {
+            document.getElementById('timeoff-modal').classList.remove('hidden');
+            document.getElementById('to-date').value = new Date().toISOString().split('T')[0];
+        }
+
+        window.submitTimeOff = async function() {
+            const reason = document.getElementById('to-reason').value;
+            const date = document.getElementById('to-date').value;
+            if (!date) return alert("Selecciona una fecha");
+
+            if (!confirm(`¿Confirmas que no podrás asistir el día ${date} por ${reason}?`)) return;
+
+            try {
+                const res = await fetch('/api/staff?action=staff_time_off_request', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        employee_id: currentEmployee.id,
+                        startDate: date,
+                        endDate: date,
+                        reason: reason
+                    })
+                });
+                if (res.ok) {
+                    alert("Reporte enviado con éxito. El administrador será notificado.");
+                    document.getElementById('timeoff-modal').classList.add('hidden');
+                }
+            } catch (e) { console.error(e); }
+        }
+
+        window.renderAttendanceWatchdog = async function(staffStatus) {
+            const adminParams = `adminId=${currentEmployee.id}&adminPin=${localStorage.getItem('ra_staff_pin')}`;
+            const today = new Date();
+            const dayOfWeek = today.getDay();
+            const todayStr = today.toISOString().split('T')[0];
+
+            try {
+                // Fetch schedule and assignments
+                const res = await fetch(`/api/staff?action=admin_shift_assignments&startDate=${todayStr}&endDate=${todayStr}&${adminParams}`);
+                const scheduled = await res.json();
+
+                const now = new Date();
+                const lateThresholdMins = 15;
+
+                const lates = scheduled.filter(s => {
+                    const punch = staffStatus.find(p => p.id === s.employee_id);
+                    if (punch && punch.status === 'in') return false; // They are here
+                    
+                    // Check if they SHOULD be here
+                    const [h, m] = s.start_time.split(':');
+                    const schedTime = new Date();
+                    schedTime.setHours(h, m, 0, 0);
+                    
+                    const diffMins = (now - schedTime) / 60000;
+                    return diffMins > lateThresholdMins;
+                });
+
+                if (lates.length > 0) {
+                    return `
+                        <div class="bg-red-500/10 border border-red-500/20 p-5 rounded-3xl space-y-3">
+                            <div class="flex items-center gap-2 text-red-400">
+                                <i class="fas fa-exclamation-triangle animate-pulse"></i>
+                                <p class="text-[10px] font-black uppercase tracking-widest">ALERTA DE ASISTENCIA</p>
+                            </div>
+                            ${lates.map(l => `
+                                <div class="flex justify-between items-center bg-dark/40 p-3 rounded-2xl">
+                                    <div>
+                                        <p class="font-bold text-xs text-white">${l.employees?.name}</p>
+                                        <p class="text-[8px] font-black text-red-500/60 uppercase">TARDÍA: Debió entrar ${formatTime12h(l.start_time.slice(0,5))}</p>
+                                    </div>
+                                    <button onclick="window.location.href='tel:'" class="w-8 h-8 rounded-full bg-red-500 text-white flex items-center justify-center"><i class="fas fa-phone-alt text-[10px]"></i></button>
+                                </div>
+                            `).join('')}
+                        </div>
+                    `;
+                }
+                return "";
+            } catch(e) { return ""; }
+        }
+
         window.deleteShift = async function(id, fromDetailDate) {
             if (!confirm("¿Eliminar este turno?")) return;
             try {
@@ -647,6 +812,140 @@
                 });
                 if (fromDetailDate) openDayDetail(fromDetailDate);
                 else openAdminModal('scheduling'); 
+            } catch (e) { console.error(e); }
+        }
+
+        window.renderPunchesAdmin = async function() {
+            const content = document.getElementById('admin-modal-content');
+            content.innerHTML = `
+                <div class="space-y-6">
+                    <div class="bg-white/5 p-6 rounded-3xl border border-white/10 space-y-4">
+                        <p class="text-[10px] font-black text-white/40 uppercase tracking-widest">Añadir Marcaje Manual</p>
+                        <select id="punch-emp-id" class="w-full bg-dark text-white p-4 rounded-2xl border border-white/10 text-sm font-bold">
+                            <option value="">Seleccionar Empleado...</option>
+                            ${allEmployees.map(e => `<option value="${e.id}">${e.name}</option>`).join('')}
+                        </select>
+                        <div class="grid grid-cols-2 gap-3">
+                            <select id="punch-type" class="bg-dark text-white p-4 rounded-2xl border border-white/10 text-sm font-bold">
+                                <option value="in">ENTRADA</option>
+                                <option value="out">SALIDA</option>
+                                <option value="break_start">INICIO DESC.</option>
+                                <option value="break_end">FIN DESC.</option>
+                            </select>
+                            <input type="datetime-local" id="punch-time" class="bg-dark text-white p-4 rounded-2xl border border-white/10 text-sm font-bold">
+                        </div>
+                        <button onclick="saveNewPunch()" class="w-full py-4 bg-gold text-dark font-black rounded-2xl">AÑADIR MARCAJE</button>
+                    </div>
+
+                    <div class="space-y-3">
+                        <div class="flex justify-between items-center px-2">
+                            <p class="text-[10px] font-black text-gold uppercase tracking-widest">Marcajes Recientes</p>
+                            <button onclick="loadPunches()" class="text-xs text-white/40 underline">Refrescar</button>
+                        </div>
+                        <div id="punches-list" class="space-y-2">
+                            <p class="text-center py-10 text-white/20 italic text-xs">Cargando...</p>
+                        </div>
+                    </div>
+                </div>
+            `;
+            // Set default time to now
+            const now = new Date();
+            now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+            document.getElementById('punch-time').value = now.toISOString().slice(0, 16);
+            loadPunches();
+        }
+
+        window.loadPunches = async function() {
+            const list = document.getElementById('punches-list');
+            const adminParams = `adminId=${currentEmployee.id}&adminPin=${localStorage.getItem('ra_staff_pin')}`;
+            try {
+                const res = await fetch(`/api/staff?action=admin_time_entries&${adminParams}`);
+                const data = await res.json();
+                
+                if (data.length === 0) {
+                    list.innerHTML = '<p class="text-center py-10 text-white/20 italic text-xs">No hay marcajes recientes</p>';
+                    return;
+                }
+
+                list.innerHTML = data.slice(0, 50).map(p => {
+                    const date = new Date(p.timestamp);
+                    const timeStr = date.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', hour12: true });
+                    const dateStr = date.toLocaleDateString([], { day: '2-digit', month: '2-digit' });
+                    
+                    let typeLabel = p.type.toUpperCase();
+                    let typeColor = "text-white/40";
+                    if (p.type === 'in') { typeLabel = "ENTRADA"; typeColor = "text-green-400"; }
+                    if (p.type === 'out') { typeLabel = "SALIDA"; typeColor = "text-red-400"; }
+                    if (p.type.includes('break')) { typeLabel = "DESC."; typeColor = "text-orange-400"; }
+
+                    return `
+                        <div class="bg-charcoal p-4 rounded-2xl border border-white/5 flex justify-between items-center">
+                            <div class="flex-1">
+                                <p class="font-bold text-sm text-white">${p.employees?.name || '---'}</p>
+                                <p class="text-[10px] font-black uppercase tracking-widest ${typeColor}">${typeLabel} • ${dateStr} ${timeStr}</p>
+                            </div>
+                            <div class="flex gap-2">
+                                <button onclick="editPunch('${p.id}', '${p.timestamp}', '${p.type}')" class="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center text-white/40"><i class="fas fa-edit text-xs"></i></button>
+                                <button onclick="deletePunch('${p.id}')" class="w-8 h-8 rounded-lg bg-red-500/10 flex items-center justify-center text-red-500/40"><i class="fas fa-trash-alt text-xs"></i></button>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+            } catch (e) { console.error(e); }
+        }
+
+        window.saveNewPunch = async function() {
+            const empId = document.getElementById('punch-emp-id').value;
+            const type = document.getElementById('punch-type').value;
+            const time = document.getElementById('punch-time').value;
+            
+            if (!empId || !time) return alert("Completa todos los campos");
+            
+            try {
+                const adminParams = `adminId=${currentEmployee.id}&adminPin=${localStorage.getItem('ra_staff_pin')}`;
+                const res = await fetch(`/api/staff?action=admin_time_entries&${adminParams}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ employee_id: empId, type, timestamp: new Date(time).toISOString() })
+                });
+                if (res.ok) {
+                    alert("Marcaje añadido");
+                    loadPunches();
+                }
+            } catch (e) { console.error(e); }
+        }
+
+        window.editPunch = async function(id, currentTime, currentType) {
+            const newTime = prompt("Nueva fecha/hora (YYYY-MM-DD HH:MM):", new Date(currentTime).toISOString().slice(0, 16).replace('T', ' '));
+            if (!newTime) return;
+
+            try {
+                const adminParams = `adminId=${currentEmployee.id}&adminPin=${localStorage.getItem('ra_staff_pin')}`;
+                const res = await fetch(`/api/staff?action=admin_time_entries&${adminParams}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ id, type: currentType, timestamp: new Date(newTime).toISOString() })
+                });
+                if (res.ok) {
+                    alert("Marcaje actualizado");
+                    loadPunches();
+                }
+            } catch (e) { alert("Formato de fecha inválido o error de red"); }
+        }
+
+        window.deletePunch = async function(id) {
+            if (!confirm("¿Eliminar este marcaje permanentemente?")) return;
+            try {
+                const adminParams = `adminId=${currentEmployee.id}&adminPin=${localStorage.getItem('ra_staff_pin')}`;
+                const res = await fetch(`/api/staff?action=admin_time_entries&${adminParams}`, {
+                    method: 'DELETE',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ id })
+                });
+                if (res.ok) {
+                    alert("Marcaje eliminado");
+                    loadPunches();
+                }
             } catch (e) { console.error(e); }
         }
 
@@ -749,7 +1048,7 @@
                                 <div class="bg-charcoal p-4 rounded-2xl border border-gold/20 flex justify-between items-center">
                                     <div>
                                         <p class="font-bold text-sm text-white">${s.employees?.name || '---'}</p>
-                                        <p class="text-[10px] text-gold/60 font-black uppercase">${s.start_time.slice(0,5)} - ${s.end_time.slice(0,5)}</p>
+                                        <p class="text-[10px] text-gold/60 font-black uppercase">${formatTime12h(s.start_time.slice(0,5))} - ${formatTime12h(s.end_time.slice(0,5))}</p>
                                     </div>
                                     <button onclick="deleteShift('${s.id}', '${dateStr}')" class="text-red-500/40 hover:text-red-500 p-2"><i class="fas fa-trash-alt"></i></button>
                                 </div>
@@ -816,5 +1115,33 @@
             if (pin) { document.getElementById('staff-pin').value = pin; login(); }
         };
     </script>
+    <!-- TIME OFF MODAL -->
+    <div id="timeoff-modal" class="hidden fixed inset-0 bg-black/90 backdrop-blur-md z-[500] flex items-center justify-center p-6">
+        <div class="bg-charcoal w-full max-w-sm rounded-[2.5rem] border border-white/10 p-8 space-y-6 shadow-2xl">
+            <div class="text-center space-y-1">
+                <h3 class="text-2xl font-black text-white uppercase tracking-tight">Reportar Inasistencia</h3>
+                <p class="text-white/40 text-xs font-bold uppercase tracking-widest italic">Solo emergencias o salud</p>
+            </div>
+            <div class="space-y-4">
+                <div class="space-y-1">
+                    <p class="text-[10px] font-black text-white/30 uppercase tracking-widest ml-2">Razón</p>
+                    <select id="to-reason" class="w-full bg-dark text-white p-4 rounded-2xl border border-white/10 text-sm font-bold">
+                        <option value="Enfermedad (Sick)">Enfermedad (Sick)</option>
+                        <option value="Emergencia Familiar">Emergencia Familiar</option>
+                        <option value="Trámite Personal">Trámite Personal / Cita</option>
+                        <option value="Otro (Explicar)">Otro</option>
+                    </select>
+                </div>
+                <div class="grid grid-cols-1 gap-4">
+                    <div class="space-y-1">
+                        <p class="text-[10px] font-black text-white/30 uppercase tracking-widest ml-2">Fecha</p>
+                        <input type="date" id="to-date" class="w-full bg-dark text-white p-4 rounded-2xl border border-white/10 text-sm font-bold">
+                    </div>
+                </div>
+                <button onclick="submitTimeOff()" class="w-full py-5 bg-red-500 text-white font-black rounded-2xl shadow-xl shadow-red-900/20 active:scale-95 transition-all uppercase tracking-widest">Enviar Reporte</button>
+                <button onclick="document.getElementById('timeoff-modal').classList.add('hidden')" class="w-full py-4 text-white/30 font-bold text-xs uppercase tracking-widest">Cancelar</button>
+            </div>
+        </div>
+    </div>
 </body>
 </html>

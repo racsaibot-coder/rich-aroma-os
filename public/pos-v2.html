@@ -1383,12 +1383,14 @@
             });
         }
         const note = document.getElementById('mod-note')?.value || "";
-        const item = { 
-            ...currentItem, 
-            qty: currentQuantity, 
-            mods, 
+        const unitPrice = parseFloat(document.getElementById('mod-final-price').innerText.replace('L. ', '')) / currentQuantity;
+        const item = {
+            ...currentItem,
+            qty: currentQuantity,
+            price: unitPrice, // Unit Price
+            mods,
             note,
-            finalPrice: parseFloat(document.getElementById('mod-final-price').innerText.replace('L. ', '')) / currentQuantity,
+            finalPrice: unitPrice * currentQuantity, // Line Total
             is_addon: currentOrderId ? true : false // Flag as new item for existing order
         };
         cart.push(item);
@@ -1399,8 +1401,7 @@
 
     // --- CART & CHECKOUT ---
     function calculateTotalWithRule() {
-        const subtotal = cart.reduce((sum, item) => sum + (parseFloat(item.finalPrice || 0) * item.qty), 0);
-        
+        const subtotal = cart.reduce((sum, item) => sum + (parseFloat(item.finalPrice || 0)), 0);        
         let discountPct = 0;
         let discountName = "";
         let applyRule = false;
@@ -1434,19 +1435,19 @@
                     // Use manually selected items
                     selectedItemIds.forEach(idx => {
                         const item = cart[idx];
-                        if (item) discountAmt += (parseFloat(item.finalPrice) * (discountPct / 100));
+                        if (item) discountAmt += (parseFloat(item.price) * (discountPct / 100));
                     });
                 } else {
                     // Fallback to auto-select most expensive 1 drink + 1 food
                     let foodDiscounted = false;
                     let drinkDiscounted = false;
-                    const sorted = [...cart].sort((a,b) => parseFloat(b.finalPrice) - parseFloat(a.finalPrice));
+                    const sorted = [...cart].sort((a,b) => parseFloat(b.price) - parseFloat(a.price));
                     sorted.forEach(item => {
                         if (isFood(item) && !foodDiscounted) {
-                            discountAmt += (parseFloat(item.finalPrice) * (discountPct / 100));
+                            discountAmt += (parseFloat(item.price) * (discountPct / 100));
                             foodDiscounted = true;
                         } else if (isDrink(item) && !drinkDiscounted) {
-                            discountAmt += (parseFloat(item.finalPrice) * (discountPct / 100));
+                            discountAmt += (parseFloat(item.price) * (discountPct / 100));
                             drinkDiscounted = true;
                         }
                     });
@@ -1480,7 +1481,7 @@
                     <div class="text-[10px] text-gray-500">${item.mods.map(m=>m.name).join(', ')}</div>
                 </div>
                 <div class="flex flex-col items-end gap-1">
-                    <span class="font-mono text-sm font-black">L. ${(parseFloat(item.finalPrice || 0) * item.qty).toFixed(2)}</span>
+                    <span class="font-mono text-sm font-black">L. ${(parseFloat(item.finalPrice || 0)).toFixed(2)}</span>
                     <button onclick="removeFromCart(${index})" class="text-red-400 text-[10px] font-bold uppercase">Remove</button>
                 </div>
             </div>
@@ -1800,7 +1801,7 @@
 
             if (res.ok) {
                 alert("✅ ORDEN ENVIADA A COCINA (TAB ABIERTA)");
-                clearOrderState();
+                clearOrderState(true);
                 fetchLiveOrders();
             } else {
                 const err = await res.json();
@@ -1812,8 +1813,8 @@
         }
     }
 
-    window.clearOrderState = function() {
-        if (cart.length > 0 && !confirm("¿Vaciar carrito y cancelar edición?")) return;
+    window.clearOrderState = function(force = false) {
+        if (!force && cart.length > 0 && !confirm("¿Vaciar carrito y comenzar nueva orden?")) return;
         
         cart = [];
         currentOrderId = null;
@@ -1838,7 +1839,7 @@
         saveCartState();
     }
 
-    function clearOrderState() { window.clearOrderState(); }
+    function clearOrderState(force = false) { window.clearOrderState(force); }
 
     async function recallOrder(id) {
         let order = liveOrders.find(o => o.id === id);
@@ -2018,7 +2019,7 @@
 
             if (res.ok) {
                 alert("✅ Venta Completada");
-                clearOrderState();
+                clearOrderState(true);
                 document.getElementById('tender-modal').classList.add('hidden');
                 fetchLiveOrders();
             } else {

@@ -6,6 +6,7 @@
     <meta name="theme-color" content="#1a1410">
     <title>POS | Rich Aroma</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
     <style>
         :root {
             --espresso: #5D4037;
@@ -464,6 +465,12 @@
         </div>
         <div class="cart-items" id="cartItems"></div>
         
+        <!-- Loyalty Identification Row -->
+        <div class="loyalty-row" id="loyaltyRow" onclick="openLoyaltyModal()" style="padding: 0.5rem 1rem; border-top: 1px solid rgba(255,255,255,0.05); display: flex; justify-content: space-between; align-items: center; cursor: pointer; background: rgba(201,166,116,0.05);">
+             <span id="activeCustomerName" style="font-size: 0.8rem; font-weight: 600; color: var(--caramel);"><i class="fas fa-user-circle mr-1"></i> Identificar Cliente</span>
+             <span class="gold" id="activeCustomerPoints" style="font-size: 0.75rem; display:none;">0⭐</span>
+        </div>
+
         <!-- Kitchen Notes Field (In-N-Out Style) -->
         <div class="notes-row" style="padding: 0.5rem 1rem;">
              <input type="text" id="orderNotes" placeholder="📝 Notas Cocina (e.g. Alérgico, Extra Crujiente...)" 
@@ -482,7 +489,8 @@
         <div class="cart-actions">
             <button class="action-btn cash" onclick="pay('cash')">💵 Cash</button>
             <button class="action-btn card" onclick="pay('card')">💳 Card</button>
-            <button class="action-btn kitchen" onclick="sendToKitchen()">🍳 Send to Kitchen</button>
+            <button class="action-btn rico" id="ricoPayBtn" onclick="pay('rico_balance')" style="display:none; background: linear-gradient(135deg, #fbbf24, #f59e0b); color: #000;">🦧 Rico Cash</button>
+            <button class="action-btn kitchen" onclick="sendToKitchen()">🍳 Kitchen</button>
         </div>
     </div>
     
@@ -515,8 +523,8 @@
             <div class="balance-input-row">
                 <input type="tel" class="balance-input" id="balancePhone" placeholder="Número (9999-9999)" maxlength="9">
                 <button class="balance-search-btn" onclick="searchBalanceCustomer()">Buscar</button>
-            </div>
-            <div class="balance-customer" id="balanceCustomer">
+                <button class="balance-search-btn" onclick="startQRScanner('balancePhone')" style="background: var(--dark-bg); color: var(--caramel); border: 1px solid var(--caramel);"><i class="fas fa-qrcode"></i></button>
+            </div>            <div class="balance-customer" id="balanceCustomer">
                 <div class="balance-customer-name" id="balanceCustomerName">Cliente</div>
                 <div class="balance-customer-info">
                     <span class="gold"><span id="balanceCustomerPoints">0</span>⭐</span>
@@ -536,12 +544,50 @@
                 <div class="balance-summary-row"><span>Bonus (10%)</span><span style="color:var(--success)">+L<span id="balanceSummaryBonus">0</span></span></div>
                 <div class="balance-summary-row total"><span>Total</span><span style="color:#fbbf24">L<span id="balanceSummaryTotal">0</span></span></div>
             </div>
-            <button class="balance-confirm-btn" id="balanceConfirmBtn" onclick="confirmBalanceLoad()">✓ Confirmar Carga</button>
+            <button class="balance-confirm-btn" id="balanceConfirmBtn" onclick="confirmBalanceLoad()">Confirmar Recarga</button>
             <div class="modal-actions">
-                <button class="cancel" onclick="closeBalanceModal()">Cerrar</button>
+                <button class="cancel" onclick="closeBalanceModal()">Cancelar</button>
+            </div>
+            </div>
+            </div>
+
+            <!-- Customer / Loyalty Modal -->
+    <div class="modal-overlay" id="loyaltyModal">
+        <div class="modal">
+            <h3>👤 Identificar Cliente</h3>
+            <p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 1rem;">Escanea el QR o ingresa el teléfono para puntos y Rico Cash.</p>
+            
+            <div class="balance-input-row">
+                <input type="tel" class="balance-input" id="loyaltyPhone" placeholder="Teléfono" maxlength="9">
+                <button class="balance-search-btn" onclick="searchLoyaltyCustomer()">Buscar</button>
+                <button class="balance-search-btn" onclick="startQRScanner('loyaltyPhone')" style="background: var(--dark-bg); color: var(--caramel); border: 1px solid var(--caramel);"><i class="fas fa-qrcode"></i></button>
+            </div>
+
+            <div class="balance-customer" id="loyaltyCustomerInfo" style="margin-top: 1rem;">
+                <div class="balance-customer-name" id="loyaltyCustomerName">Cliente</div>
+                <div class="balance-customer-info">
+                    <span class="gold"><span id="loyaltyCustomerPoints">0</span>⭐</span>
+                    <span class="green">Rico Cash: L<span id="loyaltyCustomerBalance">0</span></span>
+                </div>
+            </div>
+
+            <div class="modal-actions" style="margin-top: 1.5rem;">
+                <button class="cancel" onclick="closeLoyaltyModal()">Cancelar</button>
+                <button class="confirm" id="confirmLoyaltyBtn" onclick="applyLoyalty()" style="display:none">Seleccionar Cliente</button>
             </div>
         </div>
     </div>
+
+    <!-- QR Scanner Modal -->
+            <div class="modal-overlay" id="qrModal">
+            <div class="modal" style="max-width: 90%; width: 400px;">
+            <h3>🎥 Escanear Código QR</h3>
+            <div id="qr-reader" style="width: 100%; border-radius: 12px; overflow: hidden; margin: 1rem 0; background: #000;"></div>
+            <div class="modal-actions">
+                <button class="cancel" onclick="stopQRScanner()">Cancelar</button>
+            </div>
+            </div>
+            </div>
 
     <script>
         let menu = { categories: [], modifiers: {}, taxRate: 0.15 };
@@ -552,6 +598,77 @@
         let nextOrderNum = 1;
         let cartOpen = false;
         let appliedDiscount = null; // { code, percent, creatorId }
+        let loyaltyCustomer = null;
+
+        // Loyalty Logic
+        function openLoyaltyModal() {
+            document.getElementById('loyaltyModal').classList.add('active');
+            document.getElementById('loyaltyPhone').value = '';
+            document.getElementById('loyaltyCustomerInfo').classList.remove('show');
+            document.getElementById('confirmLoyaltyBtn').style.display = 'none';
+        }
+
+        function closeLoyaltyModal() {
+            document.getElementById('loyaltyModal').classList.remove('active');
+        }
+
+        async function searchLoyaltyCustomer() {
+            const phone = document.getElementById('loyaltyPhone').value.replace(/\D/g, '');
+            if (phone.length < 8) return alert('Número inválido');
+            try {
+                const res = await fetch(`/api/customers/phone/${phone}`);
+                if (res.ok) {
+                    const data = await res.json();
+                    showLoyaltyPreview(data);
+                } else {
+                    alert('Cliente no encontrado');
+                }
+            } catch (e) { alert('Error buscando cliente'); }
+        }
+
+        function showLoyaltyPreview(customer) {
+            const info = document.getElementById('loyaltyCustomerInfo');
+            const btn = document.getElementById('confirmLoyaltyBtn');
+            const cash = parseFloat(customer.cash_balance) || 0;
+            const credit = parseFloat(customer.membership_credit) || 0;
+            
+            // Drink Streak (Punch Card)
+            const streak = customer.drink_streak || 0;
+            const progress = streak % 7;
+            const streakHtml = progress === 6 
+                ? '<span class="green" style="font-weight:900; background:rgba(16,185,129,0.1); padding:2px 6px; border-radius:4px">🎁 FREE DRINK NEXT!</span>' 
+                : `<span class="gold">${progress}/6 <i class="fas fa-mug-hot"></i></span>`;
+
+            document.getElementById('loyaltyCustomerName').innerHTML = `${customer.name} ${streakHtml}`;
+            document.getElementById('loyaltyCustomerPoints').textContent = customer.points || 0;
+            document.getElementById('loyaltyCustomerBalance').textContent = (cash + credit).toFixed(0);
+            
+            info.classList.add('show');
+            btn.style.display = 'block';
+            btn.dataset.customer = JSON.stringify(customer);
+        }
+
+        function applyLoyalty() {
+            const btn = document.getElementById('confirmLoyaltyBtn');
+            loyaltyCustomer = JSON.parse(btn.dataset.customer);
+            
+            document.getElementById('activeCustomerName').innerHTML = `<i class="fas fa-user-check mr-1"></i> ${loyaltyCustomer.name.split(' ')[0]}`;
+            document.getElementById('activeCustomerPoints').textContent = (loyaltyCustomer.points || 0) + '⭐';
+            document.getElementById('activeCustomerPoints').style.display = 'block';
+            
+            // Show Rico Cash payment button if they have balance
+            const balance = (parseFloat(loyaltyCustomer.cash_balance) || 0) + (parseFloat(loyaltyCustomer.membership_credit) || 0);
+            document.getElementById('ricoPayBtn').style.display = balance > 0 ? 'block' : 'none';
+            
+            closeLoyaltyModal();
+        }
+
+        function clearLoyalty() {
+            loyaltyCustomer = null;
+            document.getElementById('activeCustomerName').innerHTML = `<i class="fas fa-user-circle mr-1"></i> Identificar Cliente`;
+            document.getElementById('activeCustomerPoints').style.display = 'none';
+            document.getElementById('ricoPayBtn').style.display = 'none';
+        }
 
         async function init() {
             try {
@@ -914,11 +1031,18 @@
                 total,
                 notes: document.getElementById('orderNotes').value, // Capture Notes
                 paymentMethod: method,
-                status: method === 'cash' || method === 'card' ? 'paid' : 'pending' // Auto-complete for cash/card
+                customerId: loyaltyCustomer?.id || null, // Capture Customer for points/rico cash
+                status: method === 'cash' || method === 'card' || method === 'rico_balance' ? 'paid' : 'pending' 
             };
 
             // Confirm
-            if (!confirm(`Confirm ${method.toUpperCase()} payment of L ${total}?`)) return;
+            if (method === 'rico_balance') {
+                const balance = (parseFloat(loyaltyCustomer.cash_balance) || 0) + (parseFloat(loyaltyCustomer.membership_credit) || 0);
+                if (balance < total) return alert(`Saldo insuficiente (L ${balance}).`);
+                if (!confirm(`¿Pagar L ${total} con Rico Cash de ${loyaltyCustomer.name}?`)) return;
+            } else {
+                if (!confirm(`Confirm ${method.toUpperCase()} payment of L ${total}?`)) return;
+            }
 
             // Send to API
             try {
@@ -944,6 +1068,7 @@
                 // Clear Cart & Reset
                 cart = [];
                 removeDiscount();
+                clearLoyalty(); // Clear identified customer
                 document.getElementById('orderNotes').value = ''; // Clear Notes
                 nextOrderNum++;
                 document.getElementById('orderNum').textContent = `#${String(nextOrderNum).padStart(4, '0')}`;
@@ -1003,7 +1128,15 @@
 
         function showBalanceCustomer() {
             document.getElementById('balanceCustomer').classList.add('show');
-            document.getElementById('balanceCustomerName').textContent = balanceCustomer.name || 'Cliente';
+            
+            // Drink Streak (Punch Card)
+            const streak = balanceCustomer.drink_streak || 0;
+            const progress = streak % 7;
+            const streakHtml = progress === 6 
+                ? '<span style="color:var(--success); font-weight:900; background:rgba(16,185,129,0.1); padding:2px 6px; border-radius:4px; margin-left:8px; font-size:0.7em">🎁 FREE DRINK NEXT!</span>' 
+                : `<span style="color:var(--caramel); margin-left:8px; font-size:0.7em">${progress}/6 <i class="fas fa-mug-hot"></i></span>`;
+
+            document.getElementById('balanceCustomerName').innerHTML = `${balanceCustomer.name || 'Cliente'} ${streakHtml}`;
             document.getElementById('balanceCustomerPoints').textContent = balanceCustomer.points || 0;
             
             const cash = parseFloat(balanceCustomer.cash_balance) || 0;
@@ -1064,6 +1197,45 @@
                 }
             } catch (e) {
                 alert('Error cargando balance');
+            }
+        }
+
+        // --- QR SCANNER LOGIC ---
+        let html5QrCode = null;
+
+        window.startQRScanner = function(targetInputId) {
+            document.getElementById('qrModal').classList.add('active');
+            html5QrCode = new Html5Qrcode("qr-reader");
+            const config = { fps: 10, qrbox: { width: 250, height: 250 } };
+
+            html5QrCode.start({ facingMode: "environment" }, config, (decodedText) => {
+                let value = decodedText;
+                if (value.includes('/')) value = value.split('/').pop();
+                
+                document.getElementById(targetInputId).value = value;
+                stopQRScanner();
+                
+                if (targetInputId === 'balancePhone') {
+                    searchBalanceCustomer();
+                }
+            }).catch(err => {
+                console.error("Scanner Error:", err);
+                alert("No se pudo iniciar la cámara.");
+                stopQRScanner();
+            });
+        }
+
+        window.stopQRScanner = function() {
+            if (html5QrCode) {
+                html5QrCode.stop().then(() => {
+                    document.getElementById('qrModal').classList.remove('active');
+                    html5QrCode = null;
+                }).catch(e => {
+                    document.getElementById('qrModal').classList.remove('active');
+                    html5QrCode = null;
+                });
+            } else {
+                document.getElementById('qrModal').classList.remove('active');
             }
         }
 

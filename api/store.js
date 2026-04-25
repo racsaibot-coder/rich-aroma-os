@@ -119,9 +119,14 @@ function applyOrderBenefits(orderItems, customer, paymentMethod) {
     
     // We need to keep track of applied discounts across multiple units of the same item
     const processedItems = (orderItems || []).map(item => {
-        let finalPrice = parseFloat(item.price) || 0;
+        let itemQty = parseInt(item.qty || item.quantity) || 1;
+        // Fallback: if price is missing, calculate it from finalPrice (line total)
+        let finalPrice = parseFloat(item.price);
+        if (isNaN(finalPrice) || finalPrice === 0) {
+            finalPrice = (parseFloat(item.finalPrice) || 0) / itemQty;
+        }
+        
         let appliedDiscount = 0;
-        let itemQty = item.qty || 1;
         let totalItemPrice = finalPrice * itemQty;
         let totalItemDiscount = 0;
 

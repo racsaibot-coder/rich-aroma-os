@@ -114,7 +114,8 @@ app.post('/api/checkout', async (req, res) => {
 });
 
 // Global Store Status
-let storeIsOpen = false; // Default to closed, will sync below
+let storeIsOpen = false; 
+let storeManualOverride = null; // null = sync with shift, true/false = force state
 
 // Initialize store status based on database
 async function syncStoreStatus() {
@@ -124,13 +125,17 @@ async function syncStoreStatus() {
             .select('id')
             .eq('status', 'open')
             .limit(1);
-        if (!error && data && data.length > 0) {
-            storeIsOpen = true;
-            console.log("Store initialized as OPEN (Open shift found)");
+        
+        const hasOpenShift = !error && data && data.length > 0;
+        
+        // If there's a manual override, use it. Otherwise use shift status.
+        if (storeManualOverride !== null) {
+            storeIsOpen = storeManualOverride;
         } else {
-            storeIsOpen = false;
-            console.log("Store initialized as CLOSED (No open shift found)");
+            storeIsOpen = hasOpenShift;
         }
+        
+        console.log(`[Status] Store is ${storeIsOpen ? 'OPEN' : 'CLOSED'} (Override: ${storeManualOverride}, Shift: ${hasOpenShift})`);
     } catch (e) {
         console.error("Failed to sync store status:", e);
     }
@@ -138,15 +143,15 @@ async function syncStoreStatus() {
 syncStoreStatus();
 
 app.get('/api/store/status', (req, res) => {
-    res.json({ isOpen: storeIsOpen });
+    res.json({ isOpen: storeIsOpen, manualOverride: storeManualOverride });
 });
 
 app.patch('/api/store/status', (req, res) => {
     if (typeof req.body.isOpen !== 'undefined') {
-        storeIsOpen = req.body.isOpen === true || req.body.isOpen === 'true';
+        storeManualOverride = req.body.isOpen === true || req.body.isOpen === 'true';
+        storeIsOpen = storeManualOverride;
     }
-    // Broadcast via socket could go here if needed
-    res.json({ success: true, isOpen: storeIsOpen });
+    res.json({ success: true, isOpen: storeIsOpen, manualOverride: storeManualOverride });
 });
 
 // Global memory for Receipts (Deduplication)
@@ -1459,10 +1464,42 @@ app.patch('/api/orders/:id', ensureAuthenticated, async (req, res) => {
 
                 const pointsEarned = pointsBase * multiplier;
                 
+                // --- DRINK STREAK LOGIC ---
+                // Helper to check if item is a drink (re-using logic from api/store.js)
+                const isDrink = (item) => {
+                    const name = (item.name || '').toLowerCase();
+                    const id = (item.id || '').toLowerCase();
+                    const cat = (item.category || '').toLowerCase();
+                    if (id === 'vip_membership' || name.includes('membresía')) return false;
+                    const hasDrinkKeyword = id.startsWith('hot_') || id.startsWith('cold_') || id.startsWith('frappe_') || 
+                           name.includes('latte') || name.includes('brew') || name.includes('capp') || 
+                           name.includes('tea') || name.includes('te ') || name.includes('icee') || 
+                           name.includes('espresso') || name.includes('mocha') || name.includes('matcha') || 
+                           name.includes('frappe') || name.includes('macchiato') || name.includes('jugo') || 
+                           name.includes('licuado') || name.includes('granita') || name.includes('smoothie') || 
+                           name.includes('caliente') || name.includes('helada') || name.includes('americano') ||
+                           name.includes('chocolate') || name.includes('cafe') || name.includes('café') ||
+                           cat.includes('coffee') || cat.includes('drinks') || cat.includes('heladas');
+                    if (id.startsWith('food_') && !name.includes('combo')) return false;
+                    return hasDrinkKeyword || (name.includes('combo') && !id.startsWith('food_'));
+                };
+
+                const drinksInOrder = (updatedOrder.items || []).reduce((count, item) => {
+                    if (isDrink(item)) return count + (parseInt(item.qty) || 1);
+                    return count;
+                }, 0);
+
                 // Update Customer Stats
                 const newPoints = (customer.points || 0) + pointsEarned;
                 const newTotalSpent = (parseFloat(customer.total_spent) || 0) + parseFloat(updatedOrder.total);
                 const newVisits = (customer.visits || 0) + 1;
+                let newDrinkStreak = (customer.drink_streak || 0) + drinksInOrder;
+                
+                // If they reached or exceeded 7, it means they used their free drink or earned it
+                // Logic: 6 drinks = 7th free. So streak goes 1,2,3,4,5,6 -> 7(Free) -> reset to 0
+                // For simplicity, we just keep adding and frontend can show streak % 7
+                // But better to reset so they can see "6/6" then "0/6"
+                // Actually, let's just keep a raw counter and frontend does: streak % 7
 
                 // Check Tier Upgrade
                 let newTier = customer.tier || 'bronze';
@@ -1476,6 +1513,7 @@ app.patch('/api/orders/:id', ensureAuthenticated, async (req, res) => {
                         points: newPoints,
                         total_spent: newTotalSpent,
                         visits: newVisits,
+                        drink_streak: newDrinkStreak,
                         tier: newTier
                     })
                     .eq('id', customer.id);
@@ -2521,6 +2559,19 @@ app.post('/api/admin/upload-image', requireAdmin, upload.single('image'), async 
     }
 });
 
+app.patch('/api/admin/menu/:id', requireAdmin, async (req, res) => {
+    const client = req.supabase || supabase;
+    const { data, error } = await client
+        .from('menu_items')
+        .update(req.body)
+        .eq('id', req.params.id)
+        .select()
+        .single();
+
+    if (error) return res.status(500).json({ error: error.message });
+    res.json(data);
+});
+
 app.put('/api/admin/menu/:id', requireAdmin, async (req, res) => {
     const client = req.supabase || supabase;
     const { modifier_groups, ...itemData } = req.body;
@@ -3257,7 +3308,11 @@ app.post('/api/admin/go-live', requireAdmin, async (req, res) => {
 
 // Admin Panel
 app.get('/admin', (req, res) => {
-    res.sendFile(path.join(__dirname, 'src', 'admin', 'admin.html'));
+    res.sendFile(path.join(__dirname, 'public', 'admin.html'));
+});
+
+app.get('/admin-new', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'admin-new.html'));
 });
 
 app.get('/driver', (req, res) => {
@@ -3646,7 +3701,7 @@ app.post('/api/topup', async (req, res) => {
         const { data: customer, error: custErr } = await supabase
             .from('customers')
             .select('id, name')
-            .eq('phone', phone)
+            .eq('phone', phone.replace(/\D/g, ''))
             .single();
 
         if (custErr || !customer) {

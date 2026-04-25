@@ -106,6 +106,19 @@
             </div>
             <button onclick="showView('menu')" class="w-12 h-12 flex items-center justify-center rounded-full bg-white/5 text-white text-2xl"><i class="fas fa-times"></i></button>
         </header>
+        
+        <!-- Customer Identified Bar -->
+        <div id="customer-bar" class="px-6 py-4 bg-gold/5 border-b border-gold/10 hidden flex justify-between items-center">
+            <div class="flex items-center gap-3">
+                <div class="w-8 h-8 rounded-full bg-gold/20 text-gold flex items-center justify-center text-xs"><i class="fas fa-user-check"></i></div>
+                <div>
+                    <p id="display-cust-name" class="text-[10px] font-black uppercase tracking-widest text-white">Cliente</p>
+                    <p id="display-cust-points" class="text-[8px] font-bold text-gold uppercase tracking-widest">0 Puntos</p>
+                </div>
+            </div>
+            <button onclick="clearCustomer()" class="text-white/20 hover:text-red-500 transition-colors"><i class="fas fa-times-circle"></i></button>
+        </div>
+
         <div class="flex-1 overflow-y-auto p-6 space-y-4" id="cart-items-list"></div>
         <div class="p-8 bg-black/40 border-t border-white/5 space-y-6">
             <!-- Fulfillment Type Selector -->
@@ -161,8 +174,9 @@
             <p class="text-white/30 font-black text-xs uppercase tracking-widest mb-2">Total Orden</p>
             <h3 class="text-7xl font-black text-gold tracking-tighter" id="tender-due">L. 0</h3>
         </div>
-        <div class="grid grid-cols-2 gap-4 mb-10">
+        <div class="grid grid-cols-3 gap-4 mb-10">
             <button onclick="setTender('cash')" id="btn-tender-cash" class="py-12 bg-green-600 text-white rounded-[2.5rem] font-black text-lg flex flex-col items-center gap-4 shadow-xl active:scale-95 transition-all"><i class="fas fa-money-bill-wave text-4xl"></i> Efectivo</button>
+            <button onclick="setTender('rico_balance')" id="btn-tender-rico" class="py-12 bg-gold text-dark rounded-[2.5rem] font-black text-lg flex flex-col items-center gap-4 shadow-xl active:scale-95 transition-all"><i class="fas fa-wallet text-4xl"></i> Rico Cash</button>
             <button onclick="setTender('transfer')" id="btn-tender-transfer" class="py-12 bg-blue-600 text-white rounded-[2.5rem] font-black text-lg flex flex-col items-center gap-4 shadow-xl active:scale-95 transition-all"><i class="fas fa-exchange-alt text-4xl"></i> Transf</button>
         </div>
         <div id="cash-panel" class="hidden space-y-6">
@@ -179,6 +193,13 @@
                 <p class="text-white/30 font-black text-[10px] uppercase tracking-widest mb-1">Cambio</p>
                 <h4 class="text-6xl font-black text-green-400 tracking-tighter" id="tender-change">L. 0</h4>
             </div>
+        </div>
+        <div id="rico-panel" class="hidden space-y-6">
+            <div class="bg-gold/10 border border-gold/20 rounded-[2.5rem] p-10 text-center">
+                <p class="text-gold/60 font-black text-xs uppercase tracking-widest mb-2">Saldo Disponible</p>
+                <h4 class="text-6xl font-black text-gold tracking-tighter" id="rico-balance-display">L. 0</h4>
+            </div>
+            <div id="rico-status-msg" class="text-center text-xs font-bold uppercase tracking-widest"></div>
         </div>
         <div class="mt-auto pt-12 flex gap-4">
             <button onclick="document.getElementById('tender-modal').classList.add('hidden')" class="flex-1 py-6 text-white/20 font-black text-xs uppercase tracking-widest">Cerrar</button>
@@ -498,7 +519,7 @@
 
             grid.innerHTML = filtered.map(i => `
                 <div onclick="openMod('${i.id}')" class="bg-white/5 border border-white/5 rounded-3xl overflow-hidden active:scale-95 transition-all flex flex-col h-44 relative ${i.available ? '' : 'opacity-40 grayscale'}">
-                    <img src="${i.image}" class="h-28 w-full object-cover opacity-60">
+                    ${i.image ? `<img src="${i.image}" class="h-28 w-full object-cover opacity-60">` : '<div class="h-12 bg-white/5"></div>'}
                     <div class="p-3 flex-1 flex flex-col justify-center">
                         <span class="text-[10px] font-black text-white/90 uppercase line-clamp-2">${i.name}</span>
                         <span class="text-gold font-bold text-[10px]">L. ${i.price.toFixed(0)}</span>
@@ -576,10 +597,16 @@
         }
 
         function addToCart() {
-            const finalPrice = parseFloat(document.getElementById('mod-total-price').innerText.replace('L. ', '')) / currentQty;
+            const unitPrice = parseFloat(document.getElementById('mod-total-price').innerText.replace('L. ', '')) / currentQty;
             const mods = [];
             for (const gid in currentMods) currentMods[gid].forEach(oid => { const opt = modOptions.find(o => o.id === oid); if (opt) mods.push({ name: opt.name }); });
-            cart.push({ ...currentItem, qty: currentQty, finalPrice, mods });
+            cart.push({ 
+                ...currentItem, 
+                qty: currentQty, 
+                price: unitPrice, // Backend expects 'price' as unit price
+                finalPrice: unitPrice * currentQty, // Total for this line
+                mods 
+            });
             updateCartSummary(); closeMod();
         }
 

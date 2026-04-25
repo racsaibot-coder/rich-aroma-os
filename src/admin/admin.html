@@ -2,239 +2,2132 @@
 <html lang="es">
 <head>
     <link rel="icon" type="image/png" href="/favicon.png">    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Rich Aroma Admin</title>
-    <!-- Tailwind CSS -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Admin Dashboard | Rich Aroma</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-    <style>
-        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
-        .card-stack { perspective: 1000px; }
-        .swipe-card { transition: transform 0.3s ease, opacity 0.3s ease; }
-    </style>
-</head>
-<body class="bg-gray-100 pb-20">
-
-    <!-- Header -->
-    <div class="bg-white p-4 shadow-sm sticky top-0 z-50 flex justify-between items-center">
-        <h1 class="text-xl font-bold text-gray-800">☕️ Admin HQ</h1>
-        <div class="flex items-center gap-2">
-            <span class="w-3 h-3 bg-green-500 rounded-full animate-pulse"></span>
-            <span class="text-xs text-gray-500 font-mono">LIVE</span>
-        </div>
-    </div>
-
-    <!-- MAIN DASHBOARD -->
-    <div id="view-dashboard" class="p-4 space-y-4">
-        
-        <!-- Live Stats -->
-        <div class="grid grid-cols-2 gap-4">
-            <div class="bg-white p-4 rounded-xl shadow-sm">
-                <p class="text-xs text-gray-500 uppercase font-bold">Ventas Hoy</p>
-                <p class="text-2xl font-bold text-green-600">L. 8,450</p>
-                <p class="text-xs text-green-500">▲ 12% vs Ayer</p>
-            </div>
-            <div class="bg-white p-4 rounded-xl shadow-sm">
-                <p class="text-xs text-gray-500 uppercase font-bold">Ordenes</p>
-                <p class="text-2xl font-bold text-blue-600">42</p>
-                <p class="text-xs text-gray-400">Avg: L. 201</p>
-            </div>
-        </div>
-
-        <!-- Captain Rico Status -->
-        <div class="bg-white p-4 rounded-xl shadow-sm border-l-4 border-yellow-500 flex items-center gap-4">
-            <div class="text-4xl">🐵</div>
-            <div>
-                <p class="font-bold text-gray-800">Captain Rico</p>
-                <p class="text-sm text-yellow-600">"Ticket times are slow (14m). Tell kitchen to speed up!"</p>
-            </div>
-        </div>
-
-        <!-- Quest Approvals Preview -->
-        <div class="bg-white p-4 rounded-xl shadow-sm">
-            <div class="flex justify-between items-center mb-3">
-                <h2 class="font-bold text-gray-700">📸 Quest Submissions</h2>
-                <span class="bg-red-500 text-white text-xs px-2 py-1 rounded-full">3 Pending</span>
-            </div>
-            <button onclick="switchView('quests')" class="w-full bg-blue-50 text-blue-600 py-3 rounded-lg font-bold text-sm">
-                Review Queue (3)
-            </button>
-        </div>
-
-        <!-- Staff Active -->
-        <div class="bg-white p-4 rounded-xl shadow-sm">
-            <h2 class="font-bold text-gray-700 mb-3">👥 Active Staff</h2>
-            <div class="space-y-2">
-                <div class="flex items-center justify-between">
-                    <div class="flex items-center gap-2">
-                        <div class="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold">M</div>
-                        <div>
-                            <p class="text-sm font-bold">Maria</p>
-                            <p class="text-xs text-gray-500">Barista • 4h 20m</p>
-                        </div>
-                    </div>
-                    <span class="text-xs bg-green-100 text-green-700 px-2 py-1 rounded">On Time</span>
-                </div>
-                <div class="flex items-center justify-between">
-                    <div class="flex items-center gap-2">
-                        <div class="w-8 h-8 rounded-full bg-purple-100 flex items-center justify-center text-purple-600 font-bold">C</div>
-                        <div>
-                            <p class="text-sm font-bold">Carlos</p>
-                            <p class="text-xs text-gray-500">Kitchen • 2h 10m</p>
-                        </div>
-                    </div>
-                    <span class="text-xs bg-green-100 text-green-700 px-2 py-1 rounded">On Time</span>
-                </div>
-            </div>
-        </div>
-
-    </div>
-
-    <!-- QUEST APPROVAL VIEW (Tinder Style) -->
-    <div id="view-quests" class="hidden h-[80vh] relative p-4 flex flex-col items-center justify-center">
-        
-        <div class="absolute top-4 left-4">
-            <button onclick="switchView('dashboard')" class="text-gray-500"><i class="fas fa-arrow-left"></i> Back</button>
-        </div>
-
-        <div id="card-container" class="relative w-full max-w-sm h-96 card-stack">
-            <!-- Cards injected via JS -->
-        </div>
-
-        <div class="mt-8 flex gap-6">
-            <button onclick="judge(false)" class="w-16 h-16 rounded-full bg-white shadow-lg text-red-500 text-2xl flex items-center justify-center border border-red-100 hover:bg-red-50">
-                <i class="fas fa-times"></i>
-            </button>
-            <button onclick="judge(true)" class="w-16 h-16 rounded-full bg-white shadow-lg text-green-500 text-2xl flex items-center justify-center border border-green-100 hover:bg-green-50">
-                <i class="fas fa-check"></i>
-            </button>
-        </div>
-        <p class="mt-4 text-gray-400 text-sm">Swipe or tap to review</p>
-
-    </div>
-
-    <!-- MENU MANAGER VIEW -->
-    <div id="view-menu" class="hidden p-4">
-        <div class="flex items-center gap-3 mb-4">
-            <button onclick="switchView('dashboard')" class="text-gray-500"><i class="fas fa-arrow-left"></i></button>
-            <h2 class="text-xl font-bold text-gray-800">Menu Manager</h2>
-        </div>
-
-        <div class="space-y-3" id="menu-list">
-            <!-- Items injected -->
-        </div>
-    </div>
-
-    <!-- BOTTOM NAV -->
-    <div class="fixed bottom-0 left-0 w-full bg-white border-t border-gray-200 flex justify-around p-3 pb-6 z-50">
-        <button onclick="switchView('dashboard')" class="text-blue-600 flex flex-col items-center">
-            <i class="fas fa-home text-xl"></i>
-            <span class="text-[10px] mt-1">Home</span>
-        </button>
-        <button onclick="switchView('quests')" class="text-gray-400 hover:text-blue-600 flex flex-col items-center">
-            <i class="fas fa-camera text-xl"></i>
-            <span class="text-[10px] mt-1">Quests</span>
-        </button>
-        <button onclick="switchView('menu')" class="text-gray-400 hover:text-blue-600 flex flex-col items-center">
-            <i class="fas fa-utensils text-xl"></i>
-            <span class="text-[10px] mt-1">Menu</span>
-        </button>
-        <button onclick="alert('Settings')" class="text-gray-400 hover:text-blue-600 flex flex-col items-center">
-            <i class="fas fa-cog text-xl"></i>
-            <span class="text-[10px] mt-1">Settings</span>
-        </button>
-    </div>
-
-<script>
-    // --- STATE ---
-    const submissions = [
-        { id: 1, user: "@maria_styles", type: "Instagram Story", img: "https://images.unsplash.com/photo-1511920170033-f8396924c348?w=400", time: "10m ago" },
-        { id: 2, user: "@juan_carlos", type: "Google Review", img: "https://images.unsplash.com/photo-1557804506-669a67965ba0?w=400", time: "32m ago" },
-        { id: 3, user: "@ana_banana", type: "TikTok Vibe", img: "https://images.unsplash.com/photo-1611162617474-5b21e879e113?w=400", time: "1h ago" }
-    ];
-
-    const menuItems = [
-        { id: 1, name: "Espresso", active: true },
-        { id: 2, name: "Latte", active: true },
-        { id: 3, name: "Avocado Toast", active: false }, // 86'd
-        { id: 4, name: "Banana Bread", active: true }
-    ];
-
-    // --- RENDER ---
-    function renderQuests() {
-        const container = document.getElementById('card-container');
-        container.innerHTML = "";
-        
-        if (submissions.length === 0) {
-            container.innerHTML = `<div class="text-center text-gray-400 mt-20">No pending submissions ✅</div>`;
-            return;
+    <script>
+        // AGGRESSIVE CACHE NUKE v2.6.2
+        const ADMIN_VERSION = '2.6.2';
+        if (localStorage.getItem('ra_admin_version') !== ADMIN_VERSION) {
+            localStorage.setItem('ra_admin_version', ADMIN_VERSION);
+            console.log("New Admin version detected, clearing cache...");
+            window.location.reload(true);
         }
+    </script>
+</head>
+<body class="bg-gray-100 text-gray-800 p-6">
 
-        // Show top card only
-        const sub = submissions[0];
-        container.innerHTML = `
-            <div class="bg-white rounded-2xl shadow-xl overflow-hidden h-full flex flex-col swipe-card border border-gray-200">
-                <div class="h-2/3 bg-gray-100 relative">
-                    <img src="${sub.img}" class="w-full h-full object-cover">
-                    <div class="absolute top-2 right-2 bg-black bg-opacity-50 text-white px-2 py-1 rounded text-xs">
-                        ${sub.type}
-                    </div>
-                </div>
-                <div class="p-4 flex-1">
-                    <h3 class="font-bold text-lg">${sub.user}</h3>
-                    <p class="text-gray-500 text-sm">${sub.time}</p>
-                    <div class="mt-2 flex gap-2">
-                        <span class="text-xs bg-blue-100 text-blue-600 px-2 py-1 rounded">Mutual Follow ✅</span>
-                        <span class="text-xs bg-yellow-100 text-yellow-600 px-2 py-1 rounded">Reward: L.50</span>
-                    </div>
-                </div>
+    <!-- LOGIN MODAL -->
+    <div id="login-modal" class="fixed inset-0 bg-blue-900 z-[200] flex flex-col items-center justify-center p-6 text-center">
+        <div class="max-w-xs w-full space-y-8 animate-in fade-in zoom-in-95 duration-500">
+            <div class="w-24 h-24 bg-white/10 rounded-[2rem] flex items-center justify-center mx-auto mb-6 shadow-2xl rotate-3 border border-white/20">
+                <i class="fas fa-user-shield text-4xl text-white"></i>
             </div>
-        `;
-    }
+            <div>
+                <h2 class="text-3xl font-black text-white tracking-tight">Staff Login</h2>
+                <p class="text-white/50 text-xs font-bold uppercase tracking-widest mt-2">Rich Aroma OS v2.6.2</p>
+            </div>
 
-    function renderMenuManager() {
-        const list = document.getElementById('menu-list');
-        list.innerHTML = menuItems.map(item => `
-            <div class="bg-white p-4 rounded-lg shadow-sm flex justify-between items-center">
-                <span class="font-bold ${item.active ? 'text-gray-800' : 'text-gray-400 line-through'}">${item.name}</span>
-                <button onclick="toggleItem(${item.id})" class="w-12 h-6 rounded-full transition-colors relative ${item.active ? 'bg-green-500' : 'bg-gray-300'}">
-                    <span class="absolute top-1 left-1 bg-white w-4 h-4 rounded-full transition-transform ${item.active ? 'translate-x-6' : ''}"></span>
+            <!-- PIN Display -->
+            <div class="flex justify-center gap-3 my-8">
+                <div id="pin-1" class="w-4 h-4 rounded-full border-2 border-white/30"></div>
+                <div id="pin-2" class="w-4 h-4 rounded-full border-2 border-white/30"></div>
+                <div id="pin-3" class="w-4 h-4 rounded-full border-2 border-white/30"></div>
+                <div id="pin-4" class="w-4 h-4 rounded-full border-2 border-white/30"></div>
+            </div>
+
+            <!-- Keyboard -->
+            <div class="grid grid-cols-3 gap-4">
+                <button onclick="pressKey('1')" class="w-20 h-20 rounded-2xl bg-white/5 text-white text-2xl font-black hover:bg-white/10 active:scale-90 transition-all border border-white/10">1</button>
+                <button onclick="pressKey('2')" class="w-20 h-20 rounded-2xl bg-white/5 text-white text-2xl font-black hover:bg-white/10 active:scale-90 transition-all border border-white/10">2</button>
+                <button onclick="pressKey('3')" class="w-20 h-20 rounded-2xl bg-white/5 text-white text-2xl font-black hover:bg-white/10 active:scale-90 transition-all border border-white/10">3</button>
+                <button onclick="pressKey('4')" class="w-20 h-20 rounded-2xl bg-white/5 text-white text-2xl font-black hover:bg-white/10 active:scale-90 transition-all border border-white/10">4</button>
+                <button onclick="pressKey('5')" class="w-20 h-20 rounded-2xl bg-white/5 text-white text-2xl font-black hover:bg-white/10 active:scale-90 transition-all border border-white/10">5</button>
+                <button onclick="pressKey('6')" class="w-20 h-20 rounded-2xl bg-white/5 text-white text-2xl font-black hover:bg-white/10 active:scale-90 transition-all border border-white/10">6</button>
+                <button onclick="pressKey('7')" class="w-20 h-20 rounded-2xl bg-white/5 text-white text-2xl font-black hover:bg-white/10 active:scale-90 transition-all border border-white/10">7</button>
+                <button onclick="pressKey('8')" class="w-20 h-20 rounded-2xl bg-white/5 text-white text-2xl font-black hover:bg-white/10 active:scale-90 transition-all border border-white/10">8</button>
+                <button onclick="pressKey('9')" class="w-20 h-20 rounded-2xl bg-white/5 text-white text-2xl font-black hover:bg-white/10 active:scale-90 transition-all border border-white/10">9</button>
+                <button onclick="resetPin()" class="w-20 h-20 rounded-2xl bg-red-500/20 text-red-400 text-xl font-black hover:bg-red-500/30 transition-all border border-red-500/20"><i class="fas fa-times"></i></button>
+                <button onclick="pressKey('0')" class="w-20 h-20 rounded-2xl bg-white/5 text-white text-2xl font-black hover:bg-white/10 active:scale-90 transition-all border border-white/10">0</button>
+                <button onclick="backspace()" class="w-20 h-20 rounded-2xl bg-white/5 text-white text-xl font-black hover:bg-white/10 transition-all border border-white/10"><i class="fas fa-backspace"></i></button>
+            </div>
+        </div>
+    </div>
+
+    <div id="admin-content" class="hidden max-w-4xl mx-auto">
+        <h1 class="text-3xl font-bold mb-6 flex items-center gap-2">
+            <i class="fas fa-user-shield text-blue-600"></i> Admin Dashboard
+            <span class="text-[10px] bg-blue-100 text-blue-600 px-2 py-0.5 rounded-full border border-blue-200">v2.6.2</span>
+            <div class="ml-auto flex gap-2">
+                <button onclick="startGuide()" class="bg-amber-100 text-amber-700 text-xs px-4 py-2 rounded-full font-black uppercase tracking-widest hover:bg-amber-200 transition border border-amber-200">
+                    <i class="fas fa-book-open mr-2"></i> System Guide
+                </button>
+                <button onclick="window.location.href='/onboarding.html'" class="bg-indigo-600 text-white text-xs px-4 py-2 rounded-full font-black uppercase tracking-widest hover:bg-indigo-700 transition shadow-lg shadow-indigo-600/20">
+                    <i class="fas fa-rocket mr-2"></i> Launch New Business
+                </button>
+                <button onclick="logout()" class="bg-gray-200 text-gray-600 text-xs px-4 py-2 rounded-full font-black uppercase tracking-widest hover:bg-gray-300 transition">
+                    <i class="fas fa-sign-out-alt mr-2"></i> Logout
                 </button>
             </div>
-        `).join('');
-    }
+        </h1>
 
-    // --- ACTIONS ---
-    function switchView(view) {
-        document.querySelectorAll('[id^="view-"]').forEach(el => el.classList.add('hidden'));
-        document.getElementById(`view-${view}`).classList.remove('hidden');
-        
-        // Reset Nav Colors
-        // (Simplified for prototype)
-        
-        if(view === 'quests') renderQuests();
-        if(view === 'menu') renderMenuManager();
-    }
+        <!-- Navigation Tabs -->
+        <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
+            <div class="flex gap-4 border-b border-gray-200 pb-2 w-full md:w-auto">
+                <button onclick="switchTab('overview')" id="tab-overview" class="font-bold text-blue-600 border-b-2 border-blue-600 pb-2 px-2">Overview</button>
+                <button onclick="switchTab('employees')" id="tab-employees" class="font-bold text-gray-500 hover:text-gray-800 pb-2 px-2">Employees</button>
+                <button onclick="switchTab('menu')" id="tab-menu" class="font-bold text-gray-500 hover:text-gray-800 pb-2 px-2">Menu & Modifiers</button>
+                <button onclick="switchTab('inventory')" id="tab-inventory" class="font-bold text-gray-500 hover:text-gray-800 pb-2 px-2">Inventory & Recipes</button>
+            </div>
+            
+            <!-- Store Status Toggle -->
+            <div id="store-status-control" class="bg-white px-4 py-2 rounded-xl shadow-sm border flex items-center gap-3">
+                <span id="store-status-text" class="text-xs font-bold uppercase text-gray-500">Store is Closed</span>
+                <button onclick="toggleStoreStatus()" id="store-status-toggle" class="relative inline-flex h-6 w-11 items-center rounded-full bg-gray-300 transition-colors focus:outline-none">
+                    <span id="store-status-knob" class="inline-block h-4 w-4 transform rounded-full bg-white transition-transform translate-x-1"></span>
+                </button>
+            </div>
+        </div>
 
-    function judge(approved) {
-        if (submissions.length === 0) return;
-        
-        const sub = submissions.shift(); // Remove top
-        // In real app: API call to approve/reject
-        console.log(approved ? `Approved ${sub.user}` : `Rejected ${sub.user}`);
-        
-        renderQuests(); // Show next
-    }
+        <!-- TAB: OVERVIEW -->
+        <div id="section-overview">
+            <div class="grid md:grid-cols-4 gap-6 mb-8">
+                <div class="bg-white p-6 rounded-2xl shadow-sm">
+                    <h3 class="text-gray-500 text-xs font-bold uppercase">Total Leads</h3>
+                    <p class="text-4xl font-bold text-gray-800" id="totalLeads">0</p>
+                </div>
+                <div class="bg-white p-6 rounded-2xl shadow-sm">
+                    <h3 class="text-gray-500 text-xs font-bold uppercase">Photos</h3>
+                    <p class="text-4xl font-bold text-purple-600" id="totalPhotos">0</p>
+                </div>
+                <div class="bg-white p-6 rounded-2xl shadow-sm">
+                    <h3 class="text-gray-500 text-xs font-bold uppercase">Recent Orders</h3>
+                    <p class="text-4xl font-bold text-green-600" id="totalOrders">0</p>
+                </div>
+                <a href="/creators/review" class="bg-blue-600 p-6 rounded-2xl shadow-sm hover:bg-blue-700 transition cursor-pointer flex flex-col justify-center h-full">
+                    <h3 class="text-blue-200 text-xs font-bold uppercase">Creators</h3>
+                    <p class="text-xl font-bold text-white flex items-center gap-2"><i class="fas fa-video"></i> Review Content</p>
+                </a>
+            </div>
 
-    function toggleItem(id) {
-        const item = menuItems.find(i => i.id === id);
-        item.active = !item.active;
-        // In real app: API call to update DB
-        renderMenuManager();
-    }
+            <h2 class="text-xl font-bold mb-4">Recent Orders</h2>
+            <div class="bg-white rounded-2xl shadow-lg overflow-hidden mb-8">
+                <table class="w-full text-left border-collapse">
+                    <thead class="bg-gray-50 text-gray-500 text-xs uppercase">
+                        <tr>
+                            <th class="p-4">Order #</th>
+                            <th class="p-4">Items</th>
+                            <th class="p-4">Total</th>
+                            <th class="p-4">Status</th>
+                            <th class="p-4">Time</th>
+                            <th class="p-4 text-right">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="ordersTable" class="divide-y divide-gray-100 text-sm">
+                        <!-- Injected via JS -->
+                    </tbody>
+                </table>
+            </div>
 
+            <h2 class="text-xl font-bold mb-4">Registered Leads</h2>
+            <div class="bg-white rounded-2xl shadow-lg overflow-hidden">
+                <table class="w-full text-left border-collapse">
+                    <thead class="bg-gray-50 text-gray-500 text-xs uppercase">
+                        <tr>
+                            <th class="p-4">Photo</th>
+                            <th class="p-4">Name</th>
+                            <th class="p-4">Phone</th>
+                            <th class="p-4">Submitted</th>
+                            <th class="p-4">Tags</th>
+                            <th class="p-4 text-right">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="leadsTable" class="divide-y divide-gray-100 text-sm">
+                        <!-- Injected via JS -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- TAB: EMPLOYEES -->
+        <div id="section-employees" class="hidden">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-xl font-bold">Team Management</h2>
+                <button onclick="document.getElementById('add-emp-modal').classList.remove('hidden')" class="bg-blue-600 text-white px-4 py-2 rounded-lg font-bold shadow hover:bg-blue-700">+ Add Employee</button>
+            </div>
+            
+            <div class="bg-white rounded-2xl shadow-lg overflow-hidden mb-8">
+                <table class="w-full text-left border-collapse">
+                    <thead class="bg-gray-50 text-gray-500 text-xs uppercase">
+                        <tr>
+                            <th class="p-4">Name</th>
+                            <th class="p-4">Role</th>
+                            <th class="p-4">PIN</th>
+                            <th class="p-4 text-center">Hourly Rate</th>
+                            <th class="p-4">Status</th>
+                            <th class="p-4 text-right">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="employeesTable" class="divide-y divide-gray-100 text-sm">
+                        <!-- Injected via JS -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- TAB: MENU -->
+        <div id="section-menu" class="hidden">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-xl font-bold">Menu & Modifiers</h2>
+                <div class="flex gap-2">
+                    <button onclick="document.getElementById('create-menu-item-modal').classList.remove('hidden')" class="bg-green-600 text-white px-4 py-2 rounded-lg font-bold shadow hover:bg-green-700">+ New Menu Item</button>
+                    <button onclick="document.getElementById('create-mod-group-modal').classList.remove('hidden')" class="bg-purple-600 text-white px-4 py-2 rounded-lg font-bold shadow hover:bg-purple-700">+ New Modifier Group</button>
+                    <button onclick="openCreateModOptionModal()" class="bg-blue-600 text-white px-4 py-2 rounded-lg font-bold shadow hover:bg-blue-700">+ New Option</button>
+                </div>
+            </div>
+            
+            <div class="bg-white rounded-2xl shadow-lg overflow-hidden mb-8">
+                <table class="w-full text-left border-collapse">
+                    <thead class="bg-gray-50 text-gray-500 text-xs uppercase">
+                        <tr>
+                            <th class="p-4">Item Name</th>
+                            <th class="p-4">Category</th>
+                            <th class="p-4">Price</th>
+                            <th class="p-4 text-center">Base Recipe</th>
+                            <th class="p-4 text-right">Modifiers</th>
+                        </tr>
+                    </thead>
+                    <tbody id="menuTable" class="divide-y divide-gray-100 text-sm">
+                        <!-- Injected via JS -->
+                    </tbody>
+                </table>
+            
+            <div class="flex justify-between items-center mb-4 mt-12">
+                <h2 class="text-xl font-bold">Modifier Database</h2>
+            </div>
+            <div class="bg-white rounded-2xl shadow-lg overflow-hidden mb-8 p-6" id="modifiers-database-container">
+                <!-- Modifiers injected via JS -->
+            </div>
+            </div>
+
+            <!-- TAB: INVENTORY -->
+            <div id="section-inventory" class="hidden">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-xl font-bold">Raw Ingredients & Inventory</h2>
+                <button onclick="document.getElementById('add-inventory-modal').classList.remove('hidden')" class="bg-blue-600 text-white px-4 py-2 rounded-lg font-bold shadow hover:bg-blue-700">+ Add Ingredient</button>
+            </div>
+
+            <div class="bg-white rounded-2xl shadow-lg overflow-hidden mb-8">
+                <table class="w-full text-left border-collapse">
+                    <thead class="bg-gray-50 text-gray-500 text-xs uppercase">
+                        <tr>
+                            <th class="p-4">Ingredient</th>
+                            <th class="p-4">Current Stock</th>
+                            <th class="p-4">Min Stock</th>
+                            <th class="p-4">Unit</th>
+                            <th class="p-4 text-right">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="inventoryTable" class="divide-y divide-gray-100 text-sm">
+                        <!-- Injected via JS -->
+                    </tbody>
+                </table>
+            </div>
+            </div>
+
+    </div>
+
+    
+    <!-- SYSTEM GUIDE MODAL -->
+    <div id="guide-modal" class="hidden fixed inset-0 bg-dark/90 backdrop-blur-md flex items-center justify-center z-[100]">
+        <div class="bg-white rounded-[2.5rem] p-10 max-w-2xl w-full shadow-2xl relative overflow-hidden">
+            <!-- Progress Bar -->
+            <div class="absolute top-0 left-0 h-1 bg-blue-600 transition-all duration-500" id="guide-progress" style="width: 0%"></div>
+            
+            <div id="guide-content" class="space-y-6">
+                <!-- Injected via JS -->
+            </div>
+
+            <div class="flex justify-between items-center mt-10 pt-6 border-t">
+                <button onclick="closeGuide()" class="text-gray-400 font-bold text-sm uppercase tracking-widest">Skip Guide</button>
+                <button onclick="nextGuideStep()" id="guide-next-btn" class="bg-blue-600 text-white px-8 py-4 rounded-2xl font-black uppercase tracking-[0.2em] text-xs shadow-lg shadow-blue-600/30">
+                    Next <i class="fas fa-arrow-right ml-2"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- EDIT MODIFIER OPTION MODAL -->
+    <div id="edit-mod-option-modal" class="hidden fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50">
+        <div class="bg-white rounded-3xl p-8 max-w-md w-full shadow-2xl">
+            <h3 class="text-2xl font-bold mb-6">Edit Modifier Option</h3>
+            <input type="hidden" id="edit-option-id">
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Option Name</label>
+                    <input type="text" id="edit-option-name" class="w-full border rounded-lg p-3 outline-none focus:border-blue-500">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Price Adjustment (Lps)</label>
+                    <input type="number" id="edit-option-price" class="w-full border rounded-lg p-3 outline-none focus:border-blue-500">
+                </div>
+                <div class="flex items-center gap-3">
+                    <input type="checkbox" id="edit-option-default" class="w-5 h-5 text-blue-600">
+                    <label for="edit-option-default" class="font-bold text-gray-700">Set as Default</label>
+                </div>
+            </div>
+            <div class="flex gap-3 mt-8">
+                <button onclick="document.getElementById('edit-mod-option-modal').classList.add('hidden')" class="flex-1 py-3 font-bold text-gray-500">Cancel</button>
+                <button id="save-edit-option-btn" onclick="updateModifierOption()" class="flex-1 py-3 bg-blue-600 text-white rounded-xl font-bold">Update Option</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ADD/EDIT INVENTORY MODAL -->
+    <div id="add-inventory-modal" class="hidden fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50">
+        <div class="bg-white rounded-3xl p-8 max-w-md w-full shadow-2xl">
+            <h3 class="text-2xl font-bold mb-6">Manage Ingredient</h3>
+            <input type="hidden" id="inv-id">
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Name</label>
+                    <input type="text" id="inv-name" class="w-full border rounded-lg p-3 outline-none focus:border-blue-500">
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Current Stock</label>
+                        <input type="number" id="inv-stock" class="w-full border rounded-lg p-3 outline-none focus:border-blue-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Min Stock</label>
+                        <input type="number" id="inv-min-stock" class="w-full border rounded-lg p-3 outline-none focus:border-blue-500">
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Unit</label>
+                    <select id="inv-unit" class="w-full border rounded-lg p-3 outline-none focus:border-blue-500">
+                        <option value="g">Grams (g)</option>
+                        <option value="ml">Milliliters (ml)</option>
+                        <option value="unit">Units (ea)</option>
+                        <option value="oz">Ounces (oz)</option>
+                    </select>
+                </div>
+            </div>
+            <div class="flex gap-3 mt-8">
+                <button onclick="document.getElementById('add-inventory-modal').classList.add('hidden')" class="flex-1 py-3 font-bold text-gray-500">Cancel</button>
+                <button onclick="saveInventory()" class="flex-1 py-3 bg-blue-600 text-white rounded-xl font-bold">Save Ingredient</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- EDIT BASE RECIPE MODAL -->
+    <div id="edit-recipe-modal" class="hidden fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50">
+        <div class="bg-white w-full max-w-2xl p-6 rounded-2xl flex flex-col max-h-[90vh]">
+            <h2 class="text-xl font-bold mb-2" id="edit-recipe-title">Base Recipe Builder</h2>
+            <p class="text-xs text-gray-500 mb-4">Define what modifiers are included by default when a specific size/option is selected.</p>
+            <input type="hidden" id="edit-recipe-item-id">
+            
+            <div class="flex-1 overflow-y-auto mb-4 bg-gray-50 p-4 rounded-xl border border-gray-200" id="recipe-rules-container">
+                <!-- Rules injected here -->
+            </div>
+            
+            <button onclick="addRecipeRule()" class="w-full bg-blue-100 text-blue-700 border-2 border-blue-200 border-dashed py-2 rounded-xl font-bold hover:bg-blue-200 mb-4 transition">
+                <i class="fas fa-plus mr-2"></i> Add Rule
+            </button>
+            
+            <div class="flex gap-4 mt-auto pt-4 border-t">
+                <button onclick="document.getElementById('edit-recipe-modal').classList.add('hidden')" class="w-1/2 bg-gray-200 text-gray-800 py-3 rounded-lg font-bold hover:bg-gray-300">Cancel</button>
+                <button onclick="saveBaseRecipe()" id="save-recipe-btn" class="w-1/2 bg-green-600 text-white py-3 rounded-lg font-bold hover:bg-green-700">Save Recipe</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- EDIT MENU ITEM MODAL -->
+    <div id="edit-menu-item-modal" class="hidden fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50">
+        <div class="bg-white w-full max-w-sm rounded-2xl shadow-2xl p-6">
+            <h2 class="text-2xl font-bold mb-4">Edit Menu Item</h2>
+            <input type="hidden" id="edit-item-id">
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Name</label>
+                    <input type="text" id="edit-item-name" class="w-full border rounded-lg p-3 outline-none focus:border-green-500">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Category</label>
+                    <select id="edit-item-category" class="w-full border rounded-lg p-3 outline-none focus:border-green-500">
+                        <option value="combos">🔥 Combos / Paquetes</option>
+                        <option value="coffee">☕ Café / Calientes</option>
+                        <option value="drinks">🥤 Heladas / Refreshers</option>
+                        <option value="food">🥐 Comida / Salados</option>
+                        <option value="pastry">🍰 Repostería / Dulce</option>
+                        <option value="side">🍟 Acompañamientos</option>
+                        <option value="secret">🤫 Menú Secreto</option>
+                        <option value="retail">🛍️ Retail / Otros</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Price (Lps)</label>
+                    <input type="number" id="edit-item-price" class="w-full border rounded-lg p-3 outline-none focus:border-green-500">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Description</label>
+                    <input type="text" id="edit-item-desc" class="w-full border rounded-lg p-3 outline-none focus:border-green-500">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Image URL</label>
+                    <div class="flex gap-2">
+                        <input type="text" id="edit-item-image" class="flex-1 border rounded-lg p-3 outline-none focus:border-green-500" placeholder="URL or leave blank">
+                        <input type="file" id="edit-item-image-file" accept="image/*" class="hidden" onchange="uploadImage(this)">
+                        <button type="button" onclick="document.getElementById('edit-item-image-file').click()" class="bg-blue-100 text-blue-700 px-4 rounded-lg font-bold hover:bg-blue-200 transition" id="upload-img-btn">
+                            <i class="fas fa-upload"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <div class="flex gap-3 mt-6">
+                <button onclick="document.getElementById('edit-menu-item-modal').classList.add('hidden')" class="w-1/2 bg-gray-200 text-gray-800 py-3 rounded-lg font-bold hover:bg-gray-300">Cancel</button>
+                <button onclick="updateMenuItem()" id="update-menu-item-btn" class="w-1/2 bg-blue-600 text-white py-3 rounded-lg font-bold hover:bg-blue-700">Save</button>
+            </div>
+        </div>
+    </div>
+    <div id="create-menu-item-modal" class="hidden fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50">
+        <div class="bg-white w-full max-w-sm rounded-2xl shadow-2xl p-6">
+            <h2 class="text-2xl font-bold mb-4">New Menu Item</h2>
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Item Name</label>
+                    <input type="text" id="new-menu-name" class="w-full border rounded-lg p-3 outline-none focus:border-green-500" placeholder="e.g. Caramel Macchiato">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Category</label>
+                    <select id="new-menu-category" class="w-full border rounded-lg p-3 outline-none focus:border-green-500">
+                        <option value="combos">🔥 Combos / Paquetes</option>
+                        <option value="coffee">☕ Café / Calientes</option>
+                        <option value="drinks">🥤 Heladas / Refreshers</option>
+                        <option value="food">🥐 Comida / Salados</option>
+                        <option value="pastry">🍰 Repostería / Dulce</option>
+                        <option value="side">🍟 Acompañamientos</option>
+                        <option value="secret">🤫 Menú Secreto</option>
+                        <option value="retail">🛍️ Retail / Otros</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Price (Lempiras)</label>
+                    <input type="number" id="new-menu-price" class="w-full border rounded-lg p-3 outline-none focus:border-green-500" placeholder="0">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Description (Optional)</label>
+                    <input type="text" id="new-menu-desc" class="w-full border rounded-lg p-3 outline-none focus:border-green-500" placeholder="A brief description...">
+                </div>
+            </div>
+            <div class="flex gap-3 mt-6">
+                <button onclick="document.getElementById('create-menu-item-modal').classList.add('hidden')" class="w-1/2 bg-gray-200 text-gray-800 py-3 rounded-lg font-bold hover:bg-gray-300">Cancel</button>
+                <button onclick="saveMenuItem()" id="save-menu-item-btn" class="w-1/2 bg-green-600 text-white py-3 rounded-lg font-bold hover:bg-green-700">Create</button>
+            </div>
+        </div>
+    </div>
+    <div id="add-emp-modal" class="hidden fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50">
+        <div class="bg-white w-full max-w-sm rounded-2xl shadow-2xl p-6">
+            <h2 class="text-2xl font-bold mb-4">New Employee</h2>
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Full Name</label>
+                    <input type="text" id="new-emp-name" class="w-full border rounded-lg p-3 outline-none focus:border-blue-500" placeholder="Juan Perez">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Role</label>
+                    <select id="new-emp-role" class="w-full border rounded-lg p-3 outline-none focus:border-blue-500">
+                        <option value="barista">Barista / Operator</option>
+                        <option value="barista_cashier">Barista / Caja</option>
+                        <option value="cook">Cocinero (Cook)</option>
+                        <option value="barista_cook">Barista / Cocina</option>
+                        <option value="admin">Manager / Admin</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-gray-500 uppercase mb-1">POS PIN (4 digits)</label>
+                    <input type="text" id="new-emp-pin" maxlength="4" class="w-full border rounded-lg p-3 outline-none focus:border-blue-500 tracking-widest text-lg font-mono" placeholder="1234">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Hourly Rate (Lps/hr)</label>
+                    <input type="number" id="new-emp-rate" class="w-full border rounded-lg p-3 outline-none focus:border-blue-500 font-mono" placeholder="0.00">
+                </div>
+            </div>
+            <div class="flex gap-3 mt-6">
+                <button onclick="document.getElementById('add-emp-modal').classList.add('hidden')" class="w-1/2 bg-gray-200 text-gray-800 py-3 rounded-lg font-bold hover:bg-gray-300">Cancel</button>
+                <button onclick="saveEmployee()" id="save-emp-btn" class="w-1/2 bg-blue-600 text-white py-3 rounded-lg font-bold hover:bg-blue-700">Save</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- EDIT MODIFIERS MODAL -->
+    <div id="edit-modifiers-modal" class="hidden fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50">
+        <div class="bg-white w-full max-w-sm rounded-2xl shadow-2xl p-6 max-h-[80vh] flex flex-col">
+            <h2 class="text-xl font-bold mb-4" id="edit-modifiers-title">Edit Modifiers</h2>
+            <input type="hidden" id="edit-modifiers-item-id">
+            <div id="modifiers-list" class="space-y-3 overflow-y-auto flex-1 mb-4">
+                <!-- Checkboxes injected via JS -->
+            </div>
+            <div class="flex gap-3 mt-auto">
+                <button onclick="document.getElementById('edit-modifiers-modal').classList.add('hidden')" class="w-1/2 bg-gray-200 text-gray-800 py-3 rounded-lg font-bold hover:bg-gray-300">Cancel</button>
+                <button onclick="saveModifiers()" id="save-modifiers-btn" class="w-1/2 bg-blue-600 text-white py-3 rounded-lg font-bold hover:bg-blue-700">Save</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- CREATE MODIFIER GROUP MODAL -->
+    <div id="create-mod-group-modal" class="hidden fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50">
+        <div class="bg-white w-full max-w-sm rounded-2xl shadow-2xl p-6">
+            <h2 class="text-2xl font-bold mb-4">New Modifier Group</h2>
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Group Name</label>
+                    <input type="text" id="new-group-name" class="w-full border rounded-lg p-3 outline-none focus:border-purple-500" placeholder="e.g. Milk Type">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Max Selections</label>
+                    <input type="number" id="new-group-max" class="w-full border rounded-lg p-3 outline-none focus:border-purple-500" value="1">
+                </div>
+                <div class="flex items-center gap-2">
+                    <input type="checkbox" id="new-group-required" class="w-5 h-5 text-purple-600">
+                    <label class="font-bold text-gray-700">Required?</label>
+                </div>
+            </div>
+            <div class="flex gap-3 mt-6">
+                <button onclick="document.getElementById('create-mod-group-modal').classList.add('hidden')" class="w-1/2 bg-gray-200 text-gray-800 py-3 rounded-lg font-bold hover:bg-gray-300">Cancel</button>
+                <button onclick="saveModifierGroup()" id="save-group-btn" class="w-1/2 bg-purple-600 text-white py-3 rounded-lg font-bold hover:bg-purple-700">Create</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- CREATE MODIFIER OPTION MODAL -->
+    <div id="create-mod-option-modal" class="hidden fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50">
+        <div class="bg-white w-full max-w-sm rounded-2xl shadow-2xl p-6">
+            <h2 class="text-2xl font-bold mb-4">New Option</h2>
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Select Group</label>
+                    <select id="new-option-group" class="w-full border rounded-lg p-3 outline-none focus:border-blue-500">
+                        <!-- Options injected via JS -->
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Option Name</label>
+                    <input type="text" id="new-option-name" class="w-full border rounded-lg p-3 outline-none focus:border-blue-500" placeholder="e.g. Almond Milk">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Price Adjustment (Lempiras)</label>
+                    <input type="number" id="new-option-price" class="w-full border rounded-lg p-3 outline-none focus:border-blue-500" value="0">
+                </div>
+                <div class="flex items-center gap-2">
+                    <input type="checkbox" id="new-option-default" class="w-5 h-5 text-blue-600">
+                    <label class="font-bold text-gray-700">Is Default?</label>
+                </div>
+            </div>
+            <div class="flex gap-3 mt-6">
+                <button onclick="document.getElementById('create-mod-option-modal').classList.add('hidden')" class="w-1/2 bg-gray-200 text-gray-800 py-3 rounded-lg font-bold hover:bg-gray-300">Cancel</button>
+                <button onclick="saveModifierOption()" id="save-option-btn" class="w-1/2 bg-blue-600 text-white py-3 rounded-lg font-bold hover:bg-blue-700">Create</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentPin = '';
+        let staffUser = null;
+
+        function pressKey(num) {
+            if (currentPin.length < 4) {
+                currentPin += num;
+                updatePinDisplay();
+                if (currentPin.length === 4) login();
+            }
+        }
+
+        function resetPin() {
+            currentPin = '';
+            updatePinDisplay();
+        }
+
+        function backspace() {
+            currentPin = currentPin.slice(0, -1);
+            updatePinDisplay();
+        }
+
+        function updatePinDisplay() {
+            for (let i = 1; i <= 4; i++) {
+                const dot = document.getElementById(`pin-${i}`);
+                if (i <= currentPin.length) {
+                    dot.classList.add('bg-white');
+                    dot.classList.remove('border-white/30');
+                } else {
+                    dot.classList.remove('bg-white');
+                    dot.classList.add('border-white/30');
+                }
+            }
+        }
+
+        async function login() {
+            try {
+                const res = await fetch('/api/admin?action=staff_login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ pin: currentPin })
+                });
+                const data = await res.json();
+                if (res.ok) {
+                    staffUser = data.employee;
+                    localStorage.setItem('ra_admin_pin', currentPin);
+                    localStorage.setItem('ra_staff_user', JSON.stringify(staffUser));
+                    showDashboard();
+                } else {
+                    alert(data.error || "Login Failed");
+                    resetPin();
+                }
+            } catch (e) {
+                console.error(e);
+                alert("Network error during login");
+                resetPin();
+            }
+        }
+
+        function logout() {
+            localStorage.removeItem('ra_admin_pin');
+            localStorage.removeItem('ra_staff_user');
+            window.location.reload();
+        }
+
+        function showDashboard() {
+            document.getElementById('login-modal').classList.add('hidden');
+            document.getElementById('admin-content').classList.remove('hidden');
+            applyRbac();
+            
+            // Default tab based on role
+            if (staffUser.role === 'admin') {
+                switchTab('overview');
+            } else {
+                switchTab('menu');
+            }
+        }
+
+        function applyRbac() {
+            const isAdmin = staffUser && staffUser.role === 'admin';
+            
+            // Hide/Show Nav Tabs
+            document.getElementById('tab-overview').classList.toggle('hidden', !isAdmin);
+            document.getElementById('tab-employees').classList.toggle('hidden', !isAdmin);
+            
+            // Hide/Show specific buttons (e.g., Rocket for onboarding)
+            const rocketBtn = document.querySelector('.fa-rocket')?.parentElement;
+            if (rocketBtn) rocketBtn.classList.toggle('hidden', !isAdmin);
+        }
+
+        // Initialize on load
+        window.addEventListener('load', async () => {
+            const savedPin = localStorage.getItem('ra_admin_pin');
+            if (savedPin) {
+                currentPin = savedPin;
+                await login();
+            }
+        });
+
+        function getHeaders() {
+            const token = localStorage.getItem('ra_admin_pin') || '';
+            return { 
+                'Authorization': `Bearer ${token}`, 
+                'Content-Type': 'application/json' 
+            };
+        }
+
+        // STORE STATUS LOGIC
+        let storeIsOpen = false;
+
+        async function fetchStoreStatus() {
+            try {
+                const res = await fetch('/api/store/status', { headers: getHeaders() });
+                const data = await res.json();
+                updateStoreStatusUI(data.isOpen);
+            } catch (e) {
+                console.error("Failed to fetch store status:", e);
+            }
+        }
+
+        function updateStoreStatusUI(isOpen) {
+            storeIsOpen = isOpen;
+            const text = document.getElementById('store-status-text');
+            const toggle = document.getElementById('store-status-toggle');
+            const knob = document.getElementById('store-status-knob');
+            
+            if (isOpen) {
+                text.innerText = "Store is Open";
+                text.classList.remove('text-gray-500');
+                text.classList.add('text-green-600');
+                toggle.classList.remove('bg-gray-300');
+                toggle.classList.add('bg-green-500');
+                knob.classList.remove('translate-x-1');
+                knob.classList.add('translate-x-6');
+            } else {
+                text.innerText = "Store is Closed";
+                text.classList.remove('text-green-600');
+                text.classList.add('text-gray-500');
+                toggle.classList.remove('bg-green-500');
+                toggle.classList.add('bg-gray-300');
+                knob.classList.remove('translate-x-6');
+                knob.classList.add('translate-x-1');
+            }
+        }
+
+        async function toggleStoreStatus() {
+            const newState = !storeIsOpen;
+            try {
+                const res = await fetch('/api/store/status', {
+                    method: 'PATCH',
+                    headers: getHeaders(),
+                    body: JSON.stringify({ isOpen: newState })
+                });
+                if (res.ok) {
+                    const data = await res.json();
+                    updateStoreStatusUI(data.isOpen);
+                }
+            } catch (e) {
+                console.error("Failed to toggle store status:", e);
+                alert("Failed to update store status");
+            }
+        }
+
+        function switchTab(tabId) {
+            document.getElementById('section-overview').classList.add('hidden');
+            document.getElementById('section-employees').classList.add('hidden');
+            document.getElementById('section-menu').classList.add('hidden');
+            document.getElementById('section-inventory').classList.add('hidden');
+            
+            document.getElementById('tab-overview').className = "font-bold text-gray-500 hover:text-gray-800 pb-2 px-2";
+            document.getElementById('tab-employees').className = "font-bold text-gray-500 hover:text-gray-800 pb-2 px-2";
+            document.getElementById('tab-menu').className = "font-bold text-gray-500 hover:text-gray-800 pb-2 px-2";
+            document.getElementById('tab-inventory').className = "font-bold text-gray-500 hover:text-gray-800 pb-2 px-2";
+            
+            document.getElementById(`section-${tabId}`).classList.remove('hidden');
+            document.getElementById(`tab-${tabId}`).className = "font-bold text-blue-600 border-b-2 border-blue-600 pb-2 px-2";
+            
+            if(tabId === 'employees') loadEmployees();
+            if(tabId === 'menu') { loadMenu(); loadModifiersDatabase(); }
+            if(tabId === 'inventory') loadInventory();
+        }
+
+        async function loadInventory() {
+            try {
+                const res = await fetch('/api/admin?action=inventory', { headers: getHeaders() });
+                const data = await res.json();
+                
+                const tbody = document.getElementById('inventoryTable');
+                tbody.innerHTML = '';
+                
+                data.forEach(item => {
+                    const isLow = parseFloat(item.current_stock) <= parseFloat(item.min_stock);
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td class="p-4">
+                            <div class="font-bold text-gray-800">${escapeHtml(item.name)}</div>
+                            <div class="text-[10px] text-gray-400 font-mono">${item.id}</div>
+                        </td>
+                        <td class="p-4 ${isLow ? 'text-red-600 font-bold' : 'text-gray-600'}">${parseFloat(item.current_stock).toFixed(2)}</td>
+                        <td class="p-4 text-gray-400">${parseFloat(item.min_stock).toFixed(2)}</td>
+                        <td class="p-4 text-gray-600">${escapeHtml(item.unit)}</td>
+                        <td class="p-4 text-right">
+                            <button onclick="openEditInventoryModal('${item.id}', '${escapeHtml(item.name)}', ${item.current_stock}, ${item.min_stock}, '${item.unit}')" class="text-blue-600 hover:text-blue-800 text-xs font-bold">Edit</button>
+                        </td>
+                    `;
+                    tbody.appendChild(row);
+                });
+            } catch(e) { console.error(e); }
+        }
+
+        async function saveInventory() {
+            const payload = {
+                id: document.getElementById('inv-id').value || 'INV-' + Date.now(),
+                name: document.getElementById('inv-name').value,
+                current_stock: parseFloat(document.getElementById('inv-stock').value),
+                min_stock: parseFloat(document.getElementById('inv-min-stock').value),
+                unit: document.getElementById('inv-unit').value
+            };
+
+            const res = await fetch('/api/admin?action=inventory_update', {
+                method: 'POST',
+                headers: getHeaders(),
+                body: JSON.stringify(payload)
+            });
+
+            if (res.ok) {
+                document.getElementById('add-inventory-modal').classList.add('hidden');
+                loadInventory();
+            }
+        }
+
+        function openNewInventoryModal() {
+            document.getElementById('inv-id').value = '';
+            document.getElementById('inv-name').value = '';
+            document.getElementById('inv-stock').value = '';
+            document.getElementById('inv-min-stock').value = '';
+            document.getElementById('inv-unit').value = 'g';
+            document.getElementById('add-inventory-modal').classList.remove('hidden');
+        }
+
+        function openEditInventoryModal(id, name, stock, min, unit) {
+            document.getElementById('inv-id').value = id;
+            document.getElementById('inv-name').value = name;
+            document.getElementById('inv-stock').value = stock;
+            document.getElementById('inv-min-stock').value = min;
+            document.getElementById('inv-unit').value = unit;
+            document.getElementById('add-inventory-modal').classList.remove('hidden');
+        }
+
+        let globalModGroups = [];
+
+        
+        let currentRecipeRules = {};
+        let allOptionsGlobal = [];
+
+        async function openBaseRecipeModal(itemId, itemName) {
+            document.getElementById('edit-recipe-title').innerText = `Base Recipe: ${itemName}`;
+            document.getElementById('edit-recipe-item-id').value = itemId;
+            
+            try {
+                // Fetch current item to get existing base_recipe
+                const res = await fetch('/api/admin/menu', { headers: getHeaders() });
+                const data = await res.json();
+                const item = data.items.find(i => i.id === itemId);
+                currentRecipeRules = item && item.base_recipe ? item.base_recipe : {};
+                
+                // Fetch all options so we can populate dropdowns
+                const modRes = await fetch('/api/admin/modifiers', { headers: getHeaders() });
+                const modData = await modRes.json();
+                allOptionsGlobal = modData.modOptions || [];
+                globalModGroups = modData.modGroups || [];
+                
+                renderRecipeRules();
+                document.getElementById('edit-recipe-modal').classList.remove('hidden');
+            } catch(e) {
+                console.error(e);
+            }
+        }
+
+        function renderRecipeRules() {
+            const container = document.getElementById('recipe-rules-container');
+            container.innerHTML = '';
+            
+            if (Object.keys(currentRecipeRules).length === 0) {
+                container.innerHTML = '<p class="text-center text-gray-400 font-medium py-8">No rules defined yet.<br>Click "Add Rule" to start.</p>';
+                return;
+            }
+            
+            for (const [triggerName, effects] of Object.entries(currentRecipeRules)) {
+                const ruleDiv = document.createElement('div');
+                ruleDiv.className = "bg-white p-4 rounded-xl shadow-sm border border-gray-200 mb-4 relative";
+                
+                // Delete Rule Button
+                const delBtn = document.createElement('button');
+                delBtn.className = "absolute top-2 right-2 text-red-400 hover:text-red-600";
+                delBtn.innerHTML = '<i class="fas fa-trash"></i>';
+                delBtn.onclick = () => { delete currentRecipeRules[triggerName]; renderRecipeRules(); };
+                ruleDiv.appendChild(delBtn);
+                
+                // Trigger Header
+                ruleDiv.innerHTML += `
+                    <div class="flex items-center gap-2 mb-3">
+                        <span class="font-bold text-gray-700 bg-gray-100 px-3 py-1 rounded-lg text-sm">WHEN</span>
+                        <select class="border border-gray-300 rounded-lg p-2 text-sm font-bold w-48 trigger-select" data-original="${triggerName}">
+                            ${allOptionsGlobal.map(o => `<option value="${o.name}" ${o.name === triggerName ? 'selected' : ''}>${o.name}</option>`).join('')}
+                        </select>
+                        <span class="font-bold text-gray-700 bg-gray-100 px-3 py-1 rounded-lg text-sm">IS SELECTED</span>
+                    </div>
+                `;
+                
+                // Effects List
+                const effectsContainer = document.createElement('div');
+                effectsContainer.className = "pl-4 border-l-2 border-green-400 space-y-2";
+                
+                for (const [groupId, optionId] of Object.entries(effects)) {
+                    const group = globalModGroups.find(g => g.id === groupId) || {name: 'Unknown Group'};
+                    const option = allOptionsGlobal.find(o => o.id === optionId) || {name: 'Unknown Option'};
+                    
+                    effectsContainer.innerHTML += `
+                        <div class="flex items-center gap-2 text-sm">
+                            <span class="font-bold text-green-600"><i class="fas fa-arrow-right"></i> SET</span>
+                            <span class="bg-gray-100 px-2 py-1 rounded border border-gray-200">${group.name}</span>
+                            <span class="text-gray-500">TO</span>
+                            <span class="font-bold bg-green-50 text-green-700 px-2 py-1 rounded border border-green-200">${option.name}</span>
+                            <button onclick="removeRecipeEffect('${triggerName}', '${groupId}')" class="text-gray-400 hover:text-red-500 ml-auto"><i class="fas fa-times"></i></button>
+                        </div>
+                    `;
+                }
+                
+                // Add Effect Controls
+                effectsContainer.innerHTML += `
+                    <div class="flex items-center gap-2 mt-2">
+                        <select id="new-effect-group-${triggerName.replace(/\s/g, '')}" class="border border-gray-300 rounded p-1 text-sm w-1/3" onchange="updateEffectOptions(this, '${triggerName.replace(/\s/g, '')}')">
+                            <option value="">-- Select Group --</option>
+                            ${globalModGroups.map(g => `<option value="${g.id}">${g.name}</option>`).join('')}
+                        </select>
+                        <select id="new-effect-option-${triggerName.replace(/\s/g, '')}" class="border border-gray-300 rounded p-1 text-sm w-1/3">
+                            <option value="">-- Select Option --</option>
+                        </select>
+                        <button onclick="addRecipeEffect('${triggerName}')" class="bg-green-100 text-green-700 hover:bg-green-200 px-3 py-1 rounded text-sm font-bold"><i class="fas fa-plus"></i></button>
+                    </div>
+                `;
+                
+                ruleDiv.appendChild(effectsContainer);
+                container.appendChild(ruleDiv);
+            }
+        }
+        
+        function updateEffectOptions(groupSelect, triggerId) {
+            const groupId = groupSelect.value;
+            const optSelect = document.getElementById(`new-effect-option-${triggerId}`);
+            optSelect.innerHTML = '<option value="">-- Select Option --</option>';
+            if (!groupId) return;
+            
+            const options = allOptionsGlobal.filter(o => o.group_id === groupId);
+            options.forEach(o => {
+                optSelect.innerHTML += `<option value="${o.id}">${o.name}</option>`;
+            });
+        }
+        
+        function addRecipeEffect(triggerName) {
+            syncTriggerNames(); // Save any dropdown changes first
+            
+            const triggerId = triggerName.replace(/\s/g, '');
+            const groupId = document.getElementById(`new-effect-group-${triggerId}`).value;
+            const optionId = document.getElementById(`new-effect-option-${triggerId}`).value;
+            
+            if (!groupId || !optionId) return alert("Select both a group and an option.");
+            
+            if (!currentRecipeRules[triggerName]) currentRecipeRules[triggerName] = {};
+            currentRecipeRules[triggerName][groupId] = optionId;
+            renderRecipeRules();
+        }
+        
+        function removeRecipeEffect(triggerName, groupId) {
+            syncTriggerNames();
+            delete currentRecipeRules[triggerName][groupId];
+            renderRecipeRules();
+        }
+        
+        function addRecipeRule() {
+            syncTriggerNames();
+            // Find a default option name that isn't used yet
+            let defaultName = "New Rule";
+            if (allOptionsGlobal.length > 0) {
+                const unused = allOptionsGlobal.find(o => !currentRecipeRules[o.name]);
+                if (unused) defaultName = unused.name;
+            }
+            
+            if (!currentRecipeRules[defaultName]) {
+                currentRecipeRules[defaultName] = {};
+                renderRecipeRules();
+            }
+        }
+        
+        function syncTriggerNames() {
+            // Read all select boxes and update keys in currentRecipeRules if they changed
+            const selects = document.querySelectorAll('.trigger-select');
+            const newRules = {};
+            selects.forEach(select => {
+                const original = select.getAttribute('data-original');
+                const currentVal = select.value;
+                newRules[currentVal] = currentRecipeRules[original] || {};
+            });
+            currentRecipeRules = newRules;
+        }
+
+        async function saveBaseRecipe() {
+            syncTriggerNames(); // Ensure we have the latest trigger names
+            
+            const itemId = document.getElementById('edit-recipe-item-id').value;
+            const btn = document.getElementById('save-recipe-btn');
+            btn.disabled = true; btn.innerText = 'Saving...';
+            
+            try {
+                const res = await fetch(`/api/admin/menu/${itemId}`, {
+                    method: 'PATCH',
+                    headers: getHeaders(),
+                    body: JSON.stringify({ base_recipe: currentRecipeRules })
+                });
+                
+                if (res.ok) {
+                    document.getElementById('edit-recipe-modal').classList.add('hidden');
+                    switchTab('menu');
+                } else {
+                    alert("Error saving base recipe.");
+                }
+            } catch(e) {
+                console.error(e);
+                alert("Network error.");
+            } finally {
+                btn.disabled = false; btn.innerText = 'Save Recipe';
+            }
+        }
+        
+
+        async function loadModifiersDatabase() {
+            try {
+                const res = await fetch('/api/admin/modifiers', { headers: getHeaders() });
+                const data = await res.json();
+                const container = document.getElementById('modifiers-database-container');
+                container.innerHTML = '';
+                
+                if (!data.modGroups || data.modGroups.length === 0) {
+                    container.innerHTML = '<p class="text-gray-500">No modifiers created yet.</p>';
+                    return;
+                }
+                
+                data.modGroups.forEach(group => {
+                    const options = (data.modOptions || []).filter(o => o.group_id === group.id);
+                    
+                    let html = `
+                    <div class="mb-6 border border-gray-200 rounded-xl p-4">
+                        <div class="flex justify-between items-center mb-3 border-b pb-2">
+                            <div>
+                                <h3 class="font-bold text-lg text-gray-800 uppercase">${escapeHtml(group.name)}</h3>
+                                <p class="text-xs text-gray-500">Max Selections: ${group.max_selections} | Required: ${group.required ? 'Yes' : 'No'}</p>
+                            </div>
+                            <button onclick="deleteModifierGroup('${group.id}')" class="text-red-500 hover:text-red-700 text-sm font-bold bg-red-50 px-3 py-1 rounded-lg"><i class="fas fa-trash"></i> Delete Group</button>
+                        </div>
+                        <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+                    `;
+                    
+                    options.forEach(opt => {
+                        const isDefault = !!opt.is_default;
+                        html += `
+                            <div class="bg-gray-50 p-3 rounded-lg flex justify-between items-center group border border-gray-100">
+                                <div class="truncate mr-2">
+                                    <div class="font-bold text-sm truncate">${escapeHtml(opt.name)}</div>
+                                    <div class="text-xs text-gray-500">${opt.price_adjustment > 0 ? '+L ' + opt.price_adjustment : 'Free'}${isDefault ? ' (Default)' : ''}</div>
+                                </div>
+                                <div class="flex gap-2 shrink-0">
+                                    <button onclick="openEditModOptionModal('${opt.id}', '${escapeHtml(opt.name).replace(/'/g, "\\'")}', ${opt.price_adjustment}, ${isDefault})" class="text-blue-400 hover:text-blue-600 transition opacity-40 group-hover:opacity-100"><i class="fas fa-pen text-sm"></i></button>
+                                    <button onclick="deleteModifierOption('${opt.id}')" class="text-red-400 hover:text-red-600 transition opacity-40 group-hover:opacity-100"><i class="fas fa-times-circle text-sm"></i></button>
+                                </div>
+                            </div>
+                        `;
+                    });
+                    
+                    if (options.length === 0) {
+                        html += `<div class="text-sm text-gray-400 italic">No options added yet.</div>`;
+                    }
+                    
+                    html += `</div></div>`;
+                    container.innerHTML += html;
+                });
+            } catch(e) {
+                console.error(e);
+            }
+        }
+        
+        async function deleteModifierGroup(id) {
+            if(!confirm("Are you sure you want to delete this group? All its options will be deleted too.")) return;
+            try {
+                const res = await fetch(`/api/admin/modifiers/groups/${id}`, { method: 'DELETE', headers: getHeaders() });
+                if (res.status === 404) {
+                    await fetch(`/api/admin?action=modifier_group_delete&id=${id}`, { method: 'DELETE', headers: getHeaders() });
+                }
+                loadModifiersDatabase();
+            } catch(e) { console.error(e); }
+        }
+        
+        async function deleteModifierOption(id) {
+            if(!confirm("Delete this option?")) return;
+            try {
+                const res = await fetch(`/api/admin/modifiers/options/${id}`, { method: 'DELETE', headers: getHeaders() });
+                if (res.status === 404) {
+                    await fetch(`/api/admin?action=modifier_option_delete&id=${id}`, { method: 'DELETE', headers: getHeaders() });
+                }
+                loadModifiersDatabase();
+            } catch(e) { console.error(e); }
+        }
+    
+        async function loadMenu() {
+            try {
+                // Load all items
+                const res = await fetch('/api/admin/menu', { headers: getHeaders() });
+                const data = await res.json();
+                
+                // Load all modifiers globally to use in the modal
+                const modRes = await fetch('/api/admin/modifiers', { headers: getHeaders() });
+                const modData = await modRes.json();
+                globalModGroups = modData.modGroups || [];
+
+                const tbody = document.getElementById('menuTable');
+                tbody.innerHTML = '';
+                
+                const items = data.items || [];
+                items.forEach(item => {
+                    const row = document.createElement('tr');
+                    const isAvailable = item.available !== false;
+                    const availabilityBtn = isAvailable 
+                        ? `<button onclick="toggleItemAvailability('${item.id}', false)" class="bg-green-100 text-green-700 px-3 py-1 rounded-lg text-xs font-bold hover:bg-green-200 transition">Available</button>`
+                        : `<button onclick="toggleItemAvailability('${item.id}', true)" class="bg-red-100 text-red-700 px-3 py-1 rounded-lg text-xs font-bold hover:bg-red-200 transition">Sold Out</button>`;
+
+                    const price = parseFloat(item.price || 0);
+                    const name = item.name || 'Unnamed Item';
+                    const category = item.category || 'otros';
+
+                    row.innerHTML = `
+                        <td class="p-4">
+                            <div class="font-bold text-gray-800">${escapeHtml(name)}</div>
+                            <div class="text-[10px] text-gray-400 font-mono">${item.id}</div>
+                        </td>
+                        <td class="p-4 text-gray-600 capitalize">${escapeHtml(category)}</td>
+                        <td class="p-4 text-gray-600 font-mono">L ${price.toFixed(2)}</td>
+                        <td class="p-4 text-center">${availabilityBtn}</td>
+                        <td class="p-4 text-center">
+                            <div class="flex flex-col gap-1">
+                                <button onclick="window.editItem('${item.id}')" class="text-blue-600 hover:text-blue-800 text-xs font-bold flex items-center gap-1 justify-center"><i class="fas fa-edit"></i> Item</button>
+                                <button onclick="window.editRecipe('${item.id}')" class="text-green-600 hover:text-green-800 text-xs font-bold flex items-center gap-1 justify-center"><i class="fas fa-blender"></i> Base</button>
+                                <button onclick="window.editIngredients('${item.id}')" class="text-purple-600 hover:text-purple-800 text-xs font-bold flex items-center gap-1 justify-center"><i class="fas fa-seedling"></i> Ingredients</button>
+                                <button onclick="window.editSteps('${item.id}')" class="text-amber-600 hover:text-amber-800 text-xs font-bold flex items-center gap-1 justify-center"><i class="fas fa-list-ol"></i> Steps</button>
+                            </div>
+                        </td>
+                        <td class="p-4 text-right">
+                            <button onclick="window.editModifiers('${item.id}')" class="text-blue-600 hover:text-blue-800 text-xs font-bold border border-blue-200 px-2 py-1 rounded bg-blue-50 hover:bg-blue-100 transition flex items-center gap-1 ml-auto"><i class="fas fa-list-ul"></i> Modifiers</button>
+                        </td>
+                    `;
+                    tbody.appendChild(row);
+                });
+
+                // Store menu items globally for easy access by editItem
+                window.allMenuItems = items;
+            } catch(e) {
+                console.error(e);
+            }
+        }
+
+        // Global handlers to fix escaping issues (like Niah's Licuadito)
+        window.editItem = function(id) {
+            const item = window.allMenuItems.find(i => i.id === id);
+            if (item) openEditItemModal(item.id, item.name, item.category, item.price, item.name_es || '', item.image_url || '');
+        };
+        window.editRecipe = function(id) {
+            const item = window.allMenuItems.find(i => i.id === id);
+            if (item) openBaseRecipeModal(item.id, item.name);
+        };
+        window.editIngredients = function(id) {
+            const item = window.allMenuItems.find(i => i.id === id);
+            if (item) openIngredientsModal(item.id, item.name);
+        };
+        window.editSteps = function(id) {
+            const item = window.allMenuItems.find(i => i.id === id);
+            if (item) openRecipeStepsModal(item.id, item.name);
+        };
+        window.editModifiers = function(id) {
+            const item = window.allMenuItems.find(i => i.id === id);
+            if (item) openModifiersModal(item.id, item.name);
+        };
+
+        // --- RECIPE STEPS LOGIC ---
+        function openRecipeStepsModal(id, name) {
+            document.getElementById('step-item-id').value = id;
+            document.getElementById('step-item-name-display').innerText = name;
+            
+            const container = document.getElementById('steps-container');
+            container.innerHTML = '<div class="text-center py-10 text-gray-400"><i class="fas fa-spinner fa-spin mr-2"></i>Loading steps...</div>';
+            document.getElementById('recipe-steps-modal').classList.remove('hidden');
+
+            const item = window.allMenuItems.find(i => i.id === id);
+            const steps = item.recipe_steps || [];
+            
+            container.innerHTML = '';
+            if (steps.length === 0) {
+                addRecipeStep(); // Add one empty step by default
+            } else {
+                steps.forEach((step, idx) => addRecipeStep(step));
+            }
+        }
+
+        function addRecipeStep(text = '') {
+            const container = document.getElementById('steps-container');
+            const stepDiv = document.createElement('div');
+            stepDiv.className = "flex gap-3 group animate-in slide-in-from-left-2 duration-200";
+            
+            const stepNum = container.children.length + 1;
+            
+            stepDiv.innerHTML = `
+                <div class="w-8 h-8 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center font-black text-xs shrink-0 mt-2 border border-blue-100">${stepNum}</div>
+                <div class="flex-1">
+                    <textarea class="w-full border border-gray-200 rounded-xl p-3 text-sm outline-none focus:border-blue-500 transition-all recipe-step-input" placeholder="e.g. Steam milk to 140F...">${text}</textarea>
+                </div>
+                <button onclick="this.parentElement.remove(); reindexSteps();" class="w-8 h-8 rounded-full bg-red-50 text-red-400 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all mt-2 hover:bg-red-100 hover:text-red-600">
+                    <i class="fas fa-times"></i>
+                </button>
+            `;
+            container.appendChild(stepDiv);
+        }
+
+        function reindexSteps() {
+            const container = document.getElementById('steps-container');
+            Array.from(container.children).forEach((div, idx) => {
+                div.querySelector('div').innerText = idx + 1;
+            });
+        }
+
+        async function saveRecipeSteps() {
+            const id = document.getElementById('step-item-id').value;
+            const inputs = document.querySelectorAll('.recipe-step-input');
+            const steps = Array.from(inputs).map(i => i.value.trim()).filter(v => v !== '');
+            
+            const btn = document.getElementById('save-steps-btn');
+            btn.disabled = true; btn.innerText = 'Saving...';
+
+            try {
+                const res = await fetch(`/api/admin/menu/${id}`, {
+                    method: 'PATCH',
+                    headers: getHeaders(),
+                    body: JSON.stringify({ recipe_steps: steps })
+                });
+                
+                if (res.ok) {
+                    // Update global state
+                    const item = window.allMenuItems.find(i => i.id === id);
+                    if (item) item.recipe_steps = steps;
+                    
+                    document.getElementById('recipe-steps-modal').classList.add('hidden');
+                    alert('✨ Preparation Guide saved successfully!');
+                } else {
+                    alert('Error saving steps');
+                }
+            } catch (e) {
+                console.error(e);
+                alert('Connection error');
+            } finally {
+                btn.disabled = false; btn.innerText = 'Save Guide';
+            }
+        }
+
+        async function toggleItemAvailability(id, available) {
+            try {
+                const res = await fetch(`/api/admin/menu/${id}`, {
+                    method: 'PUT',
+                    headers: getHeaders(),
+                    body: JSON.stringify({ available })
+                });
+                if (res.ok) {
+                    loadMenu();
+                } else {
+                    // Fallback to the dedicated availability endpoint if PUT fails or returns 404
+                    const res2 = await fetch(`/api/menu/${id}/availability`, {
+                        method: 'PATCH',
+                        headers: getHeaders(),
+                        body: JSON.stringify({ available })
+                    });
+                    if (res2.ok) loadMenu();
+                }
+            } catch(e) {
+                console.error(e);
+            }
+        }
+
+        function openEditItemModal(id, name, category, price, desc, img) {
+            document.getElementById('edit-item-id').value = id;
+            document.getElementById('edit-item-name').value = name;
+            document.getElementById('edit-item-category').value = category;
+            document.getElementById('edit-item-price').value = price;
+            document.getElementById('edit-item-desc').value = desc;
+            document.getElementById('edit-item-image').value = img;
+            document.getElementById('edit-menu-item-modal').classList.remove('hidden');
+        }
+
+        function compressImage(file, maxWidth = 1000, quality = 0.6) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.readAsDataURL(file);
+                reader.onload = event => {
+                    const img = new Image();
+                    img.src = event.target.result;
+                    img.onload = () => {
+                        const canvas = document.createElement('canvas');
+                        let width = img.width;
+                        let height = img.height;
+                        if (width > maxWidth) {
+                            height = Math.round((height * maxWidth) / width);
+                            width = maxWidth;
+                        }
+                        canvas.width = width;
+                        canvas.height = height;
+                        const ctx = canvas.getContext('2d');
+                        ctx.drawImage(img, 0, 0, width, height);
+                        // Using smaller quality and width to ensure < 4.5MB after base64 encoding
+                        resolve(canvas.toDataURL('image/jpeg', quality));
+                    };
+                    img.onerror = reject;
+                };
+                reader.onerror = reject;
+            });
+        }
+
+        async function uploadImage(inputEl) {
+            const file = inputEl.files[0];
+            if (!file) return;
+
+            const btn = document.getElementById('upload-img-btn');
+            const originalContent = btn.innerHTML;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+            btn.disabled = true;
+
+            try {
+                // Compress image before upload to avoid Vercel 4.5MB payload limit
+                console.log("Starting compression for:", file.name, "Size:", (file.size / 1024 / 1024).toFixed(2), "MB");
+                const base64String = await compressImage(file);
+                console.log("Compressed size estimate:", (base64String.length / 1024 / 1024).toFixed(2), "MB");
+
+                const res = await fetch('/api/admin?action=upload_image', {
+                    method: 'POST',
+                    headers: getHeaders(),
+                    body: JSON.stringify({
+                        imageBase64: base64String,
+                        fileName: file.name
+                    })
+                });
+
+                const result = await res.json();
+                if (res.ok) {
+                    document.getElementById('edit-item-image').value = result.url;
+                    alert('✨ Image uploaded successfully!');
+                } else {
+                    console.error("Server upload error:", result);
+                    alert('Error: ' + (result.error || 'Upload failed'));
+                }
+            } catch(e) {
+                console.error("Upload process crash:", e);
+                alert('Upload failed: ' + e.message);
+            } finally {                btn.innerHTML = originalContent;
+                btn.disabled = false;
+                inputEl.value = '';
+            }
+        }
+        async function updateMenuItem() {
+            const id = document.getElementById('edit-item-id').value;
+            const btn = document.getElementById('update-menu-item-btn');
+            const data = {
+                name: document.getElementById('edit-item-name').value.trim(),
+                category: document.getElementById('edit-item-category').value,
+                price: parseFloat(document.getElementById('edit-item-price').value),
+                description: document.getElementById('edit-item-desc').value,
+                image_url: document.getElementById('edit-item-image').value
+            };
+
+            btn.disabled = true; btn.innerText = 'Saving...';
+            try {
+                const res = await fetch(`/api/admin/menu/${id}`, {
+                    method: 'PUT',
+                    headers: getHeaders(),
+                    body: JSON.stringify(data)
+                });
+                if(res.ok) {
+                    document.getElementById('edit-menu-item-modal').classList.add('hidden');
+                    loadMenu();
+                } else {
+                    const err = await res.json();
+                    alert("Error updating item: " + (err.error || "Unknown error"));
+                }
+            } catch(e) {
+                console.error(e);
+                alert("Request failed: " + e.message);
+            } finally {
+                btn.disabled = false; btn.innerText = 'Save';
+            }
+        }
+
+        async function openIngredientsModal(itemId, itemName) {
+            document.getElementById('ing-item-id').value = itemId;
+            document.getElementById('ing-item-name').innerText = itemName;
+            document.getElementById('ing-item-id-display').innerText = itemId;
+            document.getElementById('manage-ingredients-modal').classList.remove('hidden');
+            
+            loadRecipeIngredients(itemId);
+            
+            // Populate dropdown
+            try {
+                const res = await fetch('/api/admin?action=inventory', { headers: getHeaders() });
+                const inventory = await res.json();
+                const select = document.getElementById('ing-select');
+                select.innerHTML = '<option value="">Select Ingredient...</option>';
+                inventory.forEach(inv => {
+                    select.innerHTML += `<option value="${inv.id}" data-unit="${inv.unit}">${inv.name} (${inv.unit})</option>`;
+                });
+                
+                select.onchange = (e) => {
+                    const opt = e.target.options[e.target.selectedIndex];
+                    document.getElementById('ing-unit-display').innerText = opt.dataset.unit || '';
+                };
+            } catch(e) { console.error(e); }
+        }
+
+        async function loadRecipeIngredients(itemId) {
+            try {
+                const res = await fetch(`/api/admin?action=menu_item_ingredients&id=${itemId}`, { headers: getHeaders() });
+                const data = await res.json();
+                const tbody = document.getElementById('recipeIngredientsTable');
+                tbody.innerHTML = '';
+                
+                data.forEach(ing => {
+                    tbody.innerHTML += `
+                        <tr>
+                            <td class="py-3 text-sm font-bold text-gray-700">${escapeHtml(ing.inventory?.name || 'Unknown')}</td>
+                            <td class="py-3 text-sm text-gray-500">${ing.quantity} ${ing.unit}</td>
+                            <td class="py-3 text-right">
+                                <button onclick="deleteIngredientFromRecipe('${ing.id}', '${itemId}')" class="text-red-500 hover:text-red-700"><i class="fas fa-trash-alt"></i></button>
+                            </td>
+                        </tr>
+                    `;
+                });
+            } catch(e) { console.error(e); }
+        }
+
+        async function addIngredientToRecipe() {
+            const itemId = document.getElementById('ing-item-id').value;
+            const invId = document.getElementById('ing-select').value;
+            const qty = document.getElementById('ing-qty').value;
+            const unit = document.getElementById('ing-unit-display').innerText;
+
+            if(!invId || !qty) return alert("Select ingredient and quantity");
+
+            const res = await fetch('/api/admin?action=menu_item_ingredient_add', {
+                method: 'POST',
+                headers: getHeaders(),
+                body: JSON.stringify({
+                    menu_item_id: itemId,
+                    inventory_item_id: invId,
+                    quantity: parseFloat(qty),
+                    unit: unit
+                })
+            });
+
+            if (res.ok) {
+                document.getElementById('ing-qty').value = '';
+                loadRecipeIngredients(itemId);
+            }
+        }
+
+        async function deleteIngredientFromRecipe(id, itemId) {
+            if(!confirm("Remove this ingredient?")) return;
+            const res = await fetch(`/api/admin?action=menu_item_ingredient_delete&id=${id}`, {
+                method: 'DELETE',
+                headers: getHeaders()
+            });
+            if (res.ok) loadRecipeIngredients(itemId);
+        }
+
+        async function openModifiersModal(itemId, itemName) {
+            document.getElementById('edit-modifiers-title').innerText = `Modifiers: ${itemName}`;
+            document.getElementById('edit-modifiers-item-id').value = itemId;
+            
+            const listDiv = document.getElementById('modifiers-list');
+            listDiv.innerHTML = '<div class="text-center text-gray-500">Loading...</div>';
+            document.getElementById('edit-modifiers-modal').classList.remove('hidden');
+
+            try {
+                // Fetch linked groups for this item
+                const res = await fetch(`/api/admin/menu/${itemId}/modifiers`, { headers: getHeaders() });
+                const data = await res.json();
+                const linkedGroups = (data.itemModGroups || []).map(g => g.modifier_group_id);
+
+                listDiv.innerHTML = '';
+                globalModGroups.forEach(group => {
+                    const isChecked = linkedGroups.includes(group.id) ? 'checked' : '';
+                    listDiv.innerHTML += `
+                        <label class="flex items-center gap-3 p-3 border rounded-lg cursor-pointer hover:bg-gray-50">
+                            <input type="checkbox" value="${group.id}" class="mod-group-checkbox w-5 h-5 text-blue-600" ${isChecked}>
+                            <div>
+                                <div class="font-bold text-gray-800">${escapeHtml(group.name)}</div>
+                                <div class="text-xs text-gray-500">Max: ${group.max_selections} | Required: ${group.required ? 'Yes' : 'No'}</div>
+                            </div>
+                        </label>
+                    `;
+                });
+                
+                if (globalModGroups.length === 0) {
+                    listDiv.innerHTML = '<div class="text-center text-gray-500">No modifier groups found.</div>';
+                }
+
+            } catch (e) {
+                console.error(e);
+                listDiv.innerHTML = '<div class="text-center text-red-500">Error loading data</div>';
+            }
+        }
+
+        async function saveModifiers() {
+            const btn = document.getElementById('save-modifiers-btn');
+            btn.disabled = true;
+            btn.innerText = 'Saving...';
+            
+            const itemId = document.getElementById('edit-modifiers-item-id').value;
+            const checkboxes = document.querySelectorAll('.mod-group-checkbox');
+            const selectedGroups = Array.from(checkboxes).filter(c => c.checked).map(c => c.value);
+
+            try {
+                const res = await fetch(`/api/admin/menu/${itemId}/modifiers`, {
+                    method: 'POST',
+                    headers: getHeaders(),
+                    body: JSON.stringify({ group_ids: selectedGroups })
+                });
+                
+                if(res.ok) {
+                    document.getElementById('edit-modifiers-modal').classList.add('hidden');
+                } else {
+                    alert("Error saving modifiers.");
+                }
+            } catch(e) {
+                console.error(e);
+                alert("Network error.");
+            } finally {
+                btn.disabled = false;
+                btn.innerText = 'Save';
+            }
+        }
+
+        function openCreateModOptionModal() {
+            if (globalModGroups.length === 0) {
+                alert("Please create a Modifier Group first!");
+                return;
+            }
+            const select = document.getElementById('new-option-group');
+            select.innerHTML = globalModGroups.map(g => `<option value="${g.id}">${escapeHtml(g.name)}</option>`).join('');
+            document.getElementById('new-option-name').value = '';
+            document.getElementById('new-option-price').value = '0';
+            document.getElementById('new-option-default').checked = false;
+            document.getElementById('create-mod-option-modal').classList.remove('hidden');
+        }
+
+        function openEditModOptionModal(id, name, price, isDefault) {
+            document.getElementById('edit-option-id').value = id;
+            document.getElementById('edit-option-name').value = name;
+            document.getElementById('edit-option-price').value = price;
+            document.getElementById('edit-option-default').checked = isDefault === true || isDefault === 'true';
+            document.getElementById('edit-mod-option-modal').classList.remove('hidden');
+        }
+
+        async function updateModifierOption() {
+            const id = document.getElementById('edit-option-id').value;
+            const payload = {
+                id,
+                name: document.getElementById('edit-option-name').value,
+                price_adjustment: parseFloat(document.getElementById('edit-option-price').value),
+                is_default: document.getElementById('edit-option-default').checked
+            };
+
+            const btn = document.getElementById('save-edit-option-btn');
+            btn.disabled = true; btn.innerText = 'Updating...';
+
+            console.log("Updating Modifier Option:", payload);
+
+            try {
+                const res = await fetch(`/api/admin?action=modifier_option_update&id=${id}`, {
+                    method: 'PATCH',
+                    headers: getHeaders(),
+                    body: JSON.stringify(payload)
+                });
+                
+                if (res.ok) {
+                    document.getElementById('edit-mod-option-modal').classList.add('hidden');
+                    await loadModifiersDatabase();
+                } else {
+                    const err = await res.json();
+                    alert("Failed to update option: " + (err.error || "Unknown error"));
+                }
+            } catch (e) {
+                console.error("Update Error:", e);
+                alert("Network error updating option");
+            } finally {
+                btn.disabled = false; btn.innerText = 'Update Option';
+            }
+        }
+
+        async function saveModifierGroup() {
+            const name = document.getElementById('new-group-name').value;
+            const maxSelections = parseInt(document.getElementById('new-group-max').value);
+            const required = document.getElementById('new-group-required').checked;
+            
+            if (!name) return alert("Name is required");
+
+            const btn = document.getElementById('save-group-btn');
+            btn.disabled = true; btn.innerText = 'Creating...';
+
+            try {
+                const res = await fetch('/api/admin/modifiers/groups', {
+                    method: 'POST',
+                    headers: getHeaders(),
+                    body: JSON.stringify({ name, max_selections: maxSelections, required })
+                });
+                if (res.ok) {
+                    document.getElementById('create-mod-group-modal').classList.add('hidden');
+                    switchTab('menu'); loadModifiersDatabase();
+                } else {
+                    alert("Failed to create group");
+                }
+            } catch (e) {
+                console.error(e);
+            } finally {
+                btn.disabled = false; btn.innerText = 'Create';
+            }
+        }
+
+        async function saveModifierOption() {
+            const groupId = document.getElementById('new-option-group').value;
+            const name = document.getElementById('new-option-name').value;
+            const price = parseFloat(document.getElementById('new-option-price').value);
+            const isDefault = document.getElementById('new-option-default').checked;
+            
+            if (!name) return alert("Name is required");
+
+            const btn = document.getElementById('save-option-btn');
+            btn.disabled = true; btn.innerText = 'Creating...';
+
+            try {
+                const res = await fetch('/api/admin/modifiers/options', {
+                    method: 'POST',
+                    headers: getHeaders(),
+                    body: JSON.stringify({ group_id: groupId, name, price_adjustment: price, is_default: isDefault })
+                });
+                if (res.ok) {
+                    document.getElementById('create-mod-option-modal').classList.add('hidden');
+                    loadModifiersDatabase();
+                } else {
+                    alert("Failed to create option");
+                }
+            } catch (e) {
+                console.error(e);
+            } finally {
+                btn.disabled = false; btn.innerText = 'Create';
+            }
+        }
+
+        async function saveMenuItem() {
+            const name = document.getElementById('new-menu-name').value.trim();
+            const category = document.getElementById('new-menu-category').value;
+            const price = parseFloat(document.getElementById('new-menu-price').value);
+            const desc = document.getElementById('new-menu-desc').value;
+
+            if (!name || isNaN(price)) return alert("Name and Price are required");
+
+            const btn = document.getElementById('save-menu-item-btn');
+            btn.disabled = true; btn.innerText = 'Creating...';
+
+            try {
+                const res = await fetch('/api/admin/menu', {
+                    method: 'POST',
+                    headers: getHeaders(),
+                    body: JSON.stringify({ name, category, price, description: desc, available: true })
+                });
+                if (res.ok) {
+                    document.getElementById('create-menu-item-modal').classList.add('hidden');
+                    loadMenu();
+                } else {
+                    const err = await res.json();
+                    alert("Failed to create menu item: " + (err.error || "Unknown error"));
+                }
+            } catch (e) {
+                console.error(e);
+                alert("Request failed: " + e.message);
+            } finally {
+                btn.disabled = false; btn.innerText = 'Create';
+            }
+        }
+        async function deleteLead(id) {
+            if (!confirm("¿Está seguro de que desea eliminar este lead? Esta acción no se puede deshacer.")) return;
+
+            try {
+                const res = await fetch(`/api/admin?action=leads&id=${id}`, {
+                    method: 'DELETE',
+                    headers: getHeaders()
+                });
+
+                if (res.ok) {
+                    loadData();
+                } else {
+                    const data = await res.json();
+                    alert("Error: " + (data.error || "No se pudo eliminar el lead"));
+                }
+            } catch (e) {
+                console.error(e);
+                alert("Error de conexión");
+            }
+        }
+
+        async function loadData() {
+            try {
+                const res = await fetch('/api/admin/leads', { headers: getHeaders() });
+                if (!res.ok) throw new Error(res.statusText);
+                const data = await res.json();
+                
+                document.getElementById('totalLeads').innerText = data.length;
+                document.getElementById('totalPhotos').innerText = data.filter(d => d.image).length;
+                // Total Founders is undefined in the old code if no length, removing for safety since it wasn't in original UI either way
+                // document.getElementById('totalFounders').innerText = data.filter(d => d.tags && d.tags.includes('founder_launch')).length;
+
+                const tbody = document.getElementById('leadsTable');
+                tbody.innerHTML = '';
+
+                data.forEach(lead => {
+                    const row = document.createElement('tr');
+                    
+                    const imgHtml = lead.image 
+                        ? `<a href="${lead.image}" target="_blank"><img src="${lead.image}" class="w-10 h-10 rounded-lg object-cover border border-gray-200"></a>` 
+                        : '<span class="text-gray-300">-</span>';
+                        
+                    const tagsHtml = (lead.tags || []).map(t => 
+                        `<span class="bg-blue-100 text-blue-700 px-2 py-1 rounded-full text-[10px] mr-1">${t}</span>`
+                    ).join('');
+
+                    row.innerHTML = `
+                        <td class="p-4">${imgHtml}</td>
+                        <td class="p-4 font-bold text-gray-700">
+                            ${escapeHtml(lead.name)}<br>
+                            <span class="text-gray-400 text-xs font-normal">Kid: ${escapeHtml(lead.kidName || '-')}</span>
+                        </td>
+                        <td class="p-4 font-mono text-gray-600">
+                            <a href="https://wa.me/${lead.phone.replace('+','')}" target="_blank" class="hover:text-green-500"><i class="fab fa-whatsapp"></i> ${escapeHtml(lead.phone)}</a>
+                        </td>
+                        <td class="p-4 text-gray-500 text-xs">${new Date(lead.created_at || Date.now()).toLocaleDateString()}</td>
+                        <td class="p-4">${tagsHtml}</td>
+                        <td class="p-4 text-right">
+                            <button onclick="deleteLead('${lead.id}')" class="text-red-600 hover:text-red-800 transition-colors">
+                                <i class="fas fa-trash-alt"></i>
+                            </button>
+                        </td>
+                    `;
+                    tbody.appendChild(row);
+                });
+
+                // Load Orders
+                const ordersRes = await fetch('/api/orders?v=' + Date.now(), { headers: getHeaders() });
+                if (ordersRes.ok) {
+                    const ordersData = await ordersRes.json();
+                    const allOrders = ordersData.orders || [];
+                    
+                    // Filter for today's orders in Honduras
+                    const hnDate = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Tegucigalpa', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date());
+                    const orders = allOrders.filter(o => {
+                        const d = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Tegucigalpa', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date(o.created_at));
+                        return d === hnDate;
+                    });
+
+                    document.getElementById('totalOrders').innerText = orders.length;
+                    
+                    const ordersTbody = document.getElementById('ordersTable');
+                    ordersTbody.innerHTML = '';
+                    
+                    orders.forEach(order => {
+                        const row = document.createElement('tr');
+                        const statusColors = {
+                            'pending': 'bg-yellow-100 text-yellow-800',
+                            'paid': 'bg-blue-100 text-blue-800',
+                            'partial_paid': 'bg-orange-100 text-orange-800',
+                            'completed': 'bg-green-100 text-green-800',
+                            'cancelled': 'bg-red-100 text-red-800'
+                        };
+                        const statusClass = statusColors[order.status] || 'bg-gray-100 text-gray-800';
+                        
+                        const itemsList = order.items.map(i => `${i.quantity || i.qty || 1}x ${i.name}`).join(', ');
+                        const isMembership = order.items.some(i => i.id === 'vip_membership');
+                        
+                        let actionsHtml = '';
+                        if (order.status === 'pending') {
+                            actionsHtml = `
+                                <div class="flex gap-2 justify-end">
+                                    <button onclick="approveOrder('${order.id}', '${order.order_number}')" class="bg-blue-600 text-white px-2 py-1 rounded text-[10px] font-bold hover:bg-blue-700">Approve</button>
+                                    <button onclick="rejectOrder('${order.id}', '${order.order_number}', '${order.customers?.phone || ''}', '${order.customers?.name || ''}')" class="bg-red-500 text-white px-2 py-1 rounded text-[10px] font-bold hover:bg-red-600">Reject</button>
+                                </div>
+                            `;
+                        }
+                        
+                        row.innerHTML = `
+                            <td class="p-4 font-bold text-gray-700">#${order.order_number} ${isMembership ? '👑' : ''}</td>
+                            <td class="p-4 text-sm text-gray-600 truncate max-w-xs" title="${escapeHtml(itemsList)}">${escapeHtml(itemsList)}</td>
+                            <td class="p-4 font-bold text-green-600">L ${parseFloat(order.total).toFixed(2)}</td>
+                            <td class="p-4"><span class="px-2 py-1 rounded-full text-[10px] font-bold uppercase ${statusClass}">${order.status}</span></td>
+                            <td class="p-4 text-gray-500 text-xs">${new Date(order.created_at || Date.now()).toLocaleString()}</td>
+                            <td class="p-4 text-right">${actionsHtml}</td>
+                        `;
+                        ordersTbody.appendChild(row);
+                    });
+                }
+
+            } catch (e) {
+                console.error(e);
+                alert("Error loading admin data");
+            }
+        }
+
+        async function approveOrder(id, num) {
+            if(!confirm(`¿Confirmas el pago de la orden #${num}?`)) return;
+            try {
+                const res = await fetch(`/api/orders/${id}`, {
+                    method: 'PATCH',
+                    headers: getHeaders(),
+                    body: JSON.stringify({ status: 'paid' })
+                });
+                if(res.ok) {
+                    loadData();
+                } else {
+                    alert("Error al aprobar.");
+                }
+            } catch(e) { console.error(e); }
+        }
+
+        async function rejectOrder(id, num, phone, name) {
+            const reason = prompt(`Motivo de rechazo para orden #${num}:`, "Captura de pantalla no válida o transferencia no recibida.");
+            if (reason === null) return;
+            
+            try {
+                const res = await fetch(`/api/orders/${id}`, {
+                    method: 'PATCH',
+                    headers: getHeaders(),
+                    body: JSON.stringify({ 
+                        status: 'cancelled',
+                        notes: `[REJECTED] ${reason}`
+                    })
+                });
+                
+                if(res.ok) {
+                    if (phone) {
+                        const message = `Hola ${name.split(' ')[0]}, tu solicitud de membresía #${num} fue rechazada por: ${reason}. Por favor intenta de nuevo con una captura válida.`;
+                        const waUrl = `https://wa.me/${phone.replace(/\D/g, '')}?text=${encodeURIComponent(message)}`;
+                        if(confirm("Orden rechazada. ¿Deseas notificar al cliente vía WhatsApp?")) {
+                            window.open(waUrl, '_blank');
+                        }
+                    }
+                    loadData();
+                } else {
+                    alert("Error al rechazar.");
+                }
+            } catch(e) { console.error(e); }
+        }
+        
+        async function loadEmployees() {
+            try {
+                const res = await fetch('/api/admin/employees', { headers: getHeaders() });
+                if(!res.ok) throw new Error("Failed to load employees");
+                const data = await res.json();
+                
+                const tbody = document.getElementById('employeesTable');
+                tbody.innerHTML = '';
+                
+                const emps = data.employees || [];
+                emps.forEach(emp => {
+                    const row = document.createElement('tr');
+                    const isActive = emp.active !== false;
+                    const statusBadge = isActive 
+                        ? `<span class="bg-green-100 text-green-800 px-2 py-1 rounded-full text-[10px] font-bold uppercase">Active</span>`
+                        : `<span class="bg-red-100 text-red-800 px-2 py-1 rounded-full text-[10px] font-bold uppercase">Disabled</span>`;
+                        
+                    const actionBtn = isActive
+                        ? `<button onclick="toggleEmployeeStatus('${emp.id}', false)" class="text-red-500 hover:text-red-700 text-sm font-bold mr-3"><i class="fas fa-ban"></i> Disable</button>`
+                        : `<button onclick="toggleEmployeeStatus('${emp.id}', true)" class="text-green-500 hover:text-green-700 text-sm font-bold mr-3"><i class="fas fa-check-circle"></i> Enable</button>`;
+
+                    const deleteBtn = `<button onclick="deleteEmployee('${emp.id}', '${escapeHtml(emp.name)}')" class="text-gray-400 hover:text-red-600 text-sm font-bold"><i class="fas fa-trash"></i></button>`;
+
+                    const hourlyRate = parseFloat(emp.hourly_rate || 0).toFixed(2);
+
+                    row.innerHTML = `
+                        <td class="p-4 font-bold text-gray-800">${escapeHtml(emp.name)}</td>
+                        <td class="p-4 text-gray-600 capitalize">${escapeHtml(emp.role)}</td>
+                        <td class="p-4 font-mono text-gray-600 tracking-widest">${escapeHtml(emp.pin || '----')}</td>
+                        <td class="p-4 text-center font-mono font-bold text-blue-600">
+                            L ${hourlyRate}
+                            <button onclick="editHourlyRate('${emp.id}', '${escapeHtml(emp.name)}', ${hourlyRate})" class="ml-1 text-gray-300 hover:text-blue-500"><i class="fas fa-pencil-alt text-[10px]"></i></button>
+                        </td>
+                        <td class="p-4">${statusBadge}</td>
+                        <td class="p-4 text-right">${actionBtn}${deleteBtn}</td>
+                    `;
+                    tbody.appendChild(row);
+                });
+            } catch(e) {
+                console.error(e);
+            }
+        }
+        
+        async function saveEmployee() {
+            const btn = document.getElementById('save-emp-btn');
+            btn.disabled = true;
+            btn.innerText = 'Saving...';
+            
+            const payload = {
+                name: document.getElementById('new-emp-name').value,
+                role: document.getElementById('new-emp-role').value,
+                pin: document.getElementById('new-emp-pin').value,
+                hourly_rate: parseFloat(document.getElementById('new-emp-rate').value) || 0,
+                active: true
+            };
+            
+            try {
+                const res = await fetch('/api/admin/employees', {
+                    method: 'POST',
+                    headers: getHeaders(),
+                    body: JSON.stringify(payload)
+                });
+                
+                if(res.ok) {
+                    document.getElementById('add-emp-modal').classList.add('hidden');
+                    document.getElementById('new-emp-name').value = '';
+                    document.getElementById('new-emp-pin').value = '';
+                    document.getElementById('new-emp-rate').value = '';
+                    loadEmployees();
+                } else {
+                    alert("Error saving employee.");
+                }
+            } catch(e) {
+                console.error(e);
+                alert("Network error.");
+            } finally {
+                btn.disabled = false;
+                btn.innerText = 'Save';
+            }
+        }
+        
+        async function editHourlyRate(id, name, currentRate) {
+            const newRate = prompt(`Update Hourly Rate for ${name} (Lps/hr):`, currentRate);
+            if (newRate === null || newRate === "") return;
+            
+            const rate = parseFloat(newRate);
+            if (isNaN(rate)) return alert("Invalid rate");
+
+            try {
+                const res = await fetch(`/api/admin/employees/${id}`, {
+                    method: 'PUT',
+                    headers: getHeaders(),
+                    body: JSON.stringify({ hourly_rate: rate })
+                });
+                if(res.ok) {
+                    loadEmployees();
+                } else {
+                    alert("Error updating rate.");
+                }
+            } catch(e) {
+                console.error(e);
+            }
+        }
+
+        async function toggleEmployeeStatus(id, isActive) {
+            if(!confirm(`Are you sure you want to ${isActive ? 'enable' : 'disable'} this employee?`)) return;
+
+            try {
+                const res = await fetch(`/api/admin/employees/${id}`, {
+                    method: 'PUT',
+                    headers: getHeaders(),
+                    body: JSON.stringify({ active: isActive })
+                });
+                if(res.ok) {
+                    loadEmployees();
+                } else {
+                    alert("Error updating employee.");
+                }
+            } catch(e) {
+                console.error(e);
+            }
+        }
+
+        async function deleteEmployee(id, name) {
+            if(!confirm(`⚠️ ¿ELIMINAR PERMANENTEMENTE A ${name}?\n\nEsta acción no se puede deshacer y eliminará todo su historial.`)) return;
+
+            try {
+                const res = await fetch(`/api/admin/employees?id=${id}`, {
+                    method: 'DELETE',
+                    headers: getHeaders()
+                });
+                if(res.ok) {
+                    loadEmployees();
+                } else {
+                    const data = await res.json();
+                    alert("Error: " + (data.error || "No se pudo eliminar"));
+                }
+            } catch(e) {
+                console.error(e);
+                alert("Network error.");
+            }
+        }
+        // Basic HTML escaper to prevent XSS
+        function escapeHtml(unsafe) {
+            return (unsafe || '').toString()
+                 .replace(/&/g, "&amp;")
+                 .replace(/</g, "&lt;")
+                 .replace(/>/g, "&gt;")
+                 .replace(/"/g, "&quot;")
+                 .replace(/'/g, "&#039;");
+        }
+        
+        // SYSTEM GUIDE LOGIC
+        let currentGuideStep = 0;
+        const guideSteps = [
+            {
+                title: "Welcome to your Command Center",
+                desc: "This dashboard is the 'brain' of Rich Aroma. From here, you control everything from menu prices to inventory automation.",
+                action: () => switchTab('overview'),
+                custom: () => {
+                    const itemCount = document.querySelectorAll('#menuTable tr').length;
+                    const modCount = globalModGroups.length;
+                    return `
+                        <div class="bg-gray-50 p-6 rounded-2xl border border-gray-100 mt-4">
+                            <h4 class="text-[10px] font-black uppercase text-gray-400 tracking-widest mb-4">Current Menu Snapshot</h4>
+                            <div class="grid grid-cols-2 gap-4">
+                                <div>
+                                    <div class="text-2xl font-black text-blue-600">${itemCount}</div>
+                                    <div class="text-xs text-gray-500">Menu Items</div>
+                                </div>
+                                <div>
+                                    <div class="text-2xl font-black text-purple-600">${modCount}</div>
+                                    <div class="text-xs text-gray-500">Mod Groups</div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }
+            },
+            {
+                title: "The 'Big Switch' (Store Status)",
+                desc: "At the top right, you can open or close your shop. If it's closed, customers on the website will see a 'We are Closed' message and cannot place orders.",
+                action: () => {
+                    document.getElementById('store-status-control').classList.add('ring-4', 'ring-blue-500', 'ring-offset-2');
+                    setTimeout(() => document.getElementById('store-status-control').classList.remove('ring-4', 'ring-blue-500', 'ring-offset-2'), 3000);
+                }
+            },
+            {
+                title: "Menu & Modifiers",
+                desc: "This tab is where you manage your products. You can mark items as 'Sold Out' instantly or change their prices.",
+                action: () => switchTab('menu')
+            },
+            {
+                title: "Linking Modifiers",
+                desc: "Click the blue 'Modifiers' button on any item to choose which options (like Milk Type or Size) apply to that specific drink.",
+                action: () => switchTab('menu')
+            },
+            {
+                title: "Inventory Tracking",
+                desc: "Add your raw ingredients here (like 'Coffee Beans' in grams). Set a 'Min Stock' to get highlighted alerts when you are running low.",
+                action: () => switchTab('inventory')
+            },
+            {
+                title: "The Magic: Recipe Logic",
+                desc: "Go back to Menu and click 'Ingredients'. Link a Latte to 18g of Beans. Now, every sale automatically subtracts from your stock!",
+                action: () => switchTab('menu')
+            },
+            {
+                title: "Launch New Business",
+                desc: "Ready to scale? Click the Rocket icon at any time to open the simplified Onboarding Launchpad for your next SaaS client.",
+                action: () => {
+                    const rocket = document.querySelector('.fa-rocket').parentElement;
+                    rocket.classList.add('ring-4', 'ring-indigo-500', 'ring-offset-2');
+                    setTimeout(() => rocket.classList.remove('ring-4', 'ring-indigo-500', 'ring-offset-2'), 3000);
+                }
+            }
+        ];
+
+        function startGuide() {
+            currentGuideStep = 0;
+            document.getElementById('guide-modal').classList.remove('hidden');
+            renderGuideStep();
+        }
+
+        function closeGuide() {
+            document.getElementById('guide-modal').classList.add('hidden');
+        }
+
+        function nextGuideStep() {
+            currentGuideStep++;
+            if (currentGuideStep >= guideSteps.length) {
+                closeGuide();
+            } else {
+                renderGuideStep();
+            }
+        }
+
+        function renderGuideStep() {
+            const step = guideSteps[currentGuideStep];
+            const content = document.getElementById('guide-content');
+            const progress = (currentGuideStep / (guideSteps.length - 1)) * 100;
+            
+            document.getElementById('guide-progress').style.width = `${progress}%`;
+            
+            if (step.action) step.action();
+            
+            let customHtml = step.custom ? step.custom() : '';
+            
+            content.innerHTML = `
+                <div class="animate-in fade-in slide-in-from-bottom-4 duration-500">
+                    <h3 class="text-3xl font-black text-gray-900 mb-2">${step.title}</h3>
+                    <p class="text-gray-500 text-lg leading-relaxed">${step.desc}</p>
+                    ${customHtml}
+                </div>
+            `;
+            
+            document.getElementById('guide-next-btn').innerText = currentGuideStep === guideSteps.length - 1 ? "Finish Walkthrough" : "Next Step";
+        }
+<!-- MANAGE INGREDIENTS MODAL -->
+<div id="manage-ingredients-modal" class="hidden fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50">
+    <div class="bg-white w-full max-w-md rounded-2xl shadow-2xl p-6 flex flex-col max-h-[90vh]">
+        <h2 class="text-xl font-bold mb-1" id="ing-item-name-header">Manage Ingredients</h2>
+        <p class="text-[10px] text-gray-400 font-mono mb-6" id="ing-item-id-display">ITEM-ID</p>
+        <input type="hidden" id="ing-item-id">
+
+        <div class="flex gap-2 mb-6">
+            <div class="flex-1">
+                <label class="block text-[10px] font-black text-gray-400 uppercase mb-1">Select Atom</label>
+                <select id="ing-select" class="w-full border rounded-lg p-2 text-sm outline-none focus:border-blue-500"></select>
+            </div>
+            <div class="w-24">
+                <label class="block text-[10px] font-black text-gray-400 uppercase mb-1">Qty</label>
+                <div class="flex items-center gap-1">
+                    <input type="number" id="ing-qty" class="w-full border rounded-lg p-2 text-sm outline-none focus:border-blue-500">
+                    <span id="ing-unit-display" class="text-xs font-bold text-gray-500"></span>
+                </div>
+            </div>
+            <div class="flex items-end">
+                <button onclick="addIngredientToRecipe()" class="bg-blue-600 text-white p-2 rounded-lg hover:bg-blue-700 transition"><i class="fas fa-plus"></i></button>
+            </div>
+        </div>
+
+        <div class="flex-1 overflow-y-auto border rounded-xl p-2 bg-gray-50">
+            <table class="w-full text-left">
+                <thead class="text-[10px] font-black text-gray-400 uppercase border-b">
+                    <tr>
+                        <th class="py-2">Ingredient</th>
+                        <th class="py-2">Amount</th>
+                        <th class="py-2 text-right"></th>
+                    </tr>
+                </thead>
+                <tbody id="recipeIngredientsTable"></tbody>
+            </table>
+        </div>
+
+        <div class="mt-6 pt-4 border-t">
+            <button onclick="document.getElementById('manage-ingredients-modal').classList.add('hidden')" class="w-full bg-gray-100 text-gray-600 py-3 rounded-xl font-bold hover:bg-gray-200 transition">Done</button>
+        </div>
+    </div>
+</div>
+
+<!-- RECIPE STEPS MODAL -->
+<div id="recipe-steps-modal" class="hidden fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50">
+    <div class="bg-white w-full max-w-lg rounded-2xl shadow-2xl p-6 flex flex-col max-h-[90vh]">
+        <div class="flex justify-between items-center mb-1">
+            <h2 class="text-xl font-bold">Preparation Guide</h2>
+            <button onclick="addRecipeStep()" class="bg-green-100 text-green-700 px-3 py-1 rounded-lg text-xs font-bold hover:bg-green-200 transition">+ Add Step</button>
+        </div>
+        <p class="text-[10px] text-gray-400 font-mono mb-6" id="step-item-name-display">Item Name</p>
+        <input type="hidden" id="step-item-id">
+
+        <div class="flex-1 overflow-y-auto space-y-4 pr-2" id="steps-container">
+            <!-- Steps injected here -->
+        </div>
+
+        <div class="mt-6 pt-4 border-t flex gap-3">
+            <button onclick="document.getElementById('recipe-steps-modal').classList.add('hidden')" class="flex-1 bg-gray-100 text-gray-600 py-3 rounded-xl font-bold hover:bg-gray-200 transition">Cancel</button>
+            <button onclick="saveRecipeSteps()" id="save-steps-btn" class="flex-1 bg-blue-600 text-white py-3 rounded-xl font-bold hover:bg-blue-700 shadow-lg transition">Save Guide</button>
+        </div>
+    </div>
+</div>
+
+<script>
     // Init
-    renderQuests();
+    fetchStoreStatus();
+    loadData();
 </script>
 </body>
 </html>

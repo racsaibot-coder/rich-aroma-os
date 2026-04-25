@@ -201,7 +201,7 @@
     },
     {
       "src": "/pos",
-      "dest": "/public/pos-v2.html"
+      "dest": "/public/drive-thru.html"
     },
     {
       "src": "/kitchen",
@@ -238,6 +238,10 @@
     {
       "src": "/admin",
       "dest": "/public/admin.html"
+    },
+    {
+      "src": "/admin-new",
+      "dest": "/public/admin-new.html"
     },
     {
       "src": "/cali",

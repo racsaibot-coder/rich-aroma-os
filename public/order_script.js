@@ -71,6 +71,14 @@
             renderMenu();
         }
 
+        function optimizeImg(url) {
+            if (!url) return "";
+            if (url.includes('supabase.co') && url.includes('/object/public/')) {
+                return url.replace('/object/public/', '/render/image/public/') + '?width=400&quality=75&format=webp';
+            }
+            return url;
+        }
+
         function renderMenu() {
             const container = document.getElementById('menu-container');
             const categories = {};
@@ -124,16 +132,22 @@
 
                     html += `<div class="mb-8"><h2 class="text-gold text-sm font-bold uppercase tracking-widest mb-4 border-l-2 border-gold pl-3">${category}</h2><div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">`;
                     items.forEach(item => {
-                        const imgUrl = item.image_url || 'https://images.unsplash.com/photo-1510591509098-f4fdc6d0ff04?w=400&q=80';
                         const isCombo = category === 'Combos';
                         const cardClass = isCombo ? "item-card rounded-2xl overflow-hidden flex flex-col group hover:border-gold transition-colors cursor-pointer border-2 border-gold/50 shadow-[0_0_15px_rgba(201,166,107,0.15)]" : "item-card rounded-2xl overflow-hidden flex flex-col group hover:border-gold/50 transition-colors cursor-pointer";
-                        html += `
-                            <div class="${cardClass}" onclick="openModifier('${item.id}')">
+                        const imgUrl = optimizeImg(item.image_url);
+                        const imgHtml = imgUrl ? `
                                 <div class="w-full h-36 bg-charcoal overflow-hidden relative">
-                                    <img src="${imgUrl}" class="w-full h-full object-cover">
+                                    <img src="${imgUrl}" class="w-full h-full object-cover" loading="lazy" decoding="async">
                                     <div class="absolute inset-0 bg-gradient-to-t from-dark/90 to-transparent"></div>
                                     <div class="absolute bottom-2 right-2 w-8 h-8 rounded-full bg-gold text-dark flex items-center justify-center shadow-lg"><i class="fas fa-plus text-xs"></i></div>
-                                </div>
+                                </div>` : `
+                                <div class="w-full h-12 bg-charcoal relative flex items-center justify-end px-4">
+                                    <div class="w-8 h-8 rounded-full bg-gold text-dark flex items-center justify-center shadow-lg"><i class="fas fa-plus text-xs"></i></div>
+                                </div>`;
+                        
+                        html += `
+                            <div class="${cardClass}" onclick="openModifier('${item.id}')">
+                                ${imgHtml}
                                 <div class="p-4 flex-1 flex flex-col justify-between">
                                     <h3 class="font-bold text-base leading-tight mb-2">${item.name}</h3>
                                     <span class="text-gold font-mono font-bold">L ${(Number(item.price) || 0).toFixed(2)}</span>
@@ -674,6 +688,7 @@
                 
                 // Switch to tracking view
                 activeOrder = savedOrder;
+                localStorage.setItem('ra_active_order', JSON.stringify(savedOrder));
                 showTracking();
 
             } catch (err) {
@@ -919,8 +934,18 @@
 
             loadMenu();
             setFulfillment('pickup');
-            
+
+            // Restore active order tracking if present
+            const savedActive = localStorage.getItem('ra_active_order');
+            if (savedActive) {
+                try {
+                    activeOrder = JSON.parse(savedActive);
+                    showTracking();
+                } catch(e) { localStorage.removeItem('ra_active_order'); }
+            }
+
             // Auto login logic for testing
+
             const phone = localStorage.getItem('ra_customer_phone') || localStorage.getItem('ra_phone');
             if (phone) {
                 fetch(`/api/customer/profile?phone=${encodeURIComponent(phone)}`)

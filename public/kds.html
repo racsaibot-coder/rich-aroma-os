@@ -142,6 +142,14 @@
         if(modeParam) setMode(modeParam);
         else setMode('drinks');
 
+        // Shared date parser for KDS timers
+        const parseDate = (dateStr) => {
+            if (!dateStr) return new Date();
+            let fixedStr = dateStr.replace(' ', 'T');
+            if (!fixedStr.includes('Z') && !fixedStr.includes('+')) fixedStr += 'Z';
+            return new Date(fixedStr);
+        };
+
         // Poll Loop
         setInterval(fetchOrders, 3000); // 3s poll
         
@@ -156,7 +164,7 @@
             document.querySelectorAll('.timer-display').forEach(el => {
                 const time = el.getAttribute('data-time');
                 if(time) {
-                    const orderTime = new Date(time);
+                    const orderTime = parseDate(time);
                     const now = new Date();
                     let diffMs = now - orderTime;
                     if(diffMs < 0) diffMs = 0;
@@ -363,7 +371,7 @@
                 if(actualRelevantItems.length === 0) return;
                 
                 // Time Color
-                const orderTime = new Date(order.created_at);
+                const orderTime = parseDate(order.created_at);
                 const now = new Date();
                 let diffMs = now - orderTime;
                 if (diffMs < 0) diffMs = 0;
@@ -504,7 +512,7 @@
                     `;
                 } else if(order.status === 'completed' || order.status === 'ready') {
                     // Only show if completed in last 10 mins
-                    const doneTime = new Date(order.completed_at || order.created_at);
+                    const doneTime = parseDate(order.completed_at || order.created_at);
                     const now = new Date();
                     if((now - doneTime) < 10 * 60 * 1000) {
                         const isNewest = index === 0; // Simple highlight for first ready

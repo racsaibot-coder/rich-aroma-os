@@ -92,8 +92,10 @@ module.exports = async function handler(req, res) {
         // Map description to name_es column since description doesn't exist in DB
         if (description !== undefined) updateData.name_es = description;
         
-        const itemId = req.query.id || id;
+        const itemId = req.query.id || id || req.body.id;
         if (!itemId) return res.status(400).json({ error: "Item ID required" });
+
+        console.log(`[Admin API] Updating item ${itemId}`, updateData);
 
         const { data, error } = await supabase.from('menu_items')
             .update(updateData)
@@ -159,7 +161,10 @@ module.exports = async function handler(req, res) {
                 upsert: true
             });
 
-        if (error) return res.status(500).json({ error: error.message });
+        if (error) {
+            console.error(`[Admin API] Supabase Upload Error for ${path}:`, error);
+            return res.status(500).json({ error: error.message });
+        }
 
         const { data: { publicUrl } } = supabase.storage
             .from('menu-images')

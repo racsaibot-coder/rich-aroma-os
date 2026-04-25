@@ -155,14 +155,22 @@
         function renderKDS() {
             const container = document.getElementById('kds-container');
             
+            // Shared date parser
+            const parseDate = (dateStr) => {
+                if (!dateStr) return new Date();
+                let fixedStr = dateStr.replace(' ', 'T');
+                if (!fixedStr.includes('Z') && !fixedStr.includes('+')) fixedStr += 'Z';
+                return new Date(fixedStr);
+            };
+
             const activeOrders = orders.filter(o => {
                 if (['completed', 'cancelled'].includes(o.status)) return false;
                 if (o.status === 'ready') {
-                    const readyTime = new Date(o.completed_at || o.created_at);
+                    const readyTime = parseDate(o.completed_at || o.created_at);
                     return (new Date() - readyTime) < (5 * 60000);
                 }
                 return true;
-            }).sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
+            }).sort((a, b) => parseDate(a.created_at) - parseDate(b.created_at));
             
             if (activeOrders.length === 0) {
                 container.innerHTML = '<div class="py-20 text-center text-white/10 uppercase font-black tracking-widest">Cero Pedidos Activos</div>';
@@ -179,8 +187,22 @@
                 });
                 if (items.length === 0) return '';
 
-                const orderTime = new Date(o.created_at);
-                const elapsed = Math.floor((new Date() - orderTime) / 60000);
+                // Robust Date Parsing for KDS Timer
+                const parseDate = (dateStr) => {
+                    if (!dateStr) return new Date();
+                    // Replace space with T for better ISO-8601 compatibility on mobile browsers
+                    // and ensure there's a timezone marker if missing
+                    let fixedStr = dateStr.replace(' ', 'T');
+                    if (!fixedStr.includes('Z') && !fixedStr.includes('+')) fixedStr += 'Z';
+                    return new Date(fixedStr);
+                };
+
+                const orderTime = parseDate(o.created_at);
+                const now = new Date();
+                const diffMs = now - orderTime;
+                // If diff is negative (client clock behind server), show 0. 
+                // Otherwise calculate minutes.
+                const elapsed = Math.max(0, Math.floor(diffMs / 60000));
                 const isUrgent = elapsed > 10;
                 const isScheduled = o.notes && o.notes.includes('[SCHEDULED:');
                 const groupMatch = o.notes ? o.notes.match(/\[GROUP:\s*([^\]]+)\]/) : null;
