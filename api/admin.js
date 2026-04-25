@@ -79,7 +79,7 @@ module.exports = async function handler(req, res) {
     }
 
     if (action === 'menu_update' && (req.method === 'PATCH' || req.method === 'PUT')) {
-        const { id, price, available, image_url, name, category, modifier_groups, base_recipe, description } = req.body;
+        const { id, price, available, image_url, name, category, modifier_groups, base_recipe, description, recipe_steps } = req.body;
         
         const updateData = {};
         if (price !== undefined) updateData.price = price;
@@ -88,6 +88,7 @@ module.exports = async function handler(req, res) {
         if (name !== undefined) updateData.name = name;
         if (category !== undefined) updateData.category = category;
         if (base_recipe !== undefined) updateData.base_recipe = base_recipe;
+        if (recipe_steps !== undefined) updateData.recipe_steps = recipe_steps;
         
         // Map description to name_es column since description doesn't exist in DB
         if (description !== undefined) updateData.name_es = description;
