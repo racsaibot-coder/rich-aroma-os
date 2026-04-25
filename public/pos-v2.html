@@ -1124,6 +1124,22 @@
         }
 
         let html = '';
+        
+        // --- SaaS EXTRA: INJECT VIRTUAL VIP ITEM in 'Otros' ---
+        if (currentCategory === 'otros') {
+            html += `
+                <div onclick="addVIPToCart()" class="bg-blue-900 rounded-xl shadow flex flex-col h-48 overflow-hidden relative cursor-pointer hover:shadow-xl border-4 border-gold group animate-pulse">
+                    <div class="h-32 w-full flex items-center justify-center bg-blue-800 text-gold text-5xl">
+                        <i class="fas fa-crown"></i>
+                    </div>
+                    <div class="p-3 flex justify-between items-center bg-blue-900 flex-1 text-white">
+                        <div class="font-black uppercase italic tracking-tighter text-sm">VENDER VIP</div>
+                        <div class="text-xs bg-gold text-blue-900 px-2 py-1 rounded font-black">L. 1500</div>
+                    </div>
+                </div>
+            `;
+        }
+
         items.forEach(item => {
             const isSoldOut = item.available === false;
             const isLocked = isSoloMode && item.category === 'food';
@@ -2450,25 +2466,26 @@
         const isCash = o.payment_method === 'cash';
         const isMembership = (o.items && o.items.some(i => i.id === 'vip_membership')) || o.notes?.includes('[VIP_PURCHASE]');
 
-        // Extract receipt URL from notes if present
-        const receiptMatch = o.notes ? o.notes.match(/\[COMPROBANTE:\s*([^\]]+)\]/) : null;
-        const receiptUrl = receiptMatch ? receiptMatch[1].trim() : null;
+        // Extract receipt URL from notes if present (Support both TAG formats)
+        let receiptUrl = null;
+        const receiptMatch = o.notes ? o.notes.match(/\[(?:COMPROBANTE|RECEIPT_URL):\s*([^\]]+)\]/) : null;
+        if (receiptMatch) receiptUrl = receiptMatch[1].trim();
 
         container.innerHTML = `
             <div class="text-center space-y-4">
                 <h4 class="text-2xl font-bold">${isCash ? 'Cobro en Efectivo' : (isMembership ? '👑 Membresía VIP' : 'Verificar Pago')}</h4>
                 <div class="bg-gray-50 p-4 rounded-2xl">
-                    <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest">Monto a Cobrar</p>
+                    <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest">Monto a Cobrar / Acreditar</p>
                     <p class="text-4xl font-black text-blue-600">L. ${o.total}</p>
                     <p class="text-[10px] text-gray-500 font-bold mt-1">${o.customers?.name || 'Cliente'} (${o.customers?.phone || 'Guest'})</p>
                 </div>
 
                 ${receiptUrl ? `
                     <div class="space-y-2">
-                        <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest text-left">Comprobante de Transferencia:</p>
+                        <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest text-left">Comprobante:</p>
                         <a href="${receiptUrl}" target="_blank" class="block rounded-xl overflow-hidden border-2 border-blue-100 hover:border-blue-400 transition-colors">
                             <img src="${receiptUrl}" class="w-full h-48 object-cover">
-                            <div class="bg-blue-50 py-2 text-[9px] font-black text-blue-600 uppercase">Click para ampliar <i class="fas fa-external-link-alt ml-1"></i></div>
+                            <div class="bg-blue-50 py-2 text-[9px] font-black text-blue-600 uppercase">Ver Comprobante <i class="fas fa-external-link-alt ml-1"></i></div>
                         </a>
                     </div>
                 ` : (isCash ? '' : `<div class="bg-amber-50 text-amber-700 p-4 rounded-xl italic text-sm border border-amber-100">Verifica la transferencia en tu banca móvil...</div>`)}
@@ -2486,6 +2503,26 @@
             </div>
         `;
     }
+
+    window.addVIPToCart = function() {
+        if (!currentCustomerId) return alert("Primero identifica al cliente (por número o QR)");
+
+        const vipItem = {
+            id: 'vip_membership',
+            name: 'Membresía VIP (Mensual)',
+            price: 1500,
+            finalPrice: 1500,
+            qty: 1,
+            mods: [],
+            note: "[VENTA DIRECTA POS]"
+        };
+
+        cart.push(vipItem);
+        renderCart();
+        saveCartState();
+        alert("💎 Membresía VIP agregada al carrito.");
+    }
+
     async function approveTransfer(id) {
         try {
             const res = await fetch(`/api/orders/${id}`, {
