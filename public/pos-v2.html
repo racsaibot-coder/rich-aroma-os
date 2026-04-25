@@ -402,6 +402,7 @@
             <button onclick="filterCategory('Postres', this)" class="cat-btn inactive-cat px-6 py-3 rounded-2xl font-black shadow transition text-xs uppercase tracking-widest border-2">🍰 Postres</button>
             <button onclick="filterCategory('Sides', this)" class="cat-btn inactive-cat px-6 py-3 rounded-2xl font-black shadow transition text-xs uppercase tracking-widest border-2">🍟 Sides</button>
             <button onclick="filterCategory('Secreto', this)" class="cat-btn inactive-cat px-6 py-3 rounded-2xl font-black shadow transition text-xs uppercase tracking-widest border-2">🤫 Secreto</button>
+            <button onclick="filterCategory('Otros', this)" class="cat-btn inactive-cat px-6 py-3 rounded-2xl font-black shadow transition text-xs uppercase tracking-widest border-2">📦 Otros</button>
             <button onclick="openCustomItemModal()" class="bg-purple-50 text-purple-700 px-6 py-3 rounded-2xl font-black shadow transition text-xs uppercase tracking-widest border-2 border-purple-100 hover:bg-purple-100 flex items-center gap-2"><i class="fas fa-plus"></i> Custom</button>
         </div>
 
@@ -532,6 +533,7 @@
     let currentOrderId = null; // Track if we are editing an existing order
     let currentOrderStatus = null; // Track original status when recalled
     let currentCustomerId = null;
+    let currentCategory = 'Combos';
     let manualDiscount = null; // { name, pct, applyRule, selectedItemIds }
     let recalledItemsJson = ""; // Track original items to detect changes
     let pendingDiscount = null; // Temp state during selection
@@ -618,6 +620,7 @@
         // 4. Initial Renders
         updateCleanFeedUI();
         renderCart();
+        filterCategory('Combos', document.querySelector('.cat-btn.active-cat'));
         fetchLiveOrders();
         fetchStoreStatus();
         fetchPendingVerifications();
@@ -1170,6 +1173,7 @@
     }
 
     function filterCategory(cat, btnEl) {
+        currentCategory = cat.toLowerCase();
         document.querySelectorAll('.cat-btn').forEach(btn => {
             btn.classList.remove('active-cat');
             btn.classList.add('inactive-cat');
