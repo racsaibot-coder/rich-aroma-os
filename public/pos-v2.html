@@ -1121,11 +1121,6 @@
 
     function renderMenuGrid(items) {
         const grid = document.getElementById('menu-grid');
-        if (!items || items.length === 0) {
-            grid.innerHTML = '<div class="col-span-4 text-center py-20 text-gray-400 italic">No items found in this category</div>';
-            return;
-        }
-
         let html = '';
         
         // --- SaaS EXTRA: INJECT VIRTUAL VIP ITEM in 'Otros' ---
@@ -1143,7 +1138,12 @@
             `;
         }
 
-        items.forEach(item => {
+        if ((!items || items.length === 0) && currentCategory !== 'otros') {
+            grid.innerHTML = '<div class="col-span-4 text-center py-20 text-gray-400 italic">No items found in this category</div>';
+            return;
+        }
+
+        (items || []).forEach(item => {
             const isSoldOut = item.available === false;
             const isLocked = isSoloMode && item.category === 'food';
             const isDisabled = isSoldOut || isLocked;
