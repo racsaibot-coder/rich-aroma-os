@@ -39,9 +39,9 @@ export default async function handler(req, res) {
                 if (data) return res.status(400).json({ error: 'Phone already registered' });
             }
 
-            const { data: maxId } = await supabase.from('customers').select('id').order('id', { ascending: false }).limit(1);
-            const nextNum = maxId?.length ? parseInt(maxId[0].id.slice(1)) + 1 : 1;
-            const newId = `C${String(nextNum).padStart(3, '0')}`;
+            // Generate a unique random ID (C-XXXXXX)
+            const randomSuffix = Math.random().toString(36).substring(2, 8).toUpperCase();
+            const newId = `C-${randomSuffix}`;
 
             const newUser = {
                 id: newId,
