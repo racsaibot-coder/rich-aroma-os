@@ -1,47 +1,65 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <link rel="icon" type="image/png" href="/favicon.png">
-    <meta charset="UTF-8">
+    <link rel="icon" type="image/png" href="/favicon.png">    <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Rich Aroma | Pedir Online</title>
-    <link rel="manifest" href="/order-manifest.json">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <link rel="apple-touch-icon" href="/rico-logo.png">
+    <title>Rich Aroma | Menú</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <script>
         tailwind.config = {
             theme: {
                 extend: {
-                    colors: { gold: '#C9A66B', dark: '#120C09', charcoal: '#1E1610', success: '#10B981', error: '#EF4444' },
-                    fontFamily: { sans: ['Inter', 'sans-serif'], display: ['Playfair Display', 'serif'] }
+                    colors: {
+                        gold: '#C9A66B',
+                        dark: '#120C09',
+                        charcoal: '#1E1610',
+                        success: '#10B981',
+                        error: '#EF4444'
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', 'sans-serif'],
+                        display: ['Georgia', 'serif']
+                    }
                 }
             }
         }
     </script>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&family=Playfair+Display:wght@700;900&display=swap');
-        body { background-color: #120C09; color: #F5F5F0; font-family: 'Inter', sans-serif; -webkit-tap-highlight-color: transparent; overflow-x: hidden; }
-        .gold-gradient { background: linear-gradient(135deg, #C9A66B 0%, #A68A55 100%); }
-        .glass { background: rgba(30, 22, 16, 0.7); backdrop-filter: blur(15px); border: 1px solid rgba(201, 166, 107, 0.1); }
-        .hide-scrollbar::-webkit-scrollbar { display: none; }
-        .drawer { transition: transform 0.4s cubic-bezier(0.32, 0.72, 0, 1); transform: translateY(100%); }
+        @font-face { font-family: 'Georgia'; src: local('Georgia'); }
+        body { background-color: #120C09; color: white; -webkit-tap-highlight-color: transparent; }
+        .font-display { font-family: 'Georgia', serif; }
+        .gold-gradient { background: linear-gradient(135deg, #C9A66B 0%, #F4E2C0 50%, #C9A66B 100%); }
+        .glass { background: rgba(255, 255, 255, 0.03); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.05); }
+        .drawer { transform: translateY(100%); transition: transform 0.4s cubic-bezier(0.32, 0.72, 0, 1); }
         .drawer.active { transform: translateY(0); }
+        .hide-scrollbar::-webkit-scrollbar { display: none; }
         .item-card { transition: all 0.3s ease; }
-        .item-card:active { transform: scale(0.96); opacity: 0.8; }
-        .category-pill { transition: all 0.2s ease; border: 1px solid rgba(255,255,255,0.1); }
-        .category-pill.active { background: #C9A66B; color: #120C09; border-color: #C9A66B; box-shadow: 0 4px 15px rgba(201,166,107,0.3); }
-        @keyframes bounce-in { 0% { transform: scale(0.5); opacity: 0; } 70% { transform: scale(1.1); } 100% { transform: scale(1); opacity: 1; } }
-        .animate-bounce-in { animation: bounce-in 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+        .item-card:active { transform: scale(0.95); opacity: 0.8; }
+        
         .btn-gold { background-color: #C9A66B !important; color: #120C09 !important; border-color: #C9A66B !important; opacity: 1 !important; }
+        
+        @keyframes bounce-in { 0% { transform: scale(0.5); opacity: 0; } 70% { transform: scale(1.05); opacity: 1; } 100% { transform: scale(1); } }
+        .animate-bounce-in { animation: bounce-in 0.6s cubic-bezier(0.34, 1.56, 0.64, 1); }
     </style>
     <script>
-        // Version Marker: 2.4.1
+        // AGGRESSIVE CACHE NUKE v2.6.0
+        const CURRENT_VERSION = '2.6.0';
+        if (localStorage.getItem('ra_app_version') !== CURRENT_VERSION) {
+            localStorage.setItem('ra_app_version', CURRENT_VERSION);
+            console.log("New version detected, nuking cache and reloading...");
+            if ('serviceWorker' in navigator) {
+                navigator.serviceWorker.getRegistrations().then(registrations => {
+                    for(let registration of registrations) { registration.unregister(); }
+                });
+            }
+            window.location.reload(true);
+        }
+    </script>
+    <script>
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
-                navigator.serviceWorker.register('/sw-v5.js?v=5');
+                navigator.serviceWorker.register('/sw-v5.js?v=6');
             });
         }
     </script>
@@ -49,10 +67,15 @@
 <body class="min-h-screen">
 
     <!-- OVERLAYS -->
-    <div id="closed-overlay" class="hidden fixed inset-0 bg-dark/95 z-[500] flex flex-col items-center justify-center p-8 text-center backdrop-blur-xl">
-        <div class="w-24 h-24 bg-red-500/20 text-red-500 rounded-full flex items-center justify-center text-4xl mb-6 shadow-2xl border border-red-500/20 animate-pulse"><i class="fas fa-clock"></i></div>
+    <div id="closed-overlay" class="hidden fixed inset-0 bg-dark/95 z-[900] flex flex-col items-center justify-center p-8 text-center backdrop-blur-md">
+        <div class="w-24 h-24 bg-red-500/10 text-red-500 rounded-full flex items-center justify-center text-4xl mb-6 shadow-2xl border border-red-500/20 animate-pulse"><i class="fas fa-clock"></i></div>
         <h2 class="text-3xl font-display font-bold text-white mb-2 uppercase tracking-tighter">Cerrado</h2>
-        <button onclick="document.getElementById('closed-overlay').classList.add('hidden')" class="px-10 py-4 bg-gold text-dark rounded-2xl font-black text-xs uppercase">Ver Menú de Consulta</button>
+        <p class="text-white/40 text-sm max-w-xs leading-relaxed mb-8">Estamos preparando el mejor café para ti. Volveremos pronto dentro de nuestro horario habitual.</p>
+        <div class="glass p-6 rounded-[2rem] w-full max-w-xs space-y-2">
+            <p class="text-[10px] font-black text-gold uppercase tracking-widest">Horario Normal</p>
+            <p class="text-xs text-white/60 font-bold">Lun - Sáb: 7am - 7pm</p>
+            <p class="text-xs text-white/60 font-bold">Dom: 8am - 6pm</p>
+        </div>
     </div>
 
     <!-- HEADER -->
@@ -62,16 +85,21 @@
             <div>
                 <div class="flex items-center gap-2">
                     <h1 class="font-display text-lg text-gold font-bold tracking-tight uppercase leading-none">Rich Aroma</h1>
-                    <span class="text-[7px] bg-gold/10 text-gold/40 px-1.5 py-0.5 rounded-full border border-gold/10">v2.5.1</span>
+                    <span class="text-[7px] bg-gold/10 text-gold/40 px-1.5 py-0.5 rounded-full border border-gold/10">v2.6.0</span>
                 </div>
-                <p id="store-status-text" class="text-[9px] text-white/30 tracking-[0.2em] uppercase mt-1">Abierto</p>
+                <div class="flex items-center gap-2 mt-1">
+                    <p id="store-status-text" class="text-[9px] text-white/30 tracking-[0.2em] uppercase">Cargando...</p>
+                    <span class="text-[7px] text-white/20 uppercase font-black tracking-widest border-l border-white/10 pl-2">7AM - 7PM</span>
+                </div>
             </div>
         </div>
-        <div id="user-pill" class="hidden flex items-center gap-2 bg-white/5 pl-3 pr-1 py-1 rounded-full border border-white/10" onclick="showPoints()">
+        <div id="user-pill" class="hidden flex items-center gap-2 bg-white/5 pl-3 pr-1 py-1 rounded-full border border-white/10" onclick="window.openProfile()">
             <span id="user-first-name" class="text-[9px] font-black text-gold uppercase tracking-widest">---</span>
             <div class="w-6 h-6 bg-gold text-dark rounded-full flex items-center justify-center text-[10px]"><i class="fas fa-user"></i></div>
         </div>
-        <button id="login-btn" onclick="window.openLogin()" class="px-4 py-2 bg-gold/10 text-gold border border-gold/20 rounded-full text-[9px] font-black uppercase tracking-widest active:scale-95 transition-all">Soy Miembro</button>
+        <button id="login-btn" onclick="window.openLogin()" class="px-5 py-2.5 bg-gold text-dark rounded-full text-[10px] font-black uppercase tracking-widest shadow-lg shadow-gold/20 active:scale-95 transition-all">
+            Soy Miembro
+        </button>
     </header>
 
     <!-- LOGIN DRAWER -->
@@ -226,18 +254,51 @@
 
     <!-- MENU FEED -->
     <main id="menu-feed" class="px-6 space-y-12 pb-[80vh] pt-6">
-        <!-- SCHEDULE BANNER -->
-        <div class="bg-gold/10 border border-gold/20 rounded-[2.5rem] p-6 text-center shadow-xl animate-bounce-in">
-            <p class="text-[10px] font-black text-gold uppercase tracking-[0.4em] mb-1">Horario de Servicio</p>
-            <h4 class="text-xl font-display font-black text-white italic tracking-tight">Lun - Sáb: 7am - 7pm</h4>
-            <h4 class="text-xl font-display font-black text-white italic tracking-tight">Dom: 8am - 6pm</h4>
+        <!-- LOYALTY MOTIVATION CARD (High Impact) -->
+        <div id="guest-welcome" class="bg-gradient-to-br from-[#1A1410] to-[#120C09] border border-gold/20 rounded-[3rem] p-8 relative overflow-hidden shadow-2xl animate-bounce-in">
+            <div class="absolute -right-6 -top-6 opacity-5 text-[8rem] text-gold rotate-12"><i class="fas fa-crown"></i></div>
+            
+            <div class="relative z-10 space-y-6">
+                <div class="space-y-1">
+                    <h4 class="text-2xl font-display font-black text-white italic tracking-tight uppercase leading-none">Gana con cada sorbo</h4>
+                    <p class="text-xs text-white/50 leading-relaxed mt-2">Únete a Rico Rewards para desbloquear beneficios exclusivos:</p>
+                </div>
+                
+                <div class="grid grid-cols-2 gap-y-4 gap-x-2">
+                    <div class="flex items-center gap-3">
+                        <div class="w-8 h-8 rounded-xl bg-gold/10 text-gold flex items-center justify-center text-xs"><i class="fas fa-star"></i></div>
+                        <span class="text-[9px] font-black text-white/70 uppercase leading-tight">Rico Points<br><span class="text-[8px] font-bold opacity-40">En cada compra</span></span>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <div class="w-8 h-8 rounded-xl bg-gold/10 text-gold flex items-center justify-center text-xs"><i class="fas fa-wallet"></i></div>
+                        <span class="text-[9px] font-black text-white/70 uppercase leading-tight">Rico Cash<br><span class="text-[8px] font-bold opacity-40">Carga & Paga</span></span>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <div class="w-8 h-8 rounded-xl bg-gold/10 text-gold flex items-center justify-center text-xs"><i class="fas fa-history"></i></div>
+                        <span class="text-[9px] font-black text-white/70 uppercase leading-tight">Favoritos<br><span class="text-[8px] font-bold opacity-40">Pedido Rápido</span></span>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <div class="w-8 h-8 rounded-xl bg-gold/10 text-gold flex items-center justify-center text-xs"><i class="fas fa-crown"></i></div>
+                        <span class="text-[9px] font-black text-white/70 uppercase leading-tight">Status VIP<br><span class="text-[8px] font-bold opacity-40">Club Privado</span></span>
+                    </div>
+                </div>
+
+                <div class="pt-2">
+                    <button onclick="window.openLogin(); toggleAuthMode('register')" class="w-full py-4 bg-gold text-dark rounded-2xl font-black text-xs uppercase tracking-[0.2em] shadow-xl active:scale-95 transition-all">
+                        Crear Mi Cuenta Gratis
+                    </button>
+                    <p class="text-center text-[9px] text-white/30 uppercase font-bold mt-4 tracking-widest">
+                        ¿Ya tienes cuenta? <span onclick="window.openLogin()" class="text-gold cursor-pointer underline decoration-gold/30">Inicia Sesión</span>
+                    </p>
+                </div>
+            </div>
         </div>
 
         <div id="loading-msg" class="py-20 text-center text-white/20 italic animate-pulse">Sincronizando el menú...</div>
     </main>
 
     <!-- CART BAR -->
-    <div id="cart-bar" class="fixed bottom-8 left-6 right-6 z-[200] transform translate-y-[200%] opacity-0 transition-all duration-500">
+    <div id="cart-bar" class="fixed bottom-32 left-6 right-6 z-[200] transform translate-y-[200%] opacity-0 transition-all duration-500">
         <div class="gold-gradient p-5 rounded-[2rem] flex justify-between items-center shadow-2xl" onclick="window.openCheckout()">
             <div class="flex items-center gap-4">
                 <div class="w-12 h-12 bg-dark rounded-2xl flex items-center justify-center text-gold shadow-xl"><i class="fas fa-shopping-bag text-lg"></i></div>
@@ -247,144 +308,6 @@
                 </div>
             </div>
             <div class="font-black text-dark text-xs uppercase tracking-widest">Ver Bolsa <i class="fas fa-chevron-right ml-1"></i></div>
-        </div>
-    </div>
-
-    <!-- MODIFIER DRAWER -->
-    <div id="mod-overlay" class="hidden fixed inset-0 bg-black/80 z-[300] backdrop-blur-sm opacity-0 transition-opacity duration-300" onclick="closeModifier()"></div>
-    <div id="mod-drawer" class="drawer fixed bottom-0 left-0 right-0 z-[310] bg-dark rounded-t-[3rem] max-h-[92vh] flex flex-col border-t border-white/10 shadow-2xl">
-        <div class="flex justify-between items-center px-6 pt-4 shrink-0">
-            <button onclick="closeModifier()" class="w-12 h-12 rounded-full bg-white/5 flex items-center justify-center text-white/60 text-xl border border-white/5 active:scale-90 transition-all"><i class="fas fa-times"></i></button>
-            <div class="w-12 h-1.5 bg-white/10 rounded-full"></div>
-            <div class="w-12"></div> <!-- Spacer -->
-        </div>
-        
-        <div class="flex-1 overflow-y-auto px-8 pb-40 space-y-8 hide-scrollbar pt-2">
-            <div id="mod-image" class="w-full h-48 rounded-[2rem] overflow-hidden border border-white/5 bg-charcoal"></div>
-            <div class="space-y-1">
-                <h2 id="mod-name" class="text-3xl font-display font-black text-white uppercase tracking-tighter leading-tight">---</h2>
-                <p id="mod-price" class="text-gold font-black text-lg">L 0.00</p>
-            </div>
-            <div id="mod-groups" class="space-y-10"></div>
-            <div class="space-y-4 pt-4">
-                <p class="text-[10px] font-black text-white/30 uppercase tracking-[0.2em]">Instrucciones Especiales</p>
-                <textarea id="mod-note" placeholder="¿Sin frijoles? ¿Doble queso?..." class="w-full bg-white/5 border border-white/10 p-5 rounded-3xl text-white outline-none focus:border-gold min-h-[100px]"></textarea>
-            </div>
-        </div>
-        <div class="absolute bottom-0 left-0 right-0 p-6 bg-dark/95 backdrop-blur-xl border-t border-white/5 flex flex-col gap-4">
-            <div class="flex items-center justify-between">
-                <div class="flex items-center gap-4 bg-white/5 p-1 rounded-2xl border border-white/10">
-                    <button onclick="changeQty(-1)" class="w-12 h-12 flex items-center justify-center text-gold"><i class="fas fa-minus"></i></button>
-                    <span id="mod-qty" class="text-xl font-black min-w-[30px] text-center">1</span>
-                    <button onclick="changeQty(1)" class="w-12 h-12 flex items-center justify-center text-gold"><i class="fas fa-plus"></i></button>
-                </div>
-                <div class="text-right">
-                    <p class="text-[9px] font-black text-white/30 uppercase">Subtotal</p>
-                    <p id="mod-subtotal" class="text-2xl font-black text-white">L 0.00</p>
-                </div>
-            </div>
-            <button onclick="addToCart()" class="w-full gold-gradient py-5 rounded-[2rem] font-black text-sm uppercase tracking-widest text-dark shadow-2xl active:scale-95 transition-all">Agregar a la Bolsa</button>
-        </div>
-    </div>
-
-    <!-- CHECKOUT DRAWER -->
-    <div id="check-overlay" class="hidden fixed inset-0 bg-black/90 z-[400] backdrop-blur-md opacity-0 transition-opacity duration-300" onclick="closeCheckout()"></div>
-    <div id="check-drawer" class="drawer fixed bottom-0 left-0 right-0 z-[410] bg-dark rounded-t-[3rem] h-[92vh] flex flex-col border-t border-white/10 shadow-2xl">
-        <div class="p-6 flex justify-between items-center shrink-0 border-b border-white/5">
-            <h3 class="text-2xl font-display font-black text-white uppercase tracking-tight">Finalizar Pedido</h3>
-            <button onclick="closeCheckout()" class="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center text-white/40"><i class="fas fa-times"></i></button>
-        </div>
-        <div class="flex-1 overflow-y-auto px-8 space-y-10 pb-48 pt-6 hide-scrollbar">
-            <div id="check-items" class="space-y-4"></div>
-            <div class="space-y-4">
-                <p class="text-[10px] font-black text-gold uppercase tracking-[0.3em]">Tipo de Entrega</p>
-                <div class="grid grid-cols-3 gap-2">
-                    <button onclick="setFulfill('pickup')" id="fbtn-pickup" class="p-4 rounded-2xl border transition-all text-center space-y-2 flex flex-col items-center">
-                        <i class="fas fa-walking text-lg"></i><span class="text-[9px] font-black uppercase">Llevar</span>
-                    </button>
-                    <button onclick="setFulfill('dinein')" id="fbtn-dinein" class="p-4 rounded-2xl border transition-all text-center space-y-2 flex flex-col items-center">
-                        <i class="fas fa-utensils text-lg"></i><span class="text-[9px] font-black uppercase">Aquí</span>
-                    </button>
-                    <button onclick="setFulfill('delivery')" id="fbtn-delivery" class="p-4 rounded-2xl border transition-all text-center space-y-2 flex flex-col items-center">
-                        <i class="fas fa-motorcycle text-lg"></i><span class="text-[9px] font-black uppercase">Domicilio</span>
-                    </button>
-                </div>
-            </div>
-            <div class="space-y-6">
-                <p class="text-[10px] font-black text-gold uppercase tracking-[0.3em]">Programación</p>
-                <div class="grid grid-cols-1 gap-4">
-                    <div class="space-y-2">
-                        <p class="text-[8px] font-bold text-white/30 uppercase px-1">¿Para qué hora?</p>
-                        <select id="check-schedule" class="w-full bg-white/5 border border-white/10 p-5 rounded-[1.5rem] text-white text-sm font-bold outline-none focus:border-gold"></select>
-                    </div>
-                    <div class="space-y-2">
-                        <p class="text-[8px] font-bold text-white/30 uppercase px-1">Código de Grupo</p>
-                        <input type="text" id="check-group" placeholder="Ej: HIBS" class="w-full bg-white/5 border border-white/10 p-5 rounded-[1.5rem] text-white text-sm font-bold outline-none focus:border-gold uppercase">
-                    </div>
-                </div>
-            </div>
-            <div id="check-delivery-ui" class="hidden space-y-6">
-                <div class="grid grid-cols-2 gap-3">
-                    <button onclick="setZone(35, 'Quimistan')" id="zbtn-35" class="p-4 rounded-2xl border border-white/10 bg-white/5 text-left"><p class="text-xs font-black">Quimistán</p><p class="text-[10px] text-gold font-bold">L 35.00</p></button>
-                    <button onclick="setZone(70, 'Pinalejo')" id="zbtn-70" class="p-4 rounded-2xl border border-white/10 bg-white/5 text-left"><p class="text-xs font-black">Pinalejo</p><p class="text-[10px] text-gold font-bold">L 70.00</p></button>
-                </div>
-                <textarea id="check-address" placeholder="Dirección exacta..." class="w-full bg-white/5 border border-white/10 p-5 rounded-3xl text-white outline-none focus:border-gold"></textarea>
-            </div>
-            <div id="check-payment-ui" class="hidden space-y-4">
-                <p class="text-[10px] font-black text-gold uppercase tracking-[0.3em]">Método de Pago</p>
-                <div class="grid grid-cols-2 gap-2">
-                    <button onclick="window.setPayment('cash')" id="pbtn-cash" class="p-4 rounded-2xl border border-gold bg-gold/10 text-gold text-center space-y-1 flex flex-col items-center">
-                        <i class="fas fa-money-bill-wave text-lg"></i><span class="text-[9px] font-black uppercase">Efectivo</span>
-                    </button>
-                    <button onclick="window.setPayment('rico_balance')" id="pbtn-rico" class="p-4 rounded-2xl border border-white/5 bg-white/5 text-white/20 text-center space-y-1 flex flex-col items-center opacity-50">
-                        <i class="fas fa-wallet text-lg"></i><span class="text-[9px] font-black uppercase">Rico Cash</span>
-                        <p id="check-rico-val" class="text-[8px] font-bold">L 0.00</p>
-                    </button>
-                </div>
-            </div>
-            <div class="space-y-4">
-                <p class="text-[10px] font-black text-gold uppercase tracking-[0.3em]">Tu Información</p>
-                <input type="text" id="check-name" placeholder="Nombre Completo" class="w-full bg-white/5 border border-white/10 p-5 rounded-[1.5rem] text-white outline-none focus:border-gold">
-                <div class="flex gap-2">
-                    <select id="check-country-code" class="bg-white/5 border border-white/10 p-5 rounded-[1.5rem] text-xs font-bold text-white/40 outline-none focus:border-gold">
-                        <option value="+504">+504</option>
-                        <option value="+1">+1</option>
-                    </select>
-                    <input type="tel" id="check-phone" placeholder="WhatsApp (Opcional si hay grupo)" class="flex-1 bg-white/5 border border-white/10 p-5 rounded-[1.5rem] text-white outline-none focus:border-gold">
-                </div>
-            </div>
-        </div>
-        <div class="absolute bottom-0 left-0 right-0 p-8 bg-dark/98 backdrop-blur-xl border-t border-white/5">
-            <div class="flex justify-between items-end mb-4">
-                <div><p class="text-[10px] font-black text-white/30 uppercase tracking-widest leading-none mb-1">Total a Pagar</p><p id="check-total" class="text-3xl font-black text-white">L 0.00</p></div>
-                <div class="text-right text-[8px] font-black text-success uppercase">Pago contra entrega</div>
-            </div>
-            <button onclick="submitFinalOrder()" id="final-btn" class="w-full gold-gradient py-5 rounded-[2rem] font-black text-sm uppercase tracking-widest text-dark shadow-2xl active:scale-95 transition-all">Enviar Pedido Ahora 🚀</button>
-        </div>
-    </div>
-
-    <!-- TRACKING MODAL -->
-    <div id="track-modal" class="hidden fixed inset-0 bg-dark z-[1000] flex flex-col p-8 items-center justify-center text-center animate-in fade-in duration-500">
-        <div id="track-icon" class="w-20 h-20 bg-success/20 text-success rounded-full flex items-center justify-center text-3xl mb-8 animate-bounce-in"><i class="fas fa-check"></i></div>
-        <h2 id="track-title" class="text-4xl font-display font-black text-white mb-2 uppercase tracking-tighter">¡Recibido!</h2>
-        <p id="track-msg" class="text-white/40 text-sm mb-12 max-w-xs leading-relaxed">Tu pedido ha sido enviado. Prepárate para el mejor sabor.</p>
-
-        <div class="glass w-full max-w-xs p-8 rounded-[3rem] space-y-6 relative mb-12 overflow-hidden">
-            <div class="space-y-1">
-                <p class="text-[10px] font-black text-gold uppercase tracking-[0.4em]">Estado del Pedido</p>
-                <div id="track-status-badge" class="inline-block px-4 py-1.5 rounded-full bg-white/5 border border-white/10 text-[10px] font-black uppercase text-white/60 tracking-widest mt-2">Sincronizando...</div>
-            </div>
-
-            <div id="receipt-qr" class="w-48 h-48 bg-white p-4 rounded-[2rem] mx-auto flex items-center justify-center"></div>
-            <div class="space-y-1">
-                <p class="text-[10px] font-black text-white/20 uppercase tracking-[0.4em]">Número de Orden</p>
-                <h3 id="receipt-num" class="text-4xl font-black text-white tracking-tighter">#--</h3>
-            </div>
-        </div>
-
-        <div class="flex flex-col gap-3 w-full max-w-xs">
-            <button onclick="location.reload()" class="w-full py-5 bg-gold text-dark rounded-[2rem] font-black text-xs uppercase tracking-widest shadow-xl active:scale-95 transition-all">Pedir Algo Más</button>
-            <p class="text-[9px] text-white/20 uppercase font-bold tracking-widest">Rich Aroma OS v2.0</p>
         </div>
     </div>
 
@@ -416,7 +339,7 @@
         </button>
     </nav>
 
-    <!-- Reload Modal -->
+    <!-- RELOAD MODAL -->
     <div id="reload-modal" class="hidden fixed inset-0 bg-black/90 backdrop-blur-md z-[1000] flex flex-col justify-end">
         <div class="bg-[#120C09] w-full max-h-[90vh] rounded-t-[3rem] shadow-2xl flex flex-col overflow-hidden border-t border-gold/20 relative">
             <div class="p-8 pb-4 border-b border-white/5 flex justify-between items-center">
@@ -450,6 +373,138 @@
                     <div id="reload-status" class="mt-4 text-xs font-black uppercase tracking-widest hidden text-gold animate-pulse">Optimizando imagen...</div>
                 </div>
             </div>
+        </div>
+    </div>
+
+    <!-- MODIFIER DRAWER -->
+    <div id="mod-overlay" class="hidden fixed inset-0 bg-black/80 z-[300] backdrop-blur-sm opacity-0 transition-opacity duration-300" onclick="closeModifier()"></div>
+    <div id="mod-drawer" class="drawer fixed bottom-0 left-0 right-0 z-[310] bg-dark rounded-t-[3rem] max-h-[92vh] flex flex-col border-t border-white/10 shadow-2xl">
+        <div class="flex justify-between items-center px-6 pt-4 shrink-0">
+            <button onclick="closeModifier()" class="w-12 h-12 rounded-full bg-white/5 flex items-center justify-center text-white/60 text-xl border border-white/5 active:scale-90 transition-all"><i class="fas fa-times"></i></button>
+            <div class="w-12 h-1.5 bg-white/10 rounded-full"></div>
+            <div class="w-12"></div> <!-- Spacer -->
+        </div>
+
+        <div class="flex-1 overflow-y-auto p-8 pt-4 space-y-8 hide-scrollbar">
+            <div id="mod-image" class="hidden h-56 rounded-[2.5rem] overflow-hidden border border-white/10 shadow-2xl"></div>
+            
+            <div class="space-y-1">
+                <h3 id="mod-name" class="text-3xl font-display font-black text-white italic tracking-tight uppercase">Product Name</h3>
+                <p id="mod-price" class="text-xl font-black text-gold font-mono tracking-tighter">L 0.00</p>
+            </div>
+
+            <div id="mod-options" class="space-y-10 pb-20">
+                <!-- Modifiers injected here -->
+            </div>
+        </div>
+
+        <div class="p-8 border-t border-white/5 space-y-6 shrink-0 bg-dark">
+            <div class="space-y-4">
+                <p class="text-[10px] font-black text-gold uppercase tracking-[0.3em]">Notas Especiales</p>
+                <input type="text" id="mod-note" placeholder="Ej: Sin azúcar, extra hielo..." class="w-full bg-white/5 border border-white/10 p-5 rounded-[1.5rem] text-white outline-none focus:border-gold">
+            </div>
+
+            <div class="flex items-center justify-between gap-6">
+                <div class="flex items-center gap-4 bg-white/5 p-2 rounded-2xl border border-white/5">
+                    <button onclick="window.changeQty(-1)" class="w-10 h-10 rounded-xl bg-white/5 text-white flex items-center justify-center active:scale-90 transition-all"><i class="fas fa-minus text-xs"></i></button>
+                    <span id="mod-qty" class="text-xl font-black text-white w-6 text-center">1</span>
+                    <button onclick="window.changeQty(1)" class="w-10 h-10 rounded-xl bg-gold text-dark flex items-center justify-center active:scale-90 transition-all"><i class="fas fa-plus text-xs"></i></button>
+                </div>
+                <button onclick="window.add()" class="flex-1 gold-gradient py-5 rounded-[2rem] font-black text-sm uppercase tracking-widest text-dark shadow-2xl active:scale-95 transition-all">Agregar a Bolsa</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- CHECKOUT DRAWER -->
+    <div id="check-overlay" class="hidden fixed inset-0 bg-black/95 z-[400] backdrop-blur-md opacity-0 transition-opacity duration-300" onclick="closeCheckout()"></div>
+    <div id="check-drawer" class="drawer fixed bottom-0 left-0 right-0 z-[410] bg-dark rounded-t-[3rem] h-[92vh] flex flex-col border-t border-white/10 shadow-2xl">
+        <div class="p-6 flex justify-between items-center shrink-0 border-b border-white/5">
+            <h3 class="text-2xl font-display font-black text-white uppercase tracking-tight">Finalizar Pedido</h3>
+            <button onclick="closeCheckout()" class="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center text-white/40"><i class="fas fa-times"></i></button>
+        </div>
+
+        <div class="flex-1 overflow-y-auto px-8 space-y-10 pb-48 pt-6 hide-scrollbar">
+            <div id="check-items" class="space-y-4"></div>
+
+            <div class="space-y-4">
+                <p class="text-[10px] font-black text-gold uppercase tracking-[0.3em]">Tipo de Entrega</p>
+                <div class="grid grid-cols-3 gap-2">
+                    <button onclick="setFulfill('pickup')" id="fbtn-pickup" class="p-4 rounded-2xl border transition-all text-center space-y-2 flex flex-col items-center">
+                        <i class="fas fa-shopping-bag text-xl"></i>
+                        <span class="text-[9px] font-black uppercase">Para Llevar</span>
+                    </button>
+                    <button onclick="setFulfill('dinein')" id="fbtn-dinein" class="p-4 rounded-2xl border transition-all text-center space-y-2 flex flex-col items-center">
+                        <i class="fas fa-mug-hot text-xl"></i>
+                        <span class="text-[9px] font-black uppercase">En Mesa</span>
+                    </button>
+                    <button onclick="setFulfill('delivery')" id="fbtn-delivery" class="p-4 rounded-2xl border transition-all text-center space-y-2 flex flex-col items-center opacity-40 grayscale pointer-events-none">
+                        <i class="fas fa-motorcycle text-xl"></i>
+                        <span class="text-[9px] font-black uppercase">A Domicilio</span>
+                    </button>
+                </div>
+            </div>
+
+            <div class="space-y-4">
+                <p class="text-[10px] font-black text-gold uppercase tracking-[0.3em]">Tu Información</p>
+                <input type="text" id="check-name" placeholder="Nombre Completo" class="w-full bg-white/5 border border-white/10 p-5 rounded-[1.5rem] text-white outline-none focus:border-gold">
+                <div class="flex gap-2">
+                    <select id="check-country-code" class="bg-white/5 border border-white/10 p-5 rounded-[1.5rem] text-xs font-bold text-white/40 outline-none focus:border-gold">
+                        <option value="+504">+504</option>
+                        <option value="+1">+1</option>
+                    </select>
+                    <input type="tel" id="check-phone" placeholder="WhatsApp (Opcional)" class="flex-1 bg-white/5 border border-white/10 p-5 rounded-[1.5rem] text-white outline-none focus:border-gold">
+                </div>
+            </div>
+
+            <div id="check-payment-ui" class="hidden space-y-4">
+                <p class="text-[10px] font-black text-gold uppercase tracking-[0.3em]">Método de Pago</p>
+                <div class="grid grid-cols-2 gap-3">
+                    <button onclick="window.setPayment('cash')" id="pbtn-cash" class="p-5 rounded-2xl border flex flex-col gap-2 transition-all">
+                        <i class="fas fa-money-bill-wave"></i>
+                        <span class="text-[10px] font-black uppercase">Efectivo / POS</span>
+                    </button>
+                    <button onclick="window.setPayment('rico_balance')" id="pbtn-rico" class="p-5 rounded-2xl border flex flex-col gap-2 transition-all relative overflow-hidden">
+                        <i class="fas fa-wallet text-gold"></i>
+                        <span class="text-[10px] font-black uppercase">Rico Cash</span>
+                        <p id="check-rico-val" class="text-[8px] font-mono text-gold/60 mt-auto">L 0.00</p>
+                    </button>
+                </div>
+            </div>
+
+            <div class="space-y-4">
+                <p class="text-[10px] font-black text-gold uppercase tracking-[0.3em]">Hora de Entrega</p>
+                <select id="check-schedule" class="w-full bg-white/5 border border-white/10 p-5 rounded-[1.5rem] text-white outline-none focus:border-gold appearance-none">
+                    <option value="asap">Lo antes posible (ASAP)</option>
+                    <!-- Times generated via JS -->
+                </select>
+            </div>
+            
+            <div class="pt-8 border-t border-white/5">
+                <div class="flex justify-between items-end mb-4">
+                    <div><p class="text-[10px] font-black text-white/30 uppercase tracking-widest leading-none mb-1">Total a Pagar</p><p id="check-total" class="text-3xl font-black text-white">L 0.00</p></div>
+                    <div id="delivery-info" class="hidden text-right"><p class="text-[9px] font-bold text-gold uppercase tracking-widest mb-1">Envío Incluido</p><p class="text-xs text-white/40">+ L 45.00</p></div>
+                </div>
+                <button onclick="submitFinalOrder()" id="final-btn" class="w-full gold-gradient py-5 rounded-[2rem] font-black text-sm uppercase tracking-widest text-dark shadow-2xl active:scale-95 transition-all">Enviar Pedido Ahora 🚀</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- TRACKING MODAL -->
+    <div id="track-modal" class="hidden fixed inset-0 bg-dark z-[1000] flex flex-col p-8 items-center justify-center text-center animate-in fade-in duration-500">
+        <div id="track-icon" class="w-20 h-20 bg-success/20 text-success rounded-full flex items-center justify-center text-3xl mb-8 animate-bounce-in"><i class="fas fa-check"></i></div>
+        <h2 class="text-3xl font-display font-black text-white mb-2 italic tracking-tight">¡ORDEN RECIBIDA!</h2>
+        <p id="track-msg" class="text-white/40 text-sm mb-12 max-w-xs leading-relaxed">Tu pedido ha sido enviado. Prepárate para el mejor sabor.</p>
+
+        <div class="glass w-full max-w-xs p-8 rounded-[3rem] space-y-6 relative mb-12 overflow-hidden">
+            <div class="absolute -right-4 -top-4 opacity-5 text-8xl text-white"><i class="fas fa-receipt"></i></div>
+            <div><p class="text-[10px] font-black text-gold uppercase tracking-[0.4em] mb-1">Orden de Seguimiento</p><h3 id="receipt-num" class="text-4xl font-black text-white tracking-tighter">#----</h3></div>
+            <div id="receipt-qr" class="bg-white p-4 rounded-3xl inline-block mx-auto shadow-2xl"></div>
+            <p class="text-[9px] text-white/30 font-black uppercase tracking-widest leading-relaxed">Muestra este código en caja<br>para identificar tu pago.</p>
+        </div>
+
+        <div class="flex flex-col gap-3 w-full max-w-xs">
+            <button onclick="location.reload()" class="w-full py-5 bg-gold text-dark rounded-[2rem] font-black text-xs uppercase tracking-widest shadow-xl active:scale-95 transition-all">Pedir Algo Más</button>
+            <p class="text-[9px] text-white/20 uppercase font-bold tracking-widest">Rich Aroma OS v2.0</p>
         </div>
     </div>
 
@@ -494,7 +549,10 @@
                 setTimeout(() => {
                     const targetBtn = document.querySelector(`button[onclick*="${defaultCat}"]`);
                     if (targetBtn) scrollToCat(defaultCat, targetBtn);
-                }, 300);
+                    
+                    const nav = document.querySelector('nav.fixed.bottom-0');
+                    console.log("Universal Nav Check:", nav ? "FOUND" : "MISSING");
+                }, 500);
             };
 
             async function fetchStatus() {
@@ -539,348 +597,34 @@
                 }
             }
 
-            function syncUser() {
-                try {
-                    const d = localStorage.getItem('ra_customer_data');
-                    if (d) {
-                        currentCustomer = JSON.parse(d);
-                        if (currentCustomer && currentCustomer.name) {
-                            document.getElementById('user-pill').classList.remove('hidden');
-                            document.getElementById('login-btn').classList.add('hidden');
-                            document.getElementById('user-first-name').innerText = currentCustomer.name.split(' ')[0];
-                            document.getElementById('check-name').value = currentCustomer.name;
-                            document.getElementById('check-phone').value = currentCustomer.phone.replace('+504','').replace('+1','');
-                            document.getElementById('check-payment-ui').classList.remove('hidden');
-                            document.getElementById('check-rico-val').innerText = 'L ' + (parseFloat(currentCustomer.rico_balance) || 0).toFixed(2);
-                        }
-                    }
-                } catch(e) { console.error("User sync failed", e); }
+            function getItemCat(i) {
+                const name = (i.name||'').toLowerCase(); const cat = (i.category||'').toLowerCase();
+                if (cat === 'combos' || name.includes('combo') || name.includes('paquete')) return 'Combos';
+                if (cat === 'coffee' || cat.includes('caliente')) return 'Calientes';
+                if (cat === 'drinks' || cat.includes('helada') || name.includes('frappe') || name.includes('refresher')) return 'Heladas';
+                if (cat === 'food' || cat.includes('comida')) return 'Comida';
+                if (cat === 'pastry' || cat.includes('reposteria')) return 'Repostería';
+                if (cat === 'secret' || cat.includes('secreto')) return 'Menú Secreto';
+                return 'Otros';
             }
-
-            window.openLogin = () => {
-                document.getElementById('login-overlay').classList.remove('hidden');
-                setTimeout(() => { document.getElementById('login-overlay').style.opacity = '1'; document.getElementById('login-drawer').classList.add('active'); }, 10);
-            };
-            window.closeLogin = () => {
-                document.getElementById('login-overlay').style.opacity = '0';
-                document.getElementById('login-drawer').classList.remove('active');
-                setTimeout(() => document.getElementById('login-overlay').classList.add('hidden'), 400);
-            };
-            window.toggleAuthMode = (mode) => {
-                const isReg = mode === 'register';
-                document.getElementById('auth-title').innerText = isReg ? 'Crear Cuenta' : 'Mi Cuenta';
-                document.getElementById('login-form').classList.toggle('hidden', isReg);
-                document.getElementById('register-form').classList.toggle('hidden', !isReg);
-            };
-
-            window.submitRegister = async () => {
-                const name = document.getElementById('reg-name').value.trim();
-                const phone = document.getElementById('reg-phone').value.trim();
-                const country = document.getElementById('reg-country-code').value;
-                const pin = document.getElementById('reg-pin').value.trim();
-
-                if (!name || !phone || pin.length < 4) return alert("Completa todos los campos y usa un PIN de 4 dígitos");
-
-                const btn = document.getElementById('reg-btn'); btn.innerText = "CREANDO..."; btn.disabled = true;
-                try {
-                    const r = await fetch('/api/store?action=customer_create', { 
-                        method:'POST', 
-                        headers:{'Content-Type':'application/json'}, 
-                        body:JSON.stringify({ name, phone: country + phone, pin }) 
-                    });
-                    const d = await r.json();
-                    if (!r.ok) throw new Error(d.error || "Error al crear cuenta");
-
-                    localStorage.setItem('ra_customer_data', JSON.stringify(d));
-                    syncUser(); closeLogin();
-                    alert("¡Bienvenido, " + name.split(' ')[0] + "! Tu cuenta ha sido creada.");
-                } catch(e) { alert(e.message); }
-                finally { btn.innerText = "Crear mi Cuenta"; btn.disabled = false; }
-            };
-
-            window.openProfile = () => {
-                if (!currentCustomer) return window.openLogin();
-
-                document.getElementById('prof-name').innerText = currentCustomer.name;
-                document.getElementById('prof-phone').innerText = currentCustomer.phone;
-                document.getElementById('prof-initial').innerText = currentCustomer.name.charAt(0).toUpperCase();
-                document.getElementById('prof-points').innerText = currentCustomer.points || 0;
-                document.getElementById('prof-balance').innerText = 'L ' + (parseFloat(currentCustomer.rico_balance) || 0).toFixed(2);
-
-                // Drink Streak (Punch Card) Logic: 6 drinks, 7th free
-                const rawStreak = currentCustomer.drink_streak || 0;
-                const progress = rawStreak % 7;
-                if (progress === 6) {
-                    document.getElementById('prof-streak-count').innerText = "¡GANASTE!";
-                    document.getElementById('prof-streak-count').classList.add('text-green-500');
-                    document.getElementById('prof-streak-msg').innerText = "¡Tu próximo café es GRATIS!";
-                } else {
-                    document.getElementById('prof-streak-count').innerText = `${progress}/6`;
-                    document.getElementById('prof-streak-count').classList.remove('text-green-500');
-                    document.getElementById('prof-streak-msg').innerText = `${6 - progress} bebidas más para tu premio`;
-                }
-                if (currentCustomer.rico_balance_expires_at) {
-                    const exp = new Date(currentCustomer.rico_balance_expires_at);
-                    document.getElementById('prof-balance').innerHTML += `<p class="text-[8px] font-bold text-error/60 uppercase mt-1">Expira: ${exp.toLocaleDateString()}</p>`;
-                }
-
-                const isVIP = currentCustomer.is_vip === true;
-                document.getElementById('prof-vip-badge').classList.toggle('hidden', !isVIP);
-                document.getElementById('vip-promo').classList.toggle('hidden', isVIP);
-
-                // Generate Member QR
-                document.getElementById('prof-qr').innerHTML = "";
-                if (window.QRCode) {
-                    new QRCode(document.getElementById('prof-qr'), { text: currentCustomer.id, width: 160, height: 160, colorDark: "#120C09" });
-                }
-
-                renderFavorites();
-
-                document.getElementById('profile-overlay').classList.remove('hidden');
-                setTimeout(() => { document.getElementById('profile-overlay').style.opacity = '1'; document.getElementById('profile-drawer').classList.add('active'); }, 10);
-            };
-
-            window.closeProfile = () => {
-                document.getElementById('profile-overlay').style.opacity = '0';
-                document.getElementById('profile-drawer').classList.remove('active');
-                setTimeout(() => document.getElementById('profile-overlay').classList.add('hidden'), 400);
-            };
-
-            window.logout = () => {
-                if (!confirm("¿Cerrar sesión?")) return;
-                localStorage.removeItem('ra_customer_data');
-                currentCustomer = null;
-                document.getElementById('user-pill').classList.add('hidden');
-                document.getElementById('login-btn').classList.remove('hidden');
-                document.getElementById('check-payment-ui').classList.add('hidden');
-                closeProfile();
-            };
-
-            window.rechargeBalance = (amount = 0, isVip = false) => {
-                if (amount === 0) {
-                    const custom = prompt("Ingresa el monto a recargar (L.):");
-                    if (!custom || isNaN(custom) || parseFloat(custom) <= 0) return;
-                    amount = parseFloat(custom);
-                }
-                window.openReloadModal(amount, isVip);
-            };
-
-            window.buyVIP = async () => {
-                if (!currentCustomer) return window.openLogin();
-                
-                const currentBalance = parseFloat(currentCustomer.rico_balance) || 0;
-                if (currentBalance < 1500) {
-                    window.openReloadModal(1500, true);
-                    return;
-                }
-
-                const btn = document.querySelector('#vip-promo button');
-                btn.innerText = "PROCESANDO..."; btn.disabled = true;
-
-                try {
-                    const r = await fetch(`/api/store?action=purchase_membership&id=${currentCustomer.id}`, { 
-                        method:'POST', 
-                        headers: {'Content-Type':'application/json'} 
-                    });
-                    const d = await r.json();
-                    if (!r.ok) throw new Error(d.error || "Error en la compra");
-
-                    currentCustomer = d.customer;
-                    localStorage.setItem('ra_customer_data', JSON.stringify(currentCustomer));
-
-                    alert("¡Felicidades! Ahora eres Miembro VIP.");
-                    window.openProfile();
-                } catch(e) { alert(e.message); }
-                finally { btn.innerText = "Comprar Membresía L 1,500"; btn.disabled = false; }
-            };
-
-            // IN-PAGE RELOAD LOGIC
-            let reloadAmount = 0;
-            let isVipTopup = false;
-
-            window.openReloadModal = (amount, isVip = false) => {
-                reloadAmount = amount;
-                isVipTopup = isVip;
-                document.getElementById('modal-amount').innerText = `L ${amount.toFixed(2)}`;
-                document.getElementById('modal-title').innerText = isVip ? 'Membresía VIP' : 'Recargar Billetera';
-                document.getElementById('modal-vip-note').classList.toggle('hidden', !isVip);
-                document.getElementById('reload-status').classList.add('hidden');
-                document.getElementById('reload-receipt').classList.remove('hidden');
-                document.getElementById('reload-receipt').value = '';
-                document.getElementById('reload-modal').classList.remove('hidden');
-            };
-
-            window.closeReloadModal = () => {
-                document.getElementById('reload-modal').classList.add('hidden');
-            };
-
-            window.copyBank = (bank) => {
-                let account = bank === 'bac' ? '756132311' : '210850188679';
-                navigator.clipboard.writeText(account).then(() => {
-                    alert(`¡Cuenta de ${bank.toUpperCase()} (${account}) copiada!`);
-                });
-            };
-
-            function compressImage(file, maxWidth = 1200, quality = 0.7) {
-                return new Promise((resolve, reject) => {
-                    const reader = new FileReader();
-                    reader.readAsDataURL(file);
-                    reader.onload = event => {
-                        const img = new Image();
-                        img.src = event.target.result;
-                        img.onload = () => {
-                            const canvas = document.createElement('canvas');
-                            let width = img.width;
-                            let height = img.height;
-                            if (width > maxWidth) {
-                                height = Math.round((height * maxWidth) / width);
-                                width = maxWidth;
-                            }
-                            canvas.width = width;
-                            canvas.height = height;
-                            const ctx = canvas.getContext('2d');
-                            ctx.drawImage(img, 0, 0, width, height);
-                            resolve(canvas.toDataURL('image/jpeg', quality));
-                        };
-                        img.onerror = reject;
-                    };
-                    reader.onerror = reject;
-                });
-            }
-
-            window.submitReload = async () => {
-                const input = document.getElementById('reload-receipt');
-                const statusDiv = document.getElementById('reload-status');
-                if (!input.files || input.files.length === 0) return;
-                
-                const file = input.files[0];
-                statusDiv.classList.remove('hidden');
-                statusDiv.innerText = "Optimizando imagen...";
-                statusDiv.className = "mt-4 text-xs font-black uppercase tracking-widest text-gold animate-pulse";
-
-                try {
-                    const base64String = await compressImage(file);
-                    statusDiv.innerText = "Enviando comprobante...";
-                    
-                    let bonus = 0;
-                    if (reloadAmount >= 1000) bonus = reloadAmount * 0.10;
-                    else if (reloadAmount >= 500) bonus = reloadAmount * 0.05;
-
-                    const res = await fetch('/api/topup', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            phone: currentCustomer.phone,
-                            amount: reloadAmount,
-                            bonus: bonus,
-                            imageBase64: base64String,
-                            fileName: file.name,
-                            isVip: isVipTopup
-                        })
-                    });
-                    
-                    const data = await res.json();
-                    if (res.ok) {
-                        statusDiv.innerText = "✅ ¡Enviado! El cajero lo aprobará en breve.";
-                        statusDiv.className = "mt-4 text-xs font-black uppercase tracking-widest text-green-500";
-                        input.classList.add('hidden');
-                        setTimeout(() => {
-                            window.closeReloadModal();
-                            window.location.reload();
-                        }, 3000);
-                    } else {
-                        throw new Error(data.error || 'Upload failed');
-                    }
-                } catch (error) {
-                    console.error('Upload Error:', error);
-                    statusDiv.innerText = "❌ Error: " + error.message;
-                    statusDiv.className = "mt-4 text-xs font-black uppercase tracking-widest text-red-500";
-                }
-            };
-
-            function renderFavorites() {
-                const favs = JSON.parse(localStorage.getItem('ra_favorites') || '[]');
-                const cont = document.getElementById('prof-favorites');
-                if (!favs.length) {
-                    cont.innerHTML = '<div class="col-span-2 text-center py-8 border-2 border-dashed border-white/5 rounded-[2rem] text-white/20 text-xs italic">Aún no tienes favoritos</div>';
-                    return;
-                }
-
-                cont.innerHTML = favs.map(id => {
-                    const i = menu.find(m => m.id === id);
-                    if (!i) return '';
-                    const img = optimizeImg(i.image_url || i.image);
-                    return `<div class="glass p-4 rounded-3xl flex flex-col items-center gap-2 text-center" onclick="closeProfile(); window.openModifier('${i.id}')">
-                        <div class="w-12 h-12 rounded-full overflow-hidden bg-white/5">
-                            ${img ? `<img src="${img}" class="w-full h-full object-cover" loading="lazy" decoding="async">` : '<i class="fas fa-star text-gold text-xs mt-4"></i>'}
-                        </div>
-                        <p class="text-[9px] font-black uppercase text-white/60 truncate w-full">${i.name}</p>
-                    </div>`;
-                }).join('');
-            }
-
-            window.toggleFavorite = (e, id) => {
-                e.stopPropagation();
-                let favs = JSON.parse(localStorage.getItem('ra_favorites') || '[]');
-                if (favs.includes(id)) favs = favs.filter(x => x !== id);
-                else favs.push(id);
-                localStorage.setItem('ra_favorites', JSON.stringify(favs));
-                renderMenu();
-            };
-
-            window.submitLogin = async () => {
-                const phone = document.getElementById('login-phone').value.trim();
-                const pin = document.getElementById('login-pin').value.trim();
-                const country = document.getElementById('login-country-code').value;
-                if (!phone || pin.length < 4) return alert("Ingresa tu teléfono y PIN de 4 dígitos");
-
-                const btn = document.getElementById('auth-btn'); btn.innerText = "ENTRANDO..."; btn.disabled = true;
-                try {
-                    const r = await fetch('/api/store?action=customer_login', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ phone: country + phone, pin }) });
-                    const d = await r.json();
-                    if (!r.ok) throw new Error(d.error || "Error al entrar");
-                    localStorage.setItem('ra_customer_data', JSON.stringify(d.customer));
-                    syncUser(); closeLogin();
-                    alert("¡Bienvenido de vuelta, " + d.customer.name.split(' ')[0] + "!");
-                } catch(e) { alert(e.message); }
-                finally { btn.innerText = "Entrar a mi Cuenta"; btn.disabled = false; }
-            };
-
-            window.showPoints = () => {
-                window.openProfile();
-            };
-
-            window.setPayment = (type) => {
-                if (type === 'rico_balance' && (currentCustomer?.rico_balance || 0) < (cart.reduce((s,i)=>s+i.finalPrice,0) + deliveryFee)) {
-                    return alert("Saldo de Rico Cash insuficiente para esta orden.");
-                }
-                paymentMethod = type;
-                document.getElementById('pbtn-cash').className = "p-4 rounded-2xl border border-white/5 bg-white/5 text-white/20 text-center space-y-1 flex flex-col items-center opacity-50";
-                document.getElementById('pbtn-rico').className = "p-4 rounded-2xl border border-white/5 bg-white/5 text-white/20 text-center space-y-1 flex flex-col items-center opacity-50";
-                document.getElementById('pbtn-' + (type === 'cash' ? 'cash' : 'rico')).className = "p-4 rounded-2xl border border-gold bg-gold/10 text-gold text-center space-y-1 flex flex-col items-center";
-                document.getElementById('pbtn-' + (type === 'cash' ? 'cash' : 'rico')).classList.remove('opacity-50');
-            };
 
             function initStickyCats() {
-                const cats = [
-                    {id:'Combos', n:'Combos', i:'🔥'}, 
-                    {id:'Calientes', n:'Café', i:'☕'}, 
-                    {id:'Heladas', n:'Heladas', i:'🥤'}, 
-                    {id:'Comida', n:'Comida', i:'🥐'}, 
-                    {id:'Repostería', n:'Postres', i:'🍰'},
-                    {id:'Menú Secreto', n:'Secreto', i:'🤫'}
-                ];
-                document.getElementById('sticky-cats').innerHTML = cats.map(c => `<button onclick="scrollToCat('${c.id}', this)" class="category-pill flex items-center gap-2 px-6 py-2.5 rounded-full text-xs font-black uppercase whitespace-nowrap bg-white/5 text-white/40"><span>${c.i}</span> <span>${c.n}</span></button>`).join('');
+                const cats = ['Combos', 'Calientes', 'Heladas', 'Comida', 'Repostería', 'Menú Secreto', 'Otros'];
+                const nav = document.getElementById('sticky-cats');
+                nav.innerHTML = cats.map(c => `<button onclick="scrollToCat('${c}', this)" class="category-pill shrink-0 px-6 py-2.5 rounded-full font-black text-[10px] uppercase tracking-widest transition-all ${c==='Menú Secreto'?'bg-gold text-dark':'bg-white/5 text-white/40'}">${c}</button>`).join('');
             }
 
             window.scrollToCat = (id, btn) => {
-                document.querySelectorAll('.category-pill').forEach(p => p.classList.remove('active')); 
+                document.querySelectorAll('#sticky-cats button').forEach(b => {
+                    b.classList.remove('bg-gold', 'text-dark');
+                    b.classList.add('bg-white/5', 'text-white/40');
+                });
                 if (btn) {
-                    btn.classList.add('active');
-                    btn.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+                    btn.classList.replace('bg-white/5', 'bg-gold');
+                    btn.classList.replace('text-white/40', 'text-dark');
                 }
-                const el = document.getElementById('section-' + id.replace(/\s+/g, '')); 
-                if (el) el.scrollIntoView({ behavior: 'smooth' });
+                const el = document.getElementById('section-' + id.replace(/\s+/g, ''));
+                if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
             };
 
             function optimizeImg(url) {
@@ -895,7 +639,11 @@
                 const main = document.getElementById('menu-feed');
                 const sortRules = { 'Combos':['combo_1','combo_2','combo_3','combo_4'], 'Heladas':['cold_supreme_frappe','cold_fresa_frappe','cold_coffee_frappe','cold_french_vanilla','cold_caramel_iced'], 'Comida':['food_avocado_toast_huevo','food_banano_almond_toast','food_chicken_salad_bowl','food_baleadas','food_chicken_melt'] };
                 const cats = ['Combos', 'Calientes', 'Heladas', 'Comida', 'Repostería', 'Menú Secreto', 'Otros'];
-                main.innerHTML = cats.map(cat => {
+                
+                // QA MOTIVATION: Keep the welcome card
+                const guestCard = document.getElementById('guest-welcome').outerHTML;
+
+                main.innerHTML = guestCard + cats.map(cat => {
                     let items = menu.filter(i => getItemCat(i) === cat);
                     if (!items.length) return '';
                     const rule = sortRules[cat];
@@ -915,24 +663,14 @@
                         }).join('')}
                     </div></section>`;
                 }).join('');
-            }
 
-            function getItemCat(i) {
-                const c = (i.category || '').toLowerCase(); const n = (i.name || '').toLowerCase(); const id = (i.id || '').toLowerCase();
-                if (c.includes('secret') || id.startsWith('secret_')) return 'Menú Secreto';
-                if (id.startsWith('combo_') || n.includes('combo')) return 'Combos';
-                if (c === 'coffee' || c.includes('hot') || n.includes('latte') || n.includes('cappuccino')) return 'Calientes';
-                if (c === 'drinks' || c.includes('cold') || c.includes('helada') || c.includes('frappe') || n.includes('iced') || n.includes('granita')) return 'Heladas';
-                if (c === 'food' || c.includes('comida') || n.includes('baleada') || n.includes('sandwich')) return 'Comida';
-                if (c === 'pastry' || c.includes('reposteria') || c.includes('cake')) return 'Repostería';
-                return 'Otros';
+                // Ensure syncUser is called to potentially hide the guestCard
+                syncUser();
             }
 
             window.openModifier = (id) => {
-                currentI = menu.find(i => i.id === id); 
-                if(!currentI) return;
-                
-                document.getElementById('mod-name').innerText = currentI.name;
+                currentI = menu.find(m => m.id === id); if(!currentI) return;
+                currentM = {}; document.getElementById('mod-name').innerText = currentI.name;
                 document.getElementById('mod-price').innerText = `L ${parseFloat(currentI.price).toFixed(0)}`;
                 document.getElementById('mod-qty').innerText = '1';
                 
@@ -947,60 +685,55 @@
                         modImg.classList.remove('hidden');
                     }
                 }
+
+                const container = document.getElementById('mod-options');
+                const groupIds = itemModG.filter(img => img.item_id === id).map(img => img.group_id);
                 
-                document.getElementById('mod-note').value = "";
-                currentM = {};
-                const cont = document.getElementById('mod-groups');
-                const rel = itemModG.filter(img => img.item_id === id).map(img => img.group_id);
-                cont.innerHTML = rel.map(gid => {
-                    const g = modG.find(group => group.id === gid); if(!g) return '';
+                container.innerHTML = groupIds.map(gid => {
+                    const g = modG.find(m => m.id === gid); if(!g) return '';
                     const opts = modO.filter(o => o.group_id === gid);
                     const def = opts.find(o => o.is_default) || opts[0];
                     if (g.required && def) currentM[gid] = [def.id];
-                    return `<div class="space-y-4"><div class="flex justify-between items-end"><p class="text-[10px] font-black text-white/30 uppercase tracking-[0.2em]">${g.name}</p>${g.required ? '<span class="text-[8px] font-black text-gold border border-gold/30 px-1.5 py-0.5 rounded">OBLIGATORIO</span>':''}</div><div class="grid grid-cols-1 gap-2">${opts.map(o => `<button id="mbtn-${o.id}" onclick="toggleM('${gid}', '${o.id}', ${g.max_selections||1}, ${g.required})" class="p-5 rounded-[1.5rem] border transition-all flex justify-between items-center ${currentM[gid]?.includes(o.id) ? 'bg-gold/10 border-gold text-gold shadow-lg' : 'bg-white/5 border-white/5 text-white/40'}"><span>${o.name}</span>${parseFloat(o.price_adjustment)>0 ? `<span class="text-[10px] opacity-60">+L ${o.price_adjustment}</span>`:''}</button>`).join('')}</div></div>`;
+
+                    return `<div class="space-y-4">
+                        <div class="flex justify-between items-center"><h4 class="text-[10px] font-black text-gold uppercase tracking-[0.3em]">${g.name}</h4>${g.required ? '<span class="text-[8px] bg-gold/10 text-gold px-2 py-0.5 rounded-full border border-gold/20 font-black">OBLIGATORIO</span>' : ''}</div>
+                        <div class="grid grid-cols-2 gap-3">${opts.map(o => {
+                            const isSel = (currentM[gid]||[]).includes(o.id);
+                            return `<button onclick="window.toggleMod('${gid}','${o.id}',${g.max_selections})" class="p-4 rounded-2xl border-2 transition-all text-left space-y-1 ${isSel ? 'border-gold bg-gold/5 text-white' : 'border-white/5 bg-white/5 text-white/40'}">
+                                <p class="text-[10px] font-black uppercase leading-tight">${o.name}</p>
+                                ${parseFloat(o.price_adjustment) > 0 ? `<p class="text-[9px] font-bold text-gold">+ L ${o.price_adjustment}</p>` : ''}
+                            </button>`;
+                        }).join('')}</div>
+                    </div>`;
                 }).join('');
-                updateModTotal();
+
                 document.getElementById('mod-overlay').classList.remove('hidden');
                 setTimeout(() => { document.getElementById('mod-overlay').style.opacity = '1'; document.getElementById('mod-drawer').classList.add('active'); }, 10);
             };
 
-            window.toggleM = (gid, oid, max, req) => {
-                let s = currentM[gid] || [];
-                if (s.includes(oid)) { if (!req || s.length > 1) s = s.filter(x => x !== oid); }
-                else { if (max === 1) s = [oid]; else if (s.length < max) s.push(oid); }
-                currentM[gid] = s;
-                const opts = modO.filter(o => o.group_id === gid);
-                opts.forEach(o => {
-                    const btn = document.getElementById('mbtn-' + o.id);
-                    if (btn) btn.className = `p-5 rounded-[1.5rem] border transition-all flex justify-between items-center ${s.includes(o.id) ? 'bg-gold/10 border-gold text-gold shadow-lg' : 'bg-white/5 border-white/5 text-white/40'}`;
-                });
-                updateModTotal();
+            window.toggleMod = (gid, oid, max) => {
+                let sel = currentM[gid] || [];
+                if (sel.includes(oid)) sel = sel.filter(id => id !== oid);
+                else { if (max === 1) sel = [oid]; else if (sel.length < max) sel.push(oid); }
+                currentM[gid] = sel; window.openModifier(currentI.id);
             };
 
-            function updateModTotal() {
-                let t = parseFloat(currentI.price);
-                Object.keys(currentM).forEach(g => currentM[g].forEach(o => { const opt = modO.find(mo => mo.id === o); if (opt) t += (parseFloat(opt.price_adjustment) || 0); }));
-                const q = parseInt(document.getElementById('mod-qty').innerText);
-                document.getElementById('mod-subtotal').innerText = 'L ' + (t * q).toFixed(2);
-            }
+            window.changeQty = (n) => {
+                const el = document.getElementById('mod-qty');
+                let q = parseInt(el.innerText) + n;
+                if (q < 1) q = 1; el.innerText = q;
+            };
 
-            window.changeQty = (v) => { let q = parseInt(document.getElementById('mod-qty').innerText) + v; if (q < 1) q = 1; document.getElementById('mod-qty').innerText = q; updateModTotal(); };
-            window.closeModifier = () => { document.getElementById('mod-overlay').style.opacity = '0'; document.getElementById('mod-drawer').classList.remove('active'); setTimeout(() => document.getElementById('mod-overlay').classList.add('hidden'), 400); };
-
-            window.addToCart = () => {
+            window.add = () => {
                 try {
-                    if (!currentI) return;
-                    console.log("Adding to cart...", currentI);
-                    const q = parseInt(document.getElementById('mod-qty').innerText) || 1; 
-                    const ms = [];
-                    Object.keys(currentM).forEach(g => {
-                        if (Array.isArray(currentM[g])) {
-                            currentM[g].forEach(o => { 
-                                const opt = modO.find(mo => mo.id === o); 
-                                if (opt) ms.push({ id: opt.id, name: opt.name, price: opt.price_adjustment }); 
-                            });
-                        }
-                    });
+                    let q = parseInt(document.getElementById('mod-qty').innerText);
+                    let ms = [];
+                    for (const gid in currentM) {
+                        currentM[gid].forEach(oid => {
+                            const o = modO.find(opt => opt.id === oid);
+                            if (o) ms.push({ id: o.id, name: o.name, price: o.price_adjustment });
+                        });
+                    }
                     let tp = parseFloat(currentI.price) || 0;
                     ms.forEach(m => tp += (parseFloat(m.price) || 0));
                     cart.push({
@@ -1011,13 +744,9 @@
                         qty: q,
                         finalPrice: tp * q, // Line Total
                         note: document.getElementById('mod-note').value
-                    });                    console.log("Cart updated:", cart);
-                    updateCartUI(); 
-                    window.closeModifier();
-                } catch(e) {
-                    console.error("Add to cart failed", e);
-                    alert("Error al agregar al carrito: " + e.message);
-                }
+                    });
+                    updateCartUI(); window.closeModifier();
+                } catch(e) { console.error("Add failed", e); }
             };
 
             function updateCartUI() {
@@ -1026,13 +755,9 @@
                 document.getElementById('cart-count-text').innerText = cart.length + ' Items';
                 const cartBar = document.getElementById('cart-bar');
                 if (cart.length > 0) {
-                    cartBar.style.transform = 'translateY(0)';
-                    cartBar.style.opacity = '1';
-                    cartBar.style.pointerEvents = 'auto';
+                    cartBar.style.transform = 'translateY(0)'; cartBar.style.opacity = '1'; cartBar.style.pointerEvents = 'auto';
                 } else {
-                    cartBar.style.transform = 'translateY(200%)';
-                    cartBar.style.opacity = '0';
-                    cartBar.style.pointerEvents = 'none';
+                    cartBar.style.transform = 'translateY(200%)'; cartBar.style.opacity = '0'; cartBar.style.pointerEvents = 'none';
                 }
             }
 
@@ -1044,139 +769,254 @@
                 setTimeout(() => { document.getElementById('check-overlay').style.opacity = '1'; document.getElementById('check-drawer').classList.add('active'); }, 10);
             };
 
+            window.remove = (idx) => { cart.splice(idx, 1); updateCartUI(); if (cart.length === 0) closeCheckout(); else window.openCheckout(); };
+
             window.setFulfill = (type) => {
                 fulfillment = type;
-                document.querySelectorAll('[id^="fbtn-"]').forEach(b => b.className = "p-4 rounded-2xl border border-white/5 bg-white/5 text-white/20 transition-all text-center space-y-2 flex flex-col items-center");
-                document.getElementById('fbtn-' + type).className = "p-4 rounded-2xl border-gold bg-gold/10 text-gold transition-all text-center space-y-2 shadow-lg flex flex-col items-center";
-                document.getElementById('check-delivery-ui').classList.toggle('hidden', type !== 'delivery');
-                if (type !== 'delivery') deliveryFee = 0;
-                document.getElementById('check-total').innerText = 'L ' + (cart.reduce((s,i)=>s+i.finalPrice,0) + deliveryFee).toFixed(2);
+                ['pickup', 'dinein'].forEach(t => {
+                    const btn = document.getElementById('fbtn-' + t);
+                    if (t === type) { btn.classList.add('btn-gold'); btn.classList.remove('bg-white/5', 'text-white/40', 'border-white/5'); }
+                    else { btn.classList.remove('btn-gold'); btn.classList.add('bg-white/5', 'text-white/40', 'border-white/5'); }
+                });
             };
 
-            window.setZone = (fee, name) => {
-                deliveryFee = fee; zoneName = name;
-                document.querySelectorAll('[id^="zbtn-"]').forEach(b => b.className = "p-4 rounded-2xl border border-white/10 bg-white/5 text-left");
-                document.getElementById('zbtn-' + fee).className = "p-4 rounded-2xl border-2 border-gold bg-gold/10 text-left shadow-lg";
-                document.getElementById('check-total').innerText = 'L ' + (cart.reduce((s,i)=>s+i.finalPrice,0) + deliveryFee).toFixed(2);
+            window.openLogin = () => {
+                document.getElementById('login-overlay').classList.remove('hidden');
+                setTimeout(() => { document.getElementById('login-overlay').style.opacity = '1'; document.getElementById('login-drawer').classList.add('active'); }, 10);
+            };
+            window.closeLogin = () => { document.getElementById('login-overlay').style.opacity = '0'; document.getElementById('login-drawer').classList.remove('active'); setTimeout(() => document.getElementById('login-overlay').classList.add('hidden'), 400); };
+            
+            window.toggleAuthMode = (mode) => {
+                const isReg = mode === 'register';
+                document.getElementById('auth-title').innerText = isReg ? 'Crear Cuenta' : 'Mi Cuenta';
+                document.getElementById('login-form').classList.toggle('hidden', isReg);
+                document.getElementById('register-form').classList.toggle('hidden', !isReg);
             };
 
-            window.remove = (idx) => { cart.splice(idx, 1); updateCartUI(); if (!cart.length) closeCheckout(); else openCheckout(); };
+            window.submitLogin = async () => {
+                const phone = document.getElementById('login-phone').value.replace(/\D/g, '');
+                const pin = document.getElementById('login-pin').value;
+                if (phone.length < 8 || pin.length < 4) return alert("Ingresa datos válidos");
+                
+                const btn = document.getElementById('auth-btn'); btn.innerText = "ENTRANDO..."; btn.disabled = true;
+                try {
+                    const r = await fetch('/api/customer/login', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ phone, pin }) });
+                    const d = await r.json();
+                    if (!r.ok) throw new Error(d.error || "Error de login");
+                    localStorage.setItem('ra_customer_phone', d.customer.phone);
+                    localStorage.setItem('ra_customer_data', JSON.stringify(d.customer));
+                    window.closeLogin(); syncUser();
+                } catch(e) { alert(e.message); } finally { btn.innerText = "Entrar a mi Cuenta"; btn.disabled = false; }
+            };
+
+            window.submitRegister = async () => {
+                const name = document.getElementById('reg-name').value;
+                const phone = document.getElementById('reg-phone').value.replace(/\D/g, '');
+                const pin = document.getElementById('reg-pin').value;
+                if (!name || phone.length < 8 || pin.length < 4) return alert("Completa todos los campos");
+
+                const btn = document.getElementById('reg-btn'); btn.innerText = "CREANDO..."; btn.disabled = true;
+                try {
+                    const r = await fetch('/api/auth/register', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ name, phone, pin }) });
+                    const d = await r.json();
+                    if (!r.ok) throw new Error(d.error || "Error al crear cuenta");
+                    localStorage.setItem('ra_customer_phone', d.customer.phone);
+                    localStorage.setItem('ra_customer_data', JSON.stringify(d.customer));
+                    window.closeLogin(); syncUser();
+                } catch(e) { alert(e.message); } finally { btn.innerText = "Crear mi Cuenta"; btn.disabled = false; }
+            };
+
+            window.openProfile = () => {
+                if (!currentCustomer) return window.openLogin();
+                
+                // Refresh data
+                fetch(`/api/customer/profile?phone=${currentCustomer.phone}`)
+                .then(r => r.json())
+                .then(d => {
+                    if (d && !d.error) {
+                        currentCustomer = d;
+                        localStorage.setItem('ra_customer_data', JSON.stringify(d));
+                        
+                        document.getElementById('prof-initial').innerText = currentCustomer.name.charAt(0).toUpperCase();
+                        document.getElementById('prof-name').innerText = currentCustomer.name;
+                        document.getElementById('prof-phone').innerText = currentCustomer.phone;
+                        document.getElementById('prof-points').innerText = currentCustomer.points || 0;
+                        document.getElementById('prof-balance').innerText = 'L ' + (parseFloat(currentCustomer.rico_balance) || 0).toFixed(2);
+                        
+                        // Drink Streak
+                        const streak = currentCustomer.drink_streak || 0;
+                        const prog = streak % 7;
+                        document.getElementById('prof-streak-count').innerText = prog === 6 ? "¡GANASTE!" : `${prog}/6`;
+                        document.getElementById('prof-streak-count').className = prog === 6 ? "text-2xl font-black text-success font-mono" : "text-2xl font-black text-gold font-mono";
+                        document.getElementById('prof-streak-msg').innerText = prog === 6 ? "¡Próxima bebida GRATIS!" : `${6-prog} bebidas más para tu premio`;
+
+                        document.getElementById('prof-vip-badge').classList.toggle('hidden', !currentCustomer.is_vip);
+                        
+                        document.getElementById('prof-qr').innerHTML = "";
+                        new QRCode(document.getElementById('prof-qr'), { text: currentCustomer.phone, width: 160, height: 160, colorDark: "#120C09" });
+                    }
+                });
+
+                document.getElementById('profile-overlay').classList.remove('hidden');
+                setTimeout(() => { document.getElementById('profile-overlay').style.opacity = '1'; document.getElementById('profile-drawer').classList.add('active'); }, 10);
+            };
+            window.closeProfile = () => { document.getElementById('profile-overlay').style.opacity = '0'; document.getElementById('profile-drawer').classList.remove('active'); setTimeout(() => document.getElementById('profile-overlay').classList.add('hidden'), 400); };
+
+            function syncUser() {
+                try {
+                    const d = localStorage.getItem('ra_customer_data');
+                    const welcome = document.getElementById('guest-welcome');
+                    if (d) {
+                        currentCustomer = JSON.parse(d);
+                        if (currentCustomer && currentCustomer.name) {
+                            document.getElementById('user-pill').classList.remove('hidden');
+                            document.getElementById('login-btn').classList.add('hidden');
+                            document.getElementById('user-first-name').innerText = currentCustomer.name.split(' ')[0];
+                            document.getElementById('check-name').value = currentCustomer.name;
+                            document.getElementById('check-phone').value = currentCustomer.phone.replace('+504','').replace('+1','');
+                            document.getElementById('check-payment-ui').classList.remove('hidden');
+                            document.getElementById('check-rico-val').innerText = 'L ' + (parseFloat(currentCustomer.rico_balance) || 0).toFixed(2);
+                            if (welcome) welcome.classList.add('hidden');
+                        }
+                    } else {
+                        document.getElementById('user-pill').classList.add('hidden');
+                        document.getElementById('login-btn').classList.remove('hidden');
+                        if (welcome) welcome.classList.remove('hidden');
+                    }
+                } catch(e) { console.error("User sync failed", e); }
+            }
+
+            window.logout = () => {
+                if (!confirm("¿Cerrar sesión?")) return;
+                localStorage.removeItem('ra_customer_data');
+                localStorage.removeItem('ra_customer_phone');
+                currentCustomer = null;
+                syncUser();
+                closeProfile();
+            };
+
+            window.rechargeBalance = (amount = 0, isVip = false) => {
+                if (amount === 0) {
+                    const custom = prompt("Monto a recargar (L.):");
+                    if (!custom || isNaN(custom) || parseFloat(custom) <= 0) return;
+                    amount = parseFloat(custom);
+                }
+                window.openReloadModal(amount, isVip);
+            };
+
+            window.openReloadModal = (amount, isVip = false) => {
+                reloadAmount = amount;
+                isVipTopup = isVip;
+                document.getElementById('modal-amount').innerText = `L ${amount.toFixed(2)}`;
+                document.getElementById('modal-title').innerText = isVip ? 'Membresía VIP' : 'Recargar Billetera';
+                document.getElementById('modal-vip-note').classList.toggle('hidden', !isVip);
+                document.getElementById('reload-status').classList.add('hidden');
+                document.getElementById('reload-receipt').classList.remove('hidden');
+                document.getElementById('reload-receipt').value = '';
+                document.getElementById('reload-modal').classList.remove('hidden');
+            };
+            window.closeReloadModal = () => document.getElementById('reload-modal').classList.add('hidden');
+            window.copyBank = (bank) => {
+                let acc = bank === 'bac' ? '756132311' : '210850188679';
+                navigator.clipboard.writeText(acc).then(() => alert(`¡Cuenta de ${bank.toUpperCase()} (${acc}) copiada!`));
+            };
+
+            function compressImage(file, maxWidth = 1200, quality = 0.7) {
+                return new Promise((resolve, reject) => {
+                    const reader = new FileReader(); reader.readAsDataURL(file);
+                    reader.onload = event => {
+                        const img = new Image(); img.src = event.target.result;
+                        img.onload = () => {
+                            const canvas = document.createElement('canvas');
+                            let w = img.width, h = img.height;
+                            if (w > maxWidth) { h = Math.round((h * maxWidth) / w); w = maxWidth; }
+                            canvas.width = w; canvas.height = h;
+                            const ctx = canvas.getContext('2d'); ctx.drawImage(img, 0, 0, w, h);
+                            resolve(canvas.toDataURL('image/jpeg', quality));
+                        };
+                    };
+                });
+            }
+
+            window.submitReload = async () => {
+                const input = document.getElementById('reload-receipt');
+                const statusDiv = document.getElementById('reload-status');
+                if (!input.files || input.files.length === 0) return;
+                
+                statusDiv.classList.remove('hidden'); statusDiv.innerText = "Subiendo...";
+                try {
+                    const base64 = await compressImage(input.files[0]);
+                    const r = await fetch('/api/topup', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ phone: currentCustomer.phone, amount: reloadAmount, imageBase64: base64, isVip: isVipTopup }) });
+                    if (r.ok) { alert("¡Enviado! Tu recarga se aplicará en breve."); window.closeReloadModal(); }
+                    else { throw new Error("Error al subir"); }
+                } catch (e) { alert(e.message); }
+            };
+
+            window.closeModifier = () => { document.getElementById('mod-overlay').style.opacity = '0'; document.getElementById('mod-drawer').classList.remove('active'); setTimeout(() => document.getElementById('mod-overlay').classList.add('hidden'), 400); };
             window.closeCheckout = () => { document.getElementById('check-overlay').style.opacity = '0'; document.getElementById('check-drawer').classList.remove('active'); setTimeout(() => document.getElementById('check-overlay').classList.add('hidden'), 400); };
 
-            window.submitFinalOrder = async function() {
+            function generateSlots() {
+                const sel = document.getElementById('check-schedule');
+                let html = '<option value="asap">Lo antes posible (ASAP)</option>';
+                const now = new Date();
+                for(let h=7; h<=19; h++) {
+                    for(let m=0; m<60; m+=15) {
+                        if(h===19 && m>0) continue;
+                        const slot = new Date(); slot.setHours(h,m,0,0);
+                        if(slot > now) {
+                            html += `<option value="${h}:${m.toString().padStart(2,'0')}">${(h%12||12)}:${m.toString().padStart(2,'0')} ${(h>=12?'PM':'AM')}</option>`;
+                        }
+                    }
+                }
+                sel.innerHTML = html;
+            }
+
+            window.submitFinalOrder = async () => {
                 if (isSubmitting) return;
                 const name = document.getElementById('check-name').value.trim();
                 const phone = document.getElementById('check-phone').value.trim();
-                const group = document.getElementById('check-group').value.trim().toUpperCase();
-                const country = document.getElementById('check-country-code').value;
-
                 if (!name) return alert("Por favor ingresa tu nombre");
-                if (!group && !phone) return alert("Por favor ingresa tu WhatsApp");
-                if (fulfillment === 'delivery' && (deliveryFee === 0 || !document.getElementById('check-address').value)) return alert("Completa el envío");
-
-                isSubmitting = true;
-                const btn = document.getElementById('final-btn'); btn.innerText = "ENVIANDO..."; btn.disabled = true;
-                const sched = document.getElementById('check-schedule').value;
                 
-                let notes = `Mobile Order (${fulfillment})`;
-                if (sched !== 'asap') notes += ` [SCHEDULED: ${sched}]`;
-                if (group) notes += ` [GROUP: ${group}]`;
-                if (fulfillment === 'delivery') notes += ` [ENTREGA: ${zoneName}] [DIR: ${document.getElementById('check-address').value}]`;
-                notes += ` [GUEST: ${name}]`;
-                if (phone) notes += ` [TEL: ${country}${phone}]`;
+                isSubmitting = true;
+                const btn = document.getElementById('final-btn');
+                btn.innerText = "PROCESANDO..."; btn.disabled = true;
+
+                const payload = {
+                    items: cart,
+                    customer_id: currentCustomer?.id || null,
+                    total: cart.reduce((s,i)=>s+i.finalPrice,0) + deliveryFee,
+                    payment_method: paymentMethod,
+                    fulfillment_type: fulfillment,
+                    customer_name: name,
+                    customer_phone: phone
+                };
 
                 try {
-                   const orderPayload = { 
-                       items: cart, 
-                       total: cart.reduce((s,i)=>s+i.finalPrice,0)+deliveryFee, 
-                       subtotal: cart.reduce((s,i)=>s+i.finalPrice,0), 
-                       paymentMethod: paymentMethod, 
-                       customerId: currentCustomer ? currentCustomer.id : null,
-                       notes, 
-                       scheduledFor: sched==='asap'?null:sched 
-                   };
-                   const res = await fetch('/api/orders', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(orderPayload) });                    const saved = await res.json();
-                    if (!res.ok) {
-                        throw new Error(saved.error || "Error al enviar el pedido");
-                    }
-                    console.log("Order saved:", saved);
+                    const r = await fetch('/api/orders', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload) });
+                    const saved = await r.json();
+                    if (!r.ok) throw new Error(saved.error || "Error al enviar");
                     localStorage.setItem('ra_active_order', JSON.stringify(saved));
-                    document.getElementById('nav-tracking').classList.remove('hidden');
-                    document.getElementById('receipt-num').innerText = '#' + (saved.order_number || '---');
-                    if (window.QRCode) {
-                        document.getElementById('receipt-qr').innerHTML = "";
-                        new QRCode(document.getElementById('receipt-qr'), { text: saved.id, width: 160, height: 160, colorDark: "#120C09" });
-                    }
-                    document.getElementById('track-modal').classList.remove('hidden');
-                    startStatusPolling(saved.id);
-                } catch(e) { 
-                    console.error("Order submission failed", e);
-                    alert(e.message); 
-                    btn.innerText = "Enviar Pedido Ahora 🚀"; 
-                    btn.disabled = false; 
-                }
-                finally { isSubmitting = false; }
+                    window.location.href = `/order?view=tracking`;
+                } catch(e) { alert(e.message); isSubmitting = false; btn.innerText = "Enviar Pedido"; btn.disabled = false; }
             };
 
-            function startStatusPolling(orderId) {
-                const poll = async () => {
-                    try {
-                        const res = await fetch(`/api/orders/${orderId}?v=${Date.now()}`);
-                        if (!res.ok) return;
-                        const order = await res.json();
-                        updateTrackingUI(order);
-                        
-                        // Stop polling if completed or cancelled
-                        if (['completed', 'cancelled', 'ready'].includes(order.status)) {
-                            // If ready, we might want to keep polling until fully completed, 
-                            // but usually 'ready' is enough for the customer.
-                        } else {
-                            setTimeout(poll, 5000);
-                        }
-                    } catch(e) {}
-                };
-                poll();
+            window.toggleFavorite = (e, id) => {
+                e.stopPropagation();
+                let favs = JSON.parse(localStorage.getItem('ra_favorites') || '[]');
+                if (favs.includes(id)) favs = favs.filter(i => i !== id);
+                else favs.push(id);
+                localStorage.setItem('ra_favorites', JSON.stringify(favs));
+                renderMenu();
+            };
+
+            function startStatusPolling(id) {
+                setInterval(async () => {
+                    const r = await fetch(`/api/store?action=track_order&id=${id}`);
+                    const d = await r.json();
+                    if (d.status === 'completed') location.reload();
+                }, 10000);
             }
 
-            function updateTrackingUI(order) {
-                const badge = document.getElementById('track-status-badge');
-                const title = document.getElementById('track-title');
-                const msg = document.getElementById('track-msg');
-                const icon = document.getElementById('track-icon');
-                
-                const states = {
-                    'pending': { t: '¡Recibido!', m: 'Tu pedido está en fila. En un momento empezamos a prepararlo.', c: 'bg-white/5 text-white/40', i: 'fa-check' },
-                    'paid': { t: 'Confirmado', m: 'Pago confirmado. Estamos asignando tu orden a la cocina.', c: 'bg-blue-500/20 text-blue-400', i: 'fa-wallet' },
-                    'preparing': { t: 'Preparando', m: 'El barista está preparando tu orden con mucho amor. ¡Ya casi!', c: 'bg-gold/20 text-gold animate-pulse', i: 'fa-fire-alt' },
-                    'ready': { t: '¡Listo!', m: 'Tu orden está lista en barra. Puedes pasar a recogerla con tu número.', c: 'bg-success/20 text-success animate-bounce', i: 'fa-mug-hot' },
-                    'completed': { t: 'Entregado', m: '¡Gracias por visitarnos! Esperamos que disfrutes tu orden.', c: 'bg-success text-dark', i: 'fa-heart' },
-                    'cancelled': { t: 'Cancelado', m: 'Tu orden ha sido cancelada. Si tienes dudas contacta a soporte.', c: 'bg-error/20 text-error', i: 'fa-times' }
-                };
-                
-                const s = states[order.status] || states['pending'];
-                badge.innerText = s.t;
-                badge.className = `inline-block px-4 py-1.5 rounded-full border border-white/10 text-[10px] font-black uppercase tracking-widest mt-2 ${s.c}`;
-                title.innerText = s.t;
-                msg.innerText = s.m;
-                icon.innerHTML = `<i class="fas ${s.i}"></i>`;
-                if (order.status === 'ready') {
-                    if ("vibrate" in navigator) navigator.vibrate([200, 100, 200]);
-                }
-            }
-
-            function generateSlots() {
-                const sel = document.getElementById('check-schedule'); const now = new Date(); const day = now.getDay();
-                let hS = (day===0)?8:7; let hE = (day===0)?18:19;
-                let html = '<option value="asap">Lo antes posible (ASAP)</option>';
-                for (let h=hS; h<hE; h++) { for (let m=0; m<60; m+=15) {
-                    const slot = new Date(); slot.setHours(h,m,0,0);
-                    if (slot.getTime() > (now.getTime() + 20*60000)) html += `<option value="${h}:${m.toString().padStart(2,'0')}">${(h%12||12)}:${m.toString().padStart(2,'0')} ${(h>=12?'PM':'AM')} (Hoy)</option>`;
-                }}
-                for (let h=hS; h<hE; h++) { for (let m=0; m<60; m+=15) {
-                    html += `<option value="${h}:${m.toString().padStart(2,'0')}">${(h%12||12)}:${m.toString().padStart(2,'0')} ${(h>=12?'PM':'AM')} (Mañana)</option>`;
-                }}
-                sel.innerHTML = html;
-            }
         })();
     </script>
 </body>
