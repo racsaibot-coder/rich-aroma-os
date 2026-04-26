@@ -44,6 +44,32 @@
 </head>
 <body class="h-screen flex flex-col">
 
+    <!-- ACADEMY LOGIN MODAL -->
+    <div id="academy-login" class="fixed inset-0 bg-blue-600 z-[2000] flex flex-col items-center justify-center p-6 text-center">
+        <div class="bg-white rounded-[3rem] p-10 max-w-sm w-full shadow-2xl animate-bounce-in">
+            <div class="w-24 h-24 bg-blue-100 text-blue-600 rounded-[2rem] flex items-center justify-center mx-auto mb-6 text-4xl shadow-inner">
+                <i class="fas fa-graduation-cap"></i>
+            </div>
+            <h2 class="text-3xl font-black text-gray-800 mb-2 tracking-tight">¡HOLA, NIAH!</h2>
+            <p class="text-gray-400 font-bold text-xs uppercase tracking-widest mb-8">Ingresa tu PIN de Barista</p>
+            
+            <!-- PIN Dots -->
+            <div class="flex justify-center gap-4 mb-10">
+                <div id="pin-1" class="w-5 h-5 rounded-full border-4 border-gray-100 transition-all"></div>
+                <div id="pin-2" class="w-5 h-5 rounded-full border-4 border-gray-100 transition-all"></div>
+                <div id="pin-3" class="w-5 h-5 rounded-full border-4 border-gray-100 transition-all"></div>
+                <div id="pin-4" class="w-5 h-5 rounded-full border-4 border-gray-100 transition-all"></div>
+            </div>
+
+            <!-- Simple Keypad -->
+            <div class="grid grid-cols-3 gap-4">
+                ${[1,2,3,4,5,6,7,8,9,0].map(n => `<button onclick="pressLogin('${n}')" class="w-full aspect-square rounded-2xl bg-gray-50 text-gray-800 text-2xl font-black hover:bg-blue-50 active:scale-90 transition-all border border-gray-100">${n}</button>`).join('')}
+                <button onclick="clearLogin()" class="col-span-2 aspect-auto rounded-2xl bg-red-50 text-red-500 font-black uppercase text-xs tracking-widest hover:bg-red-100 active:scale-95 transition-all">Borrar</button>
+            </div>
+        </div>
+        <p class="text-white/40 text-[10px] font-black uppercase tracking-[0.4em] mt-10">Rich Aroma Academy v1.0</p>
+    </div>
+
     <!-- Top Bar -->
     <header class="bg-white border-b px-6 py-4 flex justify-between items-center shadow-sm z-50">
         <div class="flex items-center gap-4">
@@ -54,7 +80,7 @@
                 <h1 class="text-xl font-black tracking-tight text-gray-800">Academy <span class="text-blue-600">POS</span></h1>
                 <div class="flex items-center gap-2">
                     <span id="mode-badge" class="bg-green-100 text-green-700 text-[10px] font-black px-2 py-0.5 rounded-full uppercase">MODO JUEGO 🎮</span>
-                    <span id="stars-count" class="text-xs font-bold text-amber-500"><i class="fas fa-star mr-1"></i> 0</span>
+                    <span class="text-[10px] font-bold text-blue-600 uppercase" id="welcome-name"></span>
                 </div>
             </div>
         </div>
@@ -178,10 +204,39 @@
         let menu = [];
         let cart = [];
         let language = 'es'; // 'es' or 'en'
-        let stars = 0;
+        let stars = parseInt(localStorage.getItem('academy_stars') || '0');
         let activeCategory = 'Combos';
         let gameTotal = 0;
         let gameReceived = 0;
+        let loginPin = '';
+
+        // LOGIN LOGIC
+        function pressLogin(n) {
+            if (loginPin.length < 4) {
+                loginPin += n;
+                updateLoginDots();
+                if (loginPin.length === 4) validateLogin();
+            }
+        }
+        function clearLogin() { loginPin = ''; updateLoginDots(); }
+        function updateLoginDots() {
+            for (let i = 1; i <= 4; i++) {
+                const dot = document.getElementById(`pin-${i}`);
+                dot.className = `w-5 h-5 rounded-full border-4 transition-all ${i <= loginPin.length ? 'bg-blue-600 border-blue-600 scale-110' : 'border-gray-100'}`;
+            }
+        }
+        async function validateLogin() {
+            if (loginPin === '0306') {
+                document.getElementById('welcome-name').innerText = "¡Hola, Laniah! 👋";
+                document.getElementById('academy-login').classList.add('hidden');
+                document.getElementById('stars-count').innerHTML = `<i class="fas fa-star mr-1"></i> ${stars}`;
+                // Save session
+                localStorage.setItem('academy_logged_in', 'true');
+            } else {
+                alert("PIN Incorrecto 🤔 ¡Pídele ayuda a Papá!");
+                clearLogin();
+            }
+        }
 
         const translations = {
             es: {
@@ -409,6 +464,7 @@
 
             if (val === correct) {
                 stars++;
+                localStorage.setItem('academy_stars', stars);
                 document.getElementById('stars-count').innerHTML = `<i class="fas fa-star mr-1"></i> ${stars}`;
                 document.getElementById('snd-correct').play();
                 alert(t('correct'));
@@ -446,7 +502,13 @@
             }
         }
 
-        window.onload = fetchMenu;
+        window.onload = () => {
+            fetchMenu();
+            if (localStorage.getItem('academy_logged_in') === 'true') {
+                loginPin = '0306';
+                validateLogin();
+            }
+        };
     </script>
 </body>
 </html>
