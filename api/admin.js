@@ -520,6 +520,30 @@ module.exports = async function handler(req, res) {
         return res.json({ success: true });
     }
 
+    // MODIFIER INGREDIENTS
+    if (action === 'modifier_ingredients' && req.method === 'GET') {
+        const { id } = req.query;
+        const { data, error } = await supabase.from('modifier_ingredients').select('*, inventory(name, unit)').eq('modifier_id', id);
+        if (error) return res.status(500).json({ error: error.message });
+        return res.json(data);
+    }
+
+    if (action === 'modifier_ingredient_add' && req.method === 'POST') {
+        if (!isAdmin) return res.status(403).json({ error: "Admin access required" });
+        const { modifier_id, inventory_item_id, quantity, unit } = req.body;
+        const { data, error } = await supabase.from('modifier_ingredients').upsert({ modifier_id, inventory_item_id, quantity, unit }).select().single();
+        if (error) return res.status(500).json({ error: error.message });
+        return res.json(data);
+    }
+
+    if (action === 'modifier_ingredient_delete' && req.method === 'DELETE') {
+        if (!isAdmin) return res.status(403).json({ error: "Admin access required" });
+        const { id } = req.query;
+        const { error } = await supabase.from('modifier_ingredients').delete().eq('id', id);
+        if (error) return res.status(500).json({ error: error.message });
+        return res.json({ success: true });
+    }
+
     // STAFF MANAGEMENT
     if (action === 'staff_availability' && req.method === 'GET') {
         const { data, error } = await supabase.from('employee_availability').select('*, employees(name)');
