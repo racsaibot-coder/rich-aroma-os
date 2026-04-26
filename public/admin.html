@@ -7,8 +7,8 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <script>
-        // AGGRESSIVE CACHE NUKE v2.6.7
-        const ADMIN_VERSION = '2.6.7';
+        // AGGRESSIVE CACHE NUKE v2.6.8
+        const ADMIN_VERSION = '2.6.8';
         if (localStorage.getItem('ra_admin_version') !== ADMIN_VERSION) {
             localStorage.setItem('ra_admin_version', ADMIN_VERSION);
             console.log("New Admin version detected, clearing local storage and reloading...");
@@ -28,7 +28,7 @@
             </div>
             <div>
                 <h2 class="text-3xl font-black text-white tracking-tight">Staff Login</h2>
-                <p class="text-white/50 text-xs font-bold uppercase tracking-widest mt-2">Rich Aroma OS v2.6.7</p>
+                <p class="text-white/50 text-xs font-bold uppercase tracking-widest mt-2">Rich Aroma OS v2.6.8</p>
             </div>
 
             <!-- PIN Display -->
@@ -62,7 +62,7 @@
     <div id="admin-content" class="hidden max-w-4xl mx-auto">
         <h1 class="text-3xl font-bold mb-6 flex items-center gap-2">
             <i class="fas fa-user-shield text-blue-600"></i> Admin Dashboard
-            <span class="text-[10px] bg-blue-100 text-blue-600 px-2 py-0.5 rounded-full border border-blue-200">v2.6.7</span>
+            <span class="text-[10px] bg-blue-100 text-blue-600 px-2 py-0.5 rounded-full border border-blue-200">v2.6.8</span>
             <div class="ml-auto flex gap-2">
                 <button onclick="logout()" class="bg-gray-200 text-gray-600 text-xs px-4 py-2 rounded-full font-black uppercase tracking-widest hover:bg-gray-300 transition">
                     <i class="fas fa-sign-out-alt mr-2"></i> Logout
@@ -514,6 +514,77 @@
         window.editSteps = (id) => { const item = allMenuItems.find(i => i.id === id); if(item) openRecipeStepsModal(item.id, item.name); };
         window.editIngredients = (id) => { const item = allMenuItems.find(i => i.id === id); if(item) openIngredientsModal(item.id, item.name); };
         window.editModifiers = (id) => { const item = allMenuItems.find(i => i.id === id); if(item) openModifiersModal(item.id, item.name); };
+
+        async function loadInventory() {
+            try {
+                const res = await fetch('/api/admin?action=inventory', { headers: getHeaders() });
+                const data = await res.json();
+                const tbody = document.getElementById('inventoryTable');
+                if (!tbody) return;
+                tbody.innerHTML = '';
+                
+                data.forEach(item => {
+                    const isLow = parseFloat(item.current_stock) <= parseFloat(item.min_stock);
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td class="p-4"><div class="font-bold text-gray-800">${escapeHtml(item.name)}</div><div class="text-[10px] text-gray-400 font-mono">${item.id}</div></td>
+                        <td class="p-4"><span class="font-mono font-bold ${isLow ? 'text-red-500' : 'text-gray-700'}">${item.current_stock}</span></td>
+                        <td class="p-4 text-gray-400 font-mono text-xs">${item.min_stock}</td>
+                        <td class="p-4 text-gray-500 uppercase text-[10px] font-bold">${item.unit}</td>
+                        <td class="p-4 text-right">
+                            <button onclick="window.editInventory('${item.id}')" class="text-blue-600 hover:text-blue-800 transition-colors"><i class="fas fa-edit"></i></button>
+                        </td>
+                    `;
+                    tbody.appendChild(row);
+                });
+            } catch (e) { console.error(e); }
+        }
+
+        window.editInventory = async function(id) {
+            try {
+                const res = await fetch('/api/admin?action=inventory', { headers: getHeaders() });
+                const data = await res.json();
+                const item = data.find(i => i.id === id);
+                if (item) {
+                    document.getElementById('inv-id').value = item.id;
+                    document.getElementById('inv-name').value = item.name;
+                    document.getElementById('inv-stock').value = item.current_stock;
+                    document.getElementById('inv-min-stock').value = item.min_stock;
+                    document.getElementById('inv-unit').value = item.unit;
+                    document.getElementById('add-inventory-modal').classList.remove('hidden');
+                }
+            } catch (e) { console.error(e); }
+        }
+
+        async function saveInventory() {
+            const data = {
+                id: document.getElementById('inv-id').value,
+                name: document.getElementById('inv-name').value,
+                current_stock: parseFloat(document.getElementById('inv-stock').value),
+                min_stock: parseFloat(document.getElementById('inv-min-stock').value),
+                unit: document.getElementById('inv-unit').value
+            };
+            try {
+                const res = await fetch('/api/admin?action=inventory_upsert', {
+                    method: 'POST',
+                    headers: getHeaders(),
+                    body: JSON.stringify(data)
+                });
+                if (res.ok) {
+                    document.getElementById('add-inventory-modal').classList.add('hidden');
+                    loadInventory();
+                }
+            } catch (e) { console.error(e); }
+        }
+
+        function openNewInventoryModal() {
+            document.getElementById('inv-id').value = '';
+            document.getElementById('inv-name').value = '';
+            document.getElementById('inv-stock').value = '0';
+            document.getElementById('inv-min-stock').value = '0';
+            document.getElementById('inv-unit').value = 'unit';
+            document.getElementById('add-inventory-modal').classList.remove('hidden');
+        }
 
         async function loadData() {
             try {
