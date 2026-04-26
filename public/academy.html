@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <link rel="icon" type="image/png" href="/favicon.png">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Niah's POS Academy 🎓</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --academy-blue: #3B82F6;
+            --academy-green: #10B981;
+            --academy-gold: #F59E0B;
+            --academy-purple: #8B5CF6;
+        }
+        body { font-family: 'Inter', system-ui, sans-serif; overflow: hidden; background: #F3F4F6; }
+        .btn-big { transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+        .btn-big:active { transform: scale(0.9); }
+        .cat-btn.active { background: var(--academy-blue) !important; color: white !important; border-color: var(--academy-blue) !important; }
+        .glass { background: rgba(255, 255, 255, 0.8); backdrop-filter: blur(10px); }
+        
+        /* Educational Highlights */
+        .math-pop { animation: pop 0.4s ease-out; }
+        @keyframes pop {
+            0% { transform: scale(0.8); opacity: 0; }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
+        .sticker-reward { position: absolute; font-size: 3rem; animation: floatUp 2s forwards; pointer-events: none; }
+        @keyframes floatUp {
+            from { transform: translateY(0) rotate(0deg); opacity: 1; }
+            to { transform: translateY(-200px) rotate(20deg); opacity: 0; }
+        }
+
+        /* Language Toggle Switch */
+        .lang-switch { position: relative; width: 80px; height: 40px; background: #E5E7EB; border-radius: 20px; cursor: pointer; }
+        .lang-switch .knob { position: absolute; left: 4px; top: 4px; width: 32px; height: 32px; background: white; border-radius: 50%; transition: 0.3s; box-shadow: 0 2px 5px rgba(0,0,0,0.1); display: flex; items-center; justify-center; font-size: 14px; font-weight: bold; }
+        .lang-switch.en .knob { left: 44px; }
+        
+        .hide-scrollbar::-webkit-scrollbar { display: none; }
+    </style>
+</head>
+<body class="h-screen flex flex-col">
+
+    <!-- Top Bar -->
+    <header class="bg-white border-b px-6 py-4 flex justify-between items-center shadow-sm z-50">
+        <div class="flex items-center gap-4">
+            <div class="w-12 h-12 bg-blue-600 rounded-2xl flex items-center justify-center text-white text-2xl shadow-lg">
+                <i class="fas fa-graduation-cap"></i>
+            </div>
+            <div>
+                <h1 class="text-xl font-black tracking-tight text-gray-800">Academy <span class="text-blue-600">POS</span></h1>
+                <div class="flex items-center gap-2">
+                    <span id="mode-badge" class="bg-green-100 text-green-700 text-[10px] font-black px-2 py-0.5 rounded-full uppercase">MODO JUEGO 🎮</span>
+                    <span id="stars-count" class="text-xs font-bold text-amber-500"><i class="fas fa-star mr-1"></i> 0</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="flex items-center gap-6">
+            <!-- Language Toggle -->
+            <div class="flex items-center gap-3">
+                <span class="text-[10px] font-black text-gray-400 uppercase">Español</span>
+                <div id="lang-switch" class="lang-switch" onclick="toggleLanguage()">
+                    <div class="knob">ES</div>
+                </div>
+                <span class="text-[10px] font-black text-gray-400 uppercase">English</span>
+            </div>
+
+            <!-- Practice/Live Switch (Admin only) -->
+            <div class="flex items-center gap-3 border-l pl-6">
+                <button onclick="requestAdminForLive()" class="bg-gray-100 hover:bg-gray-200 text-gray-600 px-4 py-2 rounded-xl text-xs font-bold transition-all">
+                    <i class="fas fa-lock mr-2"></i> MODO REAL
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <main class="flex-1 flex overflow-hidden">
+        
+        <!-- Left: Menu Grid -->
+        <section class="flex-1 flex flex-col bg-gray-50 overflow-hidden">
+            <!-- Categories -->
+            <div class="p-4 flex gap-3 overflow-x-auto hide-scrollbar shrink-0" id="category-container">
+                <!-- Injected via JS -->
+            </div>
+
+            <!-- Items -->
+            <div class="flex-1 overflow-y-auto p-4 grid grid-cols-3 xl:grid-cols-4 gap-4" id="menu-grid">
+                <!-- Injected via JS -->
+            </div>
+        </section>
+
+        <!-- Right: Cart & Math -->
+        <aside class="w-96 bg-white border-l flex flex-col shadow-2xl z-40">
+            <div class="p-6 border-b flex justify-between items-center">
+                <h2 id="txt-cart-title" class="text-lg font-black uppercase tracking-tight">Mi Carrito</h2>
+                <button onclick="clearCart()" class="text-red-400 text-xs font-bold"><i class="fas fa-trash-alt mr-1"></i> <span id="txt-clear">Vaciar</span></button>
+            </div>
+
+            <!-- Cart Items with Math Breakdown -->
+            <div class="flex-1 overflow-y-auto p-6 space-y-4" id="cart-list">
+                <!-- Empty state -->
+                <div class="h-full flex flex-col items-center justify-center text-center space-y-4 opacity-20">
+                    <i class="fas fa-shopping-basket text-6xl"></i>
+                    <p id="txt-empty" class="font-bold text-sm">Agrega algo rico...</p>
+                </div>
+            </div>
+
+            <!-- Bottom Section: Subtotal & Pay -->
+            <div class="p-6 bg-gray-50 border-t space-y-6">
+                <div class="space-y-2">
+                    <div class="flex justify-between items-center text-gray-500">
+                        <span id="txt-subtotal" class="text-xs font-bold uppercase">Subtotal</span>
+                        <span id="cart-subtotal" class="font-mono font-bold">L 0.00</span>
+                    </div>
+                    <div class="flex justify-between items-center text-gray-500">
+                        <span id="txt-tax" class="text-xs font-bold uppercase">Impuesto (15%)</span>
+                        <span id="cart-tax" class="font-mono font-bold">L 0.00</span>
+                    </div>
+                    <div class="flex justify-between items-end pt-2 border-t border-gray-200">
+                        <span id="txt-total" class="text-sm font-black uppercase text-gray-800">Total a Pagar</span>
+                        <span id="cart-total" class="text-3xl font-black text-blue-600 font-mono">L 0.00</span>
+                    </div>
+                </div>
+
+                <button id="btn-pay" onclick="openPaymentGame()" class="w-full bg-blue-600 text-white py-6 rounded-[2rem] font-black text-xl shadow-xl shadow-blue-600/30 hover:bg-blue-700 active:scale-95 transition-all">
+                    ¡COBRAR! 🚀
+                </button>
+            </div>
+        </aside>
+    </main>
+
+    <!-- PAYMENT GAME MODAL -->
+    <div id="game-modal" class="hidden fixed inset-0 bg-black/90 backdrop-blur-xl z-[1000] flex items-center justify-center p-6">
+        <div class="bg-white w-full max-w-2xl rounded-[3rem] p-10 flex flex-col items-center text-center relative overflow-hidden">
+            <div class="absolute top-0 left-0 w-full h-2 bg-gray-100">
+                <div id="game-timer" class="h-full bg-blue-600 w-full"></div>
+            </div>
+
+            <div class="mb-8">
+                <div class="text-4xl mb-2">🤔</div>
+                <h2 id="txt-game-title" class="text-2xl font-black text-gray-800">EL JUEGO DEL CAMBIO</h2>
+            </div>
+
+            <div class="grid grid-cols-2 gap-10 w-full mb-10">
+                <div class="bg-gray-50 p-8 rounded-3xl space-y-2">
+                    <p id="txt-game-total" class="text-[10px] font-black text-gray-400 uppercase tracking-widest">El cliente debe:</p>
+                    <p id="game-due" class="text-4xl font-black text-gray-800 font-mono">L 0.00</p>
+                </div>
+                <div class="bg-blue-50 p-8 rounded-3xl space-y-2 border-2 border-blue-200">
+                    <p id="txt-game-received" class="text-[10px] font-black text-blue-400 uppercase tracking-widest">El cliente te da:</p>
+                    <p id="game-received" class="text-4xl font-black text-blue-600 font-mono">L 100</p>
+                </div>
+            </div>
+
+            <div class="w-full space-y-4">
+                <p id="txt-game-question" class="text-lg font-bold text-gray-700">¿Cuánto cambio le devuelves?</p>
+                <div class="flex gap-4 justify-center">
+                    <input type="number" id="game-input" class="w-48 text-center text-5xl font-black border-b-4 border-blue-600 outline-none p-4" placeholder="0">
+                </div>
+            </div>
+
+            <div class="flex gap-4 w-full mt-12">
+                <button onclick="closeGame()" class="flex-1 py-5 rounded-2xl font-bold text-gray-400 uppercase tracking-widest">Cancelar</button>
+                <button onclick="checkGameAnswer()" class="flex-[2] bg-academy-green text-white py-5 rounded-[2rem] font-black text-xl shadow-xl shadow-green-600/30 active:scale-95 transition-all uppercase tracking-widest">Validar Cambio ✅</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- SOUNDS (Silent placeholders) -->
+    <audio id="snd-correct" src="https://assets.mixkit.co/active_storage/sfx/2000/2000-preview.mp3"></audio>
+    <audio id="snd-wrong" src="https://assets.mixkit.co/active_storage/sfx/2003/2003-preview.mp3"></audio>
+
+    <script>
+        let menu = [];
+        let cart = [];
+        let language = 'es'; // 'es' or 'en'
+        let stars = 0;
+        let activeCategory = 'Combos';
+        let gameTotal = 0;
+        let gameReceived = 0;
+
+        const translations = {
+            es: {
+                cart_title: "Mi Carrito",
+                clear: "Vaciar",
+                empty: "Agrega algo rico...",
+                subtotal: "Subtotal",
+                tax: "Impuesto (15%)",
+                total: "Total a Pagar",
+                pay: "¡COBRAR! 🚀",
+                game_title: "EL JUEGO DEL CAMBIO",
+                game_total: "El cliente debe:",
+                game_received: "El cliente te da:",
+                game_question: "¿Cuánto cambio le devuelves?",
+                correct: "¡EXCELENTE! ⭐ +1 Estrella",
+                wrong: "¡Casi! Inténtalo de nuevo 🤔",
+                confirm_live: "¿Cambiar a MODO REAL? (Esto procesará ventas de verdad)",
+                add: "Sumar",
+                remove: "Quitar"
+            },
+            en: {
+                cart_title: "My Cart",
+                clear: "Clear",
+                empty: "Add something yummy...",
+                subtotal: "Subtotal",
+                tax: "Tax (15%)",
+                total: "Total Due",
+                pay: "CHECKOUT! 🚀",
+                game_title: "THE CHANGE GAME",
+                game_total: "Customer owes:",
+                game_received: "Customer gives:",
+                game_question: "How much change do you give back?",
+                correct: "EXCELLENT! ⭐ +1 Star",
+                wrong: "Close! Try again 🤔",
+                confirm_live: "Switch to LIVE MODE? (This will process real sales)",
+                add: "Add",
+                remove: "Remove"
+            }
+        };
+
+        // UI HELPERS
+        function t(key) { return translations[language][key]; }
+
+        function toggleLanguage() {
+            language = (language === 'es') ? 'en' : 'es';
+            document.getElementById('lang-switch').classList.toggle('en');
+            document.querySelector('#lang-switch .knob').innerText = language.toUpperCase();
+            updateUIStrings();
+            renderMenu();
+            renderCart();
+        }
+
+        function updateUIStrings() {
+            document.getElementById('txt-cart-title').innerText = t('cart_title');
+            document.getElementById('txt-clear').innerText = t('clear');
+            document.getElementById('txt-subtotal').innerText = t('subtotal');
+            document.getElementById('txt-tax').innerText = t('tax');
+            document.getElementById('txt-total').innerText = t('total');
+            document.getElementById('btn-pay').innerText = t('pay');
+            
+            if (cart.length === 0) {
+                document.getElementById('cart-list').innerHTML = `
+                    <div class="h-full flex flex-col items-center justify-center text-center space-y-4 opacity-20">
+                        <i class="fas fa-shopping-basket text-6xl"></i>
+                        <p class="font-bold text-sm">${t('empty')}</p>
+                    </div>
+                `;
+            }
+        }
+
+        async function fetchMenu() {
+            try {
+                const res = await fetch('/api/menu');
+                const data = await res.json();
+                menu = data.items || [];
+                renderCategories();
+                renderMenu();
+            } catch(e) { console.error(e); }
+        }
+
+        function renderCategories() {
+            const cats = [...new Set(menu.map(i => i.category || 'Otros'))];
+            // Sort to ensure Combos is first if it exists
+            cats.sort((a, b) => a === 'combos' ? -1 : 1);
+            
+            const container = document.getElementById('category-container');
+            container.innerHTML = cats.map(c => `
+                <button onclick="setActiveCategory('${c}', this)" class="cat-btn shrink-0 bg-white border border-gray-100 px-8 py-4 rounded-2xl font-black text-xs uppercase tracking-widest transition-all shadow-sm ${c.toLowerCase() === activeCategory.toLowerCase() ? 'active' : ''}">
+                    ${getCategoryIcon(c)} ${c}
+                </button>
+            `).join('');
+        }
+
+        function getCategoryIcon(c) {
+            c = c.toLowerCase();
+            if (c.includes('coffee') || c.includes('caliente')) return '☕';
+            if (c.includes('drinks') || c.includes('helada')) return '🥤';
+            if (c.includes('food') || c.includes('comida')) return '🥐';
+            if (c.includes('combos')) return '🔥';
+            return '📦';
+        }
+
+        function setActiveCategory(cat, btn) {
+            activeCategory = cat;
+            document.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            renderMenu();
+        }
+
+        function renderMenu() {
+            const grid = document.getElementById('menu-grid');
+            const items = menu.filter(i => (i.category || 'Otros').toLowerCase() === activeCategory.toLowerCase());
+            
+            grid.innerHTML = items.map(i => `
+                <div onclick="addToCart('${i.id}')" class="bg-white border-2 border-transparent rounded-[2.5rem] p-4 btn-big cursor-pointer hover:border-blue-500 shadow-sm flex flex-col items-center text-center gap-4">
+                    <div class="w-full aspect-square bg-gray-100 rounded-[2rem] overflow-hidden">
+                        <img src="${i.image_url || '/rico-logo.png'}" class="w-full h-full object-cover">
+                    </div>
+                    <div>
+                        <h3 class="font-black text-xs uppercase text-gray-800 line-clamp-1">${i.name}</h3>
+                        <p class="text-blue-600 font-mono font-black">L ${parseFloat(i.price).toFixed(0)}</p>
+                    </div>
+                    <button class="w-full py-2 bg-gray-50 rounded-xl text-[8px] font-black uppercase text-gray-400 tracking-widest border border-gray-100">
+                        ${t('add')} <i class="fas fa-plus ml-1 text-blue-500"></i>
+                    </button>
+                </div>
+            `).join('');
+        }
+
+        function addToCart(id) {
+            const item = menu.find(i => i.id === id);
+            const inCart = cart.find(c => c.id === id);
+            
+            if (inCart) {
+                inCart.qty++;
+            } else {
+                cart.push({ ...item, qty: 1 });
+            }
+            
+            spawnSticker('✨');
+            renderCart();
+        }
+
+        function renderCart() {
+            const list = document.getElementById('cart-list');
+            if (cart.length === 0) {
+                updateUIStrings();
+                updateTotals();
+                return;
+            }
+
+            list.innerHTML = cart.map((i, idx) => `
+                <div class="glass p-5 rounded-[2rem] border-2 border-blue-100/30 space-y-3 math-pop">
+                    <div class="flex justify-between items-start">
+                        <div class="flex-1">
+                            <p class="text-[10px] font-black text-blue-600 uppercase tracking-widest">Producto ${idx + 1}</p>
+                            <h4 class="font-black text-sm uppercase text-gray-800">${i.name}</h4>
+                        </div>
+                        <div class="flex items-center gap-3 bg-white px-3 py-1.5 rounded-xl border border-blue-50 shadow-sm">
+                            <button onclick="changeQty(${idx}, -1)" class="text-blue-500 text-xs"><i class="fas fa-minus"></i></button>
+                            <span class="font-black text-sm w-4 text-center">${i.qty}</span>
+                            <button onclick="changeQty(${idx}, 1)" class="text-blue-500 text-xs"><i class="fas fa-plus"></i></button>
+                        </div>
+                    </div>
+                    
+                    <!-- THE MATH TEACHER -->
+                    <div class="bg-white/50 p-3 rounded-xl border border-dashed border-blue-200 flex justify-center items-center gap-2 text-[10px] font-bold text-gray-500">
+                        <span>L ${parseFloat(i.price).toFixed(0)}</span>
+                        <i class="fas fa-times text-[8px] opacity-30"></i>
+                        <span>${i.qty}</span>
+                        <i class="fas fa-equals text-[8px] opacity-30"></i>
+                        <span class="text-blue-600 font-black">L ${(parseFloat(i.price) * i.qty).toFixed(0)}</span>
+                    </div>
+                </div>
+            `).join('');
+
+            updateTotals();
+        }
+
+        function changeQty(idx, delta) {
+            cart[idx].qty += delta;
+            if (cart[idx].qty <= 0) cart.splice(idx, 1);
+            renderCart();
+        }
+
+        function clearCart() { cart = []; renderCart(); }
+
+        function updateTotals() {
+            const subtotal = cart.reduce((s, i) => s + (parseFloat(i.price) * i.qty), 0);
+            const tax = subtotal * 0.15;
+            const total = subtotal + tax;
+
+            document.getElementById('cart-subtotal').innerText = `L ${subtotal.toFixed(2)}`;
+            document.getElementById('cart-tax').innerText = `L ${tax.toFixed(2)}`;
+            document.getElementById('cart-total').innerText = `L ${total.toFixed(2)}`;
+        }
+
+        // GAME LOGIC
+        function openPaymentGame() {
+            if (cart.length === 0) return;
+            
+            const subtotal = cart.reduce((s, i) => s + (parseFloat(i.price) * i.qty), 0);
+            gameTotal = Math.round(subtotal + (subtotal * 0.15));
+            
+            // Generate a random "Received" amount higher than total
+            const options = [50, 100, 200, 500, 1000];
+            gameReceived = options.find(o => o >= gameTotal) || (Math.ceil(gameTotal / 100) * 100);
+
+            document.getElementById('game-due').innerText = `L ${gameTotal.toFixed(0)}`;
+            document.getElementById('game-received').innerText = `L ${gameReceived.toFixed(0)}`;
+            document.getElementById('game-input').value = "";
+            
+            document.getElementById('txt-game-title').innerText = t('game_title');
+            document.getElementById('txt-game-total').innerText = t('game_total');
+            document.getElementById('txt-game-received').innerText = t('game_received');
+            document.getElementById('txt-game-question').innerText = t('game_question');
+
+            document.getElementById('game-modal').classList.remove('hidden');
+            document.getElementById('game-input').focus();
+        }
+
+        function checkGameAnswer() {
+            const val = parseFloat(document.getElementById('game-input').value);
+            const correct = gameReceived - gameTotal;
+
+            if (val === correct) {
+                stars++;
+                document.getElementById('stars-count').innerHTML = `<i class="fas fa-star mr-1"></i> ${stars}`;
+                document.getElementById('snd-correct').play();
+                alert(t('correct'));
+                closeGame();
+                clearCart();
+                spawnSticker('⭐');
+            } else {
+                document.getElementById('snd-wrong').play();
+                alert(t('wrong'));
+            }
+        }
+
+        function closeGame() {
+            document.getElementById('game-modal').classList.add('hidden');
+        }
+
+        function spawnSticker(emoji) {
+            const s = document.createElement('div');
+            s.className = 'sticker-reward';
+            s.innerText = emoji;
+            s.style.left = Math.random() * 80 + 10 + '%';
+            s.style.bottom = '100px';
+            document.body.appendChild(s);
+            setTimeout(() => s.remove(), 2000);
+        }
+
+        function requestAdminForLive() {
+            const pin = prompt("Admin Pin Required:");
+            if (pin === '0306') { // Placeholder for Laniah's Pin or yours
+                if (confirm(t('confirm_live'))) {
+                    window.location.href = '/pos-v2.html';
+                }
+            } else {
+                alert("Access Denied");
+            }
+        }
+
+        window.onload = fetchMenu;
+    </script>
+</body>
+</html>
