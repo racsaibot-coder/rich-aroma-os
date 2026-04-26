@@ -63,8 +63,18 @@
 
             <!-- Simple Keypad -->
             <div class="grid grid-cols-3 gap-4">
-                ${[1,2,3,4,5,6,7,8,9,0].map(n => `<button onclick="pressLogin('${n}')" class="w-full aspect-square rounded-2xl bg-gray-50 text-gray-800 text-2xl font-black hover:bg-blue-50 active:scale-90 transition-all border border-gray-100">${n}</button>`).join('')}
-                <button onclick="clearLogin()" class="col-span-2 aspect-auto rounded-2xl bg-red-50 text-red-500 font-black uppercase text-xs tracking-widest hover:bg-red-100 active:scale-95 transition-all">Borrar</button>
+                <button onclick="pressLogin('1')" class="w-full aspect-square rounded-2xl bg-gray-50 text-gray-800 text-2xl font-black hover:bg-blue-50 active:scale-90 transition-all border border-gray-100">1</button>
+                <button onclick="pressLogin('2')" class="w-full aspect-square rounded-2xl bg-gray-50 text-gray-800 text-2xl font-black hover:bg-blue-50 active:scale-90 transition-all border border-gray-100">2</button>
+                <button onclick="pressLogin('3')" class="w-full aspect-square rounded-2xl bg-gray-50 text-gray-800 text-2xl font-black hover:bg-blue-50 active:scale-90 transition-all border border-gray-100">3</button>
+                <button onclick="pressLogin('4')" class="w-full aspect-square rounded-2xl bg-gray-50 text-gray-800 text-2xl font-black hover:bg-blue-50 active:scale-90 transition-all border border-gray-100">4</button>
+                <button onclick="pressLogin('5')" class="w-full aspect-square rounded-2xl bg-gray-50 text-gray-800 text-2xl font-black hover:bg-blue-50 active:scale-90 transition-all border border-gray-100">5</button>
+                <button onclick="pressLogin('6')" class="w-full aspect-square rounded-2xl bg-gray-50 text-gray-800 text-2xl font-black hover:bg-blue-50 active:scale-90 transition-all border border-gray-100">6</button>
+                <button onclick="pressLogin('7')" class="w-full aspect-square rounded-2xl bg-gray-50 text-gray-800 text-2xl font-black hover:bg-blue-50 active:scale-90 transition-all border border-gray-100">7</button>
+                <button onclick="pressLogin('8')" class="w-full aspect-square rounded-2xl bg-gray-50 text-gray-800 text-2xl font-black hover:bg-blue-50 active:scale-90 transition-all border border-gray-100">8</button>
+                <button onclick="pressLogin('9')" class="w-full aspect-square rounded-2xl bg-gray-50 text-gray-800 text-2xl font-black hover:bg-blue-50 active:scale-90 transition-all border border-gray-100">9</button>
+                <div class="w-full aspect-square"></div>
+                <button onclick="pressLogin('0')" class="w-full aspect-square rounded-2xl bg-gray-50 text-gray-800 text-2xl font-black hover:bg-blue-50 active:scale-90 transition-all border border-gray-100">0</button>
+                <button onclick="clearLogin()" class="w-full aspect-square rounded-2xl bg-red-50 text-red-500 flex items-center justify-center hover:bg-red-100 active:scale-95 transition-all border border-red-100"><i class="fas fa-backspace"></i></button>
             </div>
         </div>
         <p class="text-white/40 text-[10px] font-black uppercase tracking-[0.4em] mt-10">Rich Aroma Academy v1.0</p>
