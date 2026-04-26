@@ -85,8 +85,8 @@ module.exports = async function handler(req, res) {
 
             (entries || []).forEach(e => {
                 const dateKey = new Date(e.timestamp).toLocaleDateString('en-CA'); // YYYY-MM-DD
-                if (!dailyHistory[dateKey]) dailyHistory[dateKey] = { hours: 0, entries: [] };
-                dailyHistory[dateKey].entries.push(e);
+                if (!dailyHistory[dateKey]) dailyHistory[dateKey] = { hours: 0, punches: [] };
+                dailyHistory[dateKey].punches.push(e);
 
                 if (e.type === 'in') currentIn = new Date(e.timestamp);
                 else if (e.type === 'out' && currentIn) {

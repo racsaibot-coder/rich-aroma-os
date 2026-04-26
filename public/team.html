@@ -405,18 +405,50 @@
                     historyList.innerHTML = dates.map(date => {
                         const dayData = history[date];
                         const dateObj = new Date(date + 'T12:00:00');
+                        const detailId = `detail-${date}`;
+                        
+                        // Format the punches for this day
+                        const punchesHtml = (dayData.punches || []).map(p => {
+                            const time = new Date(p.timestamp).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', hour12: true });
+                            const type = p.type === 'in' ? 'Entrada' : (p.type === 'out' ? 'Salida' : 'Descanso');
+                            const color = p.type === 'in' ? 'text-green-400' : (p.type === 'out' ? 'text-red-400' : 'text-orange-400');
+                            return `<div class="flex justify-between text-[9px] border-b border-white/5 pb-1 mb-1 last:border-0 last:mb-0 last:pb-0"><span class="font-bold text-white/60">${type}</span><span class="${color} font-mono">${time}</span></div>`;
+                        }).join('');
+
                         return `
-                            <div class="flex justify-between items-center bg-white/5 p-3 rounded-xl">
-                                <div>
-                                    <p class="font-bold text-sm">${DAYS[dateObj.getDay()]} ${date.split('-').reverse().slice(0,2).join('/')}</p>
-                                    <p class="text-[10px] text-white/40 uppercase">Total: ${dayData.hours.toFixed(2)}h</p>
+                            <div class="bg-white/5 rounded-2xl overflow-hidden transition-all border border-transparent hover:border-gold/20">
+                                <div onclick="toggleDayDetail('${detailId}')" class="flex justify-between items-center p-4 cursor-pointer active:bg-white/5 transition-colors">
+                                    <div>
+                                        <p class="font-bold text-sm text-white">${DAYS[dateObj.getDay()]} ${date.split('-').reverse().slice(0,2).join('/')}</p>
+                                        <p class="text-[10px] text-white/40 uppercase font-black tracking-widest">${dayData.hours.toFixed(2)} horas</p>
+                                    </div>
+                                    <div class="flex items-center gap-3">
+                                        <i class="fas fa-chevron-down text-[10px] text-white/20 transition-transform" id="icon-${detailId}"></i>
+                                    </div>
                                 </div>
-                                <i class="fas fa-check-circle text-green-500/50"></i>
+                                <div id="${detailId}" class="hidden p-4 pt-0 bg-black/20 border-t border-white/5 animate-in slide-in-from-top-2 duration-200">
+                                    <p class="text-[8px] font-black text-gold uppercase tracking-[0.2em] mb-3">Detalle de Marcajes</p>
+                                    <div class="space-y-1">
+                                        ${punchesHtml || '<p class="text-[9px] text-white/20 italic">Sin detalle disponible</p>'}
+                                    </div>
+                                </div>
                             </div>
                         `;
                     }).join('');
                 }
             } catch (e) { console.error(e); }
+        }
+
+        window.toggleDayDetail = function(id) {
+            const el = document.getElementById(id);
+            const icon = document.getElementById('icon-' + id);
+            const isHidden = el.classList.contains('hidden');
+            
+            // Close others (optional but cleaner)
+            // document.querySelectorAll('[id^="detail-"]').forEach(d => d.classList.add('hidden'));
+
+            el.classList.toggle('hidden');
+            if (icon) icon.style.transform = isHidden ? 'rotate(180deg)' : 'rotate(0deg)';
         }
 
         async function loadAvailability() {
