@@ -2287,22 +2287,48 @@
         if (!currentShiftId) return alert("No hay una sesión activa para cerrar.");
         
         const cash = await showUIModal({
-            title: 'Cierre de Caja',
+            title: 'Cierre de Caja (1/3)',
             message: `Ingrese el TOTAL DE EFECTIVO físico en caja (Incluyendo la base de L. ${startingCash}):`,
             showInput: true,
             inputPlaceholder: '0.00',
             confirmText: 'Siguiente'
         });
         if (cash === null || cash === "") return;
-        
-        const amount = parseFloat(cash);
-        if (isNaN(amount)) return alert("Monto inválido");
+        const amountCash = parseFloat(cash);
+        if (isNaN(amountCash)) return alert("Monto inválido");
+
+        const card = await showUIModal({
+            title: 'Cierre de Caja (2/3)',
+            message: `Ingrese el TOTAL DE VENTAS EN TARJETA (Reporte del POS):`,
+            showInput: true,
+            inputPlaceholder: '0.00',
+            confirmText: 'Siguiente'
+        });
+        if (card === null || card === "") return;
+        const amountCard = parseFloat(card);
+        if (isNaN(amountCard)) return alert("Monto inválido");
+
+        const transfer = await showUIModal({
+            title: 'Cierre de Caja (3/3)',
+            message: `Ingrese el TOTAL DE TRANSFERENCIAS (Banca Móvil):`,
+            showInput: true,
+            inputPlaceholder: '0.00',
+            confirmText: 'Finalizar Cierre'
+        });
+        if (transfer === null || transfer === "") return;
+        const amountTransfer = parseFloat(transfer);
+        if (isNaN(amountTransfer)) return alert("Monto inválido");
 
         try {
             const res = await fetch('/api/cash/close-shift', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer EMP-admin' },
-                body: JSON.stringify({ shiftId: currentShiftId, closingAmount: amount })
+                body: JSON.stringify({ 
+                    shiftId: currentShiftId, 
+                    closingAmount: amountCash,
+                    declaredCard: amountCard,
+                    declaredTransfer: amountTransfer
+                })
             });
 
             const text = await res.text();

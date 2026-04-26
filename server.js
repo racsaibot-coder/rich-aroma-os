@@ -3121,11 +3121,11 @@ app.post('/api/cash/transaction', ensureAuthenticated, async (req, res) => {
 app.post('/api/cash/close-shift', ensureAuthenticated, async (req, res) => {
     try {
         const client = req.supabase || supabase;
-        const { shiftId, closingAmount, notes } = req.body;
+        const { shiftId, closingAmount, declaredCard, declaredTransfer, notes } = req.body;
 
         if (!shiftId) return res.status(400).json({ error: 'Shift ID required' });
 
-        console.log(`[Shift] Closing shift ${shiftId} with amount ${closingAmount}`);
+        console.log(`[Shift] Closing shift ${shiftId} with amounts: Cash=${closingAmount}, Card=${declaredCard}, Transfer=${declaredTransfer}`);
 
         // 1. Get Shift Details
         const { data: shift, error: shiftError } = await client
@@ -3162,6 +3162,8 @@ app.post('/api/cash/close-shift', ensureAuthenticated, async (req, res) => {
         }, { cash: 0, rico_balance: 0, transfer: 0, card: 0, total_gross: 0, total_points: 0 });
 
         const cashSales = salesBreakdown.cash || 0;
+        const cardSales = salesBreakdown.card || 0;
+        const transferSales = salesBreakdown.transfer || 0;
 
         // 3. Calculate Transactions (Payouts/Drops)
         const { data: transactions, error: transError } = await client
@@ -3174,24 +3176,39 @@ app.post('/api/cash/close-shift', ensureAuthenticated, async (req, res) => {
         const totalTransactions = (transactions || []).reduce((sum, t) => sum + (parseFloat(t.amount) || 0), 0);
 
         // 4. Calculate Expected
-        // Expected = Opening + Cash Sales + Transactions (negative for payouts)
+        // Cash: Expected = Opening + Cash Sales + Transactions (negative for payouts)
         const openingAmount = parseFloat(shift.opening_amount) || 0;
-        const declaredAmount = parseFloat(closingAmount) || 0;
-        const expectedAmount = openingAmount + cashSales + totalTransactions;
-        const discrepancy = declaredAmount - expectedAmount;
+        const declCash = parseFloat(closingAmount) || 0;
+        const expCash = openingAmount + cashSales + totalTransactions;
+        const discCash = declCash - expCash;
 
-        console.log(`[Shift] Summary: Opening=${openingAmount}, CashSales=${cashSales}, Trans=${totalTransactions}, Expected=${expectedAmount}, Declared=${declaredAmount}`);
+        // Card & Transfer
+        const declCard = parseFloat(declaredCard) || 0;
+        const discCard = declCard - cardSales;
+
+        const declTransfer = parseFloat(declaredTransfer) || 0;
+        const discTransfer = declTransfer - transferSales;
+
+        // Construct dynamic notes with breakdown
+        const auditNotes = JSON.stringify({
+            user_notes: notes || '',
+            audit: {
+                cash: { expected: expCash, declared: declCash, discrepancy: discCash },
+                card: { expected: cardSales, declared: declCard, discrepancy: discCard },
+                transfer: { expected: transferSales, declared: declTransfer, discrepancy: discTransfer }
+            }
+        });
 
         // 5. Update Shift
         const { data: updatedShift, error: updateError } = await client
             .from('cash_shifts')
             .update({
                 closed_at: closedAt,
-                closing_amount_declared: declaredAmount,
-                expected_amount: expectedAmount,
-                discrepancy: discrepancy,
+                closing_amount_declared: declCash,
+                expected_amount: expCash,
+                discrepancy: discCash,
                 status: 'closed',
-                notes: notes || ''
+                notes: auditNotes
             })
             .eq('id', shiftId)
             .select()
@@ -3211,9 +3228,11 @@ app.post('/api/cash/close-shift', ensureAuthenticated, async (req, res) => {
                 opening_amount: openingAmount,
                 sales: salesBreakdown,
                 transactions: totalTransactions,
-                expected_amount: expectedAmount,
-                closing_amount: declaredAmount,
-                discrepancy: discrepancy,
+                audit: {
+                    cash: { expected: expCash, declared: declCash, discrepancy: discCash },
+                    card: { expected: cardSales, declared: declCard, discrepancy: discCard },
+                    transfer: { expected: transferSales, declared: declTransfer, discrepancy: discTransfer }
+                },
                 order_count: (allOrders || []).length,
                 notes: notes || ''
             },
