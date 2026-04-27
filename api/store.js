@@ -23,23 +23,26 @@ async function syncMembershipState(customer) {
     if (!isVip) return customer;
 
     const today = getHondurasDate();
-    if (customer.next_renewal_date && today >= customer.next_renewal_date) {
-        const breakage = parseFloat(customer.rico_balance) || 0;
+    if (customer.vip_expiry && today >= new Date(customer.vip_expiry).toISOString().split('T')[0]) {
+        // Handle renewal logic: Reset/Add 500 and extend expiry
         try {
             await supabase.from('membership_billing_events').insert({
                 customer_id: customer.id,
-                event_type: 'renewal_sweep',
-                amount_swept: breakage,
-                amount_deposited: VIP_MONTHLY_RELOAD
+                event_type: 'renewal_cycle',
+                amount_swept: parseFloat(customer.membership_credit) || 0, // Track what wasn't used
+                amount_deposited: 500.00
             });
         } catch (e) { console.error("[VIP] Billing log failed", e.message); }
 
         const nextDate = new Date();
         nextDate.setDate(nextDate.getDate() + 30);
+        const isoNextDate = nextDate.toISOString();
         
         const { data } = await supabase.from('customers').update({
-            rico_balance: VIP_MONTHLY_RELOAD,
-            next_renewal_date: nextDate.toISOString().split('T')[0]
+            cash_balance: (parseFloat(customer.cash_balance) || 0) + 500, // Monthly addition
+            membership_credit: 500,
+            membership_credit_expires_at: isoNextDate,
+            vip_expiry: isoNextDate
         }).eq('id', customer.id).select().single();
         if (data) return data;
     }
@@ -259,16 +262,18 @@ async function activateVip(id, supabase) {
     let newTags = Array.isArray(customer.tags) ? customer.tags : [];
     if (!newTags.includes('VIP')) newTags.push('VIP');
 
-    const nextRenewal = new Date();
-    nextRenewal.setDate(nextRenewal.getDate() + 30);
+    const expiryDate = new Date();
+    expiryDate.setDate(expiryDate.getDate() + 30);
 
     await supabase
         .from('customers')
         .update({
             is_vip: true,
-            rico_balance: (parseFloat(customer.rico_balance) || 0) + 500,
+            cash_balance: (parseFloat(customer.cash_balance) || 0) + 500,
             tier: 'Gold',
-            next_renewal_date: nextRenewal.toISOString().split('T')[0],
+            vip_expiry: expiryDate.toISOString(),
+            membership_credit: 500, // Tracking the specific bonus amount
+            membership_credit_expires_at: expiryDate.toISOString(),
             tags: newTags
         })
         .eq('id', id);
@@ -277,7 +282,7 @@ async function activateVip(id, supabase) {
         customer_id: id,
         type: 'vip_activation',
         amount: 500,
-        notes: 'VIP Membership Activation Credits'
+        notes: 'VIP Membership Activation - 500 Lps Rico Cash Bonus (Expires in 30 days)'
     });
 }
 
@@ -834,18 +839,24 @@ module.exports = async function handler(req, res) {
             if (fetchErr || !customer) return res.status(404).json({ error: "Customer not found" });
 
             const VIP_PRICE = 1500;
-            if ((customer.rico_balance || 0) < VIP_PRICE) {
+            const currentBalance = parseFloat(customer.cash_balance) || 0;
+
+            if (currentBalance < VIP_PRICE) {
                 return res.status(400).json({ error: "Saldo Rico Cash insuficiente (L 1,500 requeridos)" });
             }
 
-            const expiryDate = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
+            const expiryDate = new Date();
+            expiryDate.setDate(expiryDate.getDate() + 30);
+            const isoExpiry = expiryDate.toISOString();
 
             const { data: updated, error: updateErr } = await supabase.from('customers')
                 .update({ 
                     is_vip: true, 
-                    rico_balance: (customer.rico_balance || 0) - VIP_PRICE + 500, // Pay 1500, get 500 back as bonus
-                    vip_expiry: expiryDate,
-                    rico_balance_expires_at: expiryDate
+                    cash_balance: currentBalance - VIP_PRICE + 500, // Pay 1500, get 500 back as bonus
+                    vip_expiry: isoExpiry,
+                    membership_credit: 500,
+                    membership_credit_expires_at: isoExpiry,
+                    tier: 'Gold'
                 })
                 .eq('id', customerId)
                 .select().single();
@@ -855,9 +866,9 @@ module.exports = async function handler(req, res) {
             // Log the bonus to balance history
             await supabase.from('balance_history').insert({
                 customer_id: customerId,
-                type: 'vip_bonus',
-                amount: 500,
-                notes: 'Bono de bienvenida Miembro VIP'
+                type: 'vip_purchase',
+                amount: -1000,
+                notes: 'VIP Membership Purchase (Paid 1500, received 500 bonus expires in 30 days)'
             });
 
             return res.json({ success: true, customer: updated });

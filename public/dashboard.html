@@ -436,7 +436,7 @@
             document.getElementById('user-initial').innerText = currentCustomer.name.charAt(0).toUpperCase();
             document.getElementById('user-phone').innerText = currentCustomer.phone;
 
-            const totalCash = parseFloat(currentCustomer.rico_balance) || parseFloat(currentCustomer.cash_balance) || 0;
+            const totalCash = parseFloat(currentCustomer.cash_balance) || parseFloat(currentCustomer.rico_balance) || 0;
             document.getElementById('user-balance').innerText = `L ${totalCash.toFixed(2)}`;
             document.getElementById('rewards-points').innerText = currentCustomer.points || 0;
 
