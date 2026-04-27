@@ -491,10 +491,42 @@ module.exports = async function handler(req, res) {
     }
 
     if (action === 'inventory_update' && req.method === 'POST') {
-        const { id, current_stock, min_stock, unit, name } = req.body;
-        const { data, error } = await supabase.from('inventory').upsert({ id, current_stock, min_stock, unit, name }).select().single();
-        if (error) return res.status(500).json({ error: error.message });
+        if (!isAdmin) return res.status(403).json({ error: "Admin access required" });
+        
+        // Support both body and query for ID
+        const finalId = req.body.id || id || req.query.id || (req.body.name ? req.body.name.toLowerCase().trim().replace(/[^a-z0-9]/g, '_') : null);
+        const { current_stock, min_stock, unit, name } = req.body;
+        
+        if (!name) return res.status(400).json({ error: "Name is required" });
+        if (!finalId) return res.status(400).json({ error: "ID required or name cannot be converted to ID" });
+
+        console.log(`[Admin API] Inventory Update: ${name} (ID: ${finalId})`);
+        
+        const upsertData = { 
+            id: finalId, 
+            name, 
+            unit: unit || 'unit',
+            current_stock: parseFloat(current_stock) || 0, 
+            min_stock: parseFloat(min_stock) || 0
+        };
+
+        const { data, error } = await supabase.from('inventory').upsert(upsertData).select().single();
+        
+        if (error) {
+            console.error("[Admin API] Inventory Update Error:", error);
+            return res.status(500).json({ error: error.message });
+        }
         return res.json(data);
+    }
+
+    if (action === 'inventory_delete' && req.method === 'DELETE') {
+        if (!isAdmin) return res.status(403).json({ error: "Admin access required" });
+        const { id } = req.query;
+        if (!id) return res.status(400).json({ error: "ID required" });
+        
+        const { error } = await supabase.from('inventory').delete().eq('id', id);
+        if (error) return res.status(500).json({ error: error.message });
+        return res.json({ success: true });
     }
 
     if (action === 'menu_item_ingredients' && req.method === 'GET') {
