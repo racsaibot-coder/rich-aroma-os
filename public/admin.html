@@ -582,22 +582,67 @@
             console.log(msg);
         }
 
+        // Catch global errors
+        window.onerror = (msg, url, line, col, error) => {
+            logDebug(`🛑 JS ERROR: ${msg} (Line: ${line})`);
+            return false;
+        };
+
+        function pressKey(num) {
+            logDebug(`Key pressed: ${num}`);
+            if (currentPin.length < 4) {
+                currentPin += num;
+                updatePinDisplay();
+                if (currentPin.length === 4) {
+                    logDebug("PIN complete. Launching login...");
+                    login();
+                }
+            }
+        }
+
+        function resetPin() {
+            logDebug("PIN reset");
+            currentPin = '';
+            updatePinDisplay();
+        }
+
+        function backspace() {
+            currentPin = currentPin.slice(0, -1);
+            updatePinDisplay();
+        }
+
+        function updatePinDisplay() {
+            for (let i = 1; i <= 4; i++) {
+                const dot = document.getElementById(`pin-${i}`);
+                if (i <= currentPin.length) {
+                    dot.classList.add('bg-white');
+                    dot.classList.remove('border-white/30');
+                } else {
+                    dot.classList.remove('bg-white');
+                    dot.classList.add('border-white/30');
+                }
+            }
+        }
+
         async function login() {
-            if (isLoggingIn) return;
+            if (isLoggingIn) {
+                logDebug("Already logging in, ignoring...");
+                return;
+            }
             isLoggingIn = true;
-            logDebug("Login attempt started...");
+            logDebug("Starting login fetch...");
 
             try {
-                logDebug("Fetching /api/admin?action=staff_login...");
                 const res = await fetch('/api/admin?action=staff_login', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ pin: currentPin })
                 });
 
-                logDebug(`Response status: ${res.status}`);
+                logDebug(`Server status: ${res.status}`);
 
                 if (res.status === 401) {
+                    logDebug("Auth result: Invalid PIN");
                     alert("Invalid PIN. Please try again.");
                     resetPin();
                     return;
@@ -605,26 +650,25 @@
 
                 const data = await res.json();
                 if (res.ok) {
-                    logDebug(`Login successful: ${data.employee?.name}`);
+                    logDebug(`Success! User: ${data.employee?.name}`);
                     staffUser = data.employee;
                     localStorage.setItem('ra_admin_pin', currentPin);
                     localStorage.setItem('ra_staff_user', JSON.stringify(staffUser));
                     showDashboard();
                 } else {
-                    logDebug(`Login failed: ${data.error}`);
+                    logDebug(`Fail: ${data.error}`);
                     alert(data.error || "Login Failed");
                     resetPin();
                 }
             } catch (e) {
-                logDebug(`Network/Code Error: ${e.message}`);
+                logDebug(`Net Error: ${e.message}`);
                 console.error("Login Error:", e);
-                alert("Network error during login. Please check your connection.");
+                alert("Network error. Check connection.");
                 resetPin();
             } finally {
                 isLoggingIn = false;
             }
-        }
-        function logout() {
+        }        function logout() {
             console.log("Logging out...");
             localStorage.removeItem('ra_admin_pin');
             localStorage.removeItem('ra_staff_user');
@@ -2209,8 +2253,11 @@
 
 <script>
     // Init
-    console.log("Admin Dashboard v2.7.2 initialized");
-    fetchStoreStatus();
+    window.addEventListener('DOMContentLoaded', () => {
+        logDebug("System boot: OK");
+        logDebug("Admin Dashboard v2.7.2 loaded");
+        fetchStoreStatus();
+    });
 </script>
 </body>
 </html>
