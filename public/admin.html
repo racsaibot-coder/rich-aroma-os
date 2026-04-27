@@ -775,8 +775,10 @@
         }
 
         async function loadInventory() {
+            logDebug("Loading inventory data...");
             try {
                 const res = await fetch('/api/admin?action=inventory', { headers: getHeaders() });
+                logDebug(`Inventory fetch status: ${res.status}`);
                 const data = await res.json();
                 
                 const tbody = document.getElementById('inventoryTable');
