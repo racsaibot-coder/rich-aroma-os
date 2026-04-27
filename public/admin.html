@@ -648,14 +648,20 @@
         function showDashboard() {
             logDebug("Showing dashboard UI...");
             try {
-                document.getElementById('login-modal').classList.add('hidden');
-                document.getElementById('admin-content').classList.remove('hidden');
+                const modal = document.getElementById('login-modal');
+                const content = document.getElementById('admin-content');
+                
+                if (modal) modal.classList.add('hidden');
+                if (content) content.classList.remove('hidden');
+                
                 applyRbac();
 
                 if (staffUser && staffUser.role === 'admin') {
+                    logDebug("Admin detected, switching to overview");
                     switchTab('overview');
                     loadData(); 
                 } else {
+                    logDebug("Staff detected, switching to menu");
                     switchTab('menu');
                 }
                 fetchStoreStatus();
@@ -664,6 +670,13 @@
                 console.error(err);
             }
         }
+
+        // Emergency manual bypass if UI is stuck
+        window.forceShowDashboard = () => {
+            logDebug("MANUAL BYPASS TRIGGERED");
+            document.getElementById('login-modal').classList.add('hidden');
+            document.getElementById('admin-content').classList.remove('hidden');
+        };
 
         function applyRbac() {
             if (!staffUser) return;
