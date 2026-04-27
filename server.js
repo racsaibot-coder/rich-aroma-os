@@ -720,7 +720,34 @@ app.post('/api/campaign/valentines', async (req, res) => {
 });
 
 const adminHandler = require('./api/admin.js');
-app.all('/api/admin', adminHandler);
+
+// STAFF LOGIN
+app.post('/api/admin', async (req, res) => {
+    const { action } = req.query;
+    if (action === 'staff_login') {
+        const { pin } = req.body;
+        console.log(`[Server] Login Attempt: ${pin}`);
+        try {
+            const { data: emp, error } = await supabase.from('employees').select('*').eq('pin', pin).eq('active', true).single();
+            if (error || !emp) {
+                console.warn(`[Server] Login Fail: ${pin}`);
+                return res.status(401).json({ error: "Invalid PIN" });
+            }
+            console.log(`[Server] Login Success: ${emp.name}`);
+            return res.json({ success: true, employee: emp });
+        } catch (err) {
+            console.error("[Server] Login Crash:", err);
+            return res.status(500).json({ error: "Login Error" });
+        }
+    }
+    // For other actions, use the handler but wrap it safely
+    try {
+        return adminHandler(req, res);
+    } catch (e) {
+        console.error("[Server] Admin Handler Crash:", e);
+        return res.status(500).json({ error: "Admin Handler Error" });
+    }
+});
 
 // Admin View for Leads (Unified Customers + Submissions)
 app.get('/api/admin/leads', requireAdmin, async (req, res) => {

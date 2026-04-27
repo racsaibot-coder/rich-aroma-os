@@ -2,7 +2,10 @@
 const { supabase } = require('./lib/supabase');
 
 module.exports = async function handler(req, res) {
-    res.setHeader('Access-Control-Allow-Origin', '*');
+    try {
+        const action = req.query.action || 'none';
+        console.log(`[Admin API] ${req.method} ${req.url} Action: ${action}`);
+        res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'GET,POST,PATCH,PUT,DELETE,OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
 
@@ -616,4 +619,8 @@ module.exports = async function handler(req, res) {
     }
 
     res.status(404).json({ error: 'Action not found' });
+    } catch (e) {
+        console.error("[Admin API] GLOBAL ERROR:", e);
+        res.status(500).json({ error: "Internal Server Error", details: e.message });
+    }
 }
