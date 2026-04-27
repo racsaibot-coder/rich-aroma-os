@@ -57,9 +57,13 @@
             </div>
 
             <button onclick="localStorage.clear(); window.location.reload();" class="text-white/30 text-[10px] font-bold uppercase tracking-widest hover:text-white transition-all pt-4 underline">Hard Reset Sessions</button>
-        </div>
-    </div>
 
+            <div class="mt-8 text-left bg-black/40 rounded-xl p-3 border border-white/10">
+               <p class="text-[8px] text-white/40 uppercase font-bold mb-2 tracking-widest">System Status Log</p>
+               <pre id="debug-log" class="text-[10px] text-green-400 font-mono h-24 overflow-y-auto whitespace-pre-wrap"></pre>
+            </div>
+            </div>
+            </div>
     <div id="admin-content" class="hidden max-w-4xl mx-auto">
         <h1 class="text-3xl font-bold mb-6 flex items-center gap-2">
             <i class="fas fa-user-shield text-blue-600"></i> Admin Dashboard
@@ -572,17 +576,26 @@
         }
 
         let isLoggingIn = false;
+        function logDebug(msg) {
+            const el = document.getElementById('debug-log');
+            if (el) el.innerHTML = `[${new Date().toLocaleTimeString()}] ${msg}\n` + el.innerHTML;
+            console.log(msg);
+        }
+
         async function login() {
             if (isLoggingIn) return;
             isLoggingIn = true;
-            console.log("Login attempt started...");
+            logDebug("Login attempt started...");
 
             try {
+                logDebug("Fetching /api/admin?action=staff_login...");
                 const res = await fetch('/api/admin?action=staff_login', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ pin: currentPin })
                 });
+
+                logDebug(`Response status: ${res.status}`);
 
                 if (res.status === 401) {
                     alert("Invalid PIN. Please try again.");
@@ -592,16 +605,18 @@
 
                 const data = await res.json();
                 if (res.ok) {
-                    console.log("Login successful for:", data.employee?.name);
+                    logDebug(`Login successful: ${data.employee?.name}`);
                     staffUser = data.employee;
                     localStorage.setItem('ra_admin_pin', currentPin);
                     localStorage.setItem('ra_staff_user', JSON.stringify(staffUser));
                     showDashboard();
                 } else {
+                    logDebug(`Login failed: ${data.error}`);
                     alert(data.error || "Login Failed");
                     resetPin();
                 }
             } catch (e) {
+                logDebug(`Network/Code Error: ${e.message}`);
                 console.error("Login Error:", e);
                 alert("Network error during login. Please check your connection.");
                 resetPin();
@@ -609,7 +624,6 @@
                 isLoggingIn = false;
             }
         }
-
         function logout() {
             console.log("Logging out...");
             localStorage.removeItem('ra_admin_pin');
