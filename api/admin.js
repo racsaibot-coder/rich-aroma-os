@@ -3,15 +3,14 @@ const { supabase } = require('./lib/supabase');
 
 module.exports = async function handler(req, res) {
     try {
-        const action = req.query.action || 'none';
+        let { action, id } = req.query;
+        if (!action) action = 'none';
         console.log(`[Admin API] ${req.method} ${req.url} Action: ${action}`);
         res.setHeader('Access-Control-Allow-Origin', '*');
-    res.setHeader('Access-Control-Allow-Methods', 'GET,POST,PATCH,PUT,DELETE,OPTIONS');
-    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+        res.setHeader('Access-Control-Allow-Methods', 'GET,POST,PATCH,PUT,DELETE,OPTIONS');
+        res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
 
-    if (req.method === 'OPTIONS') return res.status(200).end();
-
-    let { action, id } = req.query;
+        if (req.method === 'OPTIONS') return res.status(200).end();
     
     // Support REST-style nested actions like /api/admin/employees/emp_123
     if (action && action.includes('/')) {
