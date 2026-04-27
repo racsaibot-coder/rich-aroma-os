@@ -293,15 +293,33 @@ const requireAuth = async (req, res, next) => {
         const token = parts.length > 1 ? parts[1] : parts[0];
         if (!token) return next();
 
-        if (token && (token.startsWith('EMP-') || token === 'TEST_TOKEN_ADMIN')) {
-            const empId = token.startsWith('EMP-') ? token.replace('EMP-', '') : 'admin';
-            req.user = { 
-                id: empId, 
-                app_metadata: { role: 'admin' }, 
-                user_metadata: { role: 'admin' }
-            };
-            req.supabase = supabase;
-            return next();
+        if (token && (token.startsWith('EMP-') || token === 'TEST_TOKEN_ADMIN' || /^\d{4}$/.test(token))) {
+            const pin = token.replace('EMP-', '');
+            
+            // Special check for PINs
+            if (/^\d{4}$/.test(pin)) {
+                const { data: emp } = await supabase.from('employees').select('*').eq('pin', pin).single();
+                if (emp) {
+                    const role = (emp.role || '').toLowerCase().trim();
+                    req.user = { 
+                        id: emp.id,
+                        email: emp.email,
+                        user_metadata: { role: role },
+                        app_metadata: { role: role }
+                    };
+                    req.supabase = supabase;
+                    return next();
+                }
+            } else {
+                const empId = pin === 'TEST_TOKEN_ADMIN' ? 'admin' : pin;
+                req.user = { 
+                    id: empId, 
+                    app_metadata: { role: 'admin' }, 
+                    user_metadata: { role: 'admin' }
+                };
+                req.supabase = supabase;
+                return next();
+            }
         }
 
         const { data: { user }, error } = await supabase.auth.getUser(token);
@@ -700,6 +718,9 @@ app.post('/api/campaign/valentines', async (req, res) => {
         res.status(500).json({ error: 'Error del servidor' });
     }
 });
+
+const adminHandler = require('./api/admin.js');
+app.all('/api/admin', adminHandler);
 
 // Admin View for Leads (Unified Customers + Submissions)
 app.get('/api/admin/leads', requireAdmin, async (req, res) => {
