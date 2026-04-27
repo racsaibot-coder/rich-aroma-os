@@ -725,10 +725,20 @@ app.post('/api/campaign/valentines', async (req, res) => {
 
 const adminHandler = require('./api/admin.js');
 
-// STAFF LOGIN
-app.post('/api/admin', async (req, res) => {
+// UNIFIED ADMIN API
+app.all('/api/admin', async (req, res) => {
     const { action } = req.query;
-    if (action === 'staff_login') {
+    
+    // 1. Handle Preflight
+    if (req.method === 'OPTIONS') {
+        res.setHeader('Access-Control-Allow-Origin', '*');
+        res.setHeader('Access-Control-Allow-Methods', 'GET,POST,PATCH,PUT,DELETE,OPTIONS');
+        res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+        return res.status(200).end();
+    }
+
+    // 2. Handle Login (Directly for maximum stability)
+    if (action === 'staff_login' && req.method === 'POST') {
         const { pin } = req.body;
         console.log(`[Server] Login Attempt: ${pin}`);
         try {
@@ -744,7 +754,8 @@ app.post('/api/admin', async (req, res) => {
             return res.status(500).json({ error: "Login Error" });
         }
     }
-    // For other actions, use the handler but wrap it safely
+
+    // 3. Delegate other actions to the standalone handler
     try {
         return adminHandler(req, res);
     } catch (e) {

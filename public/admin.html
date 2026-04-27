@@ -7,8 +7,8 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <script>
-        // AGGRESSIVE CACHE NUKE v2.7.1
-        const ADMIN_VERSION = '2.7.1';
+        // AGGRESSIVE CACHE NUKE v2.7.2
+        const ADMIN_VERSION = '2.7.2';
         if (localStorage.getItem('ra_admin_version') !== ADMIN_VERSION) {
             localStorage.setItem('ra_admin_version', ADMIN_VERSION);
             console.log("New Admin version detected, clearing local storage and reloading...");
@@ -28,7 +28,7 @@
             </div>
             <div>
                 <h2 class="text-3xl font-black text-white tracking-tight">Staff Login</h2>
-                <p class="text-white/50 text-xs font-bold uppercase tracking-widest mt-2">Rich Aroma OS v2.7.1</p>
+                <p class="text-white/50 text-xs font-bold uppercase tracking-widest mt-2">Rich Aroma OS v2.7.2</p>
             </div>
 
             <!-- PIN Display -->
@@ -62,7 +62,7 @@
     <div id="admin-content" class="hidden max-w-4xl mx-auto">
         <h1 class="text-3xl font-bold mb-6 flex items-center gap-2">
             <i class="fas fa-user-shield text-blue-600"></i> Admin Dashboard
-            <span class="text-[10px] bg-blue-100 text-blue-600 px-2 py-0.5 rounded-full border border-blue-200">v2.7.1</span>
+            <span class="text-[10px] bg-blue-100 text-blue-600 px-2 py-0.5 rounded-full border border-blue-200">v2.7.2</span>
             <div class="ml-auto flex gap-2">
                 <button onclick="startGuide()" class="bg-amber-100 text-amber-700 text-xs px-4 py-2 rounded-full font-black uppercase tracking-widest hover:bg-amber-200 transition border border-amber-200">
                     <i class="fas fa-book-open mr-2"></i> System Guide
@@ -570,15 +570,28 @@
             }
         }
 
+        let isLoggingIn = false;
         async function login() {
+            if (isLoggingIn) return;
+            isLoggingIn = true;
+            console.log("Login attempt started...");
+
             try {
                 const res = await fetch('/api/admin?action=staff_login', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ pin: currentPin })
                 });
+
+                if (res.status === 401) {
+                    alert("Invalid PIN. Please try again.");
+                    resetPin();
+                    return;
+                }
+
                 const data = await res.json();
                 if (res.ok) {
+                    console.log("Login successful for:", data.employee?.name);
                     staffUser = data.employee;
                     localStorage.setItem('ra_admin_pin', currentPin);
                     localStorage.setItem('ra_staff_user', JSON.stringify(staffUser));
@@ -588,43 +601,56 @@
                     resetPin();
                 }
             } catch (e) {
-                console.error(e);
-                alert("Network error during login");
+                console.error("Login Error:", e);
+                alert("Network error during login. Please check your connection.");
                 resetPin();
+            } finally {
+                isLoggingIn = false;
             }
         }
 
         function logout() {
+            console.log("Logging out...");
             localStorage.removeItem('ra_admin_pin');
             localStorage.removeItem('ra_staff_user');
             window.location.reload();
         }
 
         function showDashboard() {
-            document.getElementById('login-modal').classList.add('hidden');
-            document.getElementById('admin-content').classList.remove('hidden');
-            applyRbac();
-            
-            // Default tab based on role
-            if (staffUser.role === 'admin') {
-                switchTab('overview');
-            } else {
-                switchTab('menu');
+            console.log("Showing dashboard...");
+            try {
+                document.getElementById('login-modal').classList.add('hidden');
+                document.getElementById('admin-content').classList.remove('hidden');
+                applyRbac();
+
+                // Default tab based on role
+                if (staffUser && staffUser.role === 'admin') {
+                    switchTab('overview');
+                    loadData(); // Only load data if admin
+                } else {
+                    switchTab('menu');
+                }
+                fetchStoreStatus();
+            } catch (err) {
+                console.error("Dashboard Init Error:", err);
             }
         }
 
         function applyRbac() {
-            const isAdmin = staffUser && staffUser.role === 'admin';
-            
+            if (!staffUser) return;
+            const isAdmin = staffUser.role === 'admin';
+            console.log("Applying RBAC. IsAdmin:", isAdmin);
+
             // Hide/Show Nav Tabs
-            document.getElementById('tab-overview').classList.toggle('hidden', !isAdmin);
-            document.getElementById('tab-employees').classList.toggle('hidden', !isAdmin);
-            
-            // Hide/Show specific buttons (e.g., Rocket for onboarding)
+            const tabOverview = document.getElementById('tab-overview');
+            const tabEmployees = document.getElementById('tab-employees');
+            if (tabOverview) tabOverview.classList.toggle('hidden', !isAdmin);
+            if (tabEmployees) tabEmployees.classList.toggle('hidden', !isAdmin);
+
+            // Hide/Show specific buttons
             const rocketBtn = document.querySelector('.fa-rocket')?.parentElement;
             if (rocketBtn) rocketBtn.classList.toggle('hidden', !isAdmin);
         }
-
         // Initialize on load
         window.addEventListener('load', async () => {
             const savedPin = localStorage.getItem('ra_admin_pin');
@@ -2168,8 +2194,8 @@
 
 <script>
     // Init
+    console.log("Admin Dashboard v2.7.2 initialized");
     fetchStoreStatus();
-    loadData();
 </script>
 </body>
 </html>
