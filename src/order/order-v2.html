@@ -34,6 +34,8 @@
         body.modal-open {
             overflow: hidden;
             height: 100vh;
+            position: fixed;
+            width: 100%;
         }
 
         /* Header */
@@ -736,6 +738,7 @@
     <script>
         // --- DATA & STATE ---
         let menu = { categories: [], taxRate: 0.15 };
+        let modOptions = [];
         let cart = []; // Array of objects now, not map
         let currentItem = null;
         let wizardState = {
@@ -825,6 +828,7 @@
                 .then(r => r.json())
                 .then(data => {
                     menu = data;
+                    modOptions = data.modifierOptions || [];
                     renderCategories();
                     if (menu.categories.length) selectCategory(menu.categories[0].id);
                 })
@@ -928,11 +932,6 @@
                     }
                 });
             }
-                            }
-                        }
-                    }
-                });
-            }
 
             // Setup UI
             document.getElementById('wizardProductName').textContent = currentItem.name;
@@ -978,6 +977,10 @@
         }
 
         function renderModifierStep(step, container) {
+            if (!step || !step.options) {
+                console.error("Missing options for step", step);
+                return;
+            }
             // Title
             const title = document.createElement('div');
             title.className = 'wizard-step-title';
