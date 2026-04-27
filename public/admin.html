@@ -543,39 +543,8 @@
     <script>
         let currentPin = '';
         let staffUser = null;
-
-        function pressKey(num) {
-            if (currentPin.length < 4) {
-                currentPin += num;
-                updatePinDisplay();
-                if (currentPin.length === 4) login();
-            }
-        }
-
-        function resetPin() {
-            currentPin = '';
-            updatePinDisplay();
-        }
-
-        function backspace() {
-            currentPin = currentPin.slice(0, -1);
-            updatePinDisplay();
-        }
-
-        function updatePinDisplay() {
-            for (let i = 1; i <= 4; i++) {
-                const dot = document.getElementById(`pin-${i}`);
-                if (i <= currentPin.length) {
-                    dot.classList.add('bg-white');
-                    dot.classList.remove('border-white/30');
-                } else {
-                    dot.classList.remove('bg-white');
-                    dot.classList.add('border-white/30');
-                }
-            }
-        }
-
         let isLoggingIn = false;
+
         function logDebug(msg) {
             const el = document.getElementById('debug-log');
             if (el) el.innerHTML = `[${new Date().toLocaleTimeString()}] ${msg}\n` + el.innerHTML;
@@ -614,21 +583,20 @@
         function updatePinDisplay() {
             for (let i = 1; i <= 4; i++) {
                 const dot = document.getElementById(`pin-${i}`);
-                if (i <= currentPin.length) {
-                    dot.classList.add('bg-white');
-                    dot.classList.remove('border-white/30');
-                } else {
-                    dot.classList.remove('bg-white');
-                    dot.classList.add('border-white/30');
+                if (dot) {
+                    if (i <= currentPin.length) {
+                        dot.classList.add('bg-white');
+                        dot.classList.remove('border-white/30');
+                    } else {
+                        dot.classList.remove('bg-white');
+                        dot.classList.add('border-white/30');
+                    }
                 }
             }
         }
 
         async function login() {
-            if (isLoggingIn) {
-                logDebug("Already logging in, ignoring...");
-                return;
-            }
+            if (isLoggingIn) return;
             isLoggingIn = true;
             logDebug("Starting login fetch...");
 
@@ -668,52 +636,56 @@
             } finally {
                 isLoggingIn = false;
             }
-        }        function logout() {
-            console.log("Logging out...");
+        }
+
+        function logout() {
+            logDebug("Logging out...");
             localStorage.removeItem('ra_admin_pin');
             localStorage.removeItem('ra_staff_user');
             window.location.reload();
         }
 
         function showDashboard() {
-            console.log("Showing dashboard...");
+            logDebug("Showing dashboard UI...");
             try {
                 document.getElementById('login-modal').classList.add('hidden');
                 document.getElementById('admin-content').classList.remove('hidden');
                 applyRbac();
 
-                // Default tab based on role
                 if (staffUser && staffUser.role === 'admin') {
                     switchTab('overview');
-                    loadData(); // Only load data if admin
+                    loadData(); 
                 } else {
                     switchTab('menu');
                 }
                 fetchStoreStatus();
             } catch (err) {
-                console.error("Dashboard Init Error:", err);
+                logDebug("Dashboard Init Error: " + err.message);
+                console.error(err);
             }
         }
 
         function applyRbac() {
             if (!staffUser) return;
             const isAdmin = staffUser.role === 'admin';
-            console.log("Applying RBAC. IsAdmin:", isAdmin);
+            logDebug("Applying RBAC. IsAdmin: " + isAdmin);
 
-            // Hide/Show Nav Tabs
             const tabOverview = document.getElementById('tab-overview');
             const tabEmployees = document.getElementById('tab-employees');
             if (tabOverview) tabOverview.classList.toggle('hidden', !isAdmin);
             if (tabEmployees) tabEmployees.classList.toggle('hidden', !isAdmin);
 
-            // Hide/Show specific buttons
             const rocketBtn = document.querySelector('.fa-rocket')?.parentElement;
             if (rocketBtn) rocketBtn.classList.toggle('hidden', !isAdmin);
         }
+
         // Initialize on load
         window.addEventListener('load', async () => {
+            logDebug("System boot: OK");
+            logDebug("Admin Dashboard v2.7.2 loaded");
             const savedPin = localStorage.getItem('ra_admin_pin');
             if (savedPin) {
+                logDebug("Restoring saved session...");
                 currentPin = savedPin;
                 await login();
             }
