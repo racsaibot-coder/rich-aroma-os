@@ -756,34 +756,55 @@
         }
 
         function switchTab(tabId) {
-            document.getElementById('section-overview').classList.add('hidden');
-            document.getElementById('section-employees').classList.add('hidden');
-            document.getElementById('section-menu').classList.add('hidden');
-            document.getElementById('section-inventory').classList.add('hidden');
-            
-            document.getElementById('tab-overview').className = "font-bold text-gray-500 hover:text-gray-800 pb-2 px-2";
-            document.getElementById('tab-employees').className = "font-bold text-gray-500 hover:text-gray-800 pb-2 px-2";
-            document.getElementById('tab-menu').className = "font-bold text-gray-500 hover:text-gray-800 pb-2 px-2";
-            document.getElementById('tab-inventory').className = "font-bold text-gray-500 hover:text-gray-800 pb-2 px-2";
-            
-            document.getElementById(`section-${tabId}`).classList.remove('hidden');
-            document.getElementById(`tab-${tabId}`).className = "font-bold text-blue-600 border-b-2 border-blue-600 pb-2 px-2";
-            
-            if(tabId === 'employees') loadEmployees();
-            if(tabId === 'menu') { loadMenu(); loadModifiersDatabase(); }
-            if(tabId === 'inventory') loadInventory();
+            logDebug(`Switching to tab: ${tabId}`);
+            try {
+                const sections = ['overview', 'employees', 'menu', 'inventory'];
+                sections.forEach(id => {
+                    const el = document.getElementById(`section-${id}`);
+                    if (el) el.classList.add('hidden');
+
+                    const tab = document.getElementById(`tab-${id}`);
+                    if (tab) tab.className = "font-bold text-gray-500 hover:text-gray-800 pb-2 px-2";
+                });
+
+                const activeSection = document.getElementById(`section-${tabId}`);
+                if (activeSection) activeSection.classList.remove('hidden');
+
+                const activeTab = document.getElementById(`tab-${tabId}`);
+                if (activeTab) activeTab.className = "font-bold text-blue-600 border-b-2 border-blue-600 pb-2 px-2";
+
+                if(tabId === 'employees') loadEmployees();
+                if(tabId === 'menu') { loadMenu(); loadModifiersDatabase(); }
+                if(tabId === 'inventory') {
+                    logDebug("Inventory tab selected, calling loadInventory()");
+                    loadInventory();
+                }
+            } catch (err) {
+                logDebug("Error in switchTab: " + err.message);
+            }
         }
 
         async function loadInventory() {
-            logDebug("Loading inventory data...");
+            logDebug("Starting loadInventory fetch...");
             try {
                 const res = await fetch('/api/admin?action=inventory', { headers: getHeaders() });
-                logDebug(`Inventory fetch status: ${res.status}`);
+                logDebug(`Inventory API Response: ${res.status}`);
+
                 const data = await res.json();
-                
+                if (!Array.isArray(data)) {
+                    logDebug("Error: Inventory data is not an array");
+                    return;
+                }
+
+                logDebug(`Loaded ${data.length} inventory items`);
+
                 const tbody = document.getElementById('inventoryTable');
+                if (!tbody) {
+                    logDebug("Error: inventoryTable element not found");
+                    return;
+                }
                 tbody.innerHTML = '';
-                
+
                 data.forEach(item => {
                     const isLow = parseFloat(item.current_stock) <= parseFloat(item.min_stock);
                     const row = document.createElement('tr');
@@ -802,9 +823,11 @@
                     `;
                     tbody.appendChild(row);
                 });
-            } catch(e) { console.error(e); }
+            } catch(e) { 
+                logDebug("loadInventory CRASH: " + e.message);
+                console.error(e); 
+            }
         }
-
         async function deleteInventoryItem(id) {
             if(!confirm("Are you sure you want to delete this ingredient? This might affect recipes.")) return;
             try {
