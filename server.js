@@ -1094,8 +1094,29 @@ app.post('/api/orders', async (req, res) => {
         let paymentMethod = req.body.paymentMethod;
 
         // 1. Fetch & Sync Customer (VIP Logic)
-        if (req.body.customerId) {
-            const { data } = await supabase.from('customers').select('*').eq('id', req.body.customerId).single();
+        let finalCustomerId = req.body.customerId;
+        const customerPhone = req.body.customerPhone || req.body.customer_phone;
+        const customerName = req.body.customerName || req.body.customer_name;
+
+        if (!finalCustomerId && customerPhone) {
+            // Try to find by phone
+            const { data: existing } = await supabase.from('customers').select('id').eq('phone', customerPhone).single();
+            if (existing) {
+                finalCustomerId = existing.id;
+            } else {
+                // Create new guest customer record to track points
+                const { data: newCust } = await supabase.from('customers').insert({
+                    id: 'cust_' + Date.now(),
+                    phone: customerPhone,
+                    name: customerName || 'Invitado',
+                    points: 0
+                }).select().single();
+                if (newCust) finalCustomerId = newCust.id;
+            }
+        }
+
+        if (finalCustomerId) {
+            const { data } = await supabase.from('customers').select('*').eq('id', finalCustomerId).single();
             if (data) {
                 customer = await syncMembershipState(data);
             }
@@ -1147,9 +1168,9 @@ app.post('/api/orders', async (req, res) => {
             total: finalOrderData.total,
             status: 'pending',
             payment_method: paymentMethod,
-            customer_id: req.body.customerId,
+            customer_id: finalCustomerId,
             discount_code: req.body.discountCode,
-            notes: (req.body.customerId ? '' : `[GUEST: ${req.body.customer_name || 'N/A'}] [PHONE: ${req.body.customer_phone || 'N/A'}] `) + (req.body.notes || '')
+            notes: (!finalCustomerId ? `[GUEST: ${customerName || 'N/A'}] [PHONE: ${customerPhone || 'N/A'}] ` : '') + (req.body.notes || '')
         };
 
         // 4. Handle Rico Balance Deduction
@@ -1166,6 +1187,18 @@ app.post('/api/orders', async (req, res) => {
                     amount: -total,
                     order_id: orderData.id
                 });
+                
+                // Award points immediately if paid with Rico Balance
+                if (finalCustomerId) {
+                    try {
+                        const { data: cust } = await supabase.from('customers').select('points').eq('id', finalCustomerId).single();
+                        if (cust) {
+                            await supabase.from('customers').update({
+                                points: (cust.points || 0) + Math.floor(orderData.total)
+                            }).eq('id', finalCustomerId);
+                        }
+                    } catch (lErr) { console.error("[Loyalty] Instant award failed", lErr); }
+                }
             } else {
                 return res.status(400).json({ error: 'Saldo insuficiente en Rico Cash' });
             }
