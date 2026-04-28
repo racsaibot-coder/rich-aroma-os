@@ -88,6 +88,7 @@
                 <button onclick="switchTab('employees')" id="tab-employees" class="font-bold text-gray-500 hover:text-gray-800 pb-2 px-2">Employees</button>
                 <button onclick="switchTab('menu')" id="tab-menu" class="font-bold text-gray-500 hover:text-gray-800 pb-2 px-2">Menu & Modifiers</button>
                 <button onclick="switchTab('inventory')" id="tab-inventory" class="font-bold text-gray-500 hover:text-gray-800 pb-2 px-2">Inventory & Recipes</button>
+                <button onclick="switchTab('quests')" id="tab-quests" class="font-bold text-gray-500 hover:text-gray-800 pb-2 px-2">Quests & Prizes</button>
             </div>
             
             <!-- Store Status Toggle -->
@@ -244,9 +245,123 @@
             </div>
             </div>
 
+            <!-- TAB: QUESTS & PRIZES -->
+            <div id="section-quests" class="hidden">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <!-- Quest Manager -->
+                    <div>
+                        <div class="flex justify-between items-center mb-4">
+                            <h2 class="text-xl font-bold">Quest Manager</h2>
+                            <button onclick="openNewQuestModal()" class="bg-gold text-dark px-4 py-2 rounded-lg font-bold shadow">+ Add Quest</button>
+                        </div>
+                        <div class="bg-white rounded-2xl shadow-lg overflow-hidden p-4">
+                            <div id="admin-quests-list" class="space-y-3">
+                                <!-- Dynamic -->
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Prize Store Manager -->
+                    <div>
+                        <div class="flex justify-between items-center mb-4">
+                            <h2 class="text-xl font-bold">Prize Manager</h2>
+                            <button onclick="openNewPrizeModal()" class="bg-blue-600 text-white px-4 py-2 rounded-lg font-bold shadow">+ Add Prize</button>
+                        </div>
+                        <div class="bg-white rounded-2xl shadow-lg overflow-hidden p-4">
+                            <div id="admin-prizes-list" class="space-y-3">
+                                <!-- Dynamic -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Approval Queue -->
+                <div class="mt-12">
+                    <h2 class="text-xl font-bold mb-4">Submission Approval Queue</h2>
+                    <div class="bg-white rounded-2xl shadow-lg overflow-hidden">
+                        <table class="w-full text-left">
+                            <thead class="bg-gray-50 text-gray-500 text-xs uppercase">
+                                <tr>
+                                    <th class="p-4">Customer</th>
+                                    <th class="p-4">Quest</th>
+                                    <th class="p-4">Proof</th>
+                                    <th class="p-4 text-right">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="submissionTable" class="divide-y divide-gray-100">
+                                <!-- Injected via JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
     </div>
 
     
+    <!-- QUEST MODAL -->
+    <div id="quest-modal" class="hidden fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50">
+        <div class="bg-white rounded-3xl p-8 max-w-md w-full shadow-2xl">
+            <h3 class="text-2xl font-bold mb-6" id="quest-modal-title">New Quest</h3>
+            <input type="hidden" id="quest-id">
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Title</label>
+                    <input type="text" id="quest-title" class="w-full border rounded-lg p-3">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Description</label>
+                    <textarea id="quest-desc" class="w-full border rounded-lg p-3"></textarea>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Reward (Rico Cash)</label>
+                    <input type="number" id="quest-reward" class="w-full border rounded-lg p-3">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Type</label>
+                    <select id="quest-type" class="w-full border rounded-lg p-3">
+                        <option value="ugc">UGC / Photo Upload</option>
+                        <option value="purchase">Purchase Based</option>
+                    </select>
+                </div>
+                <div class="flex items-center gap-2">
+                    <input type="checkbox" id="quest-active" checked>
+                    <label for="quest-active" class="font-bold">Active</label>
+                </div>
+            </div>
+            <div class="flex gap-3 mt-8">
+                <button onclick="document.getElementById('quest-modal').classList.add('hidden')" class="flex-1 py-3 font-bold text-gray-500">Cancel</button>
+                <button onclick="saveQuest()" class="flex-1 py-3 bg-gold text-dark rounded-xl font-bold">Save Quest</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- PRIZE MODAL -->
+    <div id="prize-modal" class="hidden fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50">
+        <div class="bg-white rounded-3xl p-8 max-w-md w-full shadow-2xl">
+            <h3 class="text-2xl font-bold mb-6" id="prize-modal-title">New Prize</h3>
+            <input type="hidden" id="prize-id">
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Name</label>
+                    <input type="text" id="prize-name" class="w-full border rounded-lg p-3">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Cost (Rico Points)</label>
+                    <input type="number" id="prize-cost" class="w-full border rounded-lg p-3">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Icon (Emoji)</label>
+                    <input type="text" id="prize-icon" class="w-full border rounded-lg p-3" placeholder="🎁">
+                </div>
+            </div>
+            <div class="flex gap-3 mt-8">
+                <button onclick="document.getElementById('prize-modal').classList.add('hidden')" class="flex-1 py-3 font-bold text-gray-500">Cancel</button>
+                <button onclick="savePrize()" class="flex-1 py-3 bg-blue-600 text-white rounded-xl font-bold">Save Prize</button>
+            </div>
+        </div>
+    </div>
+
     <!-- SYSTEM GUIDE MODAL -->
     <div id="guide-modal" class="hidden fixed inset-0 bg-dark/90 backdrop-blur-md flex items-center justify-center z-[100]">
         <div class="bg-white rounded-[2.5rem] p-10 max-w-2xl w-full shadow-2xl relative overflow-hidden">
@@ -771,7 +886,7 @@
         function switchTab(tabId) {
             logDebug(`Switching to tab: ${tabId}`);
             try {
-                const sections = ['overview', 'employees', 'menu', 'inventory'];
+                const sections = ['overview', 'employees', 'menu', 'inventory', 'quests'];
                 sections.forEach(id => {
                     const el = document.getElementById(`section-${id}`);
                     if (el) el.classList.add('hidden');
@@ -792,11 +907,140 @@
                     logDebug("Inventory tab selected, calling loadInventory()");
                     loadInventory();
                 }
+                if(tabId === 'quests') {
+                    loadAdminQuests();
+                    loadAdminPrizes();
+                    loadSubmissions();
+                }
             } catch (err) {
                 logDebug("Error in switchTab: " + err.message);
             }
         }
 
+        // --- QUESTS ---
+        async function loadAdminQuests() {
+            const res = await fetch('/api/admin?action=quests', { headers: getHeaders() });
+            const quests = await res.json();
+            const container = document.getElementById('admin-quests-list');
+            container.innerHTML = quests.map(q => `
+                <div class="flex items-center justify-between p-3 bg-gray-50 rounded-xl border border-gray-100">
+                    <div>
+                        <div class="font-bold text-sm">${q.title}</div>
+                        <div class="text-[10px] text-gray-400">L. ${q.reward_cash} Reward • ${q.type}</div>
+                    </div>
+                    <button onclick="openEditQuestModal('${q.id}', '${q.title}', '${q.description}', ${q.reward_cash}, '${q.type}', ${q.active})" class="text-blue-600 font-bold text-xs">Edit</button>
+                </div>
+            `).join('');
+        }
+
+        function openNewQuestModal() {
+            document.getElementById('quest-modal-title').innerText = "New Quest";
+            document.getElementById('quest-id').value = "";
+            document.getElementById('quest-title').value = "";
+            document.getElementById('quest-desc').value = "";
+            document.getElementById('quest-reward').value = "";
+            document.getElementById('quest-type').value = "ugc";
+            document.getElementById('quest-active').checked = true;
+            document.getElementById('quest-modal').classList.remove('hidden');
+        }
+
+        async function saveQuest() {
+            const payload = {
+                id: document.getElementById('quest-id').value,
+                title: document.getElementById('quest-title').value,
+                description: document.getElementById('quest-desc').value,
+                reward_cash: parseFloat(document.getElementById('quest-reward').value),
+                type: document.getElementById('quest-type').value,
+                active: document.getElementById('quest-active').checked
+            };
+            const res = await fetch('/api/admin?action=quests', {
+                method: 'POST',
+                headers: getHeaders(),
+                body: JSON.stringify(payload)
+            });
+            if (res.ok) {
+                document.getElementById('quest-modal').classList.add('hidden');
+                loadAdminQuests();
+            }
+        }
+
+        // --- PRIZES ---
+        async function loadAdminPrizes() {
+            const res = await fetch('/api/admin?action=prizes', { headers: getHeaders() });
+            const prizes = await res.json();
+            const container = document.getElementById('admin-prizes-list');
+            container.innerHTML = prizes.map(p => `
+                <div class="flex items-center justify-between p-3 bg-gray-50 rounded-xl border border-gray-100">
+                    <div>
+                        <div class="font-bold text-sm">${p.icon} ${p.name}</div>
+                        <div class="text-[10px] text-gray-400">${p.cost} Points</div>
+                    </div>
+                    <button class="text-blue-600 font-bold text-xs">Edit</button>
+                </div>
+            `).join('');
+        }
+
+        function openNewPrizeModal() {
+            document.getElementById('prize-id').value = "";
+            document.getElementById('prize-name').value = "";
+            document.getElementById('prize-cost').value = "";
+            document.getElementById('prize-icon').value = "🎁";
+            document.getElementById('prize-modal').classList.remove('hidden');
+        }
+
+        async function savePrize() {
+            const payload = {
+                id: document.getElementById('prize-id').value,
+                name: document.getElementById('prize-name').value,
+                cost: parseInt(document.getElementById('prize-cost').value),
+                icon: document.getElementById('prize-icon').value,
+                active: true
+            };
+            const res = await fetch('/api/admin?action=prizes', {
+                method: 'POST',
+                headers: getHeaders(),
+                body: JSON.stringify(payload)
+            });
+            if (res.ok) {
+                document.getElementById('prize-modal').classList.add('hidden');
+                loadAdminPrizes();
+            }
+        }
+
+        // --- SUBMISSIONS ---
+        async function loadSubmissions() {
+            const res = await fetch('/api/admin?action=customer_quest_submissions', { headers: getHeaders() });
+            const subs = await res.json();
+            const tbody = document.getElementById('submissionTable');
+            tbody.innerHTML = (subs || []).map(s => `
+                <tr>
+                    <td class="p-4">
+                        <div class="font-bold text-sm">${s.customers.name}</div>
+                        <div class="text-[10px] text-gray-400">${s.customers.phone}</div>
+                    </td>
+                    <td class="p-4 text-sm">${s.quests.title}</td>
+                    <td class="p-4">
+                        <button onclick="window.open('${s.proof_url}', '_blank')" class="text-blue-600 text-xs font-bold underline">View Proof</button>
+                    </td>
+                    <td class="p-4 text-right">
+                        <button onclick="approveSubmission('${s.id}')" class="bg-green-600 text-white px-3 py-1 rounded text-xs font-bold">Approve</button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        async function approveSubmission(id) {
+            if (!confirm("Approve this mission and pay reward?")) return;
+            const res = await fetch('/api/admin?action=approve_quest', {
+                method: 'POST',
+                headers: getHeaders(),
+                body: JSON.stringify({ submissionId: id, adminId: staffUser.id })
+            });
+            if (res.ok) {
+                alert("Quest approved and reward sent!");
+                loadSubmissions();
+            }
+        }
         async function loadInventory() {
             logDebug("Starting loadInventory fetch...");
             try {

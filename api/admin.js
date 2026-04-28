@@ -617,6 +617,77 @@ module.exports = async function handler(req, res) {
         return res.json(data);
     }
 
+    // QUEST & PRIZE MANAGER
+    if (action === 'quests' && req.method === 'GET') {
+        const { data, error } = await supabase.from('quests').select('*').order('created_at', { ascending: false });
+        if (error) return res.status(500).json({ error: error.message });
+        return res.json(data);
+    }
+
+    if (action === 'quests' && req.method === 'POST') {
+        if (!isAdmin) return res.status(403).json({ error: "Admin access required" });
+        const { id, title, description, reward_cash, type, icon, active } = req.body;
+        const { data, error } = await supabase.from('quests').upsert({ 
+            id: id || 'quest_' + Date.now(), 
+            title, description, reward_cash, type, icon, active 
+        }).select().single();
+        if (error) return res.status(500).json({ error: error.message });
+        return res.json(data);
+    }
+
+    if (action === 'prizes' && req.method === 'GET') {
+        const { data, error } = await supabase.from('prizes').select('*').order('cost', { ascending: true });
+        if (error) return res.status(500).json({ error: error.message });
+        return res.json(data);
+    }
+
+    if (action === 'prizes' && req.method === 'POST') {
+        if (!isAdmin) return res.status(403).json({ error: "Admin access required" });
+        const { id, name, cost, icon, active, stock } = req.body;
+        const { data, error } = await supabase.from('prizes').upsert({ 
+            id: id || 'prize_' + Date.now(), 
+            name, cost, icon, active, stock 
+        }).select().single();
+        if (error) return res.status(500).json({ error: error.message });
+        return res.json(data);
+    }
+
+    if (action === 'customer_quest_submissions' && req.method === 'GET') {
+        const { data, error } = await supabase.from('customer_quests').select('*, customers(name, phone), quests(title)').eq('status', 'pending');
+        if (error) return res.status(500).json({ error: error.message });
+        return res.json(data);
+    }
+
+    if (action === 'approve_quest' && req.method === 'POST') {
+        if (!isAdmin) return res.status(403).json({ error: "Admin access required" });
+        const { submissionId, adminId } = req.body;
+        
+        const { data: sub } = await supabase.from('customer_quests').select('*, quests(*)').eq('id', submissionId).single();
+        if (!sub) return res.status(404).json({ error: "Submission not found" });
+
+        await supabase.from('customer_quests').update({ 
+            status: 'approved', 
+            verified_at: new Date().toISOString(),
+            verified_by: adminId 
+        }).eq('id', submissionId);
+
+        const { data: customer } = await supabase.from('customers').select('cash_balance').eq('id', sub.customer_id).single();
+        const reward = parseFloat(sub.quests.reward_cash) || 0;
+        
+        await supabase.from('customers').update({ 
+            cash_balance: (parseFloat(customer.cash_balance) || 0) + reward 
+        }).eq('id', sub.customer_id);
+
+        await supabase.from('balance_history').insert({
+            customer_id: sub.customer_id,
+            type: 'quest_reward',
+            amount: reward,
+            notes: `Misión Completada: ${sub.quests.title}`
+        });
+
+        return res.json({ success: true });
+    }
+
     res.status(404).json({ error: 'Action not found' });
     } catch (e) {
         console.error("[Admin API] GLOBAL ERROR:", e);
