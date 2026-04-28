@@ -88,7 +88,7 @@
             <div>
                 <div class="flex items-center gap-2">
                     <h1 class="font-display text-lg text-gold font-bold tracking-tight uppercase leading-none">Rich Aroma</h1>
-                    <span class="text-[7px] bg-gold/10 text-gold/40 px-1.5 py-0.5 rounded-full border border-gold/10">v2.6.3</span>
+                    <span class="text-[7px] bg-gold/10 text-gold/40 px-1.5 py-0.5 rounded-full border border-gold/10">v2.6.4</span>
                 </div>
                 <div class="flex items-center gap-2 mt-1">
                     <p id="store-status-text" class="text-[9px] text-white/30 tracking-[0.2em] uppercase">Cargando...</p>
@@ -467,8 +467,20 @@
                     <input type="tel" id="check-phone" placeholder="WhatsApp (Opcional)" class="flex-1 bg-white/5 border border-white/10 p-5 rounded-[1.5rem] text-white outline-none focus:border-gold">
                 </div>
                 <!-- Address field for delivery -->
-                <div id="check-address-ui" class="hidden animate-in slide-in-from-top-2 duration-300">
-                    <textarea id="check-address" placeholder="Dirección de Entrega (Referencia, Casa, Color...)" class="w-full bg-white/5 border border-white/10 p-5 rounded-[1.5rem] text-white outline-none focus:border-gold min-h-[100px]"></textarea>
+                <div id="check-address-ui" class="hidden space-y-4 animate-in slide-in-from-top-2 duration-300">
+                    <div class="flex gap-2">
+                        <button onclick="window.getLocation()" id="loc-btn" class="flex-1 bg-gold/10 border border-gold/20 p-4 rounded-2xl text-gold flex items-center justify-center gap-3 transition-all active:scale-95">
+                            <i class="fas fa-location-arrow"></i>
+                            <span class="text-[10px] font-black uppercase">Compartir Ubicación</span>
+                        </button>
+                        <button id="loc-clear" onclick="window.clearLocation()" class="hidden w-12 bg-white/5 border border-white/10 rounded-2xl text-white/40 flex items-center justify-center"><i class="fas fa-times text-xs"></i></button>
+                    </div>
+                    <div id="loc-status" class="hidden text-center"><p class="text-[9px] font-bold text-gold uppercase tracking-widest animate-pulse">Calculando distancia...</p></div>
+                    <div id="dist-info" class="hidden p-4 bg-white/5 border border-white/5 rounded-2xl flex justify-between items-center">
+                        <div><p class="text-[8px] font-black text-white/30 uppercase">Distancia Estimada</p><p id="dist-val" class="text-xs font-black text-white">0.0 miles</p></div>
+                        <div class="text-right"><p class="text-[8px] font-black text-white/30 uppercase">Costo de Envío</p><p id="fee-val" class="text-xs font-black text-gold">L 35.00</p></div>
+                    </div>
+                    <textarea id="check-address" placeholder="Instrucciones adicionales (Casa, Color, Referencia...)" class="w-full bg-white/5 border border-white/10 p-5 rounded-[1.5rem] text-white outline-none focus:border-gold min-h-[80px]"></textarea>
                 </div>
             </div>
 
@@ -553,6 +565,75 @@
             var currentI = null; var currentM = {}; var fulfillment = 'pickup'; var deliveryFee = 0; var zoneName = "";
             var currentCustomer = null; var isSubmitting = false; var paymentMethod = 'cash';
             var isStoreClosed = false;
+            const SHOP_LAT = 14.0768; const SHOP_LNG = -87.1856; // Rich Aroma Coffee Shop (Estimated)
+
+            window.getLocation = () => {
+                if (!navigator.geolocation) return alert("Tu navegador no soporta geolocalización.");
+                
+                document.getElementById('loc-status').classList.remove('hidden');
+                document.getElementById('loc-btn').disabled = true;
+                document.getElementById('loc-btn').classList.add('opacity-50');
+
+                navigator.geolocation.getCurrentPosition(
+                    (pos) => {
+                        const lat = pos.coords.latitude;
+                        const lng = pos.coords.longitude;
+                        const dist = calculateDistance(SHOP_LAT, SHOP_LNG, lat, lng);
+                        const fee = calculateFee(dist);
+                        
+                        deliveryFee = fee;
+                        zoneName = `GPS: ${dist.toFixed(2)} miles`;
+                        
+                        document.getElementById('dist-val').innerText = `${dist.toFixed(2)} miles`;
+                        document.getElementById('fee-val').innerText = `L ${fee.toFixed(2)}`;
+                        document.getElementById('dist-info').classList.remove('hidden');
+                        document.getElementById('loc-clear').classList.remove('hidden');
+                        document.getElementById('loc-status').classList.add('hidden');
+                        document.getElementById('loc-btn').classList.add('hidden');
+                        
+                        // Update UI Total
+                        const sub = cart.reduce((s, i) => s + i.finalPrice, 0);
+                        document.getElementById('check-total').innerText = 'L ' + (sub + deliveryFee).toFixed(2);
+                    },
+                    (err) => {
+                        console.error(err);
+                        alert("No pudimos obtener tu ubicación. Por favor ingresa tu dirección manualmente.");
+                        document.getElementById('loc-status').classList.add('hidden');
+                        document.getElementById('loc-btn').disabled = false;
+                        document.getElementById('loc-btn').classList.remove('opacity-50');
+                    },
+                    { enableHighAccuracy: true }
+                );
+            };
+
+            window.clearLocation = () => {
+                deliveryFee = 35; zoneName = "";
+                document.getElementById('dist-info').classList.add('hidden');
+                document.getElementById('loc-clear').classList.add('hidden');
+                document.getElementById('loc-btn').classList.remove('hidden');
+                document.getElementById('loc-btn').disabled = false;
+                document.getElementById('loc-btn').classList.remove('opacity-50');
+                
+                const sub = cart.reduce((s, i) => s + i.finalPrice, 0);
+                document.getElementById('check-total').innerText = 'L ' + (sub + deliveryFee).toFixed(2);
+            };
+
+            function calculateDistance(lat1, lon1, lat2, lon2) {
+                const R = 3958.8; // Radius of Earth in Miles
+                const dLat = (lat2 - lat1) * Math.PI / 180;
+                const dLon = (lon2 - lon1) * Math.PI / 180;
+                const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+                          Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * 
+                          Math.sin(dLon/2) * Math.sin(dLon/2);
+                const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+                return R * c;
+            }
+
+            function calculateFee(miles) {
+                if (miles <= 1) return 35;
+                // 35 for first mile + 35 for each additional mile (rounded up)
+                return 35 + (Math.ceil(miles - 1) * 35);
+            }
 
             window.onload = async () => {
                 // Startup in parallel to speed up load time
@@ -849,7 +930,7 @@
 
             window.setFulfill = (type) => {
                 fulfillment = type;
-                deliveryFee = (type === 'delivery') ? 45 : 0;
+                deliveryFee = (type === 'delivery') ? 35 : 0;
                 
                 ['pickup', 'dinein', 'delivery'].forEach(t => {
                     const btn = document.getElementById('fbtn-' + t);
@@ -1145,8 +1226,9 @@
                     fulfillment_type: fulfillment,
                     customer_name: name,
                     customer_phone: phone,
-                    address: fulfillment === 'delivery' ? address : null,
-                    notes: fulfillment === 'delivery' ? `DOMICILIO: ${address}` : ""
+                    delivery_fee: deliveryFee,
+                    delivery_address: fulfillment === 'delivery' ? address : null,
+                    notes: fulfillment === 'delivery' ? `DOMICILIO (${zoneName}): ${address}` : ""
                 };
 
                 try {
