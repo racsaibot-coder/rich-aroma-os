@@ -347,17 +347,25 @@ module.exports = async function handler(req, res) {
                 const weeklySales = calcBreakdown(rWeeklyOrders || []);
                 const weeklyLabor = labor.map(l => ({ id: l.id, name: l.name, hours: l.totalHours, earnings: l.payCurrentWeek }));
 
+                // Fetch actual expenses
+                const { data: expenses } = await supabase.from('expenses')
+                    .select('amount, date')
+                    .gte('date', startOfWeek);
+
+                const todayStr = new Date().toISOString().split('T')[0];
+                const dayExpenses = (expenses || []).filter(e => e.date === todayStr).reduce((s, e) => s + parseFloat(e.amount || 0), 0);
+                const weekExpenses = (expenses || []).reduce((s, e) => s + parseFloat(e.amount || 0), 0);
+
                 // Profit Estimates
                 const COGS_PCT = 0.40;
-                const FIXED_DAILY = 200;
                 const laborCostDay = labor.reduce((s,l) => s + parseFloat(l.payToday || 0), 0);
                 const laborCostWeek = labor.reduce((s,l) => s + parseFloat(l.payCurrentWeek || 0), 0);
                 
                 const dayGrossProfit = sales.total * (1 - COGS_PCT);
-                const dayNetProfit = dayGrossProfit - laborCostDay - FIXED_DAILY;
+                const dayNetProfit = dayGrossProfit - laborCostDay - dayExpenses;
 
                 const weekGrossProfit = weeklySales.total * (1 - COGS_PCT);
-                const weekNetProfit = weekGrossProfit - laborCostWeek - (FIXED_DAILY * 7);
+                const weekNetProfit = weekGrossProfit - laborCostWeek - weekExpenses;
 
                 // 2. Top Items
                 const itemMap = {};

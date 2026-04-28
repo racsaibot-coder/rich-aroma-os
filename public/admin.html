@@ -88,7 +88,7 @@
                 <button onclick="switchTab('employees')" id="tab-employees" class="font-bold text-gray-500 hover:text-gray-800 pb-2 px-2">Employees</button>
                 <button onclick="switchTab('menu')" id="tab-menu" class="font-bold text-gray-500 hover:text-gray-800 pb-2 px-2">Menu & Modifiers</button>
                 <button onclick="switchTab('inventory')" id="tab-inventory" class="font-bold text-gray-500 hover:text-gray-800 pb-2 px-2">Inventory & Recipes</button>
-                <button onclick="switchTab('quests')" id="tab-quests" class="font-bold text-gray-500 hover:text-gray-800 pb-2 px-2">Quests & Prizes</button>
+                <button onclick="switchTab('marketing')" id="tab-marketing" class="font-bold text-gray-500 hover:text-gray-800 pb-2 px-2">Marketing & Quests</button>
             </div>
             
             <!-- Store Status Toggle -->
@@ -138,6 +138,37 @@
                         <!-- Injected via JS -->
                     </tbody>
                 </table>
+            </div>
+
+            <!-- ADMIN TASK BOARD (New) -->
+            <div class="grid md:grid-cols-2 gap-8 mb-8">
+                <div class="bg-white p-8 rounded-[2.5rem] shadow-sm border border-gray-100">
+                    <div class="flex justify-between items-center mb-6">
+                        <h3 class="text-sm font-black uppercase tracking-widest text-dark">
+                            <i class="fas fa-tasks text-blue-500 mr-2"></i> Admin Task Board
+                        </h3>
+                        <button onclick="openTaskModal()" class="bg-blue-600 text-white px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-blue-700 transition-all">
+                            + New Task
+                        </button>
+                    </div>
+                    <div class="space-y-3" id="admin-tasks-container">
+                        <!-- Injected via JS -->
+                        <p class="text-center text-gray-400 italic py-6 text-sm">No pending tasks for the admin.</p>
+                    </div>
+                </div>
+
+                <div class="bg-white p-8 rounded-[2.5rem] shadow-sm border border-gray-100">
+                    <h3 class="text-sm font-black uppercase tracking-widest text-dark mb-6">
+                        <i class="fas fa-chart-line text-green-500 mr-2"></i> Inventory Status
+                    </h3>
+                    <div class="space-y-4" id="inventory-critical-container">
+                        <!-- Low stock items injected here -->
+                        <p class="text-center text-gray-400 italic py-6 text-sm">Stock levels are healthy.</p>
+                    </div>
+                    <button onclick="switchTab('inventory')" class="w-full mt-6 py-4 bg-gray-50 text-gray-500 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-gray-100 transition-all">
+                        Full Inventory View
+                    </button>
+                </div>
             </div>
 
             <h2 class="text-xl font-bold mb-4">Registered Leads</h2>
@@ -245,50 +276,81 @@
             </div>
             </div>
 
-            <!-- TAB: QUESTS & PRIZES -->
-            <div id="section-quests" class="hidden">
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
-                    <!-- Quest Manager -->
-                    <div>
-                        <div class="flex justify-between items-center mb-4">
-                            <h2 class="text-xl font-bold">Quest Manager</h2>
-                            <button onclick="openNewQuestModal()" class="bg-gold text-dark px-4 py-2 rounded-lg font-bold shadow">+ Add Quest</button>
+            <!-- TAB: MARKETING & QUESTS -->
+            <div id="section-marketing" class="hidden">
+                <!-- Top Actions -->
+                <div class="flex flex-wrap gap-4 mb-8">
+                    <button onclick="openNewQuestModal()" class="bg-indigo-600 text-white px-6 py-3 rounded-2xl font-bold shadow-lg hover:bg-indigo-700 transition">
+                        <i class="fas fa-plus mr-2"></i> Crear Nueva Misión
+                    </button>
+                    <button onclick="openNewRewardModal()" class="bg-amber-500 text-white px-6 py-3 rounded-2xl font-bold shadow-lg hover:bg-amber-600 transition">
+                        <i class="fas fa-gift mr-2"></i> Nuevo Premio (Rico Points)
+                    </button>
+                </div>
+
+                <div class="grid lg:grid-cols-2 gap-8">
+                    <!-- QUESTS TABLE -->
+                    <div class="bg-white rounded-[2rem] shadow-xl overflow-hidden border border-gray-100">
+                        <div class="p-6 bg-gray-50 border-b flex justify-between items-center">
+                            <h3 class="font-black uppercase tracking-widest text-sm text-gray-400">Misiones Activas</h3>
+                            <span class="bg-indigo-100 text-indigo-600 text-[10px] font-bold px-2 py-1 rounded-full">Retos Capitán Rico</span>
                         </div>
-                        <div class="bg-white rounded-2xl shadow-lg overflow-hidden p-4">
-                            <div id="admin-quests-list" class="space-y-3">
-                                <!-- Dynamic -->
-                            </div>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left border-collapse">
+                                <thead class="bg-white text-gray-400 text-[10px] uppercase font-bold tracking-widest">
+                                    <tr>
+                                        <th class="p-6">Misión</th>
+                                        <th class="p-6">Recompensa</th>
+                                        <th class="p-6 text-right">Acciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="questsTable" class="divide-y divide-gray-50">
+                                    <!-- Injected via JS -->
+                                </tbody>
+                            </table>
                         </div>
                     </div>
 
-                    <!-- Prize Store Manager -->
-                    <div>
-                        <div class="flex justify-between items-center mb-4">
-                            <h2 class="text-xl font-bold">Prize Manager</h2>
-                            <button onclick="openNewPrizeModal()" class="bg-blue-600 text-white px-4 py-2 rounded-lg font-bold shadow">+ Add Prize</button>
+                    <!-- REWARDS TABLE -->
+                    <div class="bg-white rounded-[2rem] shadow-xl overflow-hidden border border-gray-100">
+                        <div class="p-6 bg-gray-50 border-b flex justify-between items-center">
+                            <h3 class="font-black uppercase tracking-widest text-sm text-gray-400">Canje de Puntos</h3>
+                            <span class="bg-amber-100 text-amber-600 text-[10px] font-bold px-2 py-1 rounded-full">Tienda de Premios</span>
                         </div>
-                        <div class="bg-white rounded-2xl shadow-lg overflow-hidden p-4">
-                            <div id="admin-prizes-list" class="space-y-3">
-                                <!-- Dynamic -->
-                            </div>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left border-collapse">
+                                <thead class="bg-white text-gray-400 text-[10px] uppercase font-bold tracking-widest">
+                                    <tr>
+                                        <th class="p-6">Premio</th>
+                                        <th class="p-6">Costo Puntos</th>
+                                        <th class="p-6 text-right">Acciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="rewardsTable" class="divide-y divide-gray-50">
+                                    <!-- Injected via JS -->
+                                </tbody>
+                            </table>
                         </div>
                     </div>
                 </div>
 
-                <!-- Approval Queue -->
-                <div class="mt-12">
-                    <h2 class="text-xl font-bold mb-4">Submission Approval Queue</h2>
-                    <div class="bg-white rounded-2xl shadow-lg overflow-hidden">
-                        <table class="w-full text-left">
-                            <thead class="bg-gray-50 text-gray-500 text-xs uppercase">
+                <!-- APPROVAL QUEUE -->
+                <div class="mt-8 bg-white rounded-[2rem] shadow-xl overflow-hidden border border-gray-100">
+                    <div class="p-6 bg-gray-50 border-b flex justify-between items-center">
+                        <h3 class="font-black uppercase tracking-widest text-sm text-gray-400">Cola de Aprobación (UGC)</h3>
+                        <span class="bg-green-100 text-green-600 text-[10px] font-bold px-2 py-1 rounded-full">Verificación de Retos</span>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse">
+                            <thead class="bg-white text-gray-400 text-[10px] uppercase font-bold tracking-widest">
                                 <tr>
-                                    <th class="p-4">Customer</th>
-                                    <th class="p-4">Quest</th>
-                                    <th class="p-4">Proof</th>
-                                    <th class="p-4 text-right">Actions</th>
+                                    <th class="p-6">Cliente</th>
+                                    <th class="p-6">Misión</th>
+                                    <th class="p-6">Prueba (Foto)</th>
+                                    <th class="p-6 text-right">Acciones</th>
                                 </tr>
                             </thead>
-                            <tbody id="submissionTable" class="divide-y divide-gray-100">
+                            <tbody id="approvalQueueTable" class="divide-y divide-gray-50">
                                 <!-- Injected via JS -->
                             </tbody>
                         </table>
@@ -299,69 +361,6 @@
     </div>
 
     
-    <!-- QUEST MODAL -->
-    <div id="quest-modal" class="hidden fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50">
-        <div class="bg-white rounded-3xl p-8 max-w-md w-full shadow-2xl">
-            <h3 class="text-2xl font-bold mb-6" id="quest-modal-title">New Quest</h3>
-            <input type="hidden" id="quest-id">
-            <div class="space-y-4">
-                <div>
-                    <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Title</label>
-                    <input type="text" id="quest-title" class="w-full border rounded-lg p-3">
-                </div>
-                <div>
-                    <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Description</label>
-                    <textarea id="quest-desc" class="w-full border rounded-lg p-3"></textarea>
-                </div>
-                <div>
-                    <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Reward (Rico Cash)</label>
-                    <input type="number" id="quest-reward" class="w-full border rounded-lg p-3">
-                </div>
-                <div>
-                    <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Type</label>
-                    <select id="quest-type" class="w-full border rounded-lg p-3">
-                        <option value="ugc">UGC / Photo Upload</option>
-                        <option value="purchase">Purchase Based</option>
-                    </select>
-                </div>
-                <div class="flex items-center gap-2">
-                    <input type="checkbox" id="quest-active" checked>
-                    <label for="quest-active" class="font-bold">Active</label>
-                </div>
-            </div>
-            <div class="flex gap-3 mt-8">
-                <button onclick="document.getElementById('quest-modal').classList.add('hidden')" class="flex-1 py-3 font-bold text-gray-500">Cancel</button>
-                <button onclick="saveQuest()" class="flex-1 py-3 bg-gold text-dark rounded-xl font-bold">Save Quest</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- PRIZE MODAL -->
-    <div id="prize-modal" class="hidden fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50">
-        <div class="bg-white rounded-3xl p-8 max-w-md w-full shadow-2xl">
-            <h3 class="text-2xl font-bold mb-6" id="prize-modal-title">New Prize</h3>
-            <input type="hidden" id="prize-id">
-            <div class="space-y-4">
-                <div>
-                    <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Name</label>
-                    <input type="text" id="prize-name" class="w-full border rounded-lg p-3">
-                </div>
-                <div>
-                    <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Cost (Rico Points)</label>
-                    <input type="number" id="prize-cost" class="w-full border rounded-lg p-3">
-                </div>
-                <div>
-                    <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Icon (Emoji)</label>
-                    <input type="text" id="prize-icon" class="w-full border rounded-lg p-3" placeholder="🎁">
-                </div>
-            </div>
-            <div class="flex gap-3 mt-8">
-                <button onclick="document.getElementById('prize-modal').classList.add('hidden')" class="flex-1 py-3 font-bold text-gray-500">Cancel</button>
-                <button onclick="savePrize()" class="flex-1 py-3 bg-blue-600 text-white rounded-xl font-bold">Save Prize</button>
-            </div>
-        </div>
-    </div>
-
     <!-- SYSTEM GUIDE MODAL -->
     <div id="guide-modal" class="hidden fixed inset-0 bg-dark/90 backdrop-blur-md flex items-center justify-center z-[100]">
         <div class="bg-white rounded-[2.5rem] p-10 max-w-2xl w-full shadow-2xl relative overflow-hidden">
@@ -886,7 +885,7 @@
         function switchTab(tabId) {
             logDebug(`Switching to tab: ${tabId}`);
             try {
-                const sections = ['overview', 'employees', 'menu', 'inventory', 'quests'];
+                const sections = ['overview', 'employees', 'menu', 'inventory'];
                 sections.forEach(id => {
                     const el = document.getElementById(`section-${id}`);
                     if (el) el.classList.add('hidden');
@@ -907,140 +906,11 @@
                     logDebug("Inventory tab selected, calling loadInventory()");
                     loadInventory();
                 }
-                if(tabId === 'quests') {
-                    loadAdminQuests();
-                    loadAdminPrizes();
-                    loadSubmissions();
-                }
             } catch (err) {
                 logDebug("Error in switchTab: " + err.message);
             }
         }
 
-        // --- QUESTS ---
-        async function loadAdminQuests() {
-            const res = await fetch('/api/admin?action=quests', { headers: getHeaders() });
-            const quests = await res.json();
-            const container = document.getElementById('admin-quests-list');
-            container.innerHTML = quests.map(q => `
-                <div class="flex items-center justify-between p-3 bg-gray-50 rounded-xl border border-gray-100">
-                    <div>
-                        <div class="font-bold text-sm">${q.title}</div>
-                        <div class="text-[10px] text-gray-400">L. ${q.reward_cash} Reward • ${q.type}</div>
-                    </div>
-                    <button onclick="openEditQuestModal('${q.id}', '${q.title}', '${q.description}', ${q.reward_cash}, '${q.type}', ${q.active})" class="text-blue-600 font-bold text-xs">Edit</button>
-                </div>
-            `).join('');
-        }
-
-        function openNewQuestModal() {
-            document.getElementById('quest-modal-title').innerText = "New Quest";
-            document.getElementById('quest-id').value = "";
-            document.getElementById('quest-title').value = "";
-            document.getElementById('quest-desc').value = "";
-            document.getElementById('quest-reward').value = "";
-            document.getElementById('quest-type').value = "ugc";
-            document.getElementById('quest-active').checked = true;
-            document.getElementById('quest-modal').classList.remove('hidden');
-        }
-
-        async function saveQuest() {
-            const payload = {
-                id: document.getElementById('quest-id').value,
-                title: document.getElementById('quest-title').value,
-                description: document.getElementById('quest-desc').value,
-                reward_cash: parseFloat(document.getElementById('quest-reward').value),
-                type: document.getElementById('quest-type').value,
-                active: document.getElementById('quest-active').checked
-            };
-            const res = await fetch('/api/admin?action=quests', {
-                method: 'POST',
-                headers: getHeaders(),
-                body: JSON.stringify(payload)
-            });
-            if (res.ok) {
-                document.getElementById('quest-modal').classList.add('hidden');
-                loadAdminQuests();
-            }
-        }
-
-        // --- PRIZES ---
-        async function loadAdminPrizes() {
-            const res = await fetch('/api/admin?action=prizes', { headers: getHeaders() });
-            const prizes = await res.json();
-            const container = document.getElementById('admin-prizes-list');
-            container.innerHTML = prizes.map(p => `
-                <div class="flex items-center justify-between p-3 bg-gray-50 rounded-xl border border-gray-100">
-                    <div>
-                        <div class="font-bold text-sm">${p.icon} ${p.name}</div>
-                        <div class="text-[10px] text-gray-400">${p.cost} Points</div>
-                    </div>
-                    <button class="text-blue-600 font-bold text-xs">Edit</button>
-                </div>
-            `).join('');
-        }
-
-        function openNewPrizeModal() {
-            document.getElementById('prize-id').value = "";
-            document.getElementById('prize-name').value = "";
-            document.getElementById('prize-cost').value = "";
-            document.getElementById('prize-icon').value = "🎁";
-            document.getElementById('prize-modal').classList.remove('hidden');
-        }
-
-        async function savePrize() {
-            const payload = {
-                id: document.getElementById('prize-id').value,
-                name: document.getElementById('prize-name').value,
-                cost: parseInt(document.getElementById('prize-cost').value),
-                icon: document.getElementById('prize-icon').value,
-                active: true
-            };
-            const res = await fetch('/api/admin?action=prizes', {
-                method: 'POST',
-                headers: getHeaders(),
-                body: JSON.stringify(payload)
-            });
-            if (res.ok) {
-                document.getElementById('prize-modal').classList.add('hidden');
-                loadAdminPrizes();
-            }
-        }
-
-        // --- SUBMISSIONS ---
-        async function loadSubmissions() {
-            const res = await fetch('/api/admin?action=customer_quest_submissions', { headers: getHeaders() });
-            const subs = await res.json();
-            const tbody = document.getElementById('submissionTable');
-            tbody.innerHTML = (subs || []).map(s => `
-                <tr>
-                    <td class="p-4">
-                        <div class="font-bold text-sm">${s.customers.name}</div>
-                        <div class="text-[10px] text-gray-400">${s.customers.phone}</div>
-                    </td>
-                    <td class="p-4 text-sm">${s.quests.title}</td>
-                    <td class="p-4">
-                        <button onclick="window.open('${s.proof_url}', '_blank')" class="text-blue-600 text-xs font-bold underline">View Proof</button>
-                    </td>
-                    <td class="p-4 text-right">
-                        <button onclick="approveSubmission('${s.id}')" class="bg-green-600 text-white px-3 py-1 rounded text-xs font-bold">Approve</button>
-                    </td>
-                </tr>
-            `).join('');
-        }
-
-        async function approveSubmission(id) {
-            if (!confirm("Approve this mission and pay reward?")) return;
-            const res = await fetch('/api/admin?action=approve_quest', {
-                method: 'POST',
-                headers: getHeaders(),
-                body: JSON.stringify({ submissionId: id, adminId: staffUser.id })
-            });
-            if (res.ok) {
-                alert("Quest approved and reward sent!");
-                loadSubmissions();
-            }
-        }
         async function loadInventory() {
             logDebug("Starting loadInventory fetch...");
             try {
@@ -2046,8 +1916,9 @@
                 const leads = Array.isArray(data) ? data : [];
                 document.getElementById('totalLeads').innerText = leads.length;
                 document.getElementById('totalPhotos').innerText = leads.filter(d => d.image).length;
-                // Total Founders is undefined in the old code if no length, removing for safety since it wasn't in original UI either way
-                // document.getElementById('totalFounders').innerText = data.filter(d => d.tags && d.tags.includes('founder_launch')).length;
+                
+                // NEW: Load Inventory and Tasks for Dashboard
+                loadDashboardExtras();
 
                 const tbody = document.getElementById('leadsTable');
                 if (tbody) {
@@ -2507,7 +2378,106 @@
     </div>
 </div>
 
+</script>
+
+<!-- ADMIN TASK MODAL -->
+<div id="task-modal" class="hidden fixed inset-0 bg-dark/90 backdrop-blur-sm z-[200] flex items-center justify-center p-6">
+    <div class="bg-white w-full max-w-sm rounded-[2.5rem] p-8 space-y-6 shadow-2xl">
+        <div class="text-center">
+            <h3 class="text-2xl font-black text-dark uppercase tracking-tight">New Admin Task</h3>
+            <p class="text-gray-500 font-medium text-sm">What needs to be done?</p>
+        </div>
+        <div class="space-y-4">
+            <input type="text" id="task-input" placeholder="e.g. Call the internet provider..." class="w-full bg-gray-50 border-2 border-gray-100 rounded-2xl p-4 text-dark font-bold focus:border-blue-500 outline-none transition-all">
+            <select id="task-priority" class="w-full bg-gray-50 border-2 border-gray-100 rounded-2xl p-4 text-dark font-bold focus:border-blue-500 outline-none transition-all appearance-none">
+                <option value="low">Low Priority</option>
+                <option value="med" selected>Medium Priority</option>
+                <option value="high">Urgent</option>
+            </select>
+        </div>
+        <div class="grid grid-cols-1 gap-3">
+            <button onclick="saveTask()" class="w-full py-5 bg-blue-600 text-white font-black rounded-2xl shadow-xl active:scale-95 transition-all uppercase tracking-widest text-xs">Add to Board</button>
+            <button onclick="closeTaskModal()" class="w-full py-4 text-gray-400 font-bold rounded-2xl text-xs uppercase">Cancel</button>
+        </div>
+    </div>
+</div>
+
 <script>
+    async function loadDashboardExtras() {
+        try {
+            // 1. Load Critical Inventory
+            const res = await fetch('/api/admin?action=inventory', { headers: getHeaders() });
+            const inventory = await res.json();
+            const criticalContainer = document.getElementById('inventory-critical-container');
+
+            const lowStock = inventory.filter(i => parseFloat(i.current_stock) <= parseFloat(i.min_stock));
+            if (lowStock.length > 0) {
+                criticalContainer.innerHTML = lowStock.map(i => `
+                    <div class="flex items-center justify-between p-4 bg-red-50 rounded-2xl border border-red-100">
+                        <div>
+                            <p class="text-[10px] font-black text-red-400 uppercase tracking-widest">${i.name}</p>
+                            <p class="text-sm font-bold text-red-700">${parseFloat(i.current_stock).toFixed(1)} ${i.unit} restando</p>
+                        </div>
+                        <div class="w-8 h-8 bg-red-100 text-red-600 rounded-full flex items-center justify-center text-xs">
+                            <i class="fas fa-exclamation-triangle"></i>
+                        </div>
+                    </div>
+                `).join('');
+            } else {
+                criticalContainer.innerHTML = '<p class="text-center text-gray-400 italic py-6 text-sm">Stock levels are healthy.</p>';
+            }
+
+            // 2. Load Tasks
+            renderTasks();
+        } catch (e) { console.error("Dashboard Extras Error:", e); }
+    }
+
+    function renderTasks() {
+        const tasksContainer = document.getElementById('admin-tasks-container');
+        const tasks = JSON.parse(localStorage.getItem('ra_admin_tasks') || '[]');
+
+        if (tasks.length === 0) {
+            tasksContainer.innerHTML = '<p class="text-center text-gray-400 italic py-6 text-sm">No pending tasks for the admin.</p>';
+            return;
+        }
+
+        tasksContainer.innerHTML = tasks.map((t, idx) => `
+            <div class="flex items-center justify-between p-4 bg-gray-50 rounded-2xl border border-gray-100 group">
+                <div class="flex items-center gap-3">
+                    <div class="w-2 h-2 rounded-full ${t.priority === 'high' ? 'bg-red-500' : (t.priority === 'med' ? 'bg-yellow-500' : 'bg-blue-500')}"></div>
+                    <p class="text-sm font-bold text-dark">${escapeHtml(t.text)}</p>
+                </div>
+                <button onclick="completeTask(${idx})" class="text-gray-300 hover:text-green-500 transition-colors">
+                    <i class="fas fa-check-circle"></i>
+                </button>
+            </div>
+        `).join('');
+    }
+
+    function openTaskModal() { document.getElementById('task-modal').classList.remove('hidden'); }
+    function closeTaskModal() { document.getElementById('task-modal').classList.add('hidden'); }
+
+    function saveTask() {
+        const text = document.getElementById('task-input').value;
+        const priority = document.getElementById('task-priority').value;
+        if (!text) return;
+
+        const tasks = JSON.parse(localStorage.getItem('ra_admin_tasks') || '[]');
+        tasks.push({ text, priority, created_at: new Date().toISOString() });
+        localStorage.setItem('ra_admin_tasks', JSON.stringify(tasks));
+
+        document.getElementById('task-input').value = '';
+        closeTaskModal();
+        renderTasks();
+    }
+
+    function completeTask(idx) {
+        const tasks = JSON.parse(localStorage.getItem('ra_admin_tasks') || '[]');
+        tasks.splice(idx, 1);
+        localStorage.setItem('ra_admin_tasks', JSON.stringify(tasks));
+        renderTasks();
+    }
+
     // Init
     window.addEventListener('DOMContentLoaded', () => {
         logDebug("System boot: OK");
@@ -2517,3 +2487,4 @@
 </script>
 </body>
 </html>
+

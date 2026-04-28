@@ -874,50 +874,6 @@ module.exports = async function handler(req, res) {
             return res.json({ success: true, customer: updated });
         }
 
-        // PRIZES & REDEMPTION
-        if (action === 'get_prizes' && req.method === 'GET') {
-            const { data, error } = await supabase.from('prizes').select('*').eq('active', true).order('cost', { ascending: true });
-            if (error) throw error;
-            return res.json(data);
-        }
-
-        if (action === 'redeem_points' && req.method === 'POST') {
-            const { customerId, prizeId, cost } = req.body;
-            if (!customerId || !prizeId || !cost) return res.status(400).json({ error: "Missing data" });
-
-            const { data: customer, error: cErr } = await supabase.from('customers').select('points, name').eq('id', customerId).single();
-            if (cErr || !customer) return res.status(404).json({ error: "Customer not found" });
-
-            if (customer.points < cost) return res.status(400).json({ error: "Puntos insuficientes" });
-
-            // Atomic update: Deduct points
-            const { error: upErr } = await supabase.from('customers').update({ 
-                points: customer.points - cost 
-            }).eq('id', customerId);
-
-            if (upErr) throw upErr;
-
-            // Log redemption
-            const { data: redemption, error: rErr } = await supabase.from('redemptions').insert({
-                customer_id: customerId,
-                prize_id: prizeId,
-                cost_points: cost,
-                status: 'pending' // Pending pickup/fulfillment
-            }).select().single();
-
-            if (rErr) throw rErr;
-
-            // Log to balance history (even if points aren't cash, we track the 'transaction')
-            await supabase.from('balance_history').insert({
-                customer_id: customerId,
-                type: 'redemption',
-                amount: -cost,
-                notes: `Canje de Premio ID: ${prizeId}`
-            });
-
-            return res.json({ success: true, redemption });
-        }
-
         return res.status(404).json({ error: 'Action not found' });
 
     } catch (e) {

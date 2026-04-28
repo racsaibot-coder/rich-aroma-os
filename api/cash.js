@@ -117,7 +117,7 @@ export default async function handler(req, res) {
     }
     
     if (action === 'close-shift' && req.method === 'POST') {
-        const { shiftId, closingAmount, notes } = req.body;
+        const { shiftId, closingAmount, declaredCard, declaredTransfer, notes } = req.body;
         
         if (!shiftId) return res.status(400).json({ error: 'Shift ID missing' });
 
@@ -136,9 +136,6 @@ export default async function handler(req, res) {
             .gte('created_at', shift.opened_at)
             .not('status', 'eq', 'cancelled');
             
-        // CRITICAL FIX: Only include orders that BELONG to this shift ID 
-        // OR are "Floating" (null shift_id) but happened during this shift's time.
-        // This prevents today's 4pm shift from including orders from the 8am shift.
         const shiftOrders = (orders || []).filter(o => o.shift_id === shiftId || !o.shift_id);
 
         const cashSales = (shiftOrders || []).reduce((sum, o) => {
@@ -147,6 +144,24 @@ export default async function handler(req, res) {
             const otherPaid = total - ricoPaid;
             const method = o.secondary_payment_method || o.payment_method;
             if (method === 'cash') return sum + otherPaid;
+            return sum;
+        }, 0);
+
+        const cardSales = (shiftOrders || []).reduce((sum, o) => {
+            const total = parseFloat(o.total) || 0;
+            const ricoPaid = parseFloat(o.rico_amount_paid) || 0;
+            const otherPaid = total - ricoPaid;
+            const method = o.secondary_payment_method || o.payment_method;
+            if (method === 'card') return sum + otherPaid;
+            return sum;
+        }, 0);
+
+        const transferSales = (shiftOrders || []).reduce((sum, o) => {
+            const total = parseFloat(o.total) || 0;
+            const ricoPaid = parseFloat(o.rico_amount_paid) || 0;
+            const otherPaid = total - ricoPaid;
+            const method = o.secondary_payment_method || o.payment_method;
+            if (method === 'transfer') return sum + otherPaid;
             return sum;
         }, 0);
         
@@ -169,6 +184,9 @@ export default async function handler(req, res) {
         const expected = opening + cashSales - payouts - drops;
         const declared = parseFloat(closingAmount) || 0;
         const diff = declared - expected;
+
+        const declared_card = parseFloat(declaredCard) || 0;
+        const declared_transfer = parseFloat(declaredTransfer) || 0;
         
         const { data: updated, error: closeErr } = await supabase
             .from('cash_shifts')
@@ -178,6 +196,8 @@ export default async function handler(req, res) {
                 closing_amount_declared: declared,
                 expected_amount: expected,
                 discrepancy: diff,
+                declared_card: declared_card,
+                declared_transfer: declared_transfer,
                 notes: notes
             })
             .eq('id', shiftId)
@@ -196,7 +216,14 @@ export default async function handler(req, res) {
                 discrepancy: diff,
                 sales: {
                     cash: cashSales,
+                    card: cardSales,
+                    transfer: transferSales,
                     rico_balance: 0 
+                },
+                declared: {
+                    cash: declared,
+                    card: declared_card,
+                    transfer: declared_transfer
                 },
                 order_count: orders?.length || 0
             }

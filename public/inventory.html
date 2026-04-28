@@ -1,179 +1,181 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="es">
 <head>
     <link rel="icon" type="image/png" href="/favicon.png">    <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>📦 Inventory - Rich Aroma</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
-    <style>
-        :root {
-            --dark-bg: #0f0d0b;
-            --card-bg: #1a1714;
-            --caramel: #D4A574;
-            --cream: #F5EDE4;
-            --success: #22c55e;
-            --warning: #eab308;
-            --danger: #ef4444;
+    <title>Inventario | Rich Aroma OS</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: { gold: '#C9A66B', dark: '#120C09', success: '#10B981' }
+                }
+            }
         }
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body {
-            font-family: 'Inter', sans-serif;
-            background: var(--dark-bg);
-            color: var(--cream);
-            min-height: 100vh;
-            padding: 20px;
-        }
-        .header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 20px;
-        }
-        .title { font-size: 1.5rem; color: var(--caramel); }
-        .search {
-            padding: 10px 15px;
-            background: var(--card-bg);
-            border: 1px solid #333;
-            border-radius: 10px;
-            color: var(--cream);
-            font-size: 1rem;
-        }
-        .categories {
-            display: flex;
-            gap: 10px;
-            margin-bottom: 20px;
-            overflow-x: auto;
-            padding-bottom: 10px;
-        }
-        .cat-btn {
-            padding: 10px 20px;
-            background: var(--card-bg);
-            border: none;
-            border-radius: 10px;
-            color: var(--cream);
-            cursor: pointer;
-            white-space: nowrap;
-        }
-        .cat-btn.active {
-            background: var(--caramel);
-            color: #000;
-        }
-        .items {
-            display: grid;
-            gap: 10px;
-        }
-        .item {
-            background: var(--card-bg);
-            border-radius: 15px;
-            padding: 15px;
-            display: flex;
-            align-items: center;
-            gap: 15px;
-        }
-        .item-icon { font-size: 2rem; }
-        .item-info { flex: 1; }
-        .item-name { font-weight: 600; }
-        .item-unit { font-size: 0.85rem; color: #888; }
-        .item-stock {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-        .stock-level {
-            padding: 8px 15px;
-            border-radius: 10px;
-            font-weight: 600;
-        }
-        .stock-ok { background: var(--success); color: #000; }
-        .stock-low { background: var(--warning); color: #000; }
-        .stock-out { background: var(--danger); color: #fff; }
-        .stock-btn {
-            width: 35px;
-            height: 35px;
-            border: none;
-            border-radius: 8px;
-            background: #333;
-            color: var(--cream);
-            font-size: 1.2rem;
-            cursor: pointer;
-        }
-    </style>
+    </script>
 </head>
-<body>
-    <div class="header">
-        <div class="title">📦 Inventory</div>
-        <input type="text" class="search" placeholder="🔍 Search..." id="search">
-    </div>
+<body class="bg-gray-50 min-h-screen pb-24">
+    <header class="bg-dark text-white p-6 shadow-xl sticky top-0 z-50">
+        <div class="max-w-4xl mx-auto flex justify-between items-center">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 bg-gold/20 rounded-xl flex items-center justify-center text-gold border border-gold/30">
+                    <i class="fas fa-boxes"></i>
+                </div>
+                <div>
+                    <h1 class="text-xl font-black tracking-tight uppercase">Control de Inventario</h1>
+                    <p class="text-[10px] text-white/40 font-bold uppercase tracking-widest" id="sync-status">Sincronizando...</p>
+                </div>
+            </div>
+            <button onclick="loadInventory()" class="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center hover:bg-white/10 transition-all">
+                <i class="fas fa-sync-alt"></i>
+            </button>
+        </div>
+    </header>
 
-    <div class="categories">
-        <button class="cat-btn active" onclick="filterCat('all')">All</button>
-        <button class="cat-btn" onclick="filterCat('coffee')">☕ Coffee</button>
-        <button class="cat-btn" onclick="filterCat('milk')">🥛 Milk</button>
-        <button class="cat-btn" onclick="filterCat('syrups')">🍯 Syrups</button>
-        <button class="cat-btn" onclick="filterCat('food')">🥐 Food</button>
-        <button class="cat-btn" onclick="filterCat('cups')">🥤 Cups</button>
-    </div>
+    <main class="max-w-4xl mx-auto p-6">
+        <div class="bg-white rounded-[2.5rem] shadow-sm border border-gray-100 overflow-hidden">
+            <div class="p-6 bg-gray-50 border-b border-gray-100 flex justify-between items-center">
+                <h2 class="text-xs font-black uppercase tracking-widest text-gray-400">Ingredientes y Suministros</h2>
+                <span class="bg-blue-100 text-blue-600 text-[10px] font-black px-3 py-1 rounded-full uppercase" id="item-count">0 Items</span>
+            </div>
+            <div class="divide-y divide-gray-100" id="inventory-list">
+                <!-- Data injected via JS -->
+                <div class="p-12 text-center text-gray-400 italic">Cargando existencias...</div>
+            </div>
+        </div>
+    </main>
 
-    <div class="items" id="items"></div>
+    <!-- Stock Adjust Modal -->
+    <div id="adjust-modal" class="hidden fixed inset-0 bg-dark/90 backdrop-blur-sm z-[100] flex items-center justify-center p-6">
+        <div class="bg-white w-full max-w-sm rounded-[2.5rem] p-8 space-y-6 shadow-2xl text-center">
+            <div id="adjust-icon" class="w-20 h-20 bg-gold/10 text-gold rounded-full flex items-center justify-center mx-auto text-3xl mb-4">
+                <i class="fas fa-box-open"></i>
+            </div>
+            <div>
+                <h3 id="adjust-name" class="text-2xl font-black text-dark uppercase tracking-tight">---</h3>
+                <p id="adjust-unit" class="text-gray-400 font-bold text-[10px] uppercase tracking-widest">---</p>
+            </div>
+            
+            <div class="flex items-center justify-center gap-6 py-4">
+                <button onclick="step(-1)" class="w-16 h-16 rounded-2xl bg-gray-100 text-gray-400 text-2xl font-black hover:bg-gray-200 active:scale-95 transition-all">−</button>
+                <input type="number" id="adjust-val" class="w-24 text-center text-4xl font-black text-dark outline-none bg-transparent" value="0">
+                <button onclick="step(1)" class="w-16 h-16 rounded-2xl bg-gray-100 text-gray-900 text-2xl font-black hover:bg-gray-200 active:scale-95 transition-all">+</button>
+            </div>
+
+            <div class="grid grid-cols-1 gap-3">
+                <button onclick="saveAdjustment()" class="w-full py-5 bg-dark text-white font-black rounded-2xl shadow-xl active:scale-95 transition-all uppercase tracking-widest text-xs">Actualizar Stock</button>
+                <button onclick="closeModal()" class="w-full py-4 text-gray-400 font-bold rounded-2xl text-xs uppercase">Cancelar</button>
+            </div>
+        </div>
+    </div>
 
     <script>
-        let inventory = JSON.parse(localStorage.getItem('inventory') || 'null') || [
-            { id: 1, name: 'Espresso Beans', unit: 'kg', stock: 5, min: 2, cat: 'coffee', icon: '☕' },
-            { id: 2, name: 'Whole Milk', unit: 'L', stock: 12, min: 5, cat: 'milk', icon: '🥛' },
-            { id: 3, name: 'Oat Milk', unit: 'L', stock: 4, min: 3, cat: 'milk', icon: '🌾' },
-            { id: 4, name: 'Almond Milk', unit: 'L', stock: 2, min: 3, cat: 'milk', icon: '🥜' },
-            { id: 5, name: 'Vanilla Syrup', unit: 'bottles', stock: 3, min: 2, cat: 'syrups', icon: '🍯' },
-            { id: 6, name: 'Caramel Syrup', unit: 'bottles', stock: 1, min: 2, cat: 'syrups', icon: '🍯' },
-            { id: 7, name: 'Croissants', unit: 'pcs', stock: 15, min: 10, cat: 'food', icon: '🥐' },
-            { id: 8, name: 'Muffins', unit: 'pcs', stock: 8, min: 6, cat: 'food', icon: '🧁' },
-            { id: 9, name: 'Small Cups', unit: 'pcs', stock: 150, min: 50, cat: 'cups', icon: '🥤' },
-            { id: 10, name: 'Large Cups', unit: 'pcs', stock: 80, min: 50, cat: 'cups', icon: '🥤' },
-        ];
+        let inventory = [];
+        let currentItem = null;
+        const ADMIN_PIN = localStorage.getItem('ra_admin_pin') || '';
 
-        let currentCat = 'all';
-
-        function save() {
-            localStorage.setItem('inventory', JSON.stringify(inventory));
+        async function loadInventory() {
+            document.getElementById('sync-status').innerText = "Sincronizando...";
+            try {
+                const res = await fetch('/api/admin?action=inventory', {
+                    headers: { 'Authorization': `Bearer ${ADMIN_PIN}` }
+                });
+                inventory = await res.json();
+                render();
+                document.getElementById('sync-status').innerText = "Actualizado: " + new Date().toLocaleTimeString();
+            } catch (e) {
+                console.error(e);
+                document.getElementById('sync-status').innerText = "Error de Conexión";
+            }
         }
 
         function render() {
-            const items = inventory.filter(i => currentCat === 'all' || i.cat === currentCat);
-            document.getElementById('items').innerHTML = items.map(item => {
-                const level = item.stock <= 0 ? 'out' : item.stock <= item.min ? 'low' : 'ok';
+            const list = document.getElementById('inventory-list');
+            document.getElementById('item-count').innerText = `${inventory.length} Items`;
+            
+            if (inventory.length === 0) {
+                list.innerHTML = '<div class="p-12 text-center text-gray-400 italic text-sm">No hay ingredientes registrados.</div>';
+                return;
+            }
+
+            list.innerHTML = inventory.map(item => {
+                const isLow = parseFloat(item.current_stock) <= parseFloat(item.min_stock);
                 return `
-                    <div class="item">
-                        <div class="item-icon">${item.icon}</div>
-                        <div class="item-info">
-                            <div class="item-name">${item.name}</div>
-                            <div class="item-unit">${item.unit} • Min: ${item.min}</div>
+                    <div class="p-6 flex justify-between items-center hover:bg-gray-50 transition-colors" onclick="openAdjust('${item.id}')">
+                        <div class="flex items-center gap-4">
+                            <div class="w-12 h-12 rounded-xl bg-gray-100 flex items-center justify-center text-gray-400">
+                                <i class="fas ${getIcon(item.name)}"></i>
+                            </div>
+                            <div>
+                                <h4 class="font-bold text-dark uppercase text-sm leading-tight">${item.name}</h4>
+                                <p class="text-[10px] text-gray-400 font-bold uppercase tracking-widest">Min: ${item.min_stock} ${item.unit}</p>
+                            </div>
                         </div>
-                        <div class="item-stock">
-                            <button class="stock-btn" onclick="adjust(${item.id}, -1)">−</button>
-                            <div class="stock-level stock-${level}">${item.stock}</div>
-                            <button class="stock-btn" onclick="adjust(${item.id}, 1)">+</button>
+                        <div class="text-right">
+                            <p class="text-lg font-black ${isLow ? 'text-red-500' : 'text-dark'}">${parseFloat(item.current_stock).toFixed(1)}</p>
+                            <p class="text-[8px] font-black text-gray-300 uppercase tracking-[0.2em]">${item.unit}</p>
                         </div>
                     </div>
                 `;
             }).join('');
         }
 
-        function filterCat(cat) {
-            currentCat = cat;
-            document.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('active'));
-            event.target.classList.add('active');
-            render();
+        function getIcon(name) {
+            const n = name.toLowerCase();
+            if (n.includes('leche') || n.includes('milk')) return 'fa-glass-whiskey';
+            if (n.includes('café') || n.includes('coffee')) return 'fa-coffee';
+            if (n.includes('vaso') || n.includes('cup')) return 'fa-wine-glass-alt';
+            if (n.includes('sirope') || n.includes('syrup')) return 'fa-vial';
+            if (n.includes('croissant') || n.includes('pan')) return 'fa-bread-slice';
+            return 'fa-box';
         }
 
-        function adjust(id, delta) {
-            const item = inventory.find(i => i.id === id);
-            if (item) {
-                item.stock = Math.max(0, item.stock + delta);
-                save();
-                render();
-            }
+        function openAdjust(id) {
+            currentItem = inventory.find(i => i.id === id);
+            if (!currentItem) return;
+            
+            document.getElementById('adjust-name').innerText = currentItem.name;
+            document.getElementById('adjust-unit').innerText = currentItem.unit;
+            document.getElementById('adjust-val').value = parseFloat(currentItem.current_stock).toFixed(1);
+            document.getElementById('adjust-modal').classList.remove('hidden');
         }
 
-        render();
+        function step(delta) {
+            const input = document.getElementById('adjust-val');
+            input.value = (parseFloat(input.value) + delta).toFixed(1);
+        }
+
+        function closeModal() {
+            document.getElementById('adjust-modal').classList.add('hidden');
+        }
+
+        async function saveAdjustment() {
+            const newVal = parseFloat(document.getElementById('adjust-val').value);
+            const payload = { ...currentItem, current_stock: newVal };
+
+            try {
+                const res = await fetch('/api/admin?action=inventory_update', {
+                    method: 'POST',
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${ADMIN_PIN}`
+                    },
+                    body: JSON.stringify(payload)
+                });
+                
+                if (res.ok) {
+                    closeModal();
+                    loadInventory();
+                } else {
+                    alert("Error al actualizar");
+                }
+            } catch (e) { console.error(e); }
+        }
+
+        // Init
+        window.onload = loadInventory;
     </script>
 </body>
 </html>

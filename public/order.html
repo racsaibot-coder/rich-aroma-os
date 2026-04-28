@@ -88,7 +88,7 @@
             <div>
                 <div class="flex items-center gap-2">
                     <h1 class="font-display text-lg text-gold font-bold tracking-tight uppercase leading-none">Rich Aroma</h1>
-                    <span class="text-[7px] bg-gold/10 text-gold/40 px-1.5 py-0.5 rounded-full border border-gold/10">v2.6.2</span>
+                    <span class="text-[7px] bg-gold/10 text-gold/40 px-1.5 py-0.5 rounded-full border border-gold/10">v2.6.3</span>
                 </div>
                 <div class="flex items-center gap-2 mt-1">
                     <p id="store-status-text" class="text-[9px] text-white/30 tracking-[0.2em] uppercase">Cargando...</p>
@@ -449,7 +449,7 @@
                         <i class="fas fa-mug-hot text-xl"></i>
                         <span class="text-[9px] font-black uppercase">En Mesa</span>
                     </button>
-                    <button onclick="setFulfill('delivery')" id="fbtn-delivery" class="p-4 rounded-2xl border transition-all text-center space-y-2 flex flex-col items-center opacity-40 grayscale pointer-events-none">
+                    <button onclick="setFulfill('delivery')" id="fbtn-delivery" class="p-4 rounded-2xl border transition-all text-center space-y-2 flex flex-col items-center">
                         <i class="fas fa-motorcycle text-xl"></i>
                         <span class="text-[9px] font-black uppercase">A Domicilio</span>
                     </button>
@@ -466,20 +466,46 @@
                     </select>
                     <input type="tel" id="check-phone" placeholder="WhatsApp (Opcional)" class="flex-1 bg-white/5 border border-white/10 p-5 rounded-[1.5rem] text-white outline-none focus:border-gold">
                 </div>
+                <!-- Address field for delivery -->
+                <div id="check-address-ui" class="hidden animate-in slide-in-from-top-2 duration-300">
+                    <textarea id="check-address" placeholder="Dirección de Entrega (Referencia, Casa, Color...)" class="w-full bg-white/5 border border-white/10 p-5 rounded-[1.5rem] text-white outline-none focus:border-gold min-h-[100px]"></textarea>
+                </div>
             </div>
 
-            <div id="check-payment-ui" class="hidden space-y-4">
+            <div id="check-payment-ui" class="space-y-4">
                 <p class="text-[10px] font-black text-gold uppercase tracking-[0.3em]">Método de Pago</p>
-                <div class="grid grid-cols-2 gap-3">
-                    <button onclick="window.setPayment('cash')" id="pbtn-cash" class="p-5 rounded-2xl border flex flex-col gap-2 transition-all">
-                        <i class="fas fa-money-bill-wave"></i>
-                        <span class="text-[10px] font-black uppercase">Efectivo / POS</span>
+                <div class="grid grid-cols-3 gap-2">
+                    <button onclick="window.setPayment('cash')" id="pbtn-cash" class="p-4 rounded-2xl border flex flex-col items-center justify-center gap-2 transition-all">
+                        <i class="fas fa-money-bill-wave text-lg"></i>
+                        <span class="text-[8px] font-black uppercase text-center">Efectivo / POS</span>
                     </button>
-                    <button onclick="window.setPayment('rico_balance')" id="pbtn-rico" class="p-5 rounded-2xl border flex flex-col gap-2 transition-all relative overflow-hidden">
-                        <i class="fas fa-wallet text-gold"></i>
-                        <span class="text-[10px] font-black uppercase">Rico Cash</span>
-                        <p id="check-rico-val" class="text-[8px] font-mono text-gold/60 mt-auto">L 0.00</p>
+                    <button onclick="window.setPayment('transfer')" id="pbtn-transfer" class="p-4 rounded-2xl border flex flex-col items-center justify-center gap-2 transition-all">
+                        <i class="fas fa-university text-lg"></i>
+                        <span class="text-[8px] font-black uppercase text-center">Transferencia</span>
                     </button>
+                    <button onclick="window.setPayment('rico_balance')" id="pbtn-rico" class="p-4 rounded-2xl border flex flex-col items-center justify-center gap-2 transition-all relative overflow-hidden opacity-40 grayscale pointer-events-none">
+                        <i class="fas fa-wallet text-gold text-lg"></i>
+                        <span class="text-[8px] font-black uppercase text-center">Rico Cash</span>
+                        <p id="check-rico-val" class="text-[7px] font-mono text-gold/60 mt-auto">L 0.00</p>
+                    </button>
+                </div>
+                <!-- Bank info for transfer -->
+                <div id="check-bank-ui" class="hidden p-6 bg-gold/5 border border-gold/10 rounded-[2rem] space-y-4 animate-in slide-in-from-top-2 duration-300">
+                    <div class="flex items-center gap-3">
+                        <div class="w-8 h-8 rounded-full bg-gold/20 flex items-center justify-center text-gold"><i class="fas fa-university text-xs"></i></div>
+                        <p class="text-[10px] font-black text-gold uppercase tracking-widest">Cuentas Bancarias</p>
+                    </div>
+                    <div class="grid grid-cols-1 gap-2">
+                        <div class="flex justify-between items-center p-3 bg-black/20 rounded-xl border border-white/5">
+                            <div><p class="text-[8px] font-black text-white/40 uppercase">BAC Honduras</p><p class="text-xs font-mono font-bold text-white">756132311</p></div>
+                            <button onclick="copyBank('bac')" class="text-gold hover:text-white transition-colors"><i class="far fa-copy"></i></button>
+                        </div>
+                        <div class="flex justify-between items-center p-3 bg-black/20 rounded-xl border border-white/5">
+                            <div><p class="text-[8px] font-black text-white/40 uppercase">Banco Occidente</p><p class="text-xs font-mono font-bold text-white">210850188679</p></div>
+                            <button onclick="copyBank('occ')" class="text-gold hover:text-white transition-colors"><i class="far fa-copy"></i></button>
+                        </div>
+                    </div>
+                    <p class="text-[9px] text-white/30 font-bold uppercase tracking-tight text-center">Envía tu comprobante por WhatsApp después de confirmar.</p>
                 </div>
             </div>
 
@@ -689,11 +715,16 @@
                 syncUser();
             }
 
-            window.openModifier = (id) => {
+            window.openModifier = (id, keepModifiers = false) => {
                 currentI = menu.find(m => m.id === id); if(!currentI) return;
-                currentM = {}; document.getElementById('mod-name').innerText = currentI.name;
+                if (!keepModifiers) {
+                    currentM = {}; 
+                    document.getElementById('mod-qty').innerText = '1';
+                    document.getElementById('mod-note').value = '';
+                }
+                
+                document.getElementById('mod-name').innerText = currentI.name;
                 document.getElementById('mod-price').innerText = `L ${parseFloat(currentI.price).toFixed(0)}`;
-                document.getElementById('mod-qty').innerText = '1';
                 
                 const modImg = document.getElementById('mod-image');
                 if (modImg) {
@@ -708,18 +739,26 @@
                 }
 
                 const container = document.getElementById('mod-options');
-                const groupIds = itemModG.filter(img => img.item_id === id).map(img => img.group_id);
+                // Try table links first, fallback to JSON column
+                let groupIds = itemModG.filter(img => img.item_id === id).map(img => img.group_id);
+                if (groupIds.length === 0 && currentI.modifier_groups) {
+                    groupIds = Array.isArray(currentI.modifier_groups) ? currentI.modifier_groups : [];
+                }
                 
                 container.innerHTML = groupIds.map(gid => {
-                    const g = modG.find(m => m.id === gid); if(!g) return '';
-                    const opts = modO.filter(o => o.group_id === gid);
-                    const def = opts.find(o => o.is_default) || opts[0];
-                    if (g.required && def) currentM[gid] = [def.id];
+                    const g = modG.find(m => m.id == gid); if(!g) return '';
+                    const opts = modO.filter(o => o.group_id == gid);
+                    
+                    // Apply defaults ONLY if we don't already have a selection for this group
+                    if (g.required && (!currentM[gid] || currentM[gid].length === 0)) {
+                        const def = opts.find(o => o.is_default) || opts[0];
+                        if (def) currentM[gid] = [def.id];
+                    }
 
                     return `<div class="space-y-4">
                         <div class="flex justify-between items-center"><h4 class="text-[10px] font-black text-gold uppercase tracking-[0.3em]">${g.name}</h4>${g.required ? '<span class="text-[8px] bg-gold/10 text-gold px-2 py-0.5 rounded-full border border-gold/20 font-black">OBLIGATORIO</span>' : ''}</div>
                         <div class="grid grid-cols-2 gap-3">${opts.map(o => {
-                            const isSel = (currentM[gid]||[]).includes(o.id);
+                            const isSel = (currentM[gid]||[]).some(sid => sid == o.id);
                             return `<button onclick="window.toggleMod('${gid}','${o.id}',${g.max_selections})" class="p-4 rounded-2xl border-2 transition-all text-left space-y-1 ${isSel ? 'border-gold bg-gold/5 text-white' : 'border-white/5 bg-white/5 text-white/40'}">
                                 <p class="text-[10px] font-black uppercase leading-tight">${o.name}</p>
                                 ${parseFloat(o.price_adjustment) > 0 ? `<p class="text-[9px] font-bold text-gold">+ L ${o.price_adjustment}</p>` : ''}
@@ -728,15 +767,27 @@
                     </div>`;
                 }).join('');
 
-                document.getElementById('mod-overlay').classList.remove('hidden');
-                setTimeout(() => { document.getElementById('mod-overlay').style.opacity = '1'; document.getElementById('mod-drawer').classList.add('active'); }, 10);
+                if (!keepModifiers) {
+                    document.getElementById('mod-overlay').classList.remove('hidden');
+                    setTimeout(() => { document.getElementById('mod-overlay').style.opacity = '1'; document.getElementById('mod-drawer').classList.add('active'); }, 10);
+                }
             };
 
             window.toggleMod = (gid, oid, max) => {
-                let sel = currentM[gid] || [];
-                if (sel.includes(oid)) sel = sel.filter(id => id !== oid);
-                else { if (max === 1) sel = [oid]; else if (sel.length < max) sel.push(oid); }
-                currentM[gid] = sel; window.openModifier(currentI.id);
+                let sel = (currentM[gid] || []).map(id => String(id));
+                const sOid = String(oid);
+                
+                if (sel.includes(sOid)) {
+                    // If required and it's the only one, don't allow deselecting
+                    const g = modG.find(m => m.id == gid);
+                    if (g && g.required && sel.length === 1) return;
+                    sel = sel.filter(id => id !== sOid);
+                } else { 
+                    if (max === 1) sel = [sOid]; 
+                    else if (sel.length < max) sel.push(sOid); 
+                }
+                currentM[gid] = sel; 
+                window.openModifier(currentI.id, true);
             };
 
             window.changeQty = (n) => {
@@ -755,7 +806,7 @@
                     let ms = [];
                     for (const gid in currentM) {
                         currentM[gid].forEach(oid => {
-                            const o = modO.find(opt => opt.id === oid);
+                            const o = modO.find(opt => opt.id == oid);
                             if (o) ms.push({ id: o.id, name: o.name, price: o.price_adjustment });
                         });
                     }
@@ -798,11 +849,45 @@
 
             window.setFulfill = (type) => {
                 fulfillment = type;
-                ['pickup', 'dinein'].forEach(t => {
+                deliveryFee = (type === 'delivery') ? 45 : 0;
+                
+                ['pickup', 'dinein', 'delivery'].forEach(t => {
                     const btn = document.getElementById('fbtn-' + t);
-                    if (t === type) { btn.classList.add('btn-gold'); btn.classList.remove('bg-white/5', 'text-white/40', 'border-white/5'); }
-                    else { btn.classList.remove('btn-gold'); btn.classList.add('bg-white/5', 'text-white/40', 'border-white/5'); }
+                    if (!btn) return;
+                    if (t === type) { 
+                        btn.classList.add('border-gold', 'bg-gold/10', 'text-white'); 
+                        btn.classList.remove('bg-white/5', 'text-white/40', 'border-white/5'); 
+                    } else { 
+                        btn.classList.remove('border-gold', 'bg-gold/10', 'text-white'); 
+                        btn.classList.add('bg-white/5', 'text-white/40', 'border-white/5'); 
+                    }
                 });
+
+                const delInfo = document.getElementById('delivery-info');
+                if (delInfo) delInfo.classList.toggle('hidden', type !== 'delivery');
+
+                const addressUi = document.getElementById('check-address-ui');
+                if (addressUi) addressUi.classList.toggle('hidden', type !== 'delivery');
+                
+                document.getElementById('check-total').innerText = 'L ' + (cart.reduce((s,i)=>s+i.finalPrice,0) + deliveryFee).toFixed(2);
+            };
+
+            window.setPayment = (type) => {
+                paymentMethod = type;
+                ['cash', 'transfer', 'rico_balance'].forEach(t => {
+                    const btn = document.getElementById('pbtn-' + t);
+                    if (!btn) return;
+                    if (t === type) { 
+                        btn.classList.add('border-gold', 'bg-gold/10', 'text-white'); 
+                        btn.classList.remove('bg-white/5', 'text-white/40', 'border-white/5'); 
+                    } else { 
+                        btn.classList.remove('border-gold', 'bg-gold/10', 'text-white'); 
+                        btn.classList.add('bg-white/5', 'text-white/40', 'border-white/5'); 
+                    }
+                });
+
+                const bankUi = document.getElementById('check-bank-ui');
+                if (bankUi) bankUi.classList.toggle('hidden', type !== 'transfer');
             };
 
             window.openLogin = () => {
@@ -924,6 +1009,8 @@
                 try {
                     const d = localStorage.getItem('ra_customer_data');
                     const welcome = document.getElementById('guest-welcome');
+                    const ricoBtn = document.getElementById('pbtn-rico');
+                    
                     if (d) {
                         currentCustomer = JSON.parse(d);
                         if (currentCustomer && currentCustomer.name) {
@@ -932,14 +1019,21 @@
                             document.getElementById('user-first-name').innerText = currentCustomer.name.split(' ')[0];
                             document.getElementById('check-name').value = currentCustomer.name;
                             document.getElementById('check-phone').value = currentCustomer.phone.replace('+504','').replace('+1','');
-                            document.getElementById('check-payment-ui').classList.remove('hidden');
-                            document.getElementById('check-rico-val').innerText = 'L ' + (parseFloat(currentCustomer.rico_balance) || 0).toFixed(2);
+                            
+                            if (ricoBtn) {
+                                ricoBtn.classList.remove('opacity-40', 'grayscale', 'pointer-events-none');
+                                document.getElementById('check-rico-val').innerText = 'L ' + (parseFloat(currentCustomer.rico_balance) || 0).toFixed(2);
+                            }
+                            
+                            window.setPayment('cash');
                             if (welcome) welcome.classList.add('hidden');
                         }
                     } else {
                         document.getElementById('user-pill').classList.add('hidden');
                         document.getElementById('login-btn').classList.remove('hidden');
                         if (welcome) welcome.classList.remove('hidden');
+                        if (ricoBtn) ricoBtn.classList.add('opacity-40', 'grayscale', 'pointer-events-none');
+                        window.setPayment('cash');
                     }
                 } catch(e) { console.error("User sync failed", e); }
             }
@@ -1033,10 +1127,14 @@
                 if (isSubmitting) return;
                 const name = document.getElementById('check-name').value.trim();
                 const phone = document.getElementById('check-phone').value.trim();
+                const address = document.getElementById('check-address').value.trim();
+                
                 if (!name) return alert("Por favor ingresa tu nombre");
+                if (fulfillment === 'delivery' && !address) return alert("Por favor ingresa tu dirección para la entrega");
                 
                 isSubmitting = true;
                 const btn = document.getElementById('final-btn');
+                const originalText = btn.innerText;
                 btn.innerText = "PROCESANDO..."; btn.disabled = true;
 
                 const payload = {
@@ -1046,7 +1144,9 @@
                     payment_method: paymentMethod,
                     fulfillment_type: fulfillment,
                     customer_name: name,
-                    customer_phone: phone
+                    customer_phone: phone,
+                    address: fulfillment === 'delivery' ? address : null,
+                    notes: fulfillment === 'delivery' ? `DOMICILIO: ${address}` : ""
                 };
 
                 try {
@@ -1055,7 +1155,12 @@
                     if (!r.ok) throw new Error(saved.error || "Error al enviar");
                     localStorage.setItem('ra_active_order', JSON.stringify(saved));
                     window.location.href = `/order?view=tracking`;
-                } catch(e) { alert(e.message); isSubmitting = false; btn.innerText = "Enviar Pedido"; btn.disabled = false; }
+                } catch(e) { 
+                    alert(e.message); 
+                    isSubmitting = false; 
+                    btn.innerText = originalText; 
+                    btn.disabled = false; 
+                }
             };
 
             window.toggleFavorite = (e, id) => {
