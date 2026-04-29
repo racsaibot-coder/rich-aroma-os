@@ -43,8 +43,8 @@
         .animate-bounce-in { animation: bounce-in 0.6s cubic-bezier(0.34, 1.56, 0.64, 1); }
     </style>
     <script>
-        // AGGRESSIVE CACHE NUKE v2.6.0
-        const CURRENT_VERSION = '2.6.0';
+        // AGGRESSIVE CACHE NUKE v3.0.0
+        const CURRENT_VERSION = '3.0.0';
         if (localStorage.getItem('ra_app_version') !== CURRENT_VERSION) {
             localStorage.setItem('ra_app_version', CURRENT_VERSION);
             console.log("New version detected, nuking cache and reloading...");
@@ -88,7 +88,7 @@
             <div>
                 <div class="flex items-center gap-2">
                     <h1 class="font-display text-lg text-gold font-bold tracking-tight uppercase leading-none">Rich Aroma</h1>
-                    <span class="text-[7px] bg-gold/10 text-gold/40 px-1.5 py-0.5 rounded-full border border-gold/10">v2.6.4</span>
+                    <span class="text-[7px] bg-gold/10 text-gold/40 px-1.5 py-0.5 rounded-full border border-gold/10">v3.0.0</span>
                 </div>
                 <div class="flex items-center gap-2 mt-1">
                     <p id="store-status-text" class="text-[9px] text-white/30 tracking-[0.2em] uppercase">Cargando...</p>
@@ -390,39 +390,44 @@
 
     <!-- MODIFIER DRAWER -->
     <div id="mod-overlay" class="hidden fixed inset-0 bg-black/80 z-[2100] backdrop-blur-sm opacity-0 transition-opacity duration-300" onclick="closeModifier()"></div>
-    <div id="mod-drawer" class="drawer fixed bottom-0 left-0 right-0 z-[2110] bg-dark rounded-t-[3rem] max-h-[92vh] flex flex-col border-t border-white/10 shadow-2xl">
-        <div class="flex justify-between items-center px-6 pt-4 shrink-0">
-            <button onclick="closeModifier()" class="w-12 h-12 rounded-full bg-white/5 flex items-center justify-center text-white/60 text-xl border border-white/5 active:scale-90 transition-all"><i class="fas fa-times"></i></button>
-            <div class="w-12 h-1.5 bg-white/10 rounded-full"></div>
-            <div class="w-12"></div> <!-- Spacer -->
+    <div id="mod-drawer" class="drawer fixed bottom-0 left-0 right-0 z-[2110] bg-dark rounded-t-[3rem] h-[92vh] flex flex-col border-t border-white/10 shadow-2xl">
+        <!-- Compact Header -->
+        <div class="px-6 py-4 flex justify-between items-center shrink-0 border-b border-white/5">
+            <div class="flex items-center gap-4">
+                <div id="mod-image" class="hidden w-16 h-16 shrink-0 rounded-2xl overflow-hidden border border-white/10 shadow-lg bg-charcoal"></div>
+                <div>
+                    <h3 id="mod-name" class="text-lg font-display font-black text-white uppercase leading-none truncate max-w-[180px]">Product Name</h3>
+                    <p id="mod-price" class="text-sm font-black text-gold font-mono mt-1">L 0.00</p>
+                </div>
+            </div>
+            <button onclick="closeModifier()" class="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center text-white/40 border border-white/5"><i class="fas fa-times"></i></button>
         </div>
 
-        <div class="flex-1 overflow-y-auto p-8 pt-4 space-y-8 hide-scrollbar">
-            <div id="mod-image" class="hidden h-56 rounded-[2.5rem] overflow-hidden border border-white/10 shadow-2xl"></div>
-            
-            <div class="space-y-1">
-                <h3 id="mod-name" class="text-3xl font-display font-black text-white italic tracking-tight uppercase">Product Name</h3>
-                <p id="mod-price" class="text-xl font-black text-gold font-mono tracking-tighter">L 0.00</p>
-            </div>
-
-            <div id="mod-options" class="space-y-10 pb-20">
+        <!-- Scrollable Options Area -->
+        <div class="flex-1 overflow-y-auto p-8 pt-6 space-y-10 hide-scrollbar">
+            <div id="mod-options" class="space-y-10">
                 <!-- Modifiers injected here -->
             </div>
-        </div>
 
-        <div class="p-8 border-t border-white/5 space-y-6 shrink-0 bg-dark">
-            <div class="space-y-4">
+            <div class="space-y-4 pt-6 border-t border-white/5">
                 <p class="text-[10px] font-black text-gold uppercase tracking-[0.3em]">Notas Especiales</p>
                 <input type="text" id="mod-note" placeholder="Ej: Sin azúcar, extra hielo..." class="w-full bg-white/5 border border-white/10 p-5 rounded-[1.5rem] text-white outline-none focus:border-gold">
             </div>
+            
+            <div class="h-20"></div> <!-- Buffer -->
+        </div>
 
+        <!-- Sticky Bottom Bar -->
+        <div class="p-8 border-t border-white/5 shrink-0 bg-dark/80 backdrop-blur-md">
             <div class="flex items-center justify-between gap-6">
                 <div class="flex items-center gap-4 bg-white/5 p-2 rounded-2xl border border-white/5">
                     <button onclick="window.changeQty(-1)" class="w-10 h-10 rounded-xl bg-white/5 text-white flex items-center justify-center active:scale-90 transition-all"><i class="fas fa-minus text-xs"></i></button>
                     <span id="mod-qty" class="text-xl font-black text-white w-6 text-center">1</span>
                     <button onclick="window.changeQty(1)" class="w-10 h-10 rounded-xl bg-gold text-dark flex items-center justify-center active:scale-90 transition-all"><i class="fas fa-plus text-xs"></i></button>
                 </div>
-                <button onclick="window.add()" class="flex-1 gold-gradient py-5 rounded-[2rem] font-black text-sm uppercase tracking-widest text-dark shadow-2xl active:scale-95 transition-all">Agregar a Bolsa</button>
+                <button onclick="window.add()" class="flex-1 gold-gradient py-5 rounded-[2rem] font-black text-sm uppercase tracking-widest text-dark shadow-2xl active:scale-95 transition-all">
+                    <span id="add-btn-text">Agregar a Bolsa</span>
+                </button>
             </div>
         </div>
     </div>
@@ -780,13 +785,25 @@
                         ${items.map(i => {
                             const img = optimizeImg(i.image_url || i.image);
                             const isFav = JSON.parse(localStorage.getItem('ra_favorites') || '[]').includes(i.id);
+                            
+                            // Check if it has modifiers
+                            let gids = itemModG.filter(img => img.item_id === i.id).map(img => img.group_id);
+                            if (gids.length === 0 && i.modifier_groups) gids = i.modifier_groups;
+                            const hasMods = gids.length > 0;
+
                             return `<div class="item-card glass p-4 rounded-[2.5rem] space-y-4 relative" onclick="window.openModifier('${i.id}')">
                                 <button onclick="window.toggleFavorite(event, '${i.id}')" class="absolute top-6 right-6 w-8 h-8 rounded-full bg-black/40 backdrop-blur-md flex items-center justify-center text-xs transition-all ${isFav ? 'text-gold' : 'text-white/40'} active:scale-125 z-10">
                                     <i class="${isFav ? 'fas' : 'far'} fa-heart"></i>
                                 </button>
                                 <div class="h-32 bg-charcoal rounded-[2rem] overflow-hidden border border-white/5">${img ? `<img src="${img}" class="w-full h-full object-cover" loading="lazy" decoding="async">` : '<div class="w-full h-full flex items-center justify-center opacity-10"><i class="fas fa-mug-hot text-4xl"></i></div>'}</div>
-                                <div class="space-y-1"><h3 class="text-[11px] font-black uppercase leading-tight line-clamp-2 min-h-[2.2rem]">${i.name}</h3><p class="text-gold font-black text-sm">L ${parseFloat(i.price).toFixed(0)}</p></div>
-                                <button type="button" onclick="event.stopPropagation(); window.openModifier('${i.id}')" class="w-full py-2.5 btn-gold rounded-2xl text-[10px] font-black uppercase shadow-lg active:scale-95 transition-all">+ AGREGAR</button>
+                                <div class="space-y-1">
+                                    <h3 class="text-[11px] font-black uppercase leading-tight line-clamp-2 min-h-[2.2rem]">${i.name}</h3>
+                                    <div class="flex justify-between items-center">
+                                        <p class="text-gold font-black text-sm">L ${parseFloat(i.price).toFixed(0)}</p>
+                                        ${hasMods ? '<span class="text-[7px] font-black text-white/30 uppercase tracking-widest bg-white/5 px-2 py-1 rounded-full border border-white/5">+ Personalizar</span>' : ''}
+                                    </div>
+                                </div>
+                                <button type="button" onclick="event.stopPropagation(); window.openModifier('${i.id}')" class="w-full py-2.5 btn-gold rounded-2xl text-[10px] font-black uppercase shadow-lg active:scale-95 transition-all">${hasMods ? 'CONFIGURAR' : '+ AGREGAR'}</button>
                             </div>`;
                         }).join('')}
                     </div></section>`;
@@ -798,6 +815,20 @@
 
             window.openModifier = (id, keepModifiers = false) => {
                 currentI = menu.find(m => m.id === id); if(!currentI) return;
+                
+                // Try table links first, fallback to JSON column
+                let groupIds = itemModG.filter(img => img.item_id === id).map(img => img.group_id);
+                if (groupIds.length === 0 && currentI.modifier_groups) {
+                    groupIds = Array.isArray(currentI.modifier_groups) ? currentI.modifier_groups : [];
+                }
+
+                // UI IMPROVEMENT: Direct Add if no modifiers
+                if (!keepModifiers && groupIds.length === 0) {
+                    currentM = {};
+                    window.add();
+                    return;
+                }
+
                 if (!keepModifiers) {
                     currentM = {}; 
                     document.getElementById('mod-qty').innerText = '1';
@@ -820,11 +851,6 @@
                 }
 
                 const container = document.getElementById('mod-options');
-                // Try table links first, fallback to JSON column
-                let groupIds = itemModG.filter(img => img.item_id === id).map(img => img.group_id);
-                if (groupIds.length === 0 && currentI.modifier_groups) {
-                    groupIds = Array.isArray(currentI.modifier_groups) ? currentI.modifier_groups : [];
-                }
                 
                 container.innerHTML = groupIds.map(gid => {
                     const g = modG.find(m => m.id == gid); if(!g) return '';
@@ -833,26 +859,69 @@
                     // Apply defaults ONLY if we don't already have a selection for this group
                     if (g.required && (!currentM[gid] || currentM[gid].length === 0)) {
                         const def = opts.find(o => o.is_default) || opts[0];
-                        if (def) currentM[gid] = [def.id];
+                        if (def) currentM[gid] = [String(def.id)];
                     }
 
                     return `<div class="space-y-4">
                         <div class="flex justify-between items-center"><h4 class="text-[10px] font-black text-gold uppercase tracking-[0.3em]">${g.name}</h4>${g.required ? '<span class="text-[8px] bg-gold/10 text-gold px-2 py-0.5 rounded-full border border-gold/20 font-black">OBLIGATORIO</span>' : ''}</div>
                         <div class="grid grid-cols-2 gap-3">${opts.map(o => {
                             const isSel = (currentM[gid]||[]).some(sid => sid == o.id);
-                            return `<button onclick="window.toggleMod('${gid}','${o.id}',${g.max_selections})" class="p-4 rounded-2xl border-2 transition-all text-left space-y-1 ${isSel ? 'border-gold bg-gold/5 text-white' : 'border-white/5 bg-white/5 text-white/40'}">
-                                <p class="text-[10px] font-black uppercase leading-tight">${o.name}</p>
+                            return `<button onclick="window.toggleMod('${gid}','${o.id}',${g.max_selections})" class="p-4 rounded-2xl border-2 transition-all text-left space-y-1 relative ${isSel ? 'border-gold bg-gold/5 text-white' : 'border-white/5 bg-white/5 text-white/40'}">
+                                ${isSel ? '<i class="fas fa-check-circle absolute top-3 right-3 text-gold text-[10px] animate-bounce-in"></i>' : ''}
+                                <p class="text-[10px] font-black uppercase leading-tight pr-4">${o.name}</p>
                                 ${parseFloat(o.price_adjustment) > 0 ? `<p class="text-[9px] font-bold text-gold">+ L ${o.price_adjustment}</p>` : ''}
                             </button>`;
                         }).join('')}</div>
                     </div>`;
                 }).join('');
 
+                // Add scroll hint if there are many modifiers
+                if (groupIds.length > 2) {
+                    container.innerHTML += `<div class="text-center py-4 opacity-30 animate-bounce"><i class="fas fa-chevron-down text-xs"></i><p class="text-[8px] font-black uppercase mt-1">Desliza para más opciones</p></div>`;
+                }
+
+                updateAddButton();
+
                 if (!keepModifiers) {
                     document.getElementById('mod-overlay').classList.remove('hidden');
                     setTimeout(() => { document.getElementById('mod-overlay').style.opacity = '1'; document.getElementById('mod-drawer').classList.add('active'); }, 10);
                 }
             };
+
+            function updateAddButton() {
+                const qty = parseInt(document.getElementById('mod-qty').innerText) || 1;
+                let price = parseFloat(currentI.price) || 0;
+                
+                // 1. Calculate price
+                for (const gid in currentM) {
+                    currentM[gid].forEach(oid => {
+                        const o = modO.find(opt => opt.id == oid);
+                        if (o) price += (parseFloat(o.price_adjustment) || 0);
+                    });
+                }
+                const total = price * qty;
+
+                // 2. Validate required groups
+                let groupIds = itemModG.filter(img => img.item_id === currentI.id).map(img => img.group_id);
+                if (groupIds.length === 0 && currentI.modifier_groups) groupIds = currentI.modifier_groups;
+                
+                let missingRequired = false;
+                groupIds.forEach(gid => {
+                    const g = modG.find(m => m.id == gid);
+                    if (g && g.required && (!currentM[gid] || currentM[gid].length === 0)) {
+                        missingRequired = true;
+                    }
+                });
+
+                const btn = document.getElementById('add-btn-text').parentElement;
+                if (missingRequired) {
+                    document.getElementById('add-btn-text').innerText = "Selecciona opciones";
+                    btn.classList.add('opacity-50', 'pointer-events-none');
+                } else {
+                    document.getElementById('add-btn-text').innerText = `Agregar - L ${total.toFixed(0)}`;
+                    btn.classList.remove('opacity-50', 'pointer-events-none');
+                }
+            }
 
             window.toggleMod = (gid, oid, max) => {
                 let sel = (currentM[gid] || []).map(id => String(id));
@@ -875,6 +944,7 @@
                 const el = document.getElementById('mod-qty');
                 let q = parseInt(el.innerText) + n;
                 if (q < 1) q = 1; el.innerText = q;
+                updateAddButton();
             };
 
             window.add = () => {
