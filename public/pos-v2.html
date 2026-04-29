@@ -568,7 +568,7 @@
 
             const handleConfirm = () => {
                 const val = showInput ? inputEl.value : true;
-                if (showInput && !val) return;
+                if (showInput && (val === null || val === undefined || val === '')) return;
                 cleanup();
                 resolve(val);
             };
@@ -2293,9 +2293,8 @@
             inputPlaceholder: '0.00',
             confirmText: 'Siguiente'
         });
-        if (cash === null || cash === "") return;
-        const amountCash = parseFloat(cash);
-        if (isNaN(amountCash)) return alert("Monto inválido");
+        if (cash === null) return;
+        const amountCash = parseFloat(cash) || 0;
 
         const card = await showUIModal({
             title: 'Cierre de Caja (2/3)',
@@ -2304,9 +2303,8 @@
             inputPlaceholder: '0.00',
             confirmText: 'Siguiente'
         });
-        if (card === null || card === "") return;
-        const amountCard = parseFloat(card);
-        if (isNaN(amountCard)) return alert("Monto inválido");
+        if (card === null) return;
+        const amountCard = parseFloat(card) || 0;
 
         const transfer = await showUIModal({
             title: 'Cierre de Caja (3/3)',
@@ -2315,9 +2313,8 @@
             inputPlaceholder: '0.00',
             confirmText: 'Finalizar Cierre'
         });
-        if (transfer === null || transfer === "") return;
-        const amountTransfer = parseFloat(transfer);
-        if (isNaN(amountTransfer)) return alert("Monto inválido");
+        if (transfer === null) return;
+        const amountTransfer = parseFloat(transfer) || 0;
 
         try {
             const res = await fetch('/api/cash/close-shift', {

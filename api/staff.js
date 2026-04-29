@@ -350,9 +350,9 @@ module.exports = async function handler(req, res) {
                 // Fetch actual expenses
                 const { data: expenses } = await supabase.from('expenses')
                     .select('amount, date')
-                    .gte('date', startOfWeek);
+                    .gte('date', currentWeekStart.split('T')[0]);
 
-                const todayStr = new Date().toISOString().split('T')[0];
+                const todayStr = getHondurasDate();
                 const dayExpenses = (expenses || []).filter(e => e.date === todayStr).reduce((s, e) => s + parseFloat(e.amount || 0), 0);
                 const weekExpenses = (expenses || []).reduce((s, e) => s + parseFloat(e.amount || 0), 0);
 
