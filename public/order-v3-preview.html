@@ -390,32 +390,35 @@
 
     <!-- MODIFIER DRAWER -->
     <div id="mod-overlay" class="hidden fixed inset-0 bg-black/80 z-[2100] backdrop-blur-sm opacity-0 transition-opacity duration-300" onclick="closeModifier()"></div>
-    <div id="mod-drawer" class="drawer fixed bottom-0 left-0 right-0 z-[2110] bg-dark rounded-t-[3rem] max-h-[92vh] flex flex-col border-t border-white/10 shadow-2xl">
-        <div class="flex justify-between items-center px-6 pt-4 shrink-0">
-            <button onclick="closeModifier()" class="w-12 h-12 rounded-full bg-white/5 flex items-center justify-center text-white/60 text-xl border border-white/5 active:scale-90 transition-all"><i class="fas fa-times"></i></button>
-            <div class="w-12 h-1.5 bg-white/10 rounded-full"></div>
-            <div class="w-12"></div> <!-- Spacer -->
+    <div id="mod-drawer" class="drawer fixed bottom-0 left-0 right-0 z-[2110] bg-dark rounded-t-[3rem] h-[92vh] flex flex-col border-t border-white/10 shadow-2xl">
+        <!-- Compact Header -->
+        <div class="px-6 py-4 flex justify-between items-center shrink-0 border-b border-white/5">
+            <div class="flex items-center gap-4">
+                <div id="mod-image" class="hidden w-16 h-16 shrink-0 rounded-2xl overflow-hidden border border-white/10 shadow-lg bg-charcoal"></div>
+                <div>
+                    <h3 id="mod-name" class="text-lg font-display font-black text-white uppercase leading-none truncate max-w-[180px]">Product Name</h3>
+                    <p id="mod-price" class="text-sm font-black text-gold font-mono mt-1">L 0.00</p>
+                </div>
+            </div>
+            <button onclick="closeModifier()" class="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center text-white/40 border border-white/5"><i class="fas fa-times"></i></button>
         </div>
 
-        <div class="flex-1 overflow-y-auto p-8 pt-4 space-y-8 hide-scrollbar">
-            <div id="mod-image" class="hidden h-56 rounded-[2.5rem] overflow-hidden border border-white/10 shadow-2xl"></div>
-            
-            <div class="space-y-1">
-                <h3 id="mod-name" class="text-3xl font-display font-black text-white italic tracking-tight uppercase">Product Name</h3>
-                <p id="mod-price" class="text-xl font-black text-gold font-mono tracking-tighter">L 0.00</p>
-            </div>
-
-            <div id="mod-options" class="space-y-10 pb-20">
+        <!-- Scrollable Options Area -->
+        <div class="flex-1 overflow-y-auto p-8 pt-6 space-y-10 hide-scrollbar">
+            <div id="mod-options" class="space-y-10">
                 <!-- Modifiers injected here -->
             </div>
-        </div>
 
-        <div class="p-8 border-t border-white/5 space-y-6 shrink-0 bg-dark">
-            <div class="space-y-4">
+            <div class="space-y-4 pt-6 border-t border-white/5">
                 <p class="text-[10px] font-black text-gold uppercase tracking-[0.3em]">Notas Especiales</p>
                 <input type="text" id="mod-note" placeholder="Ej: Sin azúcar, extra hielo..." class="w-full bg-white/5 border border-white/10 p-5 rounded-[1.5rem] text-white outline-none focus:border-gold">
             </div>
+            
+            <div class="h-20"></div> <!-- Buffer -->
+        </div>
 
+        <!-- Sticky Bottom Bar -->
+        <div class="p-8 border-t border-white/5 shrink-0 bg-dark/80 backdrop-blur-md">
             <div class="flex items-center justify-between gap-6">
                 <div class="flex items-center gap-4 bg-white/5 p-2 rounded-2xl border border-white/5">
                     <button onclick="window.changeQty(-1)" class="w-10 h-10 rounded-xl bg-white/5 text-white flex items-center justify-center active:scale-90 transition-all"><i class="fas fa-minus text-xs"></i></button>
