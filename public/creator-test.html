@@ -19,22 +19,23 @@
         body { background-color: #120C09; color: white; }
         .glass { background: rgba(255, 255, 255, 0.03); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.05); }
         .creator-card { background: linear-gradient(135deg, rgba(201, 166, 107, 0.1) 0%, rgba(18, 12, 9, 0.8) 100%); border: 1px solid rgba(201, 166, 107, 0.2); }
+        input::placeholder { color: rgba(255,255,255,0.2); }
     </style>
 </head>
 <body class="min-h-screen pb-24">
 
     <!-- Header -->
-    <header class="p-6 flex justify-between items-center border-b border-white/5">
+    <header class="p-6 flex justify-between items-center border-b border-white/5 sticky top-0 bg-dark/80 backdrop-blur-xl z-50">
         <div class="flex items-center gap-3">
             <div class="w-10 h-10 bg-gold/20 rounded-xl flex items-center justify-center text-gold border border-gold/30">
                 <i class="fas fa-camera-retro"></i>
             </div>
             <div>
                 <h1 class="text-lg font-black uppercase tracking-tight">Creator Hub</h1>
-                <p class="text-[9px] text-gold font-bold uppercase tracking-widest">Gana Rico Cash por tu contenido</p>
+                <p class="text-[9px] text-gold font-bold uppercase tracking-widest">v3.2 - Live Social Shopping</p>
             </div>
         </div>
-        <button onclick="window.location.href='/order'" class="text-white/40 text-xs font-bold uppercase tracking-widest hover:text-white transition-colors">Volver</button>
+        <button onclick="window.location.href='/order'" class="text-white/40 text-xs font-bold uppercase tracking-widest hover:text-white transition-colors">Menú</button>
     </header>
 
     <main class="p-6 max-w-md mx-auto space-y-8">
@@ -45,24 +46,37 @@
                 <span class="w-2 h-2 bg-gold rounded-full animate-pulse"></span>
                 <span class="text-[10px] font-black text-gold uppercase tracking-widest">Misión Activa</span>
             </div>
-            <h2 class="text-2xl font-black leading-tight">¡Sube un Reel o TikTok y gana L. 50!</h2>
-            <p class="text-white/40 text-xs leading-relaxed">Publica un video disfrutando de Rich Aroma, etiquétanos y pega el link abajo para reclamar tu premio.</p>
-            
-            <div class="pt-4">
-                <div class="flex justify-center -space-x-3">
-                    <img src="https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=100&h=100&fit=crop" class="w-10 h-10 rounded-full border-2 border-dark object-cover">
-                    <img src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100&h=100&fit=crop" class="w-10 h-10 rounded-full border-2 border-dark object-cover">
-                    <img src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop" class="w-10 h-10 rounded-full border-2 border-dark object-cover">
-                    <div class="w-10 h-10 rounded-full border-2 border-dark bg-charcoal flex items-center justify-center text-[10px] font-black">+12</div>
+            <h2 class="text-2xl font-black leading-tight">¡Gana L. 50 Rico Cash hoy!</h2>
+            <p class="text-white/40 text-xs leading-relaxed px-4">Publica un Reel o TikTok de tu orden, etiquétanos y pega el link abajo.</p>
+        </div>
+
+        <!-- Identify Step (Only if not logged in) -->
+        <div id="login-section" class="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
+            <p class="text-[10px] font-black text-gold uppercase tracking-[0.3em] ml-1">1. Identifica tu Cuenta</p>
+            <div class="glass p-8 rounded-[2.5rem] space-y-6">
+                <div class="space-y-4">
+                    <div class="flex gap-2">
+                        <select id="login-country" class="bg-white/5 border border-white/10 p-4 rounded-2xl text-xs font-bold text-white/40 outline-none">
+                            <option value="+504">+504</option>
+                            <option value="+1">+1</option>
+                        </select>
+                        <input type="tel" id="login-phone" placeholder="9999-9999" class="flex-1 bg-white/5 border border-white/10 p-4 rounded-2xl text-white outline-none focus:border-gold">
+                    </div>
+                    <input type="password" id="login-pin" inputmode="numeric" maxlength="4" placeholder="PIN (4 dígitos)" class="w-full bg-white/5 border border-white/10 p-4 rounded-2xl text-white text-center text-xl tracking-[0.5em] outline-none focus:border-gold">
                 </div>
-                <p class="text-[9px] text-white/20 mt-2 uppercase font-bold tracking-tighter">15 creadores han reclamado hoy</p>
+                <button onclick="verifyAccount()" id="verify-btn" class="w-full bg-gold/20 text-gold border border-gold/30 py-4 rounded-2xl font-black text-xs uppercase tracking-widest active:scale-95 transition-all">Verificar Cuenta</button>
+                <p class="text-[8px] text-center text-white/20 uppercase font-bold">Necesitamos saber a quién enviarle el premio.</p>
             </div>
         </div>
 
-        <!-- Submission Form -->
-        <div class="space-y-6">
+        <!-- Submission Form (Visible only when logged in) -->
+        <div id="submission-section" class="hidden space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+            <div class="flex justify-between items-center ml-1">
+                <p class="text-[10px] font-black text-gold uppercase tracking-[0.3em]">2. Pega el Link del Post</p>
+                <span id="user-display" class="text-[9px] font-black text-white/40 bg-white/5 px-3 py-1 rounded-full uppercase">---</span>
+            </div>
+            
             <div class="space-y-4">
-                <p class="text-[10px] font-black text-gold uppercase tracking-[0.3em]">Pega el Link de tu Post</p>
                 <div class="relative">
                     <input type="text" id="post-link" placeholder="https://www.instagram.com/p/..." class="w-full bg-white/5 border border-white/10 p-5 rounded-[1.5rem] text-white outline-none focus:border-gold pr-12 transition-all">
                     <div class="absolute right-5 top-5 text-white/20">
@@ -82,35 +96,73 @@
             </div>
 
             <button onclick="submitUGC()" id="submit-btn" class="w-full bg-white text-dark py-5 rounded-[2rem] font-black text-sm uppercase tracking-widest shadow-2xl active:scale-95 transition-all">Enviar para Verificación</button>
-            
-            <p class="text-[9px] text-center text-white/20 leading-relaxed uppercase font-bold px-4">Al enviar, autorizas a Rich Aroma Coffee a compartir tu contenido en nuestros canales oficiales.</p>
         </div>
 
-        <!-- Guidelines -->
-        <div class="glass p-6 rounded-[2rem] space-y-4">
-            <h3 class="text-[10px] font-black text-white uppercase tracking-widest">Reglas del Juego</h3>
-            <ul class="space-y-3">
-                <li class="flex gap-3 items-start">
-                    <div class="w-5 h-5 rounded-full bg-success/10 text-success flex items-center justify-center shrink-0 mt-0.5"><i class="fas fa-check text-[8px]"></i></div>
-                    <p class="text-xs text-white/60">El video debe durar al menos 10 segundos.</p>
-                </li>
-                <li class="flex gap-3 items-start">
-                    <div class="w-5 h-5 rounded-full bg-success/10 text-success flex items-center justify-center shrink-0 mt-0.5"><i class="fas fa-check text-[8px]"></i></div>
-                    <p class="text-xs text-white/60">Debes etiquetar a @RichAromaHn.</p>
-                </li>
-                <li class="flex gap-3 items-start">
-                    <div class="w-5 h-5 rounded-full bg-success/10 text-success flex items-center justify-center shrink-0 mt-0.5"><i class="fas fa-check text-[8px]"></i></div>
-                    <p class="text-xs text-white/60">Contenido original y buena iluminación.</p>
-                </li>
-            </ul>
+        <!-- Success Message -->
+        <div id="success-section" class="hidden text-center space-y-6 py-10 animate-in zoom-in duration-500">
+            <div class="w-24 h-24 bg-success/20 text-success rounded-full flex items-center justify-center mx-auto text-4xl border border-success/30">
+                <i class="fas fa-check"></i>
+            </div>
+            <div class="space-y-2">
+                <h3 class="text-2xl font-black uppercase tracking-tight">¡Post Recibido!</h3>
+                <p class="text-white/40 text-sm">Nuestro equipo revisará tu contenido. Recibirás tus puntos en las próximas 24 horas.</p>
+            </div>
+            <button onclick="location.reload()" class="text-gold font-black text-[10px] uppercase tracking-[0.3em] underline">Enviar otro link</button>
         </div>
 
     </main>
 
     <script>
         let selectedPlatform = null;
-        const customerData = JSON.parse(localStorage.getItem('ra_customer_data') || '{}');
-        const phone = customerData.phone || '';
+        let currentUser = null;
+
+        window.onload = () => {
+            const data = localStorage.getItem('ra_customer_data');
+            if (data) {
+                currentUser = JSON.parse(data);
+                showSubmissionForm();
+            }
+        };
+
+        async function verifyAccount() {
+            const phoneInput = document.getElementById('login-phone').value.replace(/\D/g, '');
+            const pin = document.getElementById('login-pin').value;
+            const prefix = document.getElementById('login-country').value;
+            
+            if (phoneInput.length < 8) return alert("Ingresa un número válido");
+            if (pin.length < 4) return alert("Ingresa tu PIN de 4 dígitos");
+
+            const btn = document.getElementById('verify-btn');
+            btn.innerText = "VERIFICANDO..."; btn.disabled = true;
+
+            try {
+                const fullPhone = prefix + phoneInput;
+                const r = await fetch('/api/customer/login', { 
+                    method:'POST', 
+                    headers:{'Content-Type':'application/json'}, 
+                    body:JSON.stringify({ phone: fullPhone, pin }) 
+                });
+                const d = await r.json();
+
+                if (r.ok) {
+                    currentUser = d.customer;
+                    localStorage.setItem('ra_customer_data', JSON.stringify(currentUser));
+                    showSubmissionForm();
+                } else {
+                    alert(d.error || "PIN o Teléfono incorrecto");
+                    btn.innerText = "Intentar de Nuevo"; btn.disabled = false;
+                }
+            } catch (e) {
+                alert("Error de conexión");
+                btn.innerText = "Verificar Cuenta"; btn.disabled = false;
+            }
+        }
+
+        function showSubmissionForm() {
+            document.getElementById('login-section').classList.add('hidden');
+            document.getElementById('submission-section').classList.remove('hidden');
+            document.getElementById('user-display').innerText = currentUser.name.split(' ')[0];
+        }
 
         function setPlatform(p) {
             selectedPlatform = p;
@@ -124,32 +176,30 @@
             const link = document.getElementById('post-link').value.trim();
             if (!link) return alert("Por favor pega el link de tu post");
             if (!selectedPlatform) return alert("Selecciona la plataforma (Instagram o TikTok)");
-            if (!phone) return alert("Debes iniciar sesión en la página de pedidos primero.");
 
             const btn = document.getElementById('submit-btn');
-            const originalText = btn.innerText;
-            btn.innerText = "PROCESANDO...";
-            btn.disabled = true;
+            btn.innerText = "PROCESANDO..."; btn.disabled = true;
 
             try {
                 const res = await fetch('/api/store?action=ugc_submission', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ phone, link, platform: selectedPlatform })
+                    body: JSON.stringify({ 
+                        phone: currentUser.phone, 
+                        link, 
+                        platform: selectedPlatform 
+                    })
                 });
 
                 if (res.ok) {
-                    alert("¡Recibido! Nuestro equipo revisará tu contenido. Recibirás tu Rico Cash en las próximas 24 horas.");
-                    btn.innerText = "¡ENVIADO EXITOSAMENTE!";
-                    btn.classList.add('bg-success', 'text-white');
-                    document.getElementById('post-link').value = '';
+                    document.getElementById('submission-section').classList.add('hidden');
+                    document.getElementById('success-section').classList.remove('hidden');
                 } else {
-                    throw new Error("Error al enviar");
+                    throw new Error("Error al enviar link");
                 }
             } catch (e) {
                 alert(e.message);
-                btn.innerText = originalText;
-                btn.disabled = false;
+                btn.innerText = "Enviar para Verificación"; btn.disabled = false;
             }
         }
     </script>
