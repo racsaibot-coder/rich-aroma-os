@@ -2312,43 +2312,73 @@
 
     function renderInventoryChecklist() {
         const container = document.getElementById('inventory-checklist-container');
-        // We filter for "main" ingredients that typically need daily counting
-        const coreItems = dailyInventoryData.filter(i => 
-            ['leche', 'milk', 'café', 'coffee', 'pan', 'dough', 'baleada', 'frijol', 'frijoles', 'sugar', 'azúcar', 'syrup', 'sirope'].some(key => i.name.toLowerCase().includes(key))
-        );
+        const role = (window.currentEmployee?.role || 'none').toLowerCase().trim();
+        
+        // Role-based filtering:
+        // Barista counts 'barista' items, Cook counts 'cook' items, 
+        // Admin or 'all' counts everything marked for any role.
+        const coreItems = dailyInventoryData.filter(i => {
+            const itemRole = (i.daily_count_role || 'none').toLowerCase().trim();
+            if (role === 'admin' || itemRole === 'all') return itemRole !== 'none';
+            return itemRole === role;
+        });
 
         if (coreItems.length === 0) {
-            container.innerHTML = '<p class="text-center text-gray-400 py-10">No core items found for daily count.</p>';
-            return;
+            // Fallback for safety: if no role-based items found, use keyword fallback
+            const fallbackItems = dailyInventoryData.filter(i => 
+                ['leche', 'milk', 'café', 'coffee', 'pan', 'dough', 'baleada', 'frijol', 'frijoles'].some(key => i.name.toLowerCase().includes(key))
+            );
+            if (fallbackItems.length === 0) {
+                container.innerHTML = '<p class="text-center text-gray-400 py-10">No items assigned for your role.</p>';
+                return;
+            }
+            renderItems(fallbackItems);
+        } else {
+            renderItems(coreItems);
         }
 
-        container.innerHTML = coreItems.map(item => `
-            <div class="flex items-center justify-between gap-4 p-5 bg-gray-50 rounded-2xl border border-gray-100">
-                <div>
-                    <h4 class="font-bold text-dark uppercase text-sm">${item.name}</h4>
-                    <p class="text-[9px] text-gray-400 font-bold uppercase tracking-widest">Sistema: ${parseFloat(item.current_stock).toFixed(1)} ${item.unit}</p>
+        function renderItems(items) {
+            container.innerHTML = items.map(item => `
+                <div class="flex items-center justify-between gap-4 p-5 bg-gray-50 rounded-2xl border border-gray-100">
+                    <div>
+                        <h4 class="font-bold text-dark uppercase text-sm">${item.name}</h4>
+                        <p class="text-[9px] text-gray-400 font-bold uppercase tracking-widest">Sistema: ${parseFloat(item.current_stock).toFixed(1)} ${item.unit}</p>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <input type="number" step="0.1" id="inv-input-${item.id}" placeholder="Real" class="w-24 bg-white border-2 border-gray-200 rounded-xl p-3 text-center font-black text-dark focus:border-gold outline-none">
+                        <span class="text-[9px] font-black text-gray-300 uppercase">${item.unit}</span>
+                    </div>
                 </div>
-                <div class="flex items-center gap-2">
-                    <input type="number" step="0.1" id="inv-input-${item.id}" placeholder="Real" class="w-24 bg-white border-2 border-gray-200 rounded-xl p-3 text-center font-black text-dark focus:border-gold outline-none">
-                    <span class="text-[9px] font-black text-gray-300 uppercase">${item.unit}</span>
-                </div>
-            </div>
-        `).join('');
+            `).join('');
+        }
     }
 
     async function submitInventoryCheck() {
         const btn = document.getElementById('inventory-submit-btn');
-        const coreItems = dailyInventoryData.filter(i => 
-            ['leche', 'milk', 'café', 'coffee', 'pan', 'dough', 'baleada', 'frijol', 'frijoles', 'sugar', 'azúcar', 'syrup', 'sirope'].some(key => i.name.toLowerCase().includes(key))
-        );
+        const role = (window.currentEmployee?.role || 'none').toLowerCase().trim();
+        
+        const coreItems = dailyInventoryData.filter(i => {
+            const itemRole = (i.daily_count_role || 'none').toLowerCase().trim();
+            if (role === 'admin' || itemRole === 'all') return itemRole !== 'none';
+            return itemRole === role;
+        });
 
         // Validation
         let updates = [];
-        for (const item of coreItems) {
+        let itemsToUpdate = coreItems;
+        if (coreItems.length === 0) {
+             itemsToUpdate = dailyInventoryData.filter(i => 
+                ['leche', 'milk', 'café', 'coffee', 'pan', 'dough', 'baleada', 'frijol', 'frijoles'].some(key => i.name.toLowerCase().includes(key))
+            );
+        }
+
+        for (const item of itemsToUpdate) {
             const input = document.getElementById(`inv-input-${item.id}`);
-            if (!input.value) return alert(`Por favor ingresa el conteo para ${item.name}`);
+            if (!input || !input.value) continue; // Skip empty fields to allow partial updates
             updates.push({ ...item, current_stock: parseFloat(input.value) });
         }
+
+        if (updates.length === 0) return alert("Por favor ingresa al menos un conteo");
 
         btn.disabled = true; btn.innerText = "ACTUALIZANDO...";
 
