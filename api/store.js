@@ -874,6 +874,24 @@ module.exports = async function handler(req, res) {
             return res.json({ success: true, customer: updated });
         }
 
+        // --- UGC / Creator Submissions ---
+        if (action === 'ugc_submission' && req.method === 'POST') {
+            const { phone, link, platform, description } = req.body;
+            if (!phone || !link) return res.status(400).json({ error: "Phone and Link required" });
+
+            const { data, error } = await supabase.from('creator_submissions').insert({
+                id: 'ugc_' + Date.now() + Math.random().toString(36).substr(2, 5),
+                phone: phone.replace(/\D/g, ''),
+                link,
+                platform: platform || 'instagram',
+                description: description || '',
+                status: 'pending'
+            }).select().single();
+
+            if (error) throw error;
+            return res.json({ success: true, data });
+        }
+
         return res.status(404).json({ error: 'Action not found' });
 
     } catch (e) {

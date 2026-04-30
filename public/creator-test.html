@@ -109,6 +109,8 @@
 
     <script>
         let selectedPlatform = null;
+        const customerData = JSON.parse(localStorage.getItem('ra_customer_data') || '{}');
+        const phone = customerData.phone || '';
 
         function setPlatform(p) {
             selectedPlatform = p;
@@ -122,18 +124,33 @@
             const link = document.getElementById('post-link').value.trim();
             if (!link) return alert("Por favor pega el link de tu post");
             if (!selectedPlatform) return alert("Selecciona la plataforma (Instagram o TikTok)");
+            if (!phone) return alert("Debes iniciar sesión en la página de pedidos primero.");
 
             const btn = document.getElementById('submit-btn');
+            const originalText = btn.innerText;
             btn.innerText = "PROCESANDO...";
             btn.disabled = true;
 
-            // This will be replaced with real API call
-            setTimeout(() => {
-                alert("¡Recibido! Nuestro equipo revisará tu contenido. Recibirás tu Rico Cash en las próximas 24 horas.");
-                btn.innerText = "¡ENVIADO EXITOSAMENTE!";
-                btn.classList.add('bg-success', 'text-white');
-                document.getElementById('post-link').value = '';
-            }, 1500);
+            try {
+                const res = await fetch('/api/store?action=ugc_submission', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ phone, link, platform: selectedPlatform })
+                });
+
+                if (res.ok) {
+                    alert("¡Recibido! Nuestro equipo revisará tu contenido. Recibirás tu Rico Cash en las próximas 24 horas.");
+                    btn.innerText = "¡ENVIADO EXITOSAMENTE!";
+                    btn.classList.add('bg-success', 'text-white');
+                    document.getElementById('post-link').value = '';
+                } else {
+                    throw new Error("Error al enviar");
+                }
+            } catch (e) {
+                alert(e.message);
+                btn.innerText = originalText;
+                btn.disabled = false;
+            }
         }
     </script>
 </body>

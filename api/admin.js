@@ -486,6 +486,49 @@ module.exports = async function handler(req, res) {
         return res.json({ success: true });
     }
 
+    // UGC / CREATOR SUBMISSIONS
+    if (action === 'ugc_submissions' && req.method === 'GET') {
+        if (!isAdmin) return res.status(403).json({ error: "Admin access required" });
+        const { data, error } = await supabase.from('creator_submissions').select('*').order('submitted_at', { ascending: false });
+        if (error) return res.status(500).json({ error: error.message });
+        return res.json(data || []);
+    }
+
+    if (action === 'approve_ugc' && req.method === 'POST') {
+        if (!isAdmin) return res.status(403).json({ error: "Admin access required" });
+        const { submissionId, points = 50 } = req.body;
+        
+        // 1. Get submission
+        const { data: sub } = await supabase.from('creator_submissions').select('*').eq('id', submissionId).single();
+        if (!sub) return res.status(404).json({ error: "Submission not found" });
+
+        // 2. Award points to customer
+        const { data: customer } = await supabase.from('customers').select('id, points').eq('phone', sub.phone).single();
+        if (customer) {
+            await supabase.from('customers').update({ 
+                points: (customer.points || 0) + points 
+            }).eq('id', customer.id);
+            
+            // Log balance history (if points are considered currency/value)
+            await supabase.from('balance_history').insert({
+                customer_id: customer.id,
+                type: 'load',
+                amount: points, // In this system points/rico cash are often used interchangeably
+                order_id: sub.id
+            });
+        }
+
+        // 3. Update status
+        const { data, error } = await supabase.from('creator_submissions').update({ 
+            status: 'approved',
+            reviewed_at: new Date().toISOString(),
+            points_awarded: points
+        }).eq('id', submissionId).select().single();
+
+        if (error) return res.status(500).json({ error: error.message });
+        return res.json({ success: true, data });
+    }
+
     if (action === 'inventory' && req.method === 'GET') {
         const { data, error } = await supabase.from('inventory').select('*').order('name');
         if (error) return res.status(500).json({ error: error.message });
