@@ -964,46 +964,68 @@
         }
 
         function renderUGCSubmissions(data) {
-            const tbody = document.getElementById('ugcTable');
-            const pendingCountEl = document.getElementById('ugc-pending-count');
-            
-            if (!tbody) return;
-            const pending = (data || []).filter(s => s.status === 'pending');
-            if (pendingCountEl) pendingCountEl.innerText = pending.length;
+            logDebug("Rendering UGC Submissions...");
+            try {
+                const tbody = document.getElementById('ugcTable');
+                const pendingCountEl = document.getElementById('ugc-pending-count');
+                
+                if (!tbody) {
+                    logDebug("Error: ugcTable element not found");
+                    return;
+                }
 
-            if (!data || data.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="5" class="p-12 text-center text-gray-400 italic">No submissions found.</td></tr>';
-                return;
+                if (!Array.isArray(data)) {
+                    logDebug("Error: UGC data is not an array");
+                    tbody.innerHTML = '<tr><td colspan="5" class="p-12 text-center text-red-500">Error loading data structure.</td></tr>';
+                    return;
+                }
+
+                const pending = data.filter(s => s.status === 'pending');
+                if (pendingCountEl) pendingCountEl.innerText = pending.length;
+
+                if (data.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="5" class="p-12 text-center text-gray-400 italic">No submissions found.</td></tr>';
+                    return;
+                }
+
+                tbody.innerHTML = data.map(s => {
+                    const isPending = s.status === 'pending';
+                    const date = s.submitted_at ? new Date(s.submitted_at).toLocaleDateString() : '---';
+                    const phone = s.phone || 'Unknown';
+                    const platform = s.platform || 'instagram';
+                    const link = s.link || '#';
+                    const status = s.status || 'pending';
+
+                    return `
+                        <tr class="${isPending ? 'bg-amber-50/30' : ''}">
+                            <td class="p-6 text-xs text-gray-400">${date}</td>
+                            <td class="p-6">
+                                <div class="font-bold text-gray-800">${phone}</div>
+                                <div class="text-[10px] text-gray-400 uppercase font-black">${status}</div>
+                            </td>
+                            <td class="p-6">
+                                <span class="px-3 py-1 rounded-full text-[9px] font-black uppercase ${platform === 'tiktok' ? 'bg-black text-white' : 'bg-pink-100 text-insta'}">
+                                    ${platform}
+                                </span>
+                            </td>
+                            <td class="p-6">
+                                <a href="${link}" target="_blank" class="text-blue-600 font-bold text-xs underline truncate max-w-[200px] block">View Post <i class="fas fa-external-link-alt ml-1"></i></a>
+                            </td>
+                            <td class="p-6 text-right">
+                                ${isPending ? `
+                                    <button onclick="approveUGC('${s.id}')" class="bg-success text-white px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest hover:scale-105 transition-all">
+                                        Approve & Pay
+                                    </button>
+                                ` : `<span class="text-gray-300"><i class="fas fa-check-circle"></i> Paid</span>`}
+                            </td>
+                        </tr>
+                    `;
+                }).join('');
+                logDebug("UGC Render Complete");
+            } catch (e) {
+                logDebug("UGC Render Error: " + e.message);
+                console.error("Render UGC Error:", e);
             }
-
-            tbody.innerHTML = data.map(s => {
-                const isPending = s.status === 'pending';
-                const date = new Date(s.submitted_at).toLocaleDateString();
-                return `
-                    <tr class="${isPending ? 'bg-amber-50/30' : ''}">
-                        <td class="p-6 text-xs text-gray-400">${date}</td>
-                        <td class="p-6">
-                            <div class="font-bold text-gray-800">${s.phone}</div>
-                            <div class="text-[10px] text-gray-400 uppercase font-black">${s.status}</div>
-                        </td>
-                        <td class="p-6">
-                            <span class="px-3 py-1 rounded-full text-[9px] font-black uppercase ${s.platform === 'tiktok' ? 'bg-black text-white' : 'bg-pink-100 text-insta'}">
-                                ${s.platform}
-                            </span>
-                        </td>
-                        <td class="p-6">
-                            <a href="${s.link}" target="_blank" class="text-blue-600 font-bold text-xs underline truncate max-w-[200px] block">View Post <i class="fas fa-external-link-alt ml-1"></i></a>
-                        </td>
-                        <td class="p-6 text-right">
-                            ${isPending ? `
-                                <button onclick="approveUGC('${s.id}')" class="bg-success text-white px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest hover:scale-105 transition-all">
-                                    Approve & Pay
-                                </button>
-                            ` : `<span class="text-gray-300"><i class="fas fa-check-circle"></i> Paid</span>`}
-                        </td>
-                    </tr>
-                `;
-            }).join('');
         }
 
         async function approveUGC(id) {
