@@ -66,9 +66,14 @@
 
     <!-- Header / Toggle -->
     <header class="h-16 bg-charcoal border-b border-white/10 flex items-center justify-between px-6 shrink-0">
-        <div class="flex items-center gap-4">
+        <div class="flex items-center gap-6">
             <h1 class="text-xl font-bold font-display text-gold tracking-widest">RICH AROMA OS</h1>
-            <div class="px-3 py-1 rounded bg-white/5 text-xs font-mono" id="mode-badge">LOADING...</div>
+            <div class="flex items-center gap-3">
+                <div class="px-3 py-1 rounded bg-white/5 text-xs font-mono" id="mode-badge">LOADING...</div>
+                <button onclick="openInventoryCheck()" class="bg-gold/10 text-gold border border-gold/30 px-3 py-1 rounded text-[10px] font-black uppercase tracking-widest hover:bg-gold hover:text-dark transition-all flex items-center gap-2">
+                    <i class="fas fa-boxes"></i> Inventario
+                </button>
+            </div>
         </div>
         
         <div class="flex bg-dark rounded-lg p-1 border border-white/5">
@@ -114,6 +119,33 @@
             <div class="absolute bottom-0 w-full bg-dark border-t border-gold/20 py-3 overflow-hidden whitespace-nowrap">
                 <div class="animate-marquee inline-block text-gold/80 font-mono text-lg">
                     🎥 CHALLENGE: Film your first sip & tag @richaromacoffee for a chance to win L.500!  •  📲 Skip the line next time: Load Rico Cash at the register!  •  🦁 RICH AROMA: Coffee & Culture.
+                </div>
+            </div>
+        </div>
+
+        <!-- DAILY INVENTORY CHECKLIST MODAL -->
+        <div id="inventory-check-modal" class="hidden fixed inset-0 bg-dark/95 backdrop-blur-md flex items-center justify-center z-[200] p-6">
+            <div class="bg-dark border border-white/10 rounded-[2.5rem] w-full max-w-lg shadow-2xl flex flex-col max-h-[85vh] overflow-hidden border-t-8 border-gold">
+                <div class="p-8 border-b border-white/5 flex justify-between items-center bg-charcoal">
+                    <div>
+                        <h2 class="text-2xl font-black text-white uppercase tracking-tight">Conteo de Inventario</h2>
+                        <p id="inv-role-label" class="text-[10px] text-gold font-bold uppercase tracking-widest mt-1">Cargando...</p>
+                    </div>
+                    <div class="w-12 h-12 bg-gold/10 text-gold rounded-2xl flex items-center justify-center text-xl">
+                        <i class="fas fa-clipboard-check"></i>
+                    </div>
+                </div>
+                
+                <div class="flex-1 overflow-y-auto p-8 space-y-6" id="inventory-checklist-container">
+                    <!-- Injected via JS -->
+                    <div class="text-center py-10 text-white/20 italic">Cargando lista de ingredientes...</div>
+                </div>
+
+                <div class="p-8 bg-charcoal border-t border-white/5 flex gap-4">
+                    <button onclick="closeInventoryCheck()" class="w-1/3 py-5 bg-white/5 text-white/40 font-bold rounded-2xl active:scale-95 transition-all uppercase tracking-widest text-xs">Cerrar</button>
+                    <button onclick="submitInventoryCheck()" id="inventory-submit-btn" class="w-2/3 py-5 bg-gold text-dark font-black rounded-2xl shadow-xl active:scale-95 transition-all uppercase tracking-widest text-sm">
+                        Finalizar Conteo
+                    </button>
                 </div>
             </div>
         </div>
@@ -618,6 +650,99 @@
                     alert("Error al rechazar.");
                 }
             } catch(e) { console.error(e); }
+        }
+
+        // --- DAILY INVENTORY CHECKLIST LOGIC (KDS) ---
+        let inventoryData = [];
+
+        async function openInventoryCheck() {
+            const role = currentMode === 'drinks' ? 'barista' : (currentMode === 'food' ? 'cook' : 'admin');
+            document.getElementById('inv-role-label').innerText = `LISTA PARA ${role.toUpperCase()}`;
+            document.getElementById('inventory-check-modal').classList.remove('hidden');
+            
+            try {
+                const res = await fetch('/api/admin?action=inventory', {
+                    headers: { 'Authorization': 'Bearer EMP-admin' }
+                });
+                inventoryData = await res.json();
+                renderInventoryChecklist(role);
+            } catch (e) {
+                console.error(e);
+                document.getElementById('inventory-checklist-container').innerHTML = '<p class="text-red-500">Error al cargar inventario.</p>';
+            }
+        }
+
+        function closeInventoryCheck() {
+            document.getElementById('inventory-check-modal').classList.add('hidden');
+        }
+
+        function renderInventoryChecklist(role) {
+            const container = document.getElementById('inventory-checklist-container');
+            
+            // Filter by role
+            const items = inventoryData.filter(i => {
+                const itemRole = (i.daily_count_role || 'none').toLowerCase();
+                if (itemRole === 'all') return true;
+                return itemRole === role;
+            });
+
+            if (items.length === 0) {
+                container.innerHTML = `<div class="text-center py-10 text-white/20">No hay items configurados para ${role.toUpperCase()}.<br><span class="text-[10px] uppercase">Configura los roles en el Admin Dashboard.</span></div>`;
+                return;
+            }
+
+            container.innerHTML = items.map(item => `
+                <div class="flex items-center justify-between gap-4 p-5 bg-white/5 rounded-2xl border border-white/5">
+                    <div>
+                        <h4 class="font-bold text-white uppercase text-sm">${item.name}</h4>
+                        <p class="text-[9px] text-white/20 font-bold uppercase tracking-widest">Sistema: ${parseFloat(item.current_stock).toFixed(1)} ${item.unit}</p>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <input type="number" step="0.1" id="inv-input-${item.id}" placeholder="Real" class="w-24 bg-dark border-2 border-white/10 rounded-xl p-3 text-center font-black text-gold focus:border-gold outline-none">
+                        <span class="text-[9px] font-black text-white/20 uppercase">${item.unit}</span>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        async function submitInventoryCheck() {
+            const btn = document.getElementById('inventory-submit-btn');
+            const role = currentMode === 'drinks' ? 'barista' : (currentMode === 'food' ? 'cook' : 'admin');
+            
+            const items = inventoryData.filter(i => {
+                const itemRole = (i.daily_count_role || 'none').toLowerCase();
+                if (itemRole === 'all') return true;
+                return itemRole === role;
+            });
+
+            let updates = [];
+            for (const item of items) {
+                const input = document.getElementById(`inv-input-${item.id}`);
+                if (input && input.value) {
+                    updates.push({ ...item, current_stock: parseFloat(input.value) });
+                }
+            }
+
+            if (updates.length === 0) return alert("Ingresa al menos un valor.");
+
+            btn.disabled = true; btn.innerText = "ACTUALIZANDO...";
+
+            try {
+                for (const update of updates) {
+                    await fetch('/api/admin?action=inventory_update', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer EMP-admin' },
+                        body: JSON.stringify(update)
+                    });
+                }
+                alert("✅ Inventario actualizado.");
+                closeInventoryCheck();
+            } catch (e) {
+                console.error(e);
+                alert("Error al guardar.");
+            } finally {
+                btn.disabled = false; btn.innerText = "Finalizar Conteo";
+            }
         }
     </script>
     
