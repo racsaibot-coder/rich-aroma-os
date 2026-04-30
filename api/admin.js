@@ -23,7 +23,8 @@ module.exports = async function handler(req, res) {
     const verifyAdmin = async (token) => {
         if (!token) return false;
         const pin = token.replace('Bearer ', '').trim();
-        if (pin === '3620' || pin === 'EMP-admin') return true; 
+        // 4574 is Oscar's Master Admin PIN
+        if (pin === '4574' || pin === '3620' || pin === 'EMP-admin') return true; 
         const { data } = await supabase.from('employees').select('role').eq('pin', pin).single();
         return data?.role?.toLowerCase().trim() === 'admin';
     };
