@@ -950,11 +950,17 @@
 
         // UGC / CREATOR HUB LOGIC
         async function loadUGCSubmissions() {
+            logDebug("Fetching UGC Submissions...");
             try {
                 const res = await fetch('/api/admin?action=ugc_submissions', { headers: getHeaders() });
+                logDebug(`UGC API Status: ${res.status}`);
                 const data = await res.json();
+                logDebug(`Loaded ${data.length || 0} submissions`);
                 renderUGCSubmissions(data);
-            } catch (e) { console.error("Failed to load UGC:", e); }
+            } catch (e) { 
+                logDebug("UGC Load Error: " + e.message);
+                console.error("Failed to load UGC:", e); 
+            }
         }
 
         function renderUGCSubmissions(data) {

