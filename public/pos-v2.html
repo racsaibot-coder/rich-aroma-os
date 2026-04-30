@@ -136,31 +136,8 @@
         </div>
     </div>
 
-    <!-- DAILY INVENTORY CHECKLIST MODAL -->
-    <div id="inventory-check-modal" class="hidden fixed inset-0 bg-dark/95 backdrop-blur-md flex items-center justify-center z-[200] p-6">
-        <div class="bg-white rounded-[2.5rem] w-full max-w-lg shadow-2xl flex flex-col max-h-[85vh] overflow-hidden border-t-8 border-gold">
-            <div class="p-8 border-b border-gray-100 flex justify-between items-center bg-gray-50">
-                <div>
-                    <h2 class="text-2xl font-black text-dark uppercase tracking-tight">Conteo de Inventario</h2>
-                    <p class="text-[10px] text-gray-400 font-bold uppercase tracking-widest mt-1">Verificación obligatoria del día</p>
-                </div>
-                <div class="w-12 h-12 bg-gold/10 text-gold rounded-2xl flex items-center justify-center text-xl">
-                    <i class="fas fa-clipboard-check"></i>
-                </div>
-            </div>
-
-            <div class="flex-1 overflow-y-auto p-8 space-y-6" id="inventory-checklist-container">
-                <!-- Injected via JS -->
-                <div class="text-center py-10 text-gray-400 italic">Cargando lista de ingredientes...</div>
-            </div>
-
-            <div class="p-8 bg-gray-50 border-t border-gray-100">
-                <button onclick="submitInventoryCheck()" id="inventory-submit-btn" class="w-full py-5 bg-dark text-white font-black rounded-2xl shadow-xl active:scale-95 transition-all uppercase tracking-widest text-sm">
-                    Finalizar Conteo
-                </button>
-            </div>
-        </div>
-    </div>
+    <!-- TENDER MODAL -->
+    <div id="tender-modal" class="hidden fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-[70] backdrop-blur-sm">
         <div class="bg-white w-full max-w-lg rounded-2xl shadow-2xl p-8">
             <h2 class="text-2xl font-bold text-gray-800 mb-2 text-center border-b pb-4">Método de Pago</h2>
             
@@ -2249,9 +2226,6 @@
                 startingCash = window.activeDBShift.opening_amount;
                 document.getElementById('shift-modal').classList.add('hidden');
                 console.log("🚀 Joining active shift...");
-                
-                // NEW: Trigger Inventory Check
-                checkDailyInventory();
             } else {
                 // No shift open, proceed to Step 2
                 document.getElementById('login-stage').classList.add('hidden');
@@ -2281,115 +2255,6 @@
             if (!res.ok) throw new Error(data.error || "Error al abrir caja");
 
             // Success
-            currentShiftId = data.id;
-            startingCash = data.opening_amount;
-            currentCashier = window.currentEmployee.name;
-            
-            // Save local session
-            localStorage.setItem('pos_active_shift', JSON.stringify({
-                shiftId: currentShiftId,
-                cashier: currentCashier,
-                openedAt: new Date().toISOString()
-            }));
-            localStorage.setItem('ra_staff_pin', window.currentEmployee.pin);
-
-            document.getElementById('shift-modal').classList.add('hidden');
-            
-            // NEW: Trigger Inventory Check
-            checkDailyInventory();
-        } catch (err) {
-            alert(err.message);
-        }
-    }
-
-    // --- DAILY INVENTORY CHECKLIST LOGIC ---
-    let dailyInventoryData = [];
-    
-    async function checkDailyInventory() {
-        // Only trigger if not already done today in this browser
-        const today = new Date().toISOString().split('T')[0];
-        if (localStorage.getItem('pos_inventory_checked_date') === today) return;
-
-        try {
-            const res = await fetch('/api/admin?action=inventory', {
-                headers: { 'Authorization': 'Bearer EMP-admin' }
-            });
-            dailyInventoryData = await res.json();
-            
-            if (Array.isArray(dailyInventoryData) && dailyInventoryData.length > 0) {
-                renderInventoryChecklist();
-                document.getElementById('inventory-check-modal').classList.remove('hidden');
-            }
-        } catch (e) { console.error("Failed to load inventory checklist", e); }
-    }
-
-    function renderInventoryChecklist() {
-        const container = document.getElementById('inventory-checklist-container');
-        // We filter for "main" ingredients that typically need daily counting
-        const coreItems = dailyInventoryData.filter(i => 
-            ['leche', 'milk', 'café', 'coffee', 'pan', 'dough', 'baleada', 'frijol', 'frijoles', 'sugar', 'azúcar', 'syrup', 'sirope'].some(key => i.name.toLowerCase().includes(key))
-        );
-
-        if (coreItems.length === 0) {
-            container.innerHTML = '<p class="text-center text-gray-400 py-10">No core items found for daily count.</p>';
-            return;
-        }
-
-        container.innerHTML = coreItems.map(item => `
-            <div class="flex items-center justify-between gap-4 p-5 bg-gray-50 rounded-2xl border border-gray-100">
-                <div>
-                    <h4 class="font-bold text-dark uppercase text-sm">${item.name}</h4>
-                    <p class="text-[9px] text-gray-400 font-bold uppercase tracking-widest">Sistema: ${parseFloat(item.current_stock).toFixed(1)} ${item.unit}</p>
-                </div>
-                <div class="flex items-center gap-2">
-                    <input type="number" step="0.1" id="inv-input-${item.id}" placeholder="Real" class="w-24 bg-white border-2 border-gray-200 rounded-xl p-3 text-center font-black text-dark focus:border-gold outline-none">
-                    <span class="text-[9px] font-black text-gray-300 uppercase">${item.unit}</span>
-                </div>
-            </div>
-        `).join('');
-    }
-
-    async function submitInventoryCheck() {
-        const btn = document.getElementById('inventory-submit-btn');
-        const coreItems = dailyInventoryData.filter(i => 
-            ['leche', 'milk', 'café', 'coffee', 'pan', 'dough', 'baleada', 'frijol', 'frijoles', 'sugar', 'azúcar', 'syrup', 'sirope'].some(key => i.name.toLowerCase().includes(key))
-        );
-
-        // Validation
-        let updates = [];
-        for (const item of coreItems) {
-            const input = document.getElementById(`inv-input-${item.id}`);
-            if (!input.value) return alert(`Por favor ingresa el conteo para ${item.name}`);
-            updates.push({ ...item, current_stock: parseFloat(input.value) });
-        }
-
-        btn.disabled = true; btn.innerText = "ACTUALIZANDO...";
-
-        try {
-            // We update each item in the database
-            for (const update of updates) {
-                await fetch('/api/admin?action=inventory_update', {
-                    method: 'POST',
-                    headers: { 
-                        'Content-Type': 'application/json',
-                        'Authorization': 'Bearer EMP-admin' 
-                    },
-                    body: JSON.stringify(update)
-                });
-            }
-
-            // Mark as done for today
-            const today = new Date().toISOString().split('T')[0];
-            localStorage.setItem('pos_inventory_checked_date', today);
-            
-            document.getElementById('inventory-check-modal').classList.add('hidden');
-            alert("✅ Inventario actualizado correctamente para el inicio del día.");
-        } catch (e) {
-            console.error(e);
-            alert("Error al actualizar inventario");
-            btn.disabled = false; btn.innerText = "Finalizar Conteo";
-        }
-    }
             currentShiftId = data.id;
             currentCashier = window.currentEmployee.name;
             startingCash = parseFloat(cash);
@@ -2910,19 +2775,19 @@
 
     <!-- UI MODAL (SYSTEM PROMPT/CONFIRM REPLACEMENT) -->
     <div id="ui-modal" class="hidden fixed inset-0 bg-black/70 backdrop-blur-sm z-[500] flex items-center justify-center p-6">
-    <div class="bg-white w-full max-w-sm rounded-[2rem] border-t-8 border-gold p-8 space-y-6 shadow-2xl">
-        <div class="text-center space-y-2">
-            <h3 id="ui-modal-title" class="text-2xl font-black text-dark uppercase tracking-tight">---</h3>
-            <p id="ui-modal-msg" class="text-gray-500 font-medium text-sm leading-relaxed">---</p>
+        <div class="bg-white w-full max-w-sm rounded-[2rem] border-t-8 border-gold p-8 space-y-6 shadow-2xl">
+            <div class="text-center space-y-2">
+                <h3 id="ui-modal-title" class="text-2xl font-black text-dark uppercase tracking-tight">---</h3>
+                <p id="ui-modal-msg" class="text-gray-500 font-medium text-sm leading-relaxed">---</p>
+            </div>
+            <div id="ui-modal-input-container" class="hidden">
+                <input type="text" id="ui-modal-input" class="w-full bg-gray-50 border-2 border-gray-100 rounded-2xl p-4 text-center text-2xl font-black focus:border-gold outline-none transition-all" placeholder="0.00">
+            </div>
+            <div class="grid grid-cols-2 gap-3 pt-2">
+                <button id="ui-modal-cancel" class="py-4 bg-gray-100 text-gray-400 font-bold rounded-2xl active:scale-95 transition-all text-sm uppercase">Cancelar</button>
+                <button id="ui-modal-confirm" class="py-4 bg-dark text-white font-black rounded-2xl shadow-xl active:scale-95 transition-all uppercase tracking-widest text-sm text-center">Confirmar</button>
+            </div>
         </div>
-        <div id="ui-modal-input-container" class="hidden">
-            <input type="text" id="ui-modal-input" class="w-full bg-gray-50 border-2 border-gray-200 rounded-2xl p-4 text-dark font-bold focus:border-gold outline-none transition-all" placeholder="---">
-        </div>
-        <div class="grid grid-cols-1 gap-3">
-            <button id="ui-modal-confirm" class="w-full py-4 bg-blue-600 text-white font-black rounded-2xl shadow-xl shadow-blue-600/20 active:scale-95 transition-all uppercase tracking-widest text-sm">Aceptar</button>
-            <button id="ui-modal-cancel" class="w-full py-4 bg-gray-100 text-gray-500 font-bold rounded-2xl active:scale-95 transition-all text-sm uppercase">Cancelar</button>
-        </div>
-    </div>
     </div>
 
     <!-- DISCOUNT MODAL -->
