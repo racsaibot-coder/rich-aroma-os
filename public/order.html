@@ -1485,19 +1485,25 @@
                             `).join('');
                         }
 
-                        if (d.status === 'ready') {
+                        if (d.status === 'ready' || d.status === 'completed') {
                             title.innerText = "¡ORDEN LISTA! ☕";
                             if (badge) {
-                                badge.innerText = "ORDEN LISTA";
+                                badge.innerText = d.status === 'completed' ? "ENTREGADA" : "ORDEN LISTA";
                                 badge.className = "bg-gold text-dark px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-[0.2em] shadow-lg shadow-gold/20";
                             }
                             if (progress) progress.style.width = "100%";
                             if (step2) step2.className = "w-6 h-6 rounded-full bg-gold text-dark flex items-center justify-center text-[10px] font-black shadow-lg";
                             if (step3) step3.className = "w-6 h-6 rounded-full bg-gold text-dark flex items-center justify-center text-[10px] font-black shadow-lg animate-bounce";
-                            msg.innerText = "Tu pedido está listo para ser retirado en barra. ¡Que lo disfrutes!";
+                            msg.innerText = d.status === 'completed' ? "¡Gracias por tu compra! Esperamos verte pronto." : "Tu pedido está listo para ser retirado en barra. ¡Que lo disfrutes!";
                             msg.className = "text-gold font-black text-xs mb-6 max-w-xs leading-relaxed animate-pulse";
                             icon.innerHTML = '<i class="fas fa-mug-hot"></i>';
                             icon.className = "w-20 h-20 bg-gold text-dark rounded-full flex items-center justify-center text-3xl mb-8 animate-bounce";
+                            
+                            if (d.status === 'completed') {
+                                clearInterval(interval);
+                                // Optional: Clear order after 30 seconds if completed
+                                setTimeout(() => localStorage.removeItem('ra_active_order'), 30000);
+                            }
                         } else if (['preparing', 'preparing_food', 'preparing_drinks', 'drinks_ready', 'food_ready'].includes(d.status)) {
                             title.innerText = "PREPARANDO... 🔥";
                             if (badge) {
