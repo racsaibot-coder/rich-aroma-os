@@ -550,10 +550,29 @@
     </div>
 
     <!-- TRACKING MODAL -->
-    <div id="track-modal" class="hidden fixed inset-0 bg-dark z-[1000] flex flex-col p-8 items-center justify-center text-center animate-in fade-in duration-500">
+    <div id="track-modal" class="hidden fixed inset-0 bg-dark z-[1000] flex flex-col p-8 items-center justify-center text-center animate-in fade-in duration-500 overflow-y-auto">
         <div id="track-icon" class="w-20 h-20 bg-success/20 text-success rounded-full flex items-center justify-center text-3xl mb-8 animate-bounce-in"><i class="fas fa-check"></i></div>
-        <h2 class="text-3xl font-display font-black text-white mb-2 italic tracking-tight">¡ORDEN RECIBIDA!</h2>
-        <p id="track-msg" class="text-white/40 text-sm mb-8 max-w-xs leading-relaxed">Tu pedido ha sido enviado. Prepárate para el mejor sabor.</p>
+        <h2 class="text-3xl font-display font-black text-white mb-2 italic tracking-tight uppercase">¡ORDEN RECIBIDA!</h2>
+        <p id="track-msg" class="text-white/40 text-sm mb-6 max-w-xs leading-relaxed">Tu pedido ha sido enviado. Prepárate para el mejor sabor.</p>
+
+        <!-- STATUS PROGRESS BAR -->
+        <div class="w-full max-w-xs flex items-center justify-between mb-8 px-4 relative">
+            <div class="absolute left-10 right-10 h-0.5 bg-white/5 top-1/2 -translate-y-1/2 z-0"></div>
+            <div id="track-progress-line" class="absolute left-10 h-0.5 bg-gold top-1/2 -translate-y-1/2 z-0 transition-all duration-1000" style="width: 0%"></div>
+            
+            <div class="relative z-10 flex flex-col items-center gap-2">
+                <div id="step-1" class="w-6 h-6 rounded-full bg-gold text-dark flex items-center justify-center text-[10px] font-black shadow-lg shadow-gold/20"><i class="fas fa-check"></i></div>
+                <span class="text-[7px] font-black text-gold uppercase tracking-widest">Recibida</span>
+            </div>
+            <div class="relative z-10 flex flex-col items-center gap-2">
+                <div id="step-2" class="w-6 h-6 rounded-full bg-white/5 text-white/20 flex items-center justify-center text-[10px] font-black border border-white/10 transition-all duration-500"><i class="fas fa-fire-alt"></i></div>
+                <span class="text-[7px] font-black text-white/20 uppercase tracking-widest">Cocina</span>
+            </div>
+            <div class="relative z-10 flex flex-col items-center gap-2">
+                <div id="step-3" class="w-6 h-6 rounded-full bg-white/5 text-white/20 flex items-center justify-center text-[10px] font-black border border-white/10 transition-all duration-500"><i class="fas fa-mug-hot"></i></div>
+                <span class="text-[7px] font-black text-white/20 uppercase tracking-widest">Lista</span>
+            </div>
+        </div>
 
         <!-- PWA INSTALL PROMPT (Contextual) -->
         <div id="install-prompt" class="hidden glass w-full max-w-xs p-4 rounded-2xl border-gold/20 mb-6 animate-bounce">
@@ -569,9 +588,17 @@
 
         <div class="glass w-full max-w-xs p-8 rounded-[3rem] space-y-6 relative mb-8 overflow-hidden">
             <div class="absolute -right-4 -top-4 opacity-5 text-8xl text-white"><i class="fas fa-receipt"></i></div>
+            
             <div class="flex justify-between items-center">
                 <div class="text-left"><p class="text-[10px] font-black text-gold uppercase tracking-[0.4em] mb-1">Orden</p><h3 id="receipt-num" class="text-4xl font-black text-white tracking-tighter">#----</h3></div>
                 <div id="receipt-qr" class="bg-white p-2 rounded-xl inline-block shadow-2xl"></div>
+            </div>
+
+            <!-- STATUS BADGE -->
+            <div class="flex justify-center">
+                <div id="status-badge" class="bg-white/5 border border-white/10 px-4 py-2 rounded-full text-[10px] font-black text-white uppercase tracking-[0.2em] animate-pulse">
+                    ESPERANDO...
+                </div>
             </div>
             
             <!-- ORDER DETAILS SUMMARY -->
@@ -583,8 +610,8 @@
         </div>
 
         <div class="flex flex-col gap-3 w-full max-w-xs">
-            <button onclick="location.reload()" class="w-full py-5 bg-gold text-dark rounded-[2rem] font-black text-xs uppercase tracking-widest shadow-xl active:scale-95 transition-all">Pedir Algo Más</button>
-            <p class="text-[9px] text-white/20 uppercase font-bold tracking-widest">Rich Aroma OS v3.0</p>
+            <button onclick="location.href='/order'" class="w-full py-5 bg-white/5 border border-white/10 text-white rounded-[2rem] font-black text-xs uppercase tracking-widest shadow-xl active:scale-95 transition-all">Pedir Algo Más</button>
+            <p class="text-[9px] text-white/20 uppercase font-bold tracking-widest">Rich Aroma OS v3.1</p>
         </div>
     </div>
 
@@ -1443,6 +1470,10 @@
                         const icon = document.getElementById('track-icon');
                         const title = document.querySelector('#track-modal h2');
                         const itemList = document.getElementById('track-items-list');
+                        const badge = document.getElementById('status-badge');
+                        const progress = document.getElementById('track-progress-line');
+                        const step2 = document.getElementById('step-2');
+                        const step3 = document.getElementById('step-3');
 
                         // Update items list on each poll for real-time changes
                         if (itemList && d.items) {
@@ -1456,22 +1487,29 @@
 
                         if (d.status === 'ready') {
                             title.innerText = "¡ORDEN LISTA! ☕";
-                            title.classList.add('text-gold');
+                            if (badge) {
+                                badge.innerText = "ORDEN LISTA";
+                                badge.className = "bg-gold text-dark px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-[0.2em] shadow-lg shadow-gold/20";
+                            }
+                            if (progress) progress.style.width = "100%";
+                            if (step2) step2.className = "w-6 h-6 rounded-full bg-gold text-dark flex items-center justify-center text-[10px] font-black shadow-lg";
+                            if (step3) step3.className = "w-6 h-6 rounded-full bg-gold text-dark flex items-center justify-center text-[10px] font-black shadow-lg animate-bounce";
                             msg.innerText = "Tu pedido está listo para ser retirado en barra. ¡Que lo disfrutes!";
                             msg.className = "text-gold font-black text-xs mb-6 max-w-xs leading-relaxed animate-pulse";
                             icon.innerHTML = '<i class="fas fa-mug-hot"></i>';
                             icon.className = "w-20 h-20 bg-gold text-dark rounded-full flex items-center justify-center text-3xl mb-8 animate-bounce";
-                        } else if (d.status === 'preparing' || d.status === 'preparing_food' || d.status === 'preparing_drinks') {
+                        } else if (['preparing', 'preparing_food', 'preparing_drinks', 'drinks_ready', 'food_ready'].includes(d.status)) {
                             title.innerText = "PREPARANDO... 🔥";
-                            title.classList.remove('text-gold');
-                            msg.innerText = "Estamos preparando tu pedido con mucho amor. Casi listo...";
+                            if (badge) {
+                                badge.innerText = "EN COCINA";
+                                badge.className = "bg-orange-500/20 text-orange-500 border border-orange-500/50 px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-[0.2em]";
+                            }
+                            if (progress) progress.style.width = "50%";
+                            if (step2) step2.className = "w-6 h-6 rounded-full bg-orange-500 text-white flex items-center justify-center text-[10px] font-black shadow-lg animate-pulse";
+                            if (step3) step3.className = "w-6 h-6 rounded-full bg-white/5 text-white/20 flex items-center justify-center text-[10px] font-black border border-white/10";
+                            msg.innerText = d.status.includes('ready') ? "¡Avanzando! Parte de tu pedido ya está listo." : "Estamos preparando tu pedido con mucho amor. Casi listo...";
                             icon.innerHTML = '<i class="fas fa-fire-alt"></i>';
                             icon.className = "w-20 h-20 bg-orange-500/20 text-orange-500 rounded-full flex items-center justify-center text-3xl mb-8 animate-pulse";
-                        } else if (d.status === 'drinks_ready' || d.status === 'food_ready') {
-                            title.innerText = "¡AVANZANDO! ✨";
-                            msg.innerText = "Parte de tu pedido ya está listo. ¡Ya casi terminamos!";
-                            icon.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
-                            icon.className = "w-20 h-20 bg-blue-500/20 text-blue-500 rounded-full flex items-center justify-center text-3xl mb-8";
                         } else if (d.status === 'completed') {
                             clearInterval(interval);
                             localStorage.removeItem('ra_active_order');
@@ -1480,12 +1518,23 @@
                         } else if (d.status === 'cancelled') {
                             clearInterval(interval);
                             title.innerText = "ORDEN CANCELADA";
+                            if (badge) {
+                                badge.innerText = "CANCELADA";
+                                badge.className = "bg-red-500/20 text-red-500 border border-red-500/50 px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-[0.2em]";
+                            }
                             msg.innerText = "Esta orden ha sido cancelada o movida. Contacta a caja si tienes dudas.";
                             icon.innerHTML = '<i class="fas fa-times"></i>';
                             icon.className = "w-20 h-20 bg-red-500/20 text-red-500 rounded-full flex items-center justify-center text-3xl mb-8";
                         } else {
-                            // Default: Pending / Paid
+                            // Pending / Paid
                             title.innerText = "¡ORDEN RECIBIDA! ✅";
+                            if (badge) {
+                                badge.innerText = "PAGADA & EN COLA";
+                                badge.className = "bg-blue-500/20 text-blue-400 border border-blue-500/50 px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-[0.2em]";
+                            }
+                            if (progress) progress.style.width = "0%";
+                            if (step2) step2.className = "w-6 h-6 rounded-full bg-white/5 text-white/20 flex items-center justify-center text-[10px] font-black border border-white/10";
+                            if (step3) step3.className = "w-6 h-6 rounded-full bg-white/5 text-white/20 flex items-center justify-center text-[10px] font-black border border-white/10";
                             msg.innerText = "Tu pedido ha sido enviado. Prepárate para el mejor sabor.";
                             icon.innerHTML = '<i class="fas fa-check"></i>';
                             icon.className = "w-20 h-20 bg-success/20 text-success rounded-full flex items-center justify-center text-3xl mb-8 animate-bounce-in";
