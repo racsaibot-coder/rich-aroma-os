@@ -367,6 +367,11 @@
                             </button>
                         </div>
                         <div class="py-1">
+                            <button onclick="checkDailyInventory(true); document.getElementById('config-menu').classList.add('hidden')" class="text-gray-700 group flex items-center px-4 py-2 text-sm w-full hover:bg-gray-100 font-bold">
+                                <i class="fas fa-clipboard-check mr-3 text-gold"></i> 📦 Inventario
+                            </button>
+                        </div>
+                        <div class="py-1">
                             <button onclick="connectHardware(); document.getElementById('config-menu').classList.add('hidden')" class="text-gray-700 group flex items-center px-4 py-2 text-sm w-full hover:bg-gray-100">
                                 <i class="fas fa-plug mr-3 text-blue-500"></i> <span id="printer-status">Connect Hardware</span>
                             </button>
@@ -2226,6 +2231,9 @@
                 startingCash = window.activeDBShift.opening_amount;
                 document.getElementById('shift-modal').classList.add('hidden');
                 console.log("🚀 Joining active shift...");
+                
+                // NEW: Trigger Inventory Check
+                checkDailyInventory();
             } else {
                 // No shift open, proceed to Step 2
                 document.getElementById('login-stage').classList.add('hidden');
@@ -2278,8 +2286,158 @@
 
             await fetchStoreStatus();
             console.log("✅ Shift Opened successfully.");
+
+            // NEW: Trigger Inventory Check
+            checkDailyInventory();
         } catch (err) {
             alert(err.message);
+        }
+    }
+
+    // --- RICO CASH RECARGA ---
+    async function submitRecarga(method) {
+        const amount = parseFloat(document.getElementById('recarga-amount').value);
+        if (!amount || amount <= 0) return alert("Ingrese un monto válido");
+        if (!window.loadedCustomer) return alert("Seleccione un cliente primero");
+
+        try {
+            // 1. Update Balance
+            const res = await fetch('/api/store?action=customer_update_balance', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer EMP-admin' },
+                body: JSON.stringify({ 
+                    id: window.loadedCustomer.id, 
+                    amount: amount 
+                })
+            });
+            
+            if (res.ok) {
+                // 2. Log Cash Transaction (CRITICAL for Shift Closing)
+                if (method === 'cash') {
+                    await fetch('/api/cash/transaction', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer EMP-admin' },
+                        body: JSON.stringify({
+                            shiftId: currentShiftId,
+                            type: 'drop', // Use 'drop' or 'reload' - here drop acts as cash coming into the drawer
+                            amount: amount,
+                            notes: `RECARGA: ${window.loadedCustomer.name}`
+                        })
+                    });
+                }
+
+                alert(`✅ Recarga de L. ${amount} exitosa (${method.toUpperCase()})`);
+                document.getElementById('recarga-modal').classList.add('hidden');
+                document.getElementById('recarga-amount').value = '';
+                lookupCustomer(); // Refresh profile
+            } else {
+                alert("Error al recargar saldo");
+            }
+        } catch (e) { console.error(e); alert("Error de conexión"); }
+    }
+
+    // --- DAILY INVENTORY CHECKLIST LOGIC ---
+    let dailyInventoryData = [];
+    
+    async function checkDailyInventory(force = false) {
+        // Only trigger if not already done today in this browser (unless forced)
+        const today = new Date().toISOString().split('T')[0];
+        if (!force && localStorage.getItem('pos_inventory_checked_date') === today) return;
+
+        try {
+            const res = await fetch('/api/admin?action=inventory', {
+                headers: { 'Authorization': 'Bearer EMP-admin' }
+            });
+            dailyInventoryData = await res.json();
+            
+            if (Array.isArray(dailyInventoryData) && dailyInventoryData.length > 0) {
+                renderInventoryChecklist();
+                document.getElementById('inventory-check-modal').classList.remove('hidden');
+            }
+        } catch (e) { console.error("Failed to load inventory checklist", e); }
+    }
+
+    function renderInventoryChecklist() {
+        const container = document.getElementById('inventory-checklist-container');
+        const role = (window.currentEmployee?.role || 'none').toLowerCase().trim();
+        
+        // Role-based filtering
+        const coreItems = dailyInventoryData.filter(i => {
+            const itemRole = (i.daily_count_role || 'none').toLowerCase().trim();
+            if (role === 'admin' || itemRole === 'all') return itemRole !== 'none';
+            return itemRole === role;
+        });
+
+        if (coreItems.length === 0) {
+            // Fallback for safety
+            const fallbackItems = dailyInventoryData.filter(i => 
+                ['leche', 'milk', 'café', 'coffee', 'pan', 'dough', 'baleada', 'frijol', 'frijoles'].some(key => i.name.toLowerCase().includes(key))
+            );
+            if (fallbackItems.length === 0) {
+                container.innerHTML = '<p class="text-center text-gray-400 py-10">No items assigned for your role.</p>';
+                return;
+            }
+            renderItems(fallbackItems);
+        } else {
+            renderItems(coreItems);
+        }
+
+        function renderItems(items) {
+            container.innerHTML = items.map(item => `
+                <div class="flex items-center justify-between gap-4 p-5 bg-gray-50 rounded-2xl border border-gray-100">
+                    <div>
+                        <h4 class="font-bold text-dark uppercase text-sm">${item.name}</h4>
+                        <p class="text-[9px] text-gray-400 font-bold uppercase tracking-widest">Sistema: ${parseFloat(item.current_stock).toFixed(1)} ${item.unit}</p>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <input type="number" step="0.1" id="inv-input-${item.id}" placeholder="Real" class="w-24 bg-white border-2 border-gray-200 rounded-xl p-3 text-center font-black text-dark focus:border-gold outline-none">
+                        <span class="text-[9px] font-black text-gray-300 uppercase">${item.unit}</span>
+                    </div>
+                </div>
+            `).join('');
+        }
+    }
+
+    async function submitInventoryCheck() {
+        const btn = document.getElementById('inventory-submit-btn');
+        const role = (window.currentEmployee?.role || 'none').toLowerCase().trim();
+        
+        const coreItems = dailyInventoryData.filter(i => {
+            const itemRole = (i.daily_count_role || 'none').toLowerCase().trim();
+            if (role === 'admin' || itemRole === 'all') return itemRole !== 'none';
+            return itemRole === role;
+        });
+
+        let updates = [];
+        let itemsToUpdate = coreItems.length > 0 ? coreItems : dailyInventoryData.filter(i => 
+            ['leche', 'milk', 'café', 'coffee', 'pan', 'dough', 'baleada', 'frijol', 'frijoles'].some(key => i.name.toLowerCase().includes(key))
+        );
+
+        for (const item of itemsToUpdate) {
+            const input = document.getElementById(`inv-input-${item.id}`);
+            if (input && input.value) {
+                updates.push({ ...item, current_stock: parseFloat(input.value) });
+            }
+        }
+
+        if (updates.length === 0) return alert("Ingresa al menos un conteo");
+
+        btn.disabled = true; btn.innerText = "ACTUALIZANDO...";
+
+        try {
+            for (const update of updates) {
+                await fetch('/api/admin?action=inventory_update', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer EMP-admin' },
+                    body: JSON.stringify(update)
+                });
+            }
+            localStorage.setItem('pos_inventory_checked_date', new Date().toISOString().split('T')[0]);
+            document.getElementById('inventory-check-modal').classList.add('hidden');
+            alert("✅ Inventario actualizado.");
+        } catch (e) {
+            alert("Error al actualizar");
+            btn.disabled = false; btn.innerText = "Finalizar Conteo";
         }
     }
 
@@ -2771,6 +2929,32 @@
             </div>
         </div>
     </div>
+    </div>
+
+    <!-- DAILY INVENTORY CHECKLIST MODAL -->
+    <div id="inventory-check-modal" class="hidden fixed inset-0 bg-dark/95 backdrop-blur-md flex items-center justify-center z-[200] p-6">
+        <div class="bg-white rounded-[2.5rem] w-full max-w-lg shadow-2xl flex flex-col max-h-[85vh] overflow-hidden border-t-8 border-gold">
+            <div class="p-8 border-b border-gray-100 flex justify-between items-center bg-gray-50">
+                <div>
+                    <h2 class="text-2xl font-black text-dark uppercase tracking-tight">Conteo de Inventario</h2>
+                    <p class="text-[10px] text-gray-400 font-bold uppercase tracking-widest mt-1">Verificación obligatoria del día</p>
+                </div>
+                <div class="w-12 h-12 bg-gold/10 text-gold rounded-2xl flex items-center justify-center text-xl">
+                    <i class="fas fa-clipboard-check"></i>
+                </div>
+            </div>
+            
+            <div class="flex-1 overflow-y-auto p-8 space-y-6" id="inventory-checklist-container">
+                <!-- Injected via JS -->
+                <div class="text-center py-10 text-gray-400 italic">Cargando lista de ingredientes...</div>
+            </div>
+
+            <div class="p-8 bg-gray-50 border-t border-gray-100">
+                <button onclick="submitInventoryCheck()" id="inventory-submit-btn" class="w-full py-5 bg-dark text-white font-black rounded-2xl shadow-xl active:scale-95 transition-all uppercase tracking-widest text-sm">
+                    Finalizar Conteo
+                </button>
+            </div>
+        </div>
     </div>
 
     <!-- UI MODAL (SYSTEM PROMPT/CONFIRM REPLACEMENT) -->
