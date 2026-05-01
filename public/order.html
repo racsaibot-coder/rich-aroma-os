@@ -452,12 +452,16 @@
                     </button>
                     <button onclick="setFulfill('dinein')" id="fbtn-dinein" class="p-4 rounded-2xl border transition-all text-center space-y-2 flex flex-col items-center">
                         <i class="fas fa-mug-hot text-xl"></i>
-                        <span class="text-[9px] font-black uppercase">En Mesa</span>
+                        <span class="text-[9px] font-black uppercase">Aquí (Mesa)</span>
                     </button>
                     <button onclick="setFulfill('delivery')" id="fbtn-delivery" class="p-4 rounded-2xl border transition-all text-center space-y-2 flex flex-col items-center">
                         <i class="fas fa-motorcycle text-xl"></i>
                         <span class="text-[9px] font-black uppercase">A Domicilio</span>
                     </button>
+                </div>
+                <!-- Table/Group for Dine-in -->
+                <div id="check-table-ui" class="hidden animate-in slide-in-from-top-2 duration-300">
+                    <input type="text" id="check-table" placeholder="Número de Mesa o Nombre de Grupo" class="w-full bg-white/5 border border-white/10 p-5 rounded-[1.5rem] text-white outline-none focus:border-gold font-bold">
                 </div>
             </div>
 
@@ -494,7 +498,8 @@
                 <div class="grid grid-cols-3 gap-2">
                     <button onclick="window.setPayment('cash')" id="pbtn-cash" class="p-4 rounded-2xl border flex flex-col items-center justify-center gap-2 transition-all">
                         <i class="fas fa-money-bill-wave text-lg"></i>
-                        <span class="text-[8px] font-black uppercase text-center">Efectivo / POS</span>
+                        <span class="text-[8px] font-black uppercase text-center">Pagar en Caja</span>
+                        <p class="text-[6px] font-black text-white/40 uppercase tracking-tighter">Efectivo / POS</p>
                     </button>
                     <button onclick="window.setPayment('transfer')" id="pbtn-transfer" class="p-4 rounded-2xl border flex flex-col items-center justify-center gap-2 transition-all">
                         <i class="fas fa-university text-lg"></i>
@@ -1019,6 +1024,9 @@
 
                 const addressUi = document.getElementById('check-address-ui');
                 if (addressUi) addressUi.classList.toggle('hidden', type !== 'delivery');
+
+                const tableUi = document.getElementById('check-table-ui');
+                if (tableUi) tableUi.classList.toggle('hidden', type !== 'dinein');
                 
                 document.getElementById('check-total').innerText = 'L ' + (cart.reduce((s,i)=>s+i.finalPrice,0) + deliveryFee).toFixed(2);
             };
@@ -1279,9 +1287,11 @@
                 const name = document.getElementById('check-name').value.trim();
                 const phone = document.getElementById('check-phone').value.trim();
                 const address = document.getElementById('check-address').value.trim();
+                const table = document.getElementById('check-table').value.trim();
                 
                 if (!name) return alert("Por favor ingresa tu nombre");
                 if (fulfillment === 'delivery' && !address) return alert("Por favor ingresa tu dirección para la entrega");
+                if (fulfillment === 'dinein' && !table) return alert("Por favor ingresa tu número de mesa o nombre de grupo");
                 
                 isSubmitting = true;
                 const btn = document.getElementById('final-btn');
@@ -1297,8 +1307,8 @@
                     customer_name: name,
                     customer_phone: phone,
                     delivery_fee: deliveryFee,
-                    delivery_address: fulfillment === 'delivery' ? address : null,
-                    notes: fulfillment === 'delivery' ? `DOMICILIO (${zoneName}): ${address}` : ""
+                    delivery_address: fulfillment === 'delivery' ? address : (fulfillment === 'dinein' ? `MESA: ${table}` : null),
+                    notes: fulfillment === 'delivery' ? `DOMICILIO (${zoneName}): ${address}` : (fulfillment === 'dinein' ? `[MESA: ${table}]` : "")
                 };
 
                 try {
