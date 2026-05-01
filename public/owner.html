@@ -139,6 +139,31 @@
             </div>
         </div>
 
+        <!-- Historical Sales Report (New) -->
+        <div class="bg-white p-8 rounded-[2.5rem] shadow-sm border border-gray-100 print:shadow-none" id="sales-report-section">
+            <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4 print:hidden">
+                <h3 class="text-sm font-black uppercase tracking-widest text-dark flex items-center gap-2">
+                    <i class="fas fa-file-invoice-dollar text-blue-600"></i> Reporte Histórico de Ventas
+                </h3>
+                <div class="flex flex-wrap gap-2">
+                    <div class="flex items-center gap-2 bg-gray-50 p-2 rounded-xl border border-gray-100">
+                        <label class="text-[9px] font-black text-gray-400 uppercase">Desde</label>
+                        <input type="date" id="report-start-date" class="bg-transparent text-xs font-bold outline-none focus:text-blue-600">
+                    </div>
+                    <div class="flex items-center gap-2 bg-gray-50 p-2 rounded-xl border border-gray-100">
+                        <label class="text-[9px] font-black text-gray-400 uppercase">Hasta</label>
+                        <input type="date" id="report-end-date" class="bg-transparent text-xs font-bold outline-none focus:text-blue-600">
+                    </div>
+                    <button onclick="loadHistoricalSales()" class="bg-dark text-white px-6 py-2 rounded-xl text-xs font-black uppercase tracking-widest hover:bg-blue-600 transition-all">Generar</button>
+                    <button onclick="window.print()" class="w-10 h-10 bg-gray-100 text-gray-500 rounded-xl flex items-center justify-center hover:bg-gray-200 transition-all"><i class="fas fa-print"></i></button>
+                </div>
+            </div>
+
+            <div id="sales-report-content" class="min-h-[100px]">
+                <div class="text-center py-10 text-gray-300 italic text-sm">Selecciona un rango de fechas para generar el reporte de ventas.</div>
+            </div>
+        </div>
+
         <!-- Expenses Management (New) -->
         <div class="bg-white p-8 rounded-[2.5rem] shadow-sm border border-gray-100">
             <div class="flex justify-between items-center mb-6">
@@ -432,6 +457,81 @@
                                 </tr>
                             </tfoot>
                         </table>
+                    </div>
+                `;
+            } catch (e) {
+                content.innerHTML = `<div class="text-center py-20 text-red-500 font-bold">${e.message}</div>`;
+            }
+        }
+
+        async function loadHistoricalSales() {
+            const start = document.getElementById('report-start-date').value;
+            const end = document.getElementById('report-end-date').value;
+            if (!start || !end) return alert("Selecciona ambas fechas");
+
+            const content = document.getElementById('sales-report-content');
+            content.innerHTML = '<div class="text-center py-20"><i class="fas fa-spinner fa-spin text-2xl text-blue-600"></i></div>';
+
+            try {
+                const res = await fetch(`/api/staff?action=admin_sales_report&startDate=${start}&endDate=${end}&adminPin=${OWNER_PIN}`);
+                const data = await res.json();
+
+                if (!data || data.error) throw new Error(data.error || "No data");
+
+                content.innerHTML = `
+                    <div class="space-y-8 animate-in fade-in duration-500">
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div class="p-6 bg-blue-50 rounded-[2rem] border border-blue-100">
+                                <p class="text-[10px] font-black text-blue-400 uppercase mb-1">Ventas Totales</p>
+                                <h4 class="text-3xl font-black text-blue-900">L. ${data.totals.total.toLocaleString()}</h4>
+                                <p class="text-[9px] font-bold text-blue-400 mt-1">${data.totals.count} órdenes</p>
+                            </div>
+                            <div class="p-6 bg-gray-50 rounded-[2rem] border border-gray-100">
+                                <p class="text-[10px] font-black text-gray-400 uppercase mb-1">Ticket Promedio</p>
+                                <h4 class="text-3xl font-black text-gray-800">L. ${Math.round(data.totals.avg)}</h4>
+                            </div>
+                            <div class="p-6 bg-gold/10 rounded-[2rem] border border-gold/20">
+                                <p class="text-[10px] font-black text-gold uppercase mb-1">Día más alto</p>
+                                <h4 class="text-xl font-black text-dark">${data.peakDay.date}</h4>
+                                <p class="text-[9px] font-bold text-gold mt-1">L. ${data.peakDay.total.toLocaleString()}</p>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                            <div class="space-y-4">
+                                <h4 class="text-[10px] font-black uppercase text-gray-400 tracking-widest">Desglose de Pagos</h4>
+                                <div class="space-y-2">
+                                    <div class="flex justify-between p-3 bg-white border border-gray-100 rounded-xl">
+                                        <span class="text-xs font-bold text-gray-500">EFECTIVO</span>
+                                        <span class="text-xs font-black text-green-600">L. ${data.totals.cash.toLocaleString()}</span>
+                                    </div>
+                                    <div class="flex justify-between p-3 bg-white border border-gray-100 rounded-xl">
+                                        <span class="text-xs font-bold text-gray-500">TARJETA</span>
+                                        <span class="text-xs font-black text-blue-600">L. ${data.totals.card.toLocaleString()}</span>
+                                    </div>
+                                    <div class="flex justify-between p-3 bg-white border border-gray-100 rounded-xl">
+                                        <span class="text-xs font-bold text-gray-500">TRANSFERENCIA</span>
+                                        <span class="text-xs font-black text-purple-600">L. ${data.totals.transfer.toLocaleString()}</span>
+                                    </div>
+                                    <div class="flex justify-between p-3 bg-white border border-gray-100 rounded-xl">
+                                        <span class="text-xs font-bold text-gray-500">RICO CASH</span>
+                                        <span class="text-xs font-black text-gold">L. ${data.totals.rico.toLocaleString()}</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="space-y-4">
+                                <h4 class="text-[10px] font-black uppercase text-gray-400 tracking-widest">Top 5 Productos</h4>
+                                <div class="space-y-2">
+                                    ${data.topItems.map(i => `
+                                        <div class="flex justify-between p-3 bg-white border border-gray-100 rounded-xl">
+                                            <span class="text-xs font-bold text-gray-700 uppercase">${i.name}</span>
+                                            <span class="text-xs font-black text-dark">${i.qty} und.</span>
+                                        </div>
+                                    `).join('')}
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 `;
             } catch (e) {

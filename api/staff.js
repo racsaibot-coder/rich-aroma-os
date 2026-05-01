@@ -239,6 +239,62 @@ module.exports = async function handler(req, res) {
                 return res.json(data);
             }
 
+            if (action === 'admin_sales_report') {
+                const { startDate, endDate } = req.query;
+                if (!startDate || !endDate) return res.status(400).json({ error: "Dates required" });
+
+                const start = startDate + 'T00:00:00-06:00';
+                const end = endDate + 'T23:59:59-06:00';
+
+                const { data: orders, error } = await supabase.from('orders')
+                    .select('*')
+                    .gte('created_at', start)
+                    .lte('created_at', end)
+                    .not('status', 'eq', 'cancelled');
+
+                if (error) throw error;
+
+                // Totals & Peak Day
+                const totals = { total: 0, count: orders.length, avg: 0, cash: 0, card: 0, transfer: 0, rico: 0 };
+                const dayMap = {};
+                const itemMap = {};
+
+                orders.forEach(o => {
+                    const t = parseFloat(o.total || 0);
+                    const rp = parseFloat(o.rico_amount_paid || 0);
+                    const other = t - rp;
+                    const method = o.secondary_payment_method || o.payment_method;
+
+                    totals.total += t;
+                    totals.rico += rp;
+                    if (method === 'cash') totals.cash += other;
+                    else if (method === 'card') totals.card += other;
+                    else if (method === 'transfer') totals.transfer += other;
+
+                    // Peak Day
+                    const d = o.created_at.split('T')[0];
+                    dayMap[d] = (dayMap[d] || 0) + t;
+
+                    // Items
+                    (o.items || []).forEach(i => {
+                        const name = i.name || 'Unknown';
+                        itemMap[name] = (itemMap[name] || 0) + (i.qty || 1);
+                    });
+                });
+
+                totals.avg = totals.count > 0 ? totals.total / totals.count : 0;
+
+                const peakDate = Object.keys(dayMap).sort((a,b) => dayMap[b] - dayMap[a])[0] || '---';
+                const peakDay = { date: peakDate, total: dayMap[peakDate] || 0 };
+
+                const topItems = Object.entries(itemMap)
+                    .sort((a,b) => b[1] - a[1])
+                    .slice(0, 5)
+                    .map(([name, qty]) => ({ name, qty }));
+
+                return res.json({ totals, peakDay, topItems });
+            }
+
             if (action === 'admin_reports') {
                 const todayDate = new Date();
                 const today = getHondurasDate();
