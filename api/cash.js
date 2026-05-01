@@ -239,7 +239,8 @@ export default async function handler(req, res) {
                     card: declared_card,
                     transfer: declared_transfer
                 },
-                order_count: orders?.length || 0
+                transactions: payouts + drops - cashReloads, // Physical net movement in drawer
+                order_count: allOrders?.length || 0
             }
         });
     }

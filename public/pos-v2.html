@@ -2896,17 +2896,18 @@
         const declaredCard = parseFloat(r.declared?.card || 0);
         const declaredTransfer = parseFloat(r.declared?.transfer || 0);
 
-        // Expected Cash (The only one that matters for physical discrepancy in drawer)
-        const expectedCash = opening + cashSales + parseFloat(r.transactions || 0);
+        // Expected Cash calculation
+        // Opening + Cash Sales + Net Transactions (Drops/Reloads - Payouts)
+        const expectedCash = opening + cashSales - (parseFloat(r.transactions || 0));
         const diffCash = declaredCash - expectedCash;
         const diffCard = declaredCard - cardSales;
         const diffTransfer = declaredTransfer - transferSales;
         
         content.innerHTML = `
-            <div class="space-y-4">
+            <div class="space-y-4 text-dark">
                 <!-- PHYSICAL CASH DRAWER -->
                 <div class="p-6 bg-gray-900 text-gold rounded-2xl font-mono text-sm space-y-3 border border-white/10 shadow-2xl">
-                    <h4 class="text-[10px] font-black uppercase tracking-[0.2em] text-gray-500 border-b border-white/5 pb-2 mb-2">Physical Cash / Efectivo</h4>
+                    <h4 class="text-[10px] font-black uppercase tracking-[0.2em] text-gray-500 border-b border-white/5 pb-2 mb-2 text-center">Physical Cash / Efectivo en Caja</h4>
                     <div class="flex justify-between">
                         <span class="text-gray-400">Opening Base:</span>
                         <span class="text-white">L. ${opening.toFixed(2)}</span>
@@ -2915,15 +2916,19 @@
                         <span class="text-gray-400">Cash Sales:</span>
                         <span class="text-white">+ L. ${cashSales.toFixed(2)}</span>
                     </div>
+                    <div class="flex justify-between">
+                        <span class="text-gray-400">Other (Drops/Reloads):</span>
+                        <span class="text-white">${r.transactions >= 0 ? '+' : '-'} L. ${Math.abs(r.transactions).toFixed(2)}</span>
+                    </div>
                     <div class="flex justify-between text-blue-400 border-t border-white/10 pt-2">
                         <span>Expected Cash:</span>
-                        <span class="font-black">L. ${expectedCash.toFixed(2)}</span>
+                        <span class="font-black underline">L. ${expectedCash.toFixed(2)}</span>
                     </div>
                     <div class="flex justify-between text-yellow-400">
-                        <span>Actual in Drawer:</span>
+                        <span>Actual (Typed):</span>
                         <span class="font-black">L. ${declaredCash.toFixed(2)}</span>
                     </div>
-                    <div class="flex justify-between text-lg font-black p-3 rounded-xl ${diffCash >= 0 ? 'bg-green-900/30 text-green-400' : 'bg-red-900/30 text-red-400'}">
+                    <div class="flex justify-between text-lg font-black p-3 rounded-xl ${Math.abs(diffCash) < 0.1 ? 'bg-green-900/30 text-green-400' : 'bg-red-900/30 text-red-400'}">
                         <span>DIFF CASH:</span>
                         <span>L. ${diffCash.toFixed(2)}</span>
                     </div>
@@ -2933,25 +2938,25 @@
                 <div class="grid grid-cols-2 gap-3">
                     <div class="p-4 bg-gray-50 rounded-2xl border border-gray-100">
                         <h5 class="text-[9px] font-black uppercase text-gray-400 mb-2">Card / Tarjeta</h5>
-                        <div class="flex justify-between text-xs"><span>System:</span> <span class="font-bold">L.${cardSales.toFixed(2)}</span></div>
-                        <div class="flex justify-between text-xs"><span>POS Report:</span> <span class="font-bold">L.${declaredCard.toFixed(2)}</span></div>
-                        <div class="mt-2 text-center text-xs font-black ${diffCard === 0 ? 'text-green-600' : 'text-red-500'}">
-                            ${diffCard === 0 ? 'MATCH ✅' : `DIFF: L.${diffCard.toFixed(2)}`}
+                        <div class="flex justify-between text-xs text-gray-500"><span>System:</span> <span class="font-bold">L.${cardSales.toFixed(0)}</span></div>
+                        <div class="flex justify-between text-xs text-gray-800"><span>POS:</span> <span class="font-bold">L.${declaredCard.toFixed(0)}</span></div>
+                        <div class="mt-2 text-center text-[10px] font-black ${Math.abs(diffCard) < 1 ? 'text-green-600' : 'text-red-500'}">
+                            ${Math.abs(diffCard) < 1 ? 'MATCH ✅' : `DIFF: L.${diffCard.toFixed(0)}`}
                         </div>
                     </div>
                     <div class="p-4 bg-gray-50 rounded-2xl border border-gray-100">
                         <h5 class="text-[9px] font-black uppercase text-gray-400 mb-2">Transfer / Banco</h5>
-                        <div class="flex justify-between text-xs"><span>System:</span> <span class="font-bold">L.${transferSales.toFixed(2)}</span></div>
-                        <div class="flex justify-between text-xs"><span>Declared:</span> <span class="font-bold">L.${declaredTransfer.toFixed(2)}</span></div>
-                        <div class="mt-2 text-center text-xs font-black ${diffTransfer === 0 ? 'text-green-600' : 'text-red-500'}">
-                            ${diffTransfer === 0 ? 'MATCH ✅' : `DIFF: L.${diffTransfer.toFixed(2)}`}
+                        <div class="flex justify-between text-xs text-gray-500"><span>System:</span> <span class="font-bold">L.${transferSales.toFixed(0)}</span></div>
+                        <div class="flex justify-between text-xs text-gray-800"><span>Typed:</span> <span class="font-bold">L.${declaredTransfer.toFixed(0)}</span></div>
+                        <div class="mt-2 text-center text-[10px] font-black ${Math.abs(diffTransfer) < 1 ? 'text-green-600' : 'text-red-500'}">
+                            ${Math.abs(diffTransfer) < 1 ? 'MATCH ✅' : `DIFF: L.${diffTransfer.toFixed(0)}`}
                         </div>
                     </div>
                 </div>
 
                 <div class="pt-2 flex justify-between items-center text-[10px] font-bold text-gray-400 uppercase tracking-widest px-2">
-                    <span>Total Orders: ${orderCount}</span>
-                    <span>Rico Cash: L.${ricoSales.toFixed(2)}</span>
+                    <span>Orders: ${orderCount}</span>
+                    <span>Rico Cash: L.${ricoSales.toFixed(0)}</span>
                 </div>
             </div>
         `;
