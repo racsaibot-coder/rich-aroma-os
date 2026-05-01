@@ -130,13 +130,17 @@ export default async function handler(req, res) {
         if (shiftErr || !shift) return res.status(404).json({ error: 'Shift not found' });
         if (shift.status === 'closed') return res.status(400).json({ error: 'Shift is already closed' });
         
-        const { data: orders } = await supabase
+        // 1. Fetch all orders that happened since the shift started
+        // We filter for orders that either MATCH this shiftId OR have NO shiftId (floating)
+        const { data: allOrders } = await supabase
             .from('orders')
             .select('total, payment_method, secondary_payment_method, rico_amount_paid, shift_id, created_at')
             .gte('created_at', shift.opened_at)
             .not('status', 'eq', 'cancelled');
             
-        const shiftOrders = (orders || []).filter(o => o.shift_id === shiftId || !o.shift_id);
+        // CRITICAL: A "Floating" order only belongs to THIS shift if it happened AFTER opening 
+        // AND before any subsequent shift opened (which is guaranteed here because we are the active shift).
+        const shiftOrders = (allOrders || []).filter(o => o.shift_id === shiftId || !o.shift_id);
 
         const cashSales = (shiftOrders || []).reduce((sum, o) => {
             const total = parseFloat(o.total) || 0;
@@ -167,21 +171,31 @@ export default async function handler(req, res) {
         
         const { data: txns } = await supabase
             .from('cash_transactions')
-            .select('amount, type')
+            .select('amount, type, notes')
             .eq('shift_id', shiftId);
             
         let payouts = 0;
         let drops = 0;
+        let cashReloads = 0;
         if (txns) {
             txns.forEach(t => {
                 const amt = parseFloat(t.amount) || 0;
                 if (t.type === 'payout') payouts += amt;
-                if (t.type === 'drop') drops += amt;
+                if (t.type === 'drop') {
+                    // Check if this drop was actually a Rico Cash reload
+                    if (t.notes && t.notes.includes('RECARGA:')) {
+                        cashReloads += amt;
+                    } else {
+                        drops += amt;
+                    }
+                }
+                if (t.type === 'reload') cashReloads += amt;
             });
         }
         
         const opening = parseFloat(shift.opening_amount) || 0;
-        const expected = opening + cashSales - payouts - drops;
+        // Expected Cash = Opening + Sales (Already excludes Rico portion) + Cash Reloads - Payouts - Cash Drops (Deposits)
+        const expected = opening + cashSales + cashReloads - payouts - drops;
         const declared = parseFloat(closingAmount) || 0;
         const diff = declared - expected;
 
