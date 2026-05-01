@@ -625,7 +625,8 @@ module.exports = async function handler(req, res) {
                 return {
                     ...item,
                     is_house_made: meta?.is_house_made || false,
-                    is_vip_free_eligible: meta?.is_vip_free_eligible || false
+                    is_vip_free_eligible: meta?.is_vip_free_eligible || false,
+                    fulfillment: item.fulfillment || fulfillmentType || 'dinein' // Preserve item-level or fallback
                 };
             });
 

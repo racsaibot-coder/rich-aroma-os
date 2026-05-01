@@ -478,7 +478,10 @@
                                     <div class="flex gap-3">
                                         <span class="font-bold text-gold bg-gold/10 px-2 py-0.5 rounded h-min">${i.quantity || i.qty || 1}x</span>
                                         <div class="flex flex-col">
-                                            <span class="${i.is_addon ? 'text-yellow-400' : (i.is_old ? 'text-white/40' : 'text-white/90')} leading-tight">${displayName}</span>
+                                            <div class="flex items-center gap-2">
+                                                <span class="${i.is_addon ? 'text-yellow-400' : (i.is_old ? 'text-white/40' : 'text-white/90')} leading-tight">${displayName}</span>
+                                                ${i.fulfillment === 'pickup' ? '<span class="bg-orange-500 text-white text-[8px] px-1.5 py-0.5 rounded font-black tracking-tighter">LLEVAR</span>' : ''}
+                                            </div>
                                             ${i.is_addon ? '<span class="text-[10px] bg-yellow-500 text-dark px-1.5 py-0.5 rounded w-max mt-1">NUEVO ADD-ON</span>' : ''}
                                             ${i.is_old ? '<span class="text-[8px] text-white/20 uppercase font-bold mt-1">Ya Entregado</span>' : ''}
                                         </div>
