@@ -553,18 +553,38 @@
     <div id="track-modal" class="hidden fixed inset-0 bg-dark z-[1000] flex flex-col p-8 items-center justify-center text-center animate-in fade-in duration-500">
         <div id="track-icon" class="w-20 h-20 bg-success/20 text-success rounded-full flex items-center justify-center text-3xl mb-8 animate-bounce-in"><i class="fas fa-check"></i></div>
         <h2 class="text-3xl font-display font-black text-white mb-2 italic tracking-tight">¡ORDEN RECIBIDA!</h2>
-        <p id="track-msg" class="text-white/40 text-sm mb-12 max-w-xs leading-relaxed">Tu pedido ha sido enviado. Prepárate para el mejor sabor.</p>
+        <p id="track-msg" class="text-white/40 text-sm mb-8 max-w-xs leading-relaxed">Tu pedido ha sido enviado. Prepárate para el mejor sabor.</p>
 
-        <div class="glass w-full max-w-xs p-8 rounded-[3rem] space-y-6 relative mb-12 overflow-hidden">
+        <!-- PWA INSTALL PROMPT (Contextual) -->
+        <div id="install-prompt" class="hidden glass w-full max-w-xs p-4 rounded-2xl border-gold/20 mb-6 animate-bounce">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 bg-gold rounded-xl flex items-center justify-center text-dark shadow-lg"><i class="fas fa-mobile-alt"></i></div>
+                <div class="text-left flex-1">
+                    <p class="text-[10px] font-black text-gold uppercase tracking-widest">Instala nuestra App</p>
+                    <p class="text-[8px] text-white/60 uppercase font-bold">Pide más rápido y mantente conectado</p>
+                </div>
+                <button onclick="window.installPWA()" class="bg-white/10 text-white px-3 py-2 rounded-lg text-[8px] font-black uppercase">Instalar</button>
+            </div>
+        </div>
+
+        <div class="glass w-full max-w-xs p-8 rounded-[3rem] space-y-6 relative mb-8 overflow-hidden">
             <div class="absolute -right-4 -top-4 opacity-5 text-8xl text-white"><i class="fas fa-receipt"></i></div>
-            <div><p class="text-[10px] font-black text-gold uppercase tracking-[0.4em] mb-1">Orden de Seguimiento</p><h3 id="receipt-num" class="text-4xl font-black text-white tracking-tighter">#----</h3></div>
-            <div id="receipt-qr" class="bg-white p-4 rounded-3xl inline-block mx-auto shadow-2xl"></div>
-            <p class="text-[9px] text-white/30 font-black uppercase tracking-widest leading-relaxed">Muestra este código en caja<br>para identificar tu pago.</p>
+            <div class="flex justify-between items-center">
+                <div class="text-left"><p class="text-[10px] font-black text-gold uppercase tracking-[0.4em] mb-1">Orden</p><h3 id="receipt-num" class="text-4xl font-black text-white tracking-tighter">#----</h3></div>
+                <div id="receipt-qr" class="bg-white p-2 rounded-xl inline-block shadow-2xl"></div>
+            </div>
+            
+            <!-- ORDER DETAILS SUMMARY -->
+            <div id="track-items-list" class="space-y-2 border-t border-white/5 pt-4 text-left max-h-40 overflow-y-auto no-scrollbar">
+                <!-- Items injected here -->
+            </div>
+
+            <p class="text-[9px] text-white/30 font-black uppercase tracking-widest leading-relaxed">Muestra este código en caja para identificar tu pago.</p>
         </div>
 
         <div class="flex flex-col gap-3 w-full max-w-xs">
             <button onclick="location.reload()" class="w-full py-5 bg-gold text-dark rounded-[2rem] font-black text-xs uppercase tracking-widest shadow-xl active:scale-95 transition-all">Pedir Algo Más</button>
-            <p class="text-[9px] text-white/20 uppercase font-bold tracking-widest">Rich Aroma OS v2.0</p>
+            <p class="text-[9px] text-white/20 uppercase font-bold tracking-widest">Rich Aroma OS v3.0</p>
         </div>
     </div>
 
@@ -576,6 +596,25 @@
             var currentCustomer = null; var isSubmitting = false; var paymentMethod = 'cash';
             var isStoreClosed = false;
             const SHOP_LAT = 14.0768; const SHOP_LNG = -87.1856; // Rich Aroma Coffee Shop (Estimated)
+
+            // PWA Install Logic
+            let deferredPrompt;
+            window.addEventListener('beforeinstallprompt', (e) => {
+                e.preventDefault();
+                deferredPrompt = e;
+                const installBtn = document.getElementById('install-prompt');
+                if (installBtn) installBtn.classList.remove('hidden');
+            });
+
+            window.installPWA = async () => {
+                if (!deferredPrompt) return;
+                deferredPrompt.prompt();
+                const { outcome } = await deferredPrompt.userChoice;
+                if (outcome === 'accepted') {
+                    document.getElementById('install-prompt').classList.add('hidden');
+                }
+                deferredPrompt = null;
+            };
 
             window.getLocation = () => {
                 if (!navigator.geolocation) return alert("Tu navegador no soporta geolocalización.");
@@ -1104,6 +1143,8 @@
 
                     const user = d.user || d.customer;
                     localStorage.setItem('ra_customer_phone', user.phone);
+                    // Persistent session: store with current timestamp (180 days)
+                    user.auth_expiry = Date.now() + (180 * 24 * 60 * 60 * 1000); 
                     localStorage.setItem('ra_customer_data', JSON.stringify(user));
                     window.closeLogin(); syncUser();
                 } catch(e) { alert(e.message); } finally { btn.innerText = originalText; btn.disabled = false; }
@@ -1171,7 +1212,16 @@
                     const ricoBtn = document.getElementById('pbtn-rico');
                     
                     if (d) {
-                        currentCustomer = JSON.parse(d);
+                        const tempUser = JSON.parse(d);
+                        // Check if session is still valid (180 days)
+                        if (tempUser.auth_expiry && Date.now() > tempUser.auth_expiry) {
+                            console.log("Session expired");
+                            localStorage.removeItem('ra_customer_data');
+                            location.reload();
+                            return;
+                        }
+
+                        currentCustomer = tempUser;
                         if (currentCustomer && currentCustomer.name) {
                             document.getElementById('user-pill').classList.remove('hidden');
                             document.getElementById('login-btn').classList.add('hidden');
@@ -1347,21 +1397,33 @@
                 const msg = document.getElementById('track-msg');
                 const receiptNum = document.getElementById('receipt-num');
                 const receiptQr = document.getElementById('receipt-qr');
-                
+                const itemList = document.getElementById('track-items-list');
+
                 modal.classList.remove('hidden');
                 receiptNum.innerText = `#${num}`;
-                
+                if (itemList) itemList.innerHTML = "";
+
                 try {
                     const r = await fetch(`/api/store?action=track_order&number=${num}`);
                     const d = await r.json();
                     if (!r.ok) throw new Error(d.error || "Orden no encontrada");
-                    
+
                     // Setup QR
                     if (window.QRCode) {
                         receiptQr.innerHTML = "";
-                        new QRCode(receiptQr, { text: d.id, width: 160, height: 160, colorDark: "#120C09" });
+                        new QRCode(receiptQr, { text: d.id, width: 80, height: 80, colorDark: "#120C09" });
                     }
-                    
+
+                    // Render Items initially
+                    if (itemList) {
+                        itemList.innerHTML = (d.items || []).map(i => `
+                            <div class="flex justify-between items-center text-[10px] font-bold">
+                                <span class="text-white/60">${i.qty}x ${i.name}</span>
+                                <span class="text-gold">L. ${parseFloat(i.finalPrice).toFixed(0)}</span>
+                            </div>
+                        `).join('');
+                    }
+
                     // Start Polling
                     startStatusPolling(d.id);
                 } catch(e) {
@@ -1376,16 +1438,27 @@
                     try {
                         const r = await fetch(`/api/store?action=track_order&id=${id}`);
                         const d = await r.json();
-                        
+
                         const msg = document.getElementById('track-msg');
                         const icon = document.getElementById('track-icon');
                         const title = document.querySelector('#track-modal h2');
+                        const itemList = document.getElementById('track-items-list');
+
+                        // Update items list on each poll for real-time changes
+                        if (itemList && d.items) {
+                            itemList.innerHTML = d.items.map(i => `
+                                <div class="flex justify-between items-center text-[10px] font-bold">
+                                    <span class="text-white/60">${i.qty}x ${i.name}</span>
+                                    <span class="text-gold">L. ${parseFloat(i.finalPrice).toFixed(0)}</span>
+                                </div>
+                            `).join('');
+                        }
 
                         if (d.status === 'ready') {
                             title.innerText = "¡ORDEN LISTA! ☕";
                             title.classList.add('text-gold');
                             msg.innerText = "Tu pedido está listo para ser retirado en barra. ¡Que lo disfrutes!";
-                            msg.className = "text-gold font-black text-sm mb-12 max-w-xs leading-relaxed animate-pulse";
+                            msg.className = "text-gold font-black text-xs mb-6 max-w-xs leading-relaxed animate-pulse";
                             icon.innerHTML = '<i class="fas fa-mug-hot"></i>';
                             icon.className = "w-20 h-20 bg-gold text-dark rounded-full flex items-center justify-center text-3xl mb-8 animate-bounce";
                         } else if (d.status === 'preparing' || d.status === 'preparing_food' || d.status === 'preparing_drinks') {
@@ -1404,6 +1477,12 @@
                             localStorage.removeItem('ra_active_order');
                             alert("¡Gracias por tu compra! Esperamos verte pronto.");
                             location.href = '/order';
+                        } else if (d.status === 'cancelled') {
+                            clearInterval(interval);
+                            title.innerText = "ORDEN CANCELADA";
+                            msg.innerText = "Esta orden ha sido cancelada o movida. Contacta a caja si tienes dudas.";
+                            icon.innerHTML = '<i class="fas fa-times"></i>';
+                            icon.className = "w-20 h-20 bg-red-500/20 text-red-500 rounded-full flex items-center justify-center text-3xl mb-8";
                         } else {
                             // Default: Pending / Paid
                             title.innerText = "¡ORDEN RECIBIDA! ✅";
@@ -1411,7 +1490,7 @@
                             icon.innerHTML = '<i class="fas fa-check"></i>';
                             icon.className = "w-20 h-20 bg-success/20 text-success rounded-full flex items-center justify-center text-3xl mb-8 animate-bounce-in";
                         }
-                    } catch (e) { console.error("Polling error", e); }
+                    } catch(e) { console.error("Polling error", e); }
                 }, 5000); 
             }
 
