@@ -292,7 +292,21 @@ module.exports = async function handler(req, res) {
                     .slice(0, 5)
                     .map(([name, qty]) => ({ name, qty }));
 
-                return res.json({ totals, peakDay, topItems });
+                // Traffic Heatmap Data
+                const traffic = {
+                    days: [0,0,0,0,0,0,0], // Sun-Sat
+                    hours: Array(24).fill(0)
+                };
+
+                orders.forEach(o => {
+                    const d = new Date(o.created_at);
+                    // Adjust to local time if needed (assuming DB is UTC)
+                    d.setHours(d.getHours() - 6); 
+                    traffic.days[d.getDay()]++;
+                    traffic.hours[d.getHours()]++;
+                });
+
+                return res.json({ totals, peakDay, topItems, traffic });
             }
 
             if (action === 'admin_reports') {

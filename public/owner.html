@@ -532,6 +532,66 @@
                                 </div>
                             </div>
                         </div>
+
+                        <!-- TRAFFIC HEATMAP -->
+                        <div class="space-y-6 pt-8 border-t border-gray-100">
+                            <div class="text-center">
+                                <h4 class="text-[10px] font-black uppercase text-gray-400 tracking-[0.3em]">Análisis de Tráfico para Horarios</h4>
+                            </div>
+                            
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                <!-- Days Traffic -->
+                                <div class="bg-gray-50 p-6 rounded-[2rem] border border-gray-100">
+                                    <p class="text-[9px] font-black text-gray-400 uppercase mb-4 tracking-widest text-center">Órdenes por Día</p>
+                                    <div class="flex justify-between items-end h-32 px-4">
+                                        ${['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'].map((day, idx) => {
+                                            const val = data.traffic.days[idx];
+                                            const max = Math.max(...data.traffic.days) || 1;
+                                            const h = (val / max) * 100;
+                                            return `
+                                                <div class="flex flex-col items-center gap-2 group flex-1">
+                                                    <div class="text-[8px] font-black text-blue-600 opacity-0 group-hover:opacity-100 transition-opacity">${val}</div>
+                                                    <div class="w-full max-w-[20px] bg-blue-500 rounded-t-lg transition-all duration-700 shadow-lg shadow-blue-500/20" style="height: ${h}%"></div>
+                                                    <span class="text-[8px] font-black text-gray-400 uppercase">${day}</span>
+                                                </div>
+                                            `;
+                                        }).join('')}
+                                    </div>
+                                </div>
+
+                                <!-- Hours Traffic -->
+                                <div class="bg-gray-50 p-6 rounded-[2rem] border border-gray-100">
+                                    <p class="text-[9px] font-black text-gray-400 uppercase mb-4 tracking-widest text-center">Horas Pico (7AM - 7PM)</p>
+                                    <div class="flex justify-between items-end h-32 px-2">
+                                        ${[7,8,9,10,11,12,13,14,15,16,17,18,19].map(hour => {
+                                            const val = data.traffic.hours[hour] || 0;
+                                            const max = Math.max(...data.traffic.hours) || 1;
+                                            const h = (val / max) * 100;
+                                            const label = hour > 12 ? (hour-12)+'PM' : (hour === 12 ? '12PM' : hour+'AM');
+                                            return `
+                                                <div class="flex flex-col items-center gap-2 group flex-1">
+                                                    <div class="text-[7px] font-black text-purple-600 opacity-0 group-hover:opacity-100 transition-opacity">${val}</div>
+                                                    <div class="w-full max-w-[12px] bg-purple-500 rounded-t-md transition-all duration-700 shadow-lg shadow-purple-500/20" style="height: ${h}%"></div>
+                                                    <span class="text-[6px] font-black text-gray-400 uppercase">${label}</span>
+                                                </div>
+                                            `;
+                                        }).join('')}
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="bg-blue-900 text-white p-6 rounded-[2rem] flex flex-col md:flex-row justify-around items-center text-center gap-4">
+                                <div>
+                                    <p class="text-[8px] font-black text-blue-300 uppercase mb-1">Mejor día para Staff Extra</p>
+                                    <p class="text-sm font-black uppercase italic">${['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'][data.traffic.days.indexOf(Math.max(...data.traffic.days))]}</p>
+                                </div>
+                                <div class="w-px h-10 bg-blue-800 hidden md:block"></div>
+                                <div>
+                                    <p class="text-[8px] font-black text-blue-300 uppercase mb-1">Hora de mayor tráfico</p>
+                                    <p class="text-sm font-black uppercase italic">${(data.traffic.hours.indexOf(Math.max(...data.traffic.hours)) % 12 || 12)} ${data.traffic.hours.indexOf(Math.max(...data.traffic.hours)) >= 12 ? 'PM' : 'AM'}</p>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 `;
             } catch (e) {
