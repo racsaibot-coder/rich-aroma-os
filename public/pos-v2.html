@@ -56,7 +56,10 @@
                     Heartbeat
                 </h3>
                 <p id="hb-status" class="text-[8px] text-gray-500 font-bold uppercase mt-0.5 tracking-tighter">Last sync: Just now</p>
-                <button id="clean-feed-btn" onclick="window.toggleCleanFeed()" class="mt-2 px-3 py-1.5 rounded-lg border border-white/10 text-white/40 text-[9px] font-black uppercase tracking-widest hover:bg-white/5 transition-all">Clean Feed</button>
+                <div class="flex gap-2 mt-2">
+                    <button id="clean-feed-btn" onclick="window.toggleCleanFeed()" class="px-3 py-1.5 rounded-lg border border-white/10 text-white/40 text-[9px] font-black uppercase tracking-widest hover:bg-white/5 transition-all">Clean</button>
+                    <button id="combine-btn" onclick="toggleCombineMode()" class="px-3 py-1.5 rounded-lg border border-gold/30 bg-gold/5 text-gold text-[9px] font-black uppercase tracking-widest hover:bg-gold/10 transition-all hidden">Unir Mesa</button>
+                </div>
             </div>
             <div class="flex items-center gap-2">
                 <button onclick="fetchLiveOrders()" class="text-gray-500 hover:text-white transition-colors"><i class="fas fa-sync-alt text-[10px]"></i></button>
@@ -361,6 +364,16 @@
                         <i class="fas fa-cog"></i> Config ▾
                     </button>
                     <div id="config-menu" class="hidden origin-top-right absolute right-0 mt-2 w-56 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 divide-y divide-gray-100 z-[60]">
+                        <div class="py-1">
+                            <button onclick="addVIPToCart(); document.getElementById('config-menu').classList.add('hidden')" class="text-gray-700 group flex items-center px-4 py-2 text-sm w-full hover:bg-gray-100">
+                                <i class="fas fa-crown mr-3 text-gold"></i> Vender VIP
+                            </button>
+                        </div>
+                        <div class="py-1">
+                            <button onclick="addEventToCart(); document.getElementById('config-menu').classList.add('hidden')" class="text-gray-700 group flex items-center px-4 py-2 text-sm w-full hover:bg-gray-100">
+                                <i class="fas fa-calendar-star mr-3 text-purple-600"></i> Evento Terraza
+                            </button>
+                        </div>
                         <div class="py-1">
                             <button onclick="toggleSoloMode(); document.getElementById('config-menu').classList.add('hidden')" id="solo-mode-btn" class="text-gray-700 group flex items-center px-4 py-2 text-sm w-full hover:bg-gray-100">
                                 <i class="fas fa-user-shield mr-3 text-orange-500"></i> Solo Mode: OFF
@@ -858,7 +871,12 @@
 
     function renderLiveFeed() {
         const container = document.getElementById('live-order-feed');
+        const combineBtn = document.getElementById('combine-btn');
         document.getElementById('live-order-count').innerText = liveOrders.length;
+
+        // Show combine button if there are mobile orders
+        const hasMobileOrders = liveOrders.some(o => o.notes && o.notes.includes('Mobile Order'));
+        if (combineBtn) combineBtn.classList.toggle('hidden', !hasMobileOrders && !isCombineMode);
 
         // Health Dashboard Update
         const todayOrders = liveOrders;
@@ -947,13 +965,25 @@
                 borderClass = "border-gold/50 shadow-gold/10 ring-1 ring-gold/20";
             }
 
+            // Highlighting for Combine Mode
+            const isSelected = selectedOrderIds.includes(o.id);
+            if (isCombineMode && isMobile) {
+                borderClass = isSelected ? "border-gold ring-4 ring-gold/30 bg-gold/5" : "border-white/20 opacity-60";
+            }
+
             // ACTION BUTTONS
             let actionsHtml = '';
-            if (o.status !== 'cancelled') {
+            if (o.status !== 'cancelled' && !isCombineMode) {
                 actionsHtml = `
                     <div class="flex gap-2 ml-auto">
                         <button onclick="window.viewOrder('${o.id}')" class="bg-white/10 text-white/60 p-2 rounded-lg hover:bg-white/20 transition-all" title="Ver Detalles"><i class="fas fa-eye text-[10px]"></i></button>
                         <button onclick="recallOrder('${o.id}')" class="bg-amber-500 text-white px-2 py-1 rounded text-[8px] font-black uppercase tracking-widest hover:bg-amber-600 transition-all">Recuperar</button>
+                    </div>
+                `;
+            } else if (isCombineMode && isMobile) {
+                actionsHtml = `
+                    <div class="ml-auto">
+                        <input type="checkbox" ${isSelected ? 'checked' : ''} onchange="selectOrderForCombine('${o.id}')" class="w-6 h-6 rounded-lg accent-gold">
                     </div>
                 `;
             }
@@ -1006,22 +1036,28 @@
                     </div>
 
                     <div class="flex gap-2 mt-3">
-                        ${isUnpaidCashMobile ? `
+                        ${(isUnpaidCashMobile && !isCombineMode) ? `
                             <button onclick="recallOrder('${o.id}')" class="flex-1 py-2.5 bg-blue-600 text-white text-[10px] font-black uppercase rounded-xl hover:bg-blue-500 transition-all shadow-lg shadow-blue-600/20">
                                 <i class="fas fa-cash-register mr-1"></i> COBRAR Y CONFIRMAR
                             </button>
                         ` : ''}
                         
-                        ${(isReady || o.status === 'paid') ? `
+                        ${((isReady || o.status === 'paid') && !isCombineMode) ? `
                             <button onclick="deliverOrder('${o.id}')" class="flex-1 py-2.5 bg-green-500 text-dark font-black text-[10px] uppercase rounded-xl shadow-lg hover:bg-green-400 transition-all ring-2 ring-white/20">
                                 <i class="fas fa-check-circle mr-1"></i> ENTREGAR
                             </button>
                         ` : ''}
                         
-                        ${!['ready', 'completed', 'cancelled'].includes(o.status) ? `
+                        ${(!['ready', 'completed', 'cancelled'].includes(o.status) && !isCombineMode) ? `
                             <button onclick="rejectOrder('${o.id}', '${o.order_number}', '${o.customers?.phone || ''}', '${o.customers?.name || ''}')" class="px-3 bg-red-900/20 text-red-500/60 rounded-xl border border-red-900/30 hover:bg-red-500 hover:text-white transition-all">
                                 <i class="fas fa-times text-[10px]"></i>
                             </button>
+                        ` : ''}
+
+                        ${(isCombineMode && isMobile) ? `
+                             <button onclick="selectOrderForCombine('${o.id}')" class="flex-1 py-3 ${isSelected ? 'bg-gold text-dark' : 'bg-white/10 text-white/40'} font-black text-[10px] uppercase rounded-xl transition-all">
+                                ${isSelected ? 'SELECCIONADO' : 'UNIR A MESA'}
+                             </button>
                         ` : ''}
                     </div>
                 </div>
@@ -1529,7 +1565,39 @@
 
     // --- CART & CHECKOUT ---
     function calculateTotalWithRule() {
-        const subtotal = cart.reduce((sum, item) => sum + (parseFloat(item.finalPrice || 0)), 0);        
+        const EVENT_MIN_CONSUMPTION = 2600;
+        let subtotal = cart.reduce((sum, item) => sum + (parseFloat(item.finalPrice || 0)), 0);
+
+        // --- TERRACE EVENT LOGIC ---
+        // Find if there's an event rental item
+        const eventIdx = cart.findIndex(i => i.id === 'event_terrace_rental');
+        if (eventIdx !== -1) {
+            // Calculate subtotal EXCLUDING the event fee itself
+            const consumption = cart.reduce((sum, item, idx) => {
+                if (idx === eventIdx) return sum;
+                return sum + (parseFloat(item.finalPrice || 0));
+            }, 0);
+
+            if (consumption >= EVENT_MIN_CONSUMPTION) {
+                // Minimum reached! Set event price to 0
+                if (cart[eventIdx].finalPrice !== 0) {
+                    cart[eventIdx].finalPrice = 0;
+                    cart[eventIdx].price = 0;
+                    cart[eventIdx].note = "[CONSUMO MÍNIMO ALCANZADO]";
+                    // We must recalculate subtotal after this change
+                    subtotal = cart.reduce((sum, item) => sum + (parseFloat(item.finalPrice || 0)), 0);
+                }
+            } else {
+                // Minimum not reached, restore original price
+                if (cart[eventIdx].finalPrice === 0) {
+                    cart[eventIdx].finalPrice = 2600;
+                    cart[eventIdx].price = 2600;
+                    cart[eventIdx].note = "[REQUERIDO: CONSUMO < L.2600]";
+                    subtotal = cart.reduce((sum, item) => sum + (parseFloat(item.finalPrice || 0)), 0);
+                }
+            }
+        }
+
         let discountPct = 0;
         let discountName = "";
         let applyRule = false;
@@ -1571,6 +1639,9 @@
                     let drinkDiscounted = false;
                     const sorted = [...cart].sort((a,b) => parseFloat(b.price) - parseFloat(a.price));
                     sorted.forEach(item => {
+                        // Don't discount the event fee!
+                        if (item.id === 'event_terrace_rental') return;
+
                         if (isFood(item) && !foodDiscounted) {
                             discountAmt += (parseFloat(item.price) * (discountPct / 100));
                             foodDiscounted = true;
@@ -1581,7 +1652,12 @@
                     });
                 }
             } else {
-                discountAmt = subtotal * (discountPct / 100);
+                // If it's a flat discount (like employee), apply to everything EXCEPT event fee
+                const discountableSubtotal = cart.reduce((sum, item) => {
+                    if (item.id === 'event_terrace_rental') return sum;
+                    return sum + (parseFloat(item.finalPrice || 0));
+                }, 0);
+                discountAmt = discountableSubtotal * (discountPct / 100);
             }
         }
 
@@ -1591,7 +1667,6 @@
 
         return { subtotal, total: roundedTotal, discount: finalDiscount, name: discountName, pct: discountPct, applyRule, selectedItemIds };
     }
-
     function renderCart() {
         const container = document.getElementById('cart-items');
         if (cart.length === 0) {
@@ -2855,6 +2930,118 @@
         renderCart();
         saveCartState();
         alert("💎 Membresía VIP agregada al carrito.");
+    }
+
+    window.addEventToCart = function() {
+        // Event space logic: L.2600 fee, but waived if food/drink >= L.2600
+        const eventItem = {
+            id: 'event_terrace_rental',
+            name: 'RENTA TERRAZA (EVENTO)',
+            price: 2600,
+            finalPrice: 2600,
+            qty: 1,
+            mods: [],
+            note: "[REQUERIDO: CONSUMO < L.2600]"
+        };
+
+        const existing = cart.find(i => i.id === 'event_terrace_rental');
+        if (existing) return alert("Ya hay un evento en esta cuenta.");
+
+        cart.push(eventItem);
+        renderCart();
+        saveCartState();
+        alert("🏟️ Evento Terraza agregado. El sistema ajustará el precio automáticamente según el consumo.");
+    }
+
+    // --- COMBINE MESA LOGIC ---
+    let isCombineMode = false;
+    let selectedOrderIds = [];
+
+    window.toggleCombineMode = function() {
+        isCombineMode = !isCombineMode;
+        selectedOrderIds = [];
+        const btn = document.getElementById('combine-btn');
+        btn.innerText = isCombineMode ? 'CANCELAR UNIÓN' : 'UNIR MESA';
+        btn.classList.toggle('bg-red-500', isCombineMode);
+        btn.classList.toggle('text-white', isCombineMode);
+        btn.classList.toggle('border-red-600', isCombineMode);
+        
+        renderLiveFeed(); // Refresh UI to show checkboxes
+        if (!isCombineMode && cart.length > 0) {
+             if (confirm("¿Limpiar carrito actual?")) {
+                 cart = [];
+                 saveCartState();
+                 renderCart();
+             }
+        }
+    }
+
+    window.selectOrderForCombine = function(id) {
+        if (selectedOrderIds.includes(id)) {
+            selectedOrderIds = selectedOrderIds.filter(oid => oid !== id);
+        } else {
+            selectedOrderIds.push(id);
+        }
+        
+        // Update the combine button text with count
+        const btn = document.getElementById('combine-btn');
+        if (selectedOrderIds.length > 0) {
+            btn.innerText = `UNIR ${selectedOrderIds.length} ÓRDENES`;
+            btn.classList.replace('bg-red-500', 'bg-blue-600');
+            btn.onclick = window.executeCombine;
+        } else {
+            btn.innerText = 'CANCELAR UNIÓN';
+            btn.classList.replace('bg-blue-600', 'bg-red-500');
+            btn.onclick = window.toggleCombineMode;
+        }
+    }
+
+    window.executeCombine = async function() {
+        if (selectedOrderIds.length < 1) return;
+        
+        // 1. Gather all items from selected orders
+        let combinedItems = [];
+        let combinedNotes = [];
+        
+        selectedOrderIds.forEach(oid => {
+            const order = liveOrders.find(o => o.id === oid);
+            if (order) {
+                const name = order.customers?.name || "Guest";
+                (order.items || []).forEach(item => {
+                    combinedItems.push({
+                        ...item,
+                        note: `[De: ${name}] ${item.note || ''}`
+                    });
+                });
+                if (order.notes) combinedNotes.push(`${name}: ${order.notes}`);
+            }
+        });
+
+        // 2. Load into current cart
+        cart = combinedItems;
+        saveCartState();
+        renderCart();
+        
+        // 3. Mark the original mobile orders as 'cancelled' (merged) in DB
+        // so they disappear from KDS and Feed
+        const confirmMerge = confirm(`¿Unir estas ${selectedOrderIds.length} órdenes en esta terminal? Las órdenes individuales serán removidas del feed.`);
+        if (confirmMerge) {
+            try {
+                for (const oid of selectedOrderIds) {
+                    await fetch(`/api/orders/${oid}`, {
+                        method: 'PATCH',
+                        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer EMP-admin' },
+                        body: JSON.stringify({ 
+                            status: 'cancelled',
+                            notes: "[UNIDO A MESA - CONSOLIDADO]"
+                        })
+                    });
+                }
+                alert("✅ Órdenes unidas exitosamente.");
+                window.toggleCombineMode();
+                fetchLiveOrders();
+            } catch(e) { console.error("Merge error", e); }
+        }
     }
 
     async function approveTransfer(id) {
