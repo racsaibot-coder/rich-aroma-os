@@ -26,6 +26,11 @@
       "dest": "/public/quimieats.html"
     },
     {
+      "src": "/partner",
+      "has": [{ "type": "host", "value": "(.*)quimieats.com" }],
+      "dest": "/public/partner.html"
+    },
+    {
       "src": "/os/?",
       "dest": "/public/os.html"
     },
