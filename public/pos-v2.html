@@ -2698,6 +2698,8 @@
         if (transfer === null) return;
         const amountTransfer = parseFloat(transfer) || 0;
 
+        console.log(`[L-Debug] Initiating shift close. Cash: ${amountCash}, Card: ${amountCard}, Transfer: ${amountTransfer}`);
+
         try {
             const res = await fetch('/api/cash/close-shift', {
                 method: 'POST',
@@ -3062,6 +3064,7 @@
     }
 
     function showShiftReport(r) {
+        console.log(`[L-Debug] Displaying Shift Report:`, r);
         const content = document.getElementById('shift-report-content');
         if (!r) {
             content.innerHTML = '<p class="text-red-500 text-center py-10 font-bold">Error: Report data is missing.</p>';

@@ -118,6 +118,7 @@ export default async function handler(req, res) {
     
     if (action === 'close-shift' && req.method === 'POST') {
         const { shiftId, closingAmount, declaredCard, declaredTransfer, notes } = req.body;
+        console.log(`[L-Debug] Closing shift ${shiftId}. Declared Cash: ${closingAmount}`);
         
         if (!shiftId) return res.status(400).json({ error: 'Shift ID missing' });
 
@@ -131,15 +132,12 @@ export default async function handler(req, res) {
         if (shift.status === 'closed') return res.status(400).json({ error: 'Shift is already closed' });
         
         // 1. Fetch all orders that happened since the shift started
-        // We filter for orders that either MATCH this shiftId OR have NO shiftId (floating)
         const { data: allOrders } = await supabase
             .from('orders')
             .select('total, payment_method, secondary_payment_method, rico_amount_paid, shift_id, created_at')
             .gte('created_at', shift.opened_at)
             .not('status', 'eq', 'cancelled');
             
-        // CRITICAL: A "Floating" order only belongs to THIS shift if it happened AFTER opening 
-        // AND before any subsequent shift opened (which is guaranteed here because we are the active shift).
         const shiftOrders = (allOrders || []).filter(o => o.shift_id === shiftId || !o.shift_id);
 
         const cashSales = (shiftOrders || []).reduce((sum, o) => {
@@ -182,7 +180,6 @@ export default async function handler(req, res) {
                 const amt = parseFloat(t.amount) || 0;
                 if (t.type === 'payout') payouts += amt;
                 if (t.type === 'drop') {
-                    // Check if this drop was actually a Rico Cash reload
                     if (t.notes && t.notes.includes('RECARGA:')) {
                         cashReloads += amt;
                     } else {
@@ -194,10 +191,11 @@ export default async function handler(req, res) {
         }
         
         const opening = parseFloat(shift.opening_amount) || 0;
-        // Expected Cash = Opening + Sales (Already excludes Rico portion) + Cash Reloads - Payouts - Cash Drops (Deposits)
         const expected = opening + cashSales + cashReloads - payouts - drops;
         const declared = parseFloat(closingAmount) || 0;
         const diff = declared - expected;
+
+        console.log(`[L-Debug] Stats - Opening: ${opening}, Sales: ${cashSales}, Reloads: ${cashReloads}, Expected: ${expected}, Typed: ${declared}`);
 
         const declared_card = parseFloat(declaredCard) || 0;
         const declared_transfer = parseFloat(declaredTransfer) || 0;
@@ -218,14 +216,19 @@ export default async function handler(req, res) {
             .select()
             .single();
             
-        if (closeErr) return res.status(500).json({ error: "DB Update Failed: " + closeErr.message });
+        if (closeErr) {
+            console.error(`[L-Debug] DB UPDATE ERROR:`, closeErr);
+            return res.status(500).json({ error: "DB Update Failed: " + closeErr.message });
+        }
         
+        console.log(`[L-Debug] Shift successfully closed. Saved Declared: ${updated.closing_amount_declared}`);
+
         return res.json({ 
             success: true, 
             shift: updated,
             report: {
                 opening_amount: opening,
-                closing_amount: declared,
+                closing_amount: updated.closing_amount_declared, // Use value directly from DB record
                 expected_amount: expected,
                 discrepancy: diff,
                 sales: {
@@ -235,11 +238,11 @@ export default async function handler(req, res) {
                     rico_balance: 0 
                 },
                 declared: {
-                    cash: declared,
+                    cash: updated.closing_amount_declared,
                     card: declared_card,
                     transfer: declared_transfer
                 },
-                transactions: payouts + drops - cashReloads, // Physical net movement in drawer
+                transactions: payouts + drops - cashReloads,
                 order_count: allOrders?.length || 0
             }
         });
