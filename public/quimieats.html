@@ -77,11 +77,17 @@
                 <h3 class="text-4xl font-black uppercase tracking-tight">Nuestra Red de Aliados</h3>
             </div>
             
-            <div class="flex flex-wrap justify-center gap-12 items-center grayscale opacity-50">
+            <div class="flex flex-wrap justify-center gap-12 items-center">
                 <!-- Rich Aroma (The Pioneer) -->
-                <div class="flex flex-col items-center gap-4 transition-all duration-500 hover:grayscale-0 hover:opacity-100">
-                    <img src="/rico-logo.png" class="w-32 h-32 rounded-full border-4 border-gold/30 shadow-2xl">
-                    <span class="text-xs font-black text-gold uppercase tracking-widest">Rich Aroma Coffee</span>
+                <div class="flex flex-col items-center gap-4 transition-all duration-500 hover:scale-105 group cursor-pointer" onclick="window.location.href='/order?ref=quimieats'">
+                    <div class="relative">
+                        <img src="/rico-logo.png" class="w-32 h-32 rounded-full border-4 border-gold/30 shadow-2xl group-hover:border-cyan transition-all">
+                        <div class="absolute -bottom-2 left-1/2 -translate-x-1/2 bg-cyan text-dark text-[8px] font-black px-2 py-0.5 rounded-full shadow-lg">LIVE</div>
+                    </div>
+                    <div class="text-center">
+                        <span class="text-xs font-black text-gold uppercase tracking-widest block">Rich Aroma Coffee</span>
+                        <button class="mt-2 bg-white/5 border border-white/10 px-4 py-1.5 rounded-lg text-[8px] font-black uppercase text-cyan group-hover:bg-cyan group-hover:text-dark transition-all">Pedir Ahora</button>
+                    </div>
                 </div>
 
                 <!-- Placeholders -->
