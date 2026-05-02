@@ -539,6 +539,18 @@ module.exports = async function handler(req, res) {
         return res.json({ success: true, data });
     }
 
+    if (action === 'shift_history' && req.method === 'GET') {
+        if (!isAdmin) return res.status(403).json({ error: "Admin access required" });
+        const { data, error } = await supabase
+            .from('cash_shifts')
+            .select('*, employees(name)')
+            .eq('status', 'closed')
+            .order('closed_at', { ascending: false })
+            .limit(10);
+        if (error) return res.status(500).json({ error: error.message });
+        return res.json(data || []);
+    }
+
     if (action === 'inventory' && req.method === 'GET') {
         const { data, error } = await supabase.from('inventory').select('*').order('name');
         if (error) return res.status(500).json({ error: error.message });

@@ -164,6 +164,28 @@
             </div>
         </div>
 
+        <!-- Shift Closure Audit (New) -->
+        <div class="bg-white p-8 rounded-[2.5rem] shadow-sm border border-gray-100">
+            <h3 class="text-sm font-black uppercase tracking-widest text-dark mb-6 flex items-center gap-2">
+                <i class="fas fa-history text-gold"></i> Historial de Cierres (Auditoría)
+            </h3>
+            <div class="overflow-x-auto">
+                <table class="w-full text-left">
+                    <thead class="text-[10px] font-black text-gray-400 uppercase tracking-widest border-b border-gray-100">
+                        <tr>
+                            <th class="pb-4">Fecha / Cajero</th>
+                            <th class="pb-4">Esperado</th>
+                            <th class="pb-4">Declarado (Typed)</th>
+                            <th class="pb-4 text-right">Discrepancia</th>
+                        </tr>
+                    </thead>
+                    <tbody id="shift-history-body" class="divide-y divide-gray-50 text-xs">
+                        <tr><td colspan="4" class="py-10 text-center text-gray-400 italic">Cargando historial...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
         <!-- Expenses Management (New) -->
         <div class="bg-white p-8 rounded-[2.5rem] shadow-sm border border-gray-100">
             <div class="flex justify-between items-center mb-6">
@@ -599,11 +621,53 @@
             }
         }
 
+        async function loadShiftHistory() {
+            try {
+                const res = await fetch(`/api/admin?action=shift_history`, {
+                    headers: { 'Authorization': `Bearer ${OWNER_PIN}` }
+                });
+                const data = await res.json();
+                renderShiftHistory(data);
+            } catch(e) { console.error("Shift History failed", e); }
+        }
+
+        function renderShiftHistory(data) {
+            const body = document.getElementById('shift-history-body');
+            if (!body) return;
+            if (!data || data.length === 0) {
+                body.innerHTML = '<tr><td colspan="4" class="py-10 text-center text-gray-400 italic">No hay cierres recientes.</td></tr>';
+                return;
+            }
+
+            body.innerHTML = data.map(s => {
+                const date = new Date(s.closed_at).toLocaleString();
+                const expected = parseFloat(s.expected_amount || 0);
+                const declared = parseFloat(s.closing_amount_declared || 0);
+                const diff = declared - expected;
+                const cashier = s.employees?.name || "Desconocido";
+
+                return `
+                    <tr>
+                        <td class="py-4">
+                            <div class="font-bold text-dark uppercase">${cashier}</div>
+                            <div class="text-[9px] text-gray-400 font-mono">${date}</div>
+                        </td>
+                        <td class="py-4 font-mono font-bold text-gray-500">L. ${expected.toLocaleString()}</td>
+                        <td class="py-4 font-mono font-black text-blue-600">L. ${declared.toLocaleString()}</td>
+                        <td class="py-4 text-right font-mono font-black ${Math.abs(diff) < 1 ? 'text-green-500' : 'text-red-500'}">
+                            L. ${diff.toLocaleString()}
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
         async function loadReports() {
             try {
                 const res = await fetch(`/api/staff?action=admin_reports&adminPin=${OWNER_PIN}`);
                 const data = await res.json();
                 renderReports(data);
+                loadShiftHistory();
             } catch(e) { console.error("Report Fetch Failed:", e); }
         }
 
