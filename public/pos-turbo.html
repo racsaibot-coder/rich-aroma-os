@@ -1,0 +1,539 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <link rel="icon" type="image/png" href="/favicon.png">    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>POS Turbo | Rich Aroma</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: { gold: '#C9A66B', dark: '#120C09', charcoal: '#1E1610', success: '#10B981' }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { background-color: #120C09; color: white; -webkit-tap-highlight-color: transparent; }
+        .font-display { font-family: 'Georgia', serif; }
+        .glass { background: rgba(255, 255, 255, 0.03); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.05); }
+        .hide-scrollbar::-webkit-scrollbar { display: none; }
+        .turbo-grid { grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); }
+        .turbo-btn { transition: all 0.1s ease; user-select: none; }
+        .turbo-btn:active { transform: scale(0.92); filter: brightness(1.2); }
+        .selected-item { border-color: #C9A66B !important; background: rgba(201, 166, 107, 0.1); }
+        .active-mod { background: #C9A66B !important; color: #120C09 !important; border-color: #C9A66B !important; }
+        .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 10px; }
+    </style>
+</head>
+<body class="h-screen flex flex-col overflow-hidden bg-gray-100 text-dark">
+
+    <!-- Header -->
+    <header class="h-14 bg-charcoal border-b border-white/10 flex items-center justify-between px-6 shrink-0 z-50">
+        <div class="flex items-center gap-6">
+            <h1 class="text-lg font-black font-display text-gold tracking-widest uppercase italic">Rich Aroma Turbo</h1>
+            <div id="connection-status" class="bg-green-500/10 text-green-500 px-2 py-0.5 rounded text-[8px] font-black uppercase border border-green-500/20">ONLINE 🟢</div>
+        </div>
+        
+        <div class="flex items-center gap-4">
+             <div class="flex items-center gap-2 bg-dark/50 p-1 rounded-lg border border-white/5">
+                <span id="store-status-label" class="text-[9px] font-black text-green-500 px-2 uppercase">Abierto</span>
+                <label class="relative inline-flex items-center cursor-pointer">
+                  <input type="checkbox" id="store-status-toggle" class="sr-only peer" checked onchange="toggleStoreStatus(this)">
+                  <div class="w-8 h-4 bg-gray-600 rounded-full peer peer-checked:bg-green-500 after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:after:translate-x-4"></div>
+                </label>
+            </div>
+            <button onclick="document.getElementById('config-menu').classList.toggle('hidden')" class="w-8 h-8 bg-white/5 text-white/40 rounded-lg hover:bg-white/10 flex items-center justify-center transition-all">
+                <i class="fas fa-cog text-xs"></i>
+            </button>
+            <div id="config-menu" class="hidden absolute right-6 top-14 w-56 rounded-xl shadow-2xl bg-white ring-1 ring-black/5 divide-y divide-gray-100 z-[100] border border-gray-200">
+                <div class="py-1">
+                    <button onclick="location.href='/pos-v2.html'" class="text-gray-700 group flex items-center px-4 py-2 text-sm w-full hover:bg-gray-100 font-bold">
+                        <i class="fas fa-desktop mr-3 text-blue-500"></i> POS Normal (V2)
+                    </button>
+                    <button onclick="location.reload()" class="text-gray-700 group flex items-center px-4 py-2 text-sm w-full hover:bg-gray-100">
+                        <i class="fas fa-sync mr-3 text-gray-400"></i> Refresh Turbo
+                    </button>
+                    <button onclick="endShift()" class="text-red-600 group flex items-center px-4 py-2 text-sm w-full hover:bg-red-50 font-bold">
+                        <i class="fas fa-door-closed mr-3"></i> Cerrar Caja
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Workspace -->
+    <main class="flex-1 flex overflow-hidden">
+        
+        <!-- COL 1: SIDEBAR (15%) -->
+        <aside class="w-[15%] bg-charcoal border-r border-white/5 flex flex-col p-2 gap-4 overflow-y-auto hide-scrollbar">
+            <div>
+                <p class="text-[9px] font-black text-gray-500 uppercase tracking-widest px-2 mb-2">Categorías</p>
+                <div id="category-list" class="space-y-1">
+                    <!-- Categories -->
+                </div>
+            </div>
+            <div class="mt-4">
+                <p class="text-[9px] font-black text-gold/40 uppercase tracking-widest px-2 mb-2 italic">Fast Lane</p>
+                <div id="fast-lane" class="space-y-1">
+                    <!-- Top items -->
+                </div>
+            </div>
+        </aside>
+
+        <!-- COL 2: HIGH-DENSITY GRID (50%) -->
+        <div class="w-[50%] flex flex-col bg-[#16100c]">
+            <div class="p-3 border-b border-white/5 flex gap-2">
+                <div class="relative flex-1">
+                    <i class="fas fa-search absolute left-4 top-1/2 -translate-y-1/2 text-white/20 text-xs"></i>
+                    <input type="text" id="turbo-search" placeholder="Buscar (/) ..." 
+                        class="w-full bg-white/5 border border-white/10 rounded-lg p-2.5 pl-9 text-white font-bold outline-none focus:border-gold transition-all uppercase text-xs"
+                        oninput="handleTurboSearch(this.value)">
+                </div>
+                <button onclick="clearCart()" class="px-4 py-2 bg-red-900/20 text-red-500 border border-red-900/30 rounded-lg text-[9px] font-black uppercase tracking-widest hover:bg-red-500 hover:text-white transition-all">Limpiar</button>
+            </div>
+
+            <div id="turbo-grid" class="flex-1 overflow-y-auto p-3 grid turbo-grid gap-2 content-start custom-scrollbar">
+                <!-- Tiles -->
+            </div>
+        </div>
+
+        <!-- COL 3: CART & MODIFIERS (35%) -->
+        <div class="w-[35%] flex flex-col bg-white shadow-2xl relative z-10 border-l border-gray-200">
+            <!-- Customer Info -->
+            <div class="p-3 border-b border-gray-200 bg-gray-50">
+                <div class="flex gap-2">
+                    <input type="tel" id="cust-id" placeholder="Cliente (Phone/Scan)..." class="flex-1 bg-white border border-gray-200 rounded-lg p-2 text-xs font-bold outline-none" oninput="if(this.value.length>=8) lookupCustomer()">
+                    <button onclick="startQRScanner()" class="w-10 bg-dark text-gold rounded-lg flex items-center justify-center active:scale-95"><i class="fas fa-qrcode"></i></button>
+                </div>
+                <div id="cust-profile" class="hidden mt-2 p-2 bg-blue-50 border border-blue-100 rounded-lg flex justify-between items-center animate-in slide-in-from-top-2">
+                    <div>
+                        <p id="prof-name" class="text-[10px] font-black uppercase text-blue-900">---</p>
+                        <p id="prof-balance" class="text-[9px] font-bold text-blue-600">L 0.00</p>
+                    </div>
+                    <button onclick="clearCustomer()" class="text-blue-300 hover:text-red-500"><i class="fas fa-times-circle"></i></button>
+                </div>
+            </div>
+
+            <!-- Cart (Upper Half) -->
+            <div class="h-[45%] flex flex-col border-b border-gray-200 overflow-hidden bg-white">
+                <div id="cart-items" class="flex-1 overflow-y-auto p-2 space-y-1 custom-scrollbar">
+                    <!-- Items -->
+                </div>
+            </div>
+
+            <!-- Modifiers (Lower Half) -->
+            <div class="h-[35%] bg-gray-50 flex flex-col overflow-hidden border-b border-gray-200">
+                <div class="p-2 bg-white border-b border-gray-100 flex justify-between items-center shrink-0">
+                    <h3 class="text-[9px] font-black text-blue-600 uppercase tracking-widest flex items-center gap-2">
+                        <i class="fas fa-magic"></i> Modificadores <span id="mod-target" class="text-gray-400 font-bold italic normal-case"></span>
+                    </h3>
+                    <div id="mod-qty-ui" class="hidden flex items-center gap-2">
+                        <button onclick="changeSelectedQty(-1)" class="w-6 h-6 rounded bg-gray-200 text-gray-500 flex items-center justify-center text-xs">-</button>
+                        <span id="selected-qty" class="text-xs font-black w-4 text-center">1</span>
+                        <button onclick="changeSelectedQty(1)" class="w-6 h-6 rounded bg-blue-600 text-white flex items-center justify-center text-xs">+</button>
+                    </div>
+                </div>
+                <div id="modifier-pane" class="flex-1 overflow-y-auto p-2 grid grid-cols-2 gap-1.5 content-start no-scrollbar">
+                    <div class="col-span-2 text-center py-10 opacity-20"><i class="fas fa-hand-pointer text-2xl mb-2"></i><br><p class="text-[9px] font-black uppercase tracking-widest">Toca un item para configurar</p></div>
+                </div>
+                <div class="p-2 bg-white border-t border-gray-100 shrink-0">
+                    <input type="text" id="turbo-note" placeholder="Nota especial..." class="w-full bg-gray-50 border border-gray-200 rounded-lg p-2 text-xs outline-none focus:border-blue-500" oninput="updateSelectedNote(this.value)">
+                </div>
+            </div>
+
+            <!-- Footer -->
+            <div class="h-[20%] p-4 bg-white flex flex-col justify-between">
+                <div class="flex justify-between items-end">
+                    <div class="space-y-0.5">
+                        <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest leading-none">Total a Pagar</p>
+                        <h4 id="cart-total" class="text-4xl font-black text-blue-600 font-mono tracking-tighter">L 0.00</h4>
+                    </div>
+                    <div class="text-right">
+                        <div class="flex gap-2">
+                            <button id="btn-fulfill-dinein" onclick="setFulfillment('dinein')" class="px-3 py-1.5 rounded-lg border-2 border-blue-600 bg-blue-50 text-blue-700 text-[9px] font-black uppercase tracking-widest">Aquí</button>
+                            <button id="btn-fulfill-pickup" onclick="setFulfillment('pickup')" class="px-3 py-1.5 rounded-lg border-2 border-gray-100 text-gray-400 text-[9px] font-black uppercase tracking-widest">Llevar</button>
+                        </div>
+                    </div>
+                </div>
+                <button onclick="openTender()" class="w-full bg-green-600 text-white py-4 rounded-2xl font-black text-xl shadow-xl shadow-green-600/20 active:scale-95 transition-all flex items-center justify-center gap-3">
+                    <i class="fas fa-cash-register"></i> COBRAR
+                </button>
+            </div>
+        </div>
+    </main>
+
+    <!-- Tender Modal -->
+    <div id="tender-modal" class="hidden fixed inset-0 bg-dark/95 backdrop-blur-md flex items-center justify-center z-[1000] p-6">
+        <div class="bg-white rounded-[3rem] w-full max-w-sm shadow-2xl p-10 space-y-8">
+            <div class="text-center">
+                <h2 class="text-2xl font-black text-dark uppercase tracking-tighter">Total: <span id="tender-total" class="text-blue-600">L 0.00</span></h2>
+            </div>
+            <div class="grid grid-cols-1 gap-4">
+                <button onclick="executeTurboCharge('cash')" class="p-6 bg-green-50 border-2 border-green-200 rounded-3xl flex justify-between items-center group">
+                    <span class="text-xl font-black text-green-900 uppercase">EFECTIVO / POS</span>
+                    <i class="fas fa-money-bill-wave text-green-500 text-2xl"></i>
+                </button>
+                <button onclick="executeTurboCharge('rico_balance')" class="p-6 bg-blue-50 border-2 border-blue-200 rounded-3xl flex justify-between items-center group">
+                    <span class="text-xl font-black text-blue-900 uppercase tracking-tighter">RICO CASH</span>
+                    <i class="fas fa-wallet text-gold text-2xl"></i>
+                </button>
+            </div>
+            <button onclick="document.getElementById('tender-modal').classList.add('hidden')" class="w-full py-4 text-gray-400 font-bold uppercase tracking-widest text-xs">Atrás</button>
+        </div>
+    </div>
+
+    <!-- Login/Shift Overlay (Turbo version of pos-v2 logic) -->
+    <div id="shift-modal" class="hidden fixed inset-0 bg-dark z-[2000] flex items-center justify-center p-6 backdrop-blur-xl">
+        <div class="bg-white rounded-[3rem] w-full max-w-sm p-10 text-center border-t-8 border-gold">
+            <div id="login-stage">
+                <h2 class="text-3xl font-black text-dark uppercase tracking-tighter mb-8">Turbo POS Login</h2>
+                <input type="password" id="login-pin" maxlength="4" class="text-center text-5xl tracking-[0.5em] w-full border-b-4 border-gray-100 p-4 mb-8 focus:border-gold outline-none font-black text-gold" placeholder="****" onkeyup="if(event.key==='Enter') handleLogin()">
+                <button onclick="handleLogin()" class="w-full bg-dark text-white py-5 rounded-2xl font-black uppercase tracking-widest active:scale-95 transition-all shadow-2xl">Entrar</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://unpkg.com/html5-qrcode"></script>
+    <script>
+        // --- TURBO STATE ---
+        var menu = []; var modGroups = []; var modOptions = []; var itemModGroups = [];
+        var cart = []; var selectedIdx = -1;
+        var currentEmployee = null; var currentShiftId = null;
+        var fulfillment = 'dinein';
+
+        // --- STARTUP ---
+        window.onload = async () => {
+            await fetchStatus();
+            const res = await fetch('/api/menu');
+            const data = await res.json();
+            menu = data.items;
+            modGroups = data.modGroups;
+            modOptions = data.modOptions;
+            itemModGroups = data.itemModGroups;
+            
+            initTurboCategories();
+            initFastLane();
+            filterCategory('Combos');
+            checkAuth();
+        };
+
+        async function fetchStatus() {
+            try {
+                const r = await fetch('/api/store?action=status');
+                const d = await r.json();
+                const open = d.isOpen;
+                document.getElementById('store-status-label').innerText = open ? 'Abierto' : 'Cerrado';
+                document.getElementById('store-status-label').className = open ? 'text-[9px] font-black text-green-500 px-2 uppercase' : 'text-[9px] font-black text-red-500 px-2 uppercase';
+                document.getElementById('store-status-toggle').checked = open;
+            } catch(e) {}
+        }
+
+        function checkAuth() {
+            const shift = localStorage.getItem('pos_active_shift');
+            if (shift) {
+                const data = JSON.parse(shift);
+                currentShiftId = data.shiftId;
+                // Simplified for Turbo
+                document.getElementById('shift-modal').classList.add('hidden');
+            } else {
+                document.getElementById('shift-modal').classList.remove('hidden');
+            }
+        }
+
+        async function handleLogin() {
+            const pin = document.getElementById('login-pin').value;
+            if (pin === '4574' || pin === '3620') {
+                localStorage.setItem('pos_active_shift', JSON.stringify({ shiftId: 'turbo_active', startTime: new Date() }));
+                location.reload();
+            } else { alert("Invalid PIN"); }
+        }
+
+        // --- GRID RENDERING ---
+        function initTurboCategories() {
+            const cats = ['Combos', 'Comida', 'Caliente', 'Heladas', 'Menu Secreto', 'Sides', 'Otros'];
+            const container = document.getElementById('category-list');
+            container.innerHTML = cats.map(c => `
+                <button onclick="filterCategory('${c}', this)" class="turbo-cat w-full text-left p-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${c==='Combos'?'bg-gold text-dark':'text-white/40 hover:bg-white/5'}">
+                    ${c}
+                </button>
+            `).join('');
+        }
+
+        function initFastLane() {
+            const fast = [
+                { id: 'combo_1', name: 'Combo 1', color: 'bg-orange-500/20 text-orange-400 border-orange-500/30' },
+                { id: 'food_baleadas', name: 'Baleada', color: 'bg-blue-500/20 text-blue-400 border-blue-500/30' },
+                { id: 'hot_cappuccino', name: 'Cappuccino', color: 'bg-amber-500/20 text-amber-400 border-amber-500/30' }
+            ];
+            document.getElementById('fast-lane').innerHTML = fast.map(i => `
+                <button onclick="turboAddItem('${i.id}')" class="w-full text-left p-3 rounded-xl border ${i.color} text-[10px] font-black uppercase active:scale-95 transition-all">
+                    ${i.name}
+                </button>
+            `).join('');
+        }
+
+        function filterCategory(cat, btn) {
+            document.querySelectorAll('.turbo-cat').forEach(b => {
+                b.classList.remove('bg-gold', 'text-dark');
+                b.classList.add('text-white/40');
+            });
+            if (btn) {
+                btn.classList.remove('text-white/40');
+                btn.classList.add('bg-gold', 'text-dark');
+            }
+            const items = menu.filter(i => {
+                const c = (i.category || '').toLowerCase();
+                const n = (i.name || '').toLowerCase();
+                if (cat === 'Combos') return c.includes('combo') || n.includes('combo');
+                if (cat === 'Comida') return c.includes('food') || c.includes('comida') || c.includes('pastry');
+                if (cat === 'Caliente') return c.includes('coffee') || c.includes('caliente');
+                if (cat === 'Heladas') return c.includes('drinks') || c.includes('helada') || n.includes('frappe');
+                if (cat === 'Menu Secreto') return c.includes('secret') || n.includes('secreto');
+                if (cat === 'Sides') return c.includes('side');
+                return c.includes(cat.toLowerCase());
+            });
+            renderTurboGrid(items);
+        }
+
+        function renderTurboGrid(items) {
+            const container = document.getElementById('turbo-grid');
+            container.innerHTML = items.map(i => {
+                let color = "bg-white/5 border-white/10 text-white/90";
+                if (i.category?.includes('coffee')) color = "bg-amber-900/20 border-amber-500/30 text-amber-200";
+                if (i.category?.includes('food')) color = "bg-blue-900/20 border-blue-500/30 text-blue-200";
+                if (i.category?.includes('combo')) color = "bg-orange-900/20 border-orange-500/30 text-orange-200";
+
+                return `
+                    <button onclick="turboAddItem('${i.id}')" class="turbo-btn h-20 p-3 rounded-xl border-2 flex flex-col justify-center items-center text-center gap-1 ${color}">
+                        <span class="text-[10px] font-black uppercase leading-none line-clamp-2">${i.name}</span>
+                        <span class="text-[9px] font-bold opacity-40">L ${parseFloat(i.price).toFixed(0)}</span>
+                    </button>
+                `;
+            }).join('');
+        }
+
+        // --- CART LOGIC ---
+        function turboAddItem(id) {
+            const item = menu.find(i => i.id === id);
+            if (!item) return;
+            
+            const newItem = {
+                ...item,
+                qty: 1,
+                finalPrice: parseFloat(item.price),
+                mods: [],
+                fulfillment: fulfillment
+            };
+            
+            // Auto-apply defaults
+            const gids = itemModGroups.filter(img => img.item_id === id).map(img => img.group_id);
+            gids.forEach(gid => {
+                const group = modGroups.find(g => g.id == gid);
+                if (group && group.required) {
+                    const def = modOptions.find(o => o.group_id == gid && o.is_default) || modOptions.find(o => o.group_id == gid);
+                    if (def) newItem.mods.push({ id: def.id, name: def.name, price: def.price_adjustment, group_id: gid });
+                }
+            });
+
+            cart.push(newItem);
+            selectCartItem(cart.length - 1);
+            renderCart();
+        }
+
+        function selectCartItem(idx) {
+            selectedIdx = idx;
+            renderCart();
+            renderModifierPane();
+        }
+
+        function renderCart() {
+            const container = document.getElementById('cart-items');
+            document.getElementById('cart-count').innerText = cart.length;
+            
+            if (cart.length === 0) {
+                container.innerHTML = '<div class="text-center py-10 text-gray-300 italic text-xs uppercase tracking-widest font-black">Esperando Orden...</div>';
+                updateTotals();
+                return;
+            }
+
+            container.innerHTML = cart.map((item, idx) => `
+                <div onclick="selectCartItem(${idx})" class="p-3 rounded-xl border-2 transition-all cursor-pointer ${selectedIdx === idx ? 'selected-item border-gold shadow-lg' : 'bg-gray-50 border-gray-100'}">
+                    <div class="flex justify-between items-start">
+                        <div class="flex-1">
+                            <p class="text-[10px] font-black uppercase text-dark leading-tight">${item.qty}x ${item.name}</p>
+                            <p class="text-[8px] text-gray-400 font-bold uppercase mt-0.5">${item.mods.map(m=>m.name).join(' • ')}</p>
+                        </div>
+                        <p class="text-[10px] font-black font-mono">L ${parseFloat(item.finalPrice).toFixed(0)}</p>
+                    </div>
+                </div>
+            `).join('');
+            updateTotals();
+        }
+
+        function renderModifierPane() {
+            const container = document.getElementById('modifier-pane');
+            const targetLabel = document.getElementById('mod-target');
+            const qtyUi = document.getElementById('mod-qty-ui');
+            const noteInput = document.getElementById('turbo-note');
+
+            if (selectedIdx === -1 || !cart[selectedIdx]) {
+                container.innerHTML = '<div class="col-span-2 text-center py-10 opacity-20"><p class="text-[9px] font-black uppercase">Selecciona un item</p></div>';
+                targetLabel.innerText = "";
+                qtyUi.classList.add('hidden');
+                return;
+            }
+
+            const item = cart[selectedIdx];
+            targetLabel.innerText = `- ${item.name}`;
+            qtyUi.classList.remove('hidden');
+            document.getElementById('selected-qty').innerText = item.qty;
+            noteInput.value = item.note || '';
+
+            const gids = itemModGroups.filter(img => img.item_id === item.id).map(img => img.group_id);
+            if (gids.length === 0) {
+                container.innerHTML = '<div class="col-span-2 text-center py-10 opacity-20"><p class="text-[9px] font-black uppercase">No hay opciones para este item</p></div>';
+                return;
+            }
+
+            let html = '';
+            gids.forEach(gid => {
+                const group = modGroups.find(g => g.id == gid);
+                if (!group) return;
+                const opts = modOptions.filter(o => o.group_id == gid);
+                
+                html += `<div class="col-span-2 mt-2 first:mt-0"><p class="text-[8px] font-black text-gray-400 uppercase tracking-widest">${group.name}</p></div>`;
+                opts.forEach(o => {
+                    const isSel = item.mods.some(m => m.id == o.id);
+                    html += `
+                        <button onclick="toggleTurboMod(${gid}, ${o.id})" class="p-2.5 rounded-lg border text-[9px] font-black uppercase transition-all ${isSel ? 'active-mod shadow-md' : 'bg-white border-gray-200 text-gray-400 hover:bg-gray-50'}">
+                            ${o.name} ${parseFloat(o.price_adjustment)>0 ? '+'+parseFloat(o.price_adjustment).toFixed(0) : ''}
+                        </button>
+                    `;
+                });
+            });
+            container.innerHTML = html;
+        }
+
+        function toggleTurboMod(gid, oid) {
+            const item = cart[selectedIdx];
+            const group = modGroups.find(g => g.id == gid);
+            const opt = modOptions.find(o => o.id == oid);
+            
+            const isSelected = item.mods.some(m => m.id == oid);
+            if (isSelected) {
+                item.mods = item.mods.filter(m => m.id != oid);
+            } else {
+                if (group.max_selections === 1) {
+                    item.mods = item.mods.filter(m => m.group_id != gid);
+                }
+                item.mods.push({ id: opt.id, name: opt.name, price: opt.price_adjustment, group_id: gid });
+            }
+            
+            // Recalculate item price
+            let base = parseFloat(item.price);
+            item.mods.forEach(m => base += (parseFloat(m.price) || 0));
+            item.finalPrice = base * item.qty;
+            
+            renderCart();
+            renderModifierPane();
+        }
+
+        function changeSelectedQty(n) {
+            const item = cart[selectedIdx];
+            item.qty = Math.max(1, item.qty + n);
+            let base = parseFloat(item.price);
+            item.mods.forEach(m => base += (parseFloat(m.price) || 0));
+            item.finalPrice = base * item.qty;
+            renderCart();
+            document.getElementById('selected-qty').innerText = item.qty;
+        }
+
+        function updateSelectedNote(val) {
+            if (cart[selectedIdx]) cart[selectedIdx].note = val;
+        }
+
+        function updateTotals() {
+            const sub = cart.reduce((s, i) => s + i.finalPrice, 0);
+            document.getElementById('cart-total').innerText = `L ${sub.toFixed(0)}`;
+        }
+
+        function setFulfillment(type) {
+            fulfillment = type;
+            document.getElementById('btn-fulfill-dinein').className = type === 'dinein' ? 'px-3 py-1.5 rounded-lg border-2 border-blue-600 bg-blue-50 text-blue-700 text-[9px] font-black uppercase tracking-widest' : 'px-3 py-1.5 rounded-lg border-2 border-gray-100 text-gray-400 text-[9px] font-black uppercase tracking-widest';
+            document.getElementById('btn-fulfill-pickup').className = type === 'pickup' ? 'px-3 py-1.5 rounded-lg border-2 border-orange-500 bg-orange-50 text-orange-700 text-[9px] font-black uppercase tracking-widest' : 'px-3 py-1.5 rounded-lg border-2 border-gray-100 text-gray-400 text-[9px] font-black uppercase tracking-widest';
+            cart.forEach(i => i.fulfillment = type);
+        }
+
+        function openTender() {
+            if (cart.length === 0) return alert("Cart is empty");
+            const sub = cart.reduce((s, i) => s + i.finalPrice, 0);
+            document.getElementById('tender-total').innerText = `L ${sub.toFixed(0)}`;
+            document.getElementById('tender-modal').classList.remove('hidden');
+        }
+
+        async function executeTurboCharge(method) {
+            const total = cart.reduce((s, i) => s + i.finalPrice, 0);
+            const payload = {
+                items: cart,
+                total: total,
+                payment_method: method,
+                fulfillment_type: fulfillment,
+                status: method === 'cash' ? 'pending' : 'paid'
+            };
+            
+            try {
+                const res = await fetch('/api/orders', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer EMP-admin' },
+                    body: JSON.stringify(payload)
+                });
+                if (res.ok) {
+                    alert("✅ Venta exitosa");
+                    clearCart();
+                    document.getElementById('tender-modal').classList.add('hidden');
+                }
+            } catch(e) { alert("Error al procesar"); }
+        }
+
+        function clearCart() {
+            cart = [];
+            selectedIdx = -1;
+            renderCart();
+            renderModifierPane();
+        }
+
+        function handleTurboSearch(val) {
+            const q = val.toLowerCase();
+            const filtered = menu.filter(i => i.name.toLowerCase().includes(q) || i.category?.toLowerCase().includes(q));
+            renderTurboGrid(filtered);
+        }
+
+        window.addEventListener('keydown', (e) => {
+            if (e.key === '/') {
+                e.preventDefault();
+                document.getElementById('turbo-search').focus();
+            }
+            if (e.key === 'Escape') {
+                document.getElementById('turbo-search').value = '';
+                handleTurboSearch('');
+                document.getElementById('turbo-search').blur();
+            }
+        });
+        
+        async function toggleStoreStatus(cb) {
+            const isOpen = cb.checked;
+            await fetch('/api/store/status', {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer EMP-admin' },
+                body: JSON.stringify({ isOpen })
+            });
+            fetchStatus();
+        }
+    </script>
+</body>
+</html>
