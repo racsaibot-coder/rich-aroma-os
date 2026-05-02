@@ -1004,23 +1004,55 @@
                 return;
             }
             tbody.innerHTML = data.map(l => `
-                <tr>
+                <tr class="${l.status === 'new' ? 'bg-cyan-50/20' : ''}">
                     <td class="p-6 text-xs text-gray-400">${new Date(l.created_at).toLocaleDateString()}</td>
                     <td class="p-6">
                         <div class="flex items-center gap-4">
                             <div class="w-12 h-12 rounded-xl bg-gray-100 border border-gray-200 flex items-center justify-center overflow-hidden">
                                 ${l.logo_url ? `<img src="${l.logo_url}" class="w-full h-full object-cover">` : '<i class="fas fa-store text-gray-300"></i>'}
                             </div>
-                            <div class="font-bold text-gray-800 uppercase">${l.restaurant_name}</div>
+                            <div>
+                                <div class="font-bold text-gray-800 uppercase">${l.restaurant_name}</div>
+                                <div class="text-[8px] font-black uppercase text-gray-400">Status: ${l.status}</div>
+                            </div>
                         </div>
                     </td>
                     <td class="p-6 text-xs font-bold text-gray-500">${l.contact_name}</td>
                     <td class="p-6">
-                        <a href="https://wa.me/${l.phone}" class="text-blue-600 font-bold underline">${l.phone}</a>
+                        <a href="https://wa.me/${l.phone}" target="_blank" class="text-blue-600 font-bold underline flex items-center gap-1">
+                            ${l.phone} <i class="fab fa-whatsapp text-green-500"></i>
+                        </a>
                     </td>
-                    <td class="p-6 text-right"><span class="px-3 py-1 bg-cyan-50 text-cyan-700 rounded-full text-[10px] font-black uppercase">${l.category}</span></td>
+                    <td class="p-6 text-right">
+                        ${l.status === 'new' ? `
+                            <button onclick="approveQuimiLead(${l.id})" class="bg-cyan-500 text-dark px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-cyan-400 transition-all shadow-lg">
+                                Aprobar Socio
+                            </button>
+                        ` : `<span class="text-success font-bold text-[10px] uppercase tracking-widest"><i class="fas fa-check-circle"></i> Activo</span>`}
+                    </td>
                 </tr>
             `).join('');
+        }
+
+        async function approveQuimiLead(id) {
+            if (!confirm("¿Convertir este interesado en SOCIO OFICIAL de QuimiEats? Esto creará su cuenta automáticamente.")) return;
+            try {
+                const res = await fetch('/api/admin?action=approve_quimieats_lead', {
+                    method: 'POST',
+                    headers: getHeaders(),
+                    body: JSON.stringify({ leadId: id })
+                });
+                const data = await res.json();
+                if (res.ok) {
+                    alert(`✅ ¡Socio activado! \n\nID de Acceso: ${data.restaurant.id} \nPIN: 4574 \n\nEnviando mensaje de bienvenida...`);
+                    // Open WhatsApp automatically
+                    const msg = encodeURIComponent(`¡Hola! Bienvenido a QuimiEats. Tu cuenta ha sido activada. \n\nAccede a tu panel en: quimieats.com/partner \nID de Restaurante: ${data.restaurant.id} \nPIN: 4574 \n\n¡Ya puedes empezar a subir tu menú!`);
+                    window.open(`https://wa.me/${data.restaurant.contact_phone}?text=${msg}`, '_blank');
+                    loadQuimiLeads();
+                } else {
+                    alert("Error al aprobar: " + data.error);
+                }
+            } catch (e) { console.error(e); }
         }
 
         // UGC / CREATOR HUB LOGIC

@@ -504,6 +504,34 @@ module.exports = async function handler(req, res) {
         return res.json(data || []);
     }
 
+    if (action === 'approve_quimieats_lead' && req.method === 'POST') {
+        if (!isAdmin) return res.status(403).json({ error: "Admin access required" });
+        const { leadId } = req.body;
+        
+        // 1. Get lead data
+        const { data: lead } = await supabase.from('quimieats_leads').select('*').eq('id', leadId).single();
+        if (!lead) return res.status(404).json({ error: "Lead not found" });
+
+        // 2. Generate a clean ID (e.g. "Burger Station" -> "burger-station")
+        const resId = lead.restaurant_name.toLowerCase().trim().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+
+        // 3. Create the restaurant
+        const { data: restaurant, error: resErr } = await supabase.from('restaurants').insert({
+            id: resId,
+            name: lead.restaurant_name,
+            logo_url: lead.logo_url,
+            contact_phone: lead.phone,
+            status: 'active'
+        }).select().single();
+
+        if (resErr) return res.status(500).json({ error: "Res creation fail: " + resErr.message });
+
+        // 4. Update lead status
+        await supabase.from('quimieats_leads').update({ status: 'partner' }).eq('id', leadId);
+
+        return res.json({ success: true, restaurant });
+    }
+
     // UGC / CREATOR SUBMISSIONS
     if (action === 'ugc_submissions' && req.method === 'GET') {
         if (!isAdmin) return res.status(403).json({ error: "Admin access required" });
