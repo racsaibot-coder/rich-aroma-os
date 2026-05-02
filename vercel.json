@@ -16,6 +16,16 @@
   ],
   "routes": [
     {
+      "src": "/",
+      "has": [{ "type": "host", "value": "(.*)quimieats.com" }],
+      "dest": "/public/quimieats.html"
+    },
+    {
+      "src": "/index.html",
+      "has": [{ "type": "host", "value": "(.*)quimieats.com" }],
+      "dest": "/public/quimieats.html"
+    },
+    {
       "src": "/os/?",
       "dest": "/public/os.html"
     },
