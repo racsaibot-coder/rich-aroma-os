@@ -203,10 +203,29 @@
             btn.innerText = "SUBIENDO..."; btn.disabled = true;
 
             try {
-                // Here we will call a new partner-only API action
-                alert("¡Felicidades! Tu producto ha sido guardado y ya está en tu menú.");
-                location.reload();
-            } catch(e) { alert("Error"); btn.disabled = false; }
+                const res = await fetch('/api/store?action=partner_save_item', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                        restaurant_id: restaurantId,
+                        name, 
+                        price, 
+                        category: 'comida',
+                        imageBase64: logoBase64 
+                    })
+                });
+
+                if (res.ok) {
+                    alert("¡Felicidades! Tu producto ha sido guardado y ya está en tu menú.");
+                    location.reload();
+                } else {
+                    throw new Error("Error en el servidor");
+                }
+            } catch(e) { 
+                alert(e.message); 
+                btn.innerText = "Guardar Cambios";
+                btn.disabled = false; 
+            }
         }
 
     </script>

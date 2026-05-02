@@ -949,6 +949,42 @@ module.exports = async function handler(req, res) {
             return res.json({ success: true, data });
         }
 
+        // --- Partner Self-Service Menu ---
+        if (action === 'partner_save_item' && req.method === 'POST') {
+            const { restaurant_id, name, price, category, imageBase64 } = req.body;
+            if (!restaurant_id || !name || !price) return res.status(400).json({ error: "Data missing" });
+
+            let image_url = null;
+            if (imageBase64 && imageBase64.includes('base64')) {
+                const buffer = Buffer.from(imageBase64.split(',')[1], 'base64');
+                const safeName = name.toLowerCase().replace(/[^a-z0-9]/g, '_');
+                const path = `partners/${restaurant_id}/${Date.now()}_${safeName}.png`;
+                const contentType = imageBase64.split(';')[0].split(':')[1] || 'image/png';
+                
+                const { error: uploadErr } = await supabase.storage
+                    .from('menu-images')
+                    .upload(path, buffer, { contentType, upsert: true });
+                
+                if (!uploadErr) {
+                    const { data: urlData } = supabase.storage.from('menu-images').getPublicUrl(path);
+                    image_url = urlData.publicUrl;
+                }
+            }
+
+            const { data, error } = await supabase.from('menu_items').insert({
+                id: name.toLowerCase().replace(/[^a-z0-9]/g, '_') + '_' + Date.now(),
+                name,
+                price: parseFloat(price) || 0,
+                category: category || 'otros',
+                image_url,
+                restaurant_id,
+                available: true
+            }).select().single();
+
+            if (error) throw error;
+            return res.json({ success: true, data });
+        }
+
         return res.status(404).json({ error: 'Action not found' });
 
     } catch (e) {
