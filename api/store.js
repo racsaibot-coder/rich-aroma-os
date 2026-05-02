@@ -393,7 +393,7 @@ module.exports = async function handler(req, res) {
 
         // CUSTOMER PROFILE LOOKUP
         if (action === 'customer_profile' && req.method === 'GET') {
-            const { phone } = req.query;
+            const { phone, restaurantId } = req.query;
             if (!phone) return res.status(400).json({ error: "Phone required" });
             const cleanPhone = phone.replace(/[^\d+]/g, '');
             const { data: customer, error } = await supabase.from('customers').select('*').eq('phone', cleanPhone).single();
@@ -401,6 +401,17 @@ module.exports = async function handler(req, res) {
             
             let synced = await syncMembershipState(customer);
             synced = await syncDailyReload(synced);
+
+            // Fetch specific points for this restaurant
+            if (restaurantId) {
+                const { data: pointRecord } = await supabase.from('customer_points')
+                    .select('points')
+                    .eq('customer_id', customer.id)
+                    .eq('restaurant_id', restaurantId)
+                    .maybeSingle();
+                
+                synced.points = pointRecord ? pointRecord.points : 0;
+            }
             
             return res.json(synced);
         }
@@ -723,9 +734,22 @@ module.exports = async function handler(req, res) {
                 const cashPortion = orderData.total - orderData.rico_amount_paid;
                 if (cashPortion >= 100) {
                     const pointsToAward = Math.floor(cashPortion / 100) * 10;
-                    await supabase.from('customers').update({ 
-                        points: (parseInt(customer.points) || 0) + pointsToAward 
-                    }).eq('id', customer.id);
+                    
+                    // Award points to the SPECIFIC restaurant bucket
+                    const { data: currentP } = await supabase.from('customer_points')
+                        .select('points')
+                        .eq('customer_id', customer.id)
+                        .eq('restaurant_id', resId)
+                        .maybeSingle();
+
+                    const newTotalPoints = (currentP?.points || 0) + pointsToAward;
+
+                    await supabase.from('customer_points').upsert({ 
+                        customer_id: customer.id,
+                        restaurant_id: resId,
+                        points: newTotalPoints,
+                        updated_at: new Date().toISOString()
+                    });
                 }
             }
 

@@ -1189,8 +1189,11 @@
             window.openProfile = () => {
                 if (!currentCustomer) return window.openLogin();
                 
+                const urlParams = new URLSearchParams(window.location.search);
+                const resId = urlParams.get('restaurantId') || 'rich-aroma';
+
                 // Refresh data
-                fetch(`/api/customer/profile?phone=${currentCustomer.phone}`)
+                fetch(`/api/customer/profile?phone=${currentCustomer.phone}&restaurantId=${resId}`)
                 .then(r => r.json())
                 .then(d => {
                     if (d && !d.error) {
