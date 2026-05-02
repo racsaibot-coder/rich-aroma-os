@@ -90,6 +90,7 @@
                 <button onclick="switchTab('inventory')" id="tab-inventory" class="font-bold text-gray-500 hover:text-gray-800 pb-2 px-2">Inventory & Recipes</button>
                 <button onclick="switchTab('marketing')" id="tab-marketing" class="font-bold text-gray-500 hover:text-gray-800 pb-2 px-2">Marketing & Quests</button>
                 <button onclick="switchTab('creators')" id="tab-creators" class="font-bold text-gray-500 hover:text-gray-800 pb-2 px-2">UGC Reviews</button>
+                <button onclick="switchTab('quimieats')" id="tab-quimieats" class="font-bold text-gray-500 hover:text-gray-800 pb-2 px-2 text-cyan-600">QuimiEats</button>
             </div>
             
             <!-- Store Status Toggle -->
@@ -392,6 +393,36 @@
                             </thead>
                             <tbody id="ugcTable" class="divide-y divide-gray-100">
                                 <tr><td colspan="5" class="p-12 text-center text-gray-400 italic">Loading submissions...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            <!-- TAB: QUIMIEATS LEADS -->
+            <div id="section-quimieats" class="hidden">
+                <div class="bg-white rounded-[2rem] shadow-xl overflow-hidden border border-gray-100">
+                    <div class="p-8 bg-[#0D0D0D] text-white flex justify-between items-center">
+                        <div>
+                            <h3 class="text-xl font-black uppercase tracking-tight text-cyan-400">QuimiEats Network</h3>
+                            <p class="text-[10px] text-white/40 font-bold uppercase tracking-widest mt-1">Interesados en unirse a la plataforma</p>
+                        </div>
+                        <button onclick="loadQuimiLeads()" class="w-12 h-12 rounded-full bg-white/5 flex items-center justify-center hover:bg-white/10 transition-all border border-white/10">
+                            <i class="fas fa-sync-alt"></i>
+                        </button>
+                    </div>
+                    
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse">
+                            <thead class="bg-gray-50 text-gray-400 text-[10px] uppercase font-bold tracking-widest">
+                                <tr>
+                                    <th class="p-6">Fecha</th>
+                                    <th class="p-6">Negocio</th>
+                                    <th class="p-6">Contacto</th>
+                                    <th class="p-6">WhatsApp</th>
+                                    <th class="p-6 text-right">Categoría</th>
+                                </tr>
+                            </thead>
+                            <tbody id="quimiTable" class="divide-y divide-gray-100 text-sm">
+                                <!-- Data injected via JS -->
                             </tbody>
                         </table>
                     </div>
@@ -925,28 +956,64 @@
         function switchTab(tabId) {
             logDebug(`Switching to tab: ${tabId}`);
             try {
-                const sections = ['overview', 'employees', 'menu', 'inventory', 'marketing', 'creators'];
+                const sections = ['overview', 'employees', 'menu', 'inventory', 'marketing', 'creators', 'quimieats'];
                 sections.forEach(id => {
                     const el = document.getElementById(`section-${id}`);
                     if (el) el.classList.add('hidden');
 
                     const tab = document.getElementById(`tab-${id}`);
-                    if (tab) tab.className = "font-bold text-gray-500 hover:text-gray-800 pb-2 px-2";
+                    if (tab) {
+                        if (id === 'quimieats') tab.className = "font-bold text-gray-500 hover:text-cyan-600 pb-2 px-2";
+                        else tab.className = "font-bold text-gray-500 hover:text-gray-800 pb-2 px-2";
+                    }
                 });
 
                 const activeSection = document.getElementById(`section-${tabId}`);
                 if (activeSection) activeSection.classList.remove('hidden');
 
                 const activeTab = document.getElementById(`tab-${tabId}`);
-                if (activeTab) activeTab.className = "font-bold text-blue-600 border-b-2 border-blue-600 pb-2 px-2";
+                if (activeTab) {
+                    if (tabId === 'quimieats') activeTab.className = "font-bold text-cyan-600 border-b-2 border-cyan-600 pb-2 px-2";
+                    else activeTab.className = "font-bold text-blue-600 border-b-2 border-blue-600 pb-2 px-2";
+                }
 
                 if(tabId === 'employees') loadEmployees();
                 if(tabId === 'menu') { loadMenu(); loadModifiersDatabase(); }
                 if(tabId === 'inventory') loadInventory();
                 if(tabId === 'creators') loadUGCSubmissions();
+                if(tabId === 'quimieats') loadQuimiLeads();
             } catch (err) {
                 logDebug("Error in switchTab: " + err.message);
             }
+        }
+
+        // QUIMIEATS LOGIC
+        async function loadQuimiLeads() {
+            try {
+                const res = await fetch('/api/admin?action=quimieats_leads', { headers: getHeaders() });
+                const data = await res.json();
+                renderQuimiLeads(data);
+            } catch (e) { console.error("Leads fail", e); }
+        }
+
+        function renderQuimiLeads(data) {
+            const tbody = document.getElementById('quimiTable');
+            if (!tbody) return;
+            if (!data || data.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" class="p-12 text-center text-gray-400 italic">No hay interesados aún.</td></tr>';
+                return;
+            }
+            tbody.innerHTML = data.map(l => `
+                <tr>
+                    <td class="p-6 text-xs text-gray-400">${new Date(l.created_at).toLocaleDateString()}</td>
+                    <td class="p-6 font-bold text-gray-800 uppercase">${l.restaurant_name}</td>
+                    <td class="p-6 text-xs font-bold text-gray-500">${l.contact_name}</td>
+                    <td class="p-6">
+                        <a href="https://wa.me/${l.phone}" class="text-blue-600 font-bold underline">${l.phone}</a>
+                    </td>
+                    <td class="p-6 text-right"><span class="px-3 py-1 bg-cyan-50 text-cyan-700 rounded-full text-[10px] font-black uppercase">${l.category}</span></td>
+                </tr>
+            `).join('');
         }
 
         // UGC / CREATOR HUB LOGIC

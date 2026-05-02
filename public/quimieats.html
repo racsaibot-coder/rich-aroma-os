@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <link rel="icon" type="image/png" href="/favicon.png">    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>QuimiEats | El Futuro del Delivery</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: { gold: '#C9A66B', dark: '#0D0D0D', cyan: '#00F2FF' }
+                }
+            }
+        }
+    </script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap');
+        body { background-color: #0D0D0D; color: white; font-family: 'Inter', sans-serif; overflow-x: hidden; }
+        .cyber-glow { box-shadow: 0 0 20px rgba(0, 242, 255, 0.2); }
+        .glass { background: rgba(255, 255, 255, 0.03); backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.05); }
+        .neon-text { text-shadow: 0 0 10px rgba(0, 242, 255, 0.5); }
+        .hero-gradient { background: radial-gradient(circle at 50% 50%, rgba(0, 242, 255, 0.1) 0%, transparent 50%); }
+    </style>
+</head>
+<body class="min-h-screen">
+
+    <!-- Hero Section -->
+    <div class="relative min-h-screen flex flex-col items-center justify-center p-6 text-center hero-gradient">
+        <div class="absolute top-0 left-0 w-full h-full opacity-10 pointer-events-none" style="background-image: radial-gradient(#00F2FF 0.5px, transparent 0.5px); background-size: 30px 30px;"></div>
+        
+        <!-- Logo / Badge -->
+        <div class="mb-8 inline-flex items-center gap-3 px-6 py-2 rounded-full glass border-cyan/20 animate-in fade-in slide-in-from-top-4 duration-1000">
+            <div class="w-2 h-2 bg-cyan rounded-full animate-pulse"></div>
+            <span class="text-[10px] font-black uppercase tracking-[0.3em] text-cyan">Próximamente en Quimistán</span>
+        </div>
+
+        <h1 class="text-6xl md:text-8xl font-black italic tracking-tighter mb-6 animate-in fade-in slide-in-from-bottom-8 duration-1000">
+            QUIMI<span class="text-cyan neon-text">EATS</span>
+        </h1>
+        
+        <p class="text-white/40 text-lg md:text-xl max-w-lg leading-relaxed mb-12 animate-in fade-in slide-in-from-bottom-12 duration-1000">
+            No somos solo una app de delivery. Somos el motor que impulsa el crecimiento de los negocios locales.
+        </p>
+
+        <div class="flex flex-col md:flex-row gap-4 w-full max-w-md animate-in fade-in slide-in-from-bottom-16 duration-1000">
+            <a href="#join" class="flex-1 bg-cyan text-dark py-5 rounded-2xl font-black uppercase tracking-widest shadow-[0_0_30px_rgba(0,242,255,0.4)] active:scale-95 transition-all text-center">Unirme a la Red</a>
+            <a href="#partners" class="flex-1 bg-white/5 border border-white/10 py-5 rounded-2xl font-black uppercase tracking-widest hover:bg-white/10 transition-all text-center">Ver Aliados</a>
+        </div>
+    </div>
+
+    <!-- Feature Grid -->
+    <section class="max-w-6xl mx-auto px-6 py-32 grid grid-cols-1 md:grid-cols-3 gap-8">
+        <div class="glass p-10 rounded-[3rem] space-y-6 group hover:border-cyan/30 transition-all duration-500">
+            <div class="w-16 h-16 bg-cyan/10 text-cyan rounded-2xl flex items-center justify-center text-2xl border border-cyan/20"><i class="fas fa-bolt"></i></div>
+            <h3 class="text-2xl font-black uppercase tracking-tight">Velocidad Turbo</h3>
+            <p class="text-white/40 leading-relaxed">Entregas inteligentes en tiempo récord. Nuestra logística está optimizada para la geografía local.</p>
+        </div>
+        <div class="glass p-10 rounded-[3rem] space-y-6 group hover:border-cyan/30 transition-all duration-500">
+            <div class="w-16 h-16 bg-cyan/10 text-cyan rounded-2xl flex items-center justify-center text-2xl border border-cyan/20"><i class="fas fa-microchip"></i></div>
+            <h3 class="text-2xl font-black uppercase tracking-tight">OS Integrado</h3>
+            <p class="text-white/40 leading-relaxed">Tu restaurante recibe un sistema completo: POS, KDS e Inventario. Control total de tu cocina.</p>
+        </div>
+        <div class="glass p-10 rounded-[3rem] space-y-6 group hover:border-cyan/30 transition-all duration-500">
+            <div class="w-16 h-16 bg-cyan/10 text-cyan rounded-2xl flex items-center justify-center text-2xl border border-cyan/20"><i class="fas fa-users"></i></div>
+            <h3 class="text-2xl font-black uppercase tracking-tight">Lealtad Local</h3>
+            <p class="text-white/40 leading-relaxed">Sistema de recompensas unificado para que tus clientes siempre vuelvan por más.</p>
+        </div>
+    </section>
+
+    <!-- Partners Section -->
+    <section id="partners" class="py-32 bg-white/2 overflow-hidden border-y border-white/5">
+        <div class="max-w-6xl mx-auto px-6">
+            <div class="text-center mb-20 space-y-2">
+                <h4 class="text-cyan font-black text-xs uppercase tracking-[0.4em]">First Members</h4>
+                <h3 class="text-4xl font-black uppercase tracking-tight">Nuestra Red de Aliados</h3>
+            </div>
+            
+            <div class="flex flex-wrap justify-center gap-12 items-center grayscale opacity-50">
+                <!-- Rich Aroma (The Pioneer) -->
+                <div class="flex flex-col items-center gap-4 transition-all duration-500 hover:grayscale-0 hover:opacity-100">
+                    <img src="/rico-logo.png" class="w-32 h-32 rounded-full border-4 border-gold/30 shadow-2xl">
+                    <span class="text-xs font-black text-gold uppercase tracking-widest">Rich Aroma Coffee</span>
+                </div>
+
+                <!-- Placeholders -->
+                <div class="w-24 h-24 rounded-full border-2 border-dashed border-white/10 flex items-center justify-center text-white/10 text-[10px] font-black uppercase text-center p-4">Tu Logo Aquí</div>
+                <div class="w-24 h-24 rounded-full border-2 border-dashed border-white/10 flex items-center justify-center text-white/10 text-[10px] font-black uppercase text-center p-4">Tu Logo Aquí</div>
+                <div class="w-24 h-24 rounded-full border-2 border-dashed border-white/10 flex items-center justify-center text-white/10 text-[10px] font-black uppercase text-center p-4">Tu Logo Aquí</div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Join Section -->
+    <section id="join" class="max-w-4xl mx-auto px-6 py-32">
+        <div class="glass p-12 md:p-20 rounded-[4rem] space-y-12 relative overflow-hidden">
+            <div class="absolute -right-20 -bottom-20 w-80 h-80 bg-cyan/5 rounded-full blur-3xl"></div>
+            
+            <div class="text-center space-y-4">
+                <h3 class="text-4xl font-black uppercase tracking-tight">Inscribe tu Restaurante</h3>
+                <p class="text-white/40 max-w-sm mx-auto">Sé de los primeros en transformar tu negocio con la tecnología de QuimiEats.</p>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 relative z-10">
+                <div class="space-y-2">
+                    <label class="text-[10px] font-black text-cyan uppercase tracking-[0.3em] ml-4">Nombre del Negocio</label>
+                    <input type="text" id="lead-restaurant" placeholder="Ej. Burger Station" class="w-full bg-white/5 border border-white/10 p-5 rounded-[2rem] text-white outline-none focus:border-cyan transition-all">
+                </div>
+                <div class="space-y-2">
+                    <label class="text-[10px] font-black text-cyan uppercase tracking-[0.3em] ml-4">Persona de Contacto</label>
+                    <input type="text" id="lead-contact" placeholder="Tu Nombre" class="w-full bg-white/5 border border-white/10 p-5 rounded-[2rem] text-white outline-none focus:border-cyan transition-all">
+                </div>
+                <div class="space-y-2">
+                    <label class="text-[10px] font-black text-cyan uppercase tracking-[0.3em] ml-4">WhatsApp</label>
+                    <input type="tel" id="lead-phone" placeholder="9999-9999" class="w-full bg-white/5 border border-white/10 p-5 rounded-[2rem] text-white outline-none focus:border-cyan transition-all">
+                </div>
+                <div class="space-y-2">
+                    <label class="text-[10px] font-black text-cyan uppercase tracking-[0.3em] ml-4">Giro del Negocio</label>
+                    <select id="lead-cat" class="w-full bg-white/5 border border-white/10 p-5 rounded-[2rem] text-white/40 outline-none focus:border-cyan transition-all appearance-none">
+                        <option value="restaurante">Restaurante / Comida</option>
+                        <option value="reposteria">Repostería / Café</option>
+                        <option value="bebidas">Bebidas / Bar</option>
+                        <option value="otro">Otro</option>
+                    </select>
+                </div>
+            </div>
+
+            <button onclick="submitLead()" id="submit-btn" class="w-full bg-white text-dark py-6 rounded-[2.5rem] font-black uppercase tracking-[0.3em] shadow-2xl active:scale-95 transition-all text-sm">Aplicar para Beta</button>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="py-12 border-t border-white/5 text-center space-y-6">
+        <h4 class="text-white/20 font-black italic tracking-tighter">QUIMIEATS &bull; 2026</h4>
+        <div class="flex justify-center gap-6 text-white/20 text-xl">
+            <i class="fab fa-instagram"></i>
+            <i class="fab fa-facebook"></i>
+            <i class="fab fa-whatsapp"></i>
+        </div>
+        <p class="text-[8px] font-black uppercase tracking-[0.5em] text-white/10">Powered by Rich Aroma OS</p>
+    </footer>
+
+    <script>
+        async function submitLead() {
+            const restaurant_name = document.getElementById('lead-restaurant').value;
+            const contact_name = document.getElementById('lead-contact').value;
+            const phone = document.getElementById('lead-phone').value;
+            const category = document.getElementById('lead-cat').value;
+
+            if (!restaurant_name || !contact_name || !phone) return alert("Por favor completa los campos");
+
+            const btn = document.getElementById('submit-btn');
+            const originalText = btn.innerText;
+            btn.innerText = "PROCESANDO..."; btn.disabled = true;
+
+            try {
+                const res = await fetch('/api/store?action=quimieats_signup', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ restaurant_name, contact_name, phone, category })
+                });
+
+                if (res.ok) {
+                    alert("¡Excelente! Hemos recibido tu solicitud. Nos pondremos en contacto contigo pronto.");
+                    btn.innerText = "SOLICITUD ENVIADA";
+                    btn.className = "w-full bg-cyan text-dark py-6 rounded-[2.5rem] font-black uppercase tracking-[0.3em] shadow-2xl";
+                    document.querySelectorAll('input').forEach(i => i.value = '');
+                } else {
+                    throw new Error("Error en el envío");
+                }
+            } catch (e) {
+                alert(e.message);
+                btn.innerText = originalText; btn.disabled = false;
+            }
+        }
+    </script>
+</body>
+</html>

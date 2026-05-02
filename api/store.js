@@ -893,6 +893,22 @@ module.exports = async function handler(req, res) {
             return res.json({ success: true, data });
         }
 
+        // --- QuimiEats Signup ---
+        if (action === 'quimieats_signup' && req.method === 'POST') {
+            const { restaurant_name, contact_name, phone, category } = req.body;
+            if (!restaurant_name || !phone) return res.status(400).json({ error: "Nombre y WhatsApp requeridos" });
+
+            const { data, error } = await supabase.from('quimieats_leads').insert({
+                restaurant_name,
+                contact_name,
+                phone: phone.replace(/\D/g, ''),
+                category: category || 'otro'
+            }).select().single();
+
+            if (error) throw error;
+            return res.json({ success: true, data });
+        }
+
         return res.status(404).json({ error: 'Action not found' });
 
     } catch (e) {

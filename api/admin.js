@@ -496,6 +496,14 @@ module.exports = async function handler(req, res) {
         return res.json({ success: true });
     }
 
+    // QUIMIEATS LEADS
+    if (action === 'quimieats_leads' && req.method === 'GET') {
+        if (!isAdmin) return res.status(403).json({ error: "Admin access required" });
+        const { data, error } = await supabase.from('quimieats_leads').select('*').order('created_at', { ascending: false });
+        if (error) return res.status(500).json({ error: error.message });
+        return res.json(data || []);
+    }
+
     // UGC / CREATOR SUBMISSIONS
     if (action === 'ugc_submissions' && req.method === 'GET') {
         if (!isAdmin) return res.status(403).json({ error: "Admin access required" });
