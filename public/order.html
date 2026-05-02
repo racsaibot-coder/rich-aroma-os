@@ -761,18 +761,18 @@
             function getItemCat(i) {
                 const name = (i.name||'').toLowerCase(); const cat = (i.category||'').toLowerCase();
                 if (cat === 'combos' || name.includes('combo') || name.includes('paquete')) return 'Combos';
-                if (cat === 'coffee' || cat.includes('caliente')) return 'Calientes';
+                if (cat === 'food' || cat.includes('comida') || cat === 'pastry' || cat.includes('reposteria')) return 'Comida';
+                if (cat === 'coffee' || cat.includes('caliente')) return 'Caliente';
                 if (cat === 'drinks' || cat.includes('helada') || name.includes('frappe') || name.includes('refresher')) return 'Heladas';
-                if (cat === 'food' || cat.includes('comida')) return 'Comida';
-                if (cat === 'pastry' || cat.includes('reposteria')) return 'Repostería';
-                if (cat === 'secret' || cat.includes('secreto')) return 'Menú Secreto';
+                if (cat === 'secret' || cat.includes('secreto')) return 'Menu Secreto';
+                if (cat === 'sides' || cat.includes('side')) return 'Sides';
                 return 'Otros';
             }
 
             function initStickyCats() {
-                const cats = ['Combos', 'Calientes', 'Heladas', 'Comida', 'Repostería', 'Menú Secreto', 'Otros'];
+                const cats = ['Combos', 'Comida', 'Caliente', 'Heladas', 'Menu Secreto', 'Sides'];
                 const nav = document.getElementById('sticky-cats');
-                nav.innerHTML = cats.map(c => `<button onclick="scrollToCat('${c}', this)" class="category-pill shrink-0 px-6 py-2.5 rounded-full font-black text-[10px] uppercase tracking-widest transition-all ${c==='Menú Secreto'?'bg-gold text-dark':'bg-white/5 text-white/40'}">${c}</button>`).join('');
+                nav.innerHTML = cats.map(c => `<button onclick="scrollToCat('${c}', this)" class="category-pill shrink-0 px-6 py-2.5 rounded-full font-black text-[10px] uppercase tracking-widest transition-all ${c==='Combos'?'bg-gold text-dark':'bg-white/5 text-white/40'}">${c}</button>`).join('');
             }
 
             window.scrollToCat = (id, btn) => {
@@ -785,7 +785,12 @@
                     btn.classList.replace('text-white/40', 'text-dark');
                 }
                 const el = document.getElementById('section-' + id.replace(/\s+/g, ''));
-                if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                if (el) {
+                    const headerOffset = 160;
+                    const elementPosition = el.getBoundingClientRect().top;
+                    const offsetPosition = elementPosition + window.pageYOffset - headerOffset;
+                    window.scrollTo({ top: offsetPosition, behavior: "smooth" });
+                }
             };
 
             function optimizeImg(url) {
@@ -800,10 +805,10 @@
                 const main = document.getElementById('menu-feed');
                 const sortRules = { 
                     'Combos':['combo_1','combo_2','combo_3','combo_4'], 
-                    'Cold':['cold_supreme_frappe','cold_fresa_frappe','cold_coffee_frappe','cold_french_vanilla','cold_caramel_iced'], 
-                    'Food':['food_avocado_toast_huevo','food_banano_almond_toast','food_chicken_salad_bowl','food_baleadas','food_chicken_melt'] 
+                    'Heladas':['cold_supreme_frappe','cold_fresa_frappe','cold_coffee_frappe','cold_french_vanilla','cold_caramel_iced'], 
+                    'Comida':['food_avocado_toast_huevo','food_banano_almond_toast','food_chicken_salad_bowl','food_baleadas','food_chicken_melt'] 
                 };
-                const cats = ['Combos', 'Food', 'Hot', 'Cold', 'Side', 'Secret Menu', 'Otros'];
+                const cats = ['Combos', 'Comida', 'Caliente', 'Heladas', 'Menu Secreto', 'Sides'];
                 
                 // Base HTML of the guest card
                 const guestCardHtml = `
