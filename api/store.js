@@ -482,10 +482,11 @@ module.exports = async function handler(req, res) {
         // MENU (Bulletproof version)
         if (action === 'menu' && req.method === 'GET') {
             const isAdmin = req.query.admin === 'true';
+            const resId = req.query.restaurantId || 'rich-aroma';
             
             const [rItems, rModGroups, rModOptions, rItemModGroups] = await Promise.all([
-                supabase.from('menu_items').select('*').order('name'),
-                supabase.from('modifier_groups').select('*'),
+                supabase.from('menu_items').select('*').eq('restaurant_id', resId).order('name'),
+                supabase.from('modifier_groups').select('*').eq('restaurant_id', resId),
                 supabase.from('modifier_options').select('*').order('name'),
                 supabase.from('item_modifier_groups').select('*')
             ]);
@@ -662,7 +663,9 @@ module.exports = async function handler(req, res) {
 
             // --- AUTO-LINK TO ACTIVE SHIFT ---
             let resolvedShiftId = req.body.shiftId;
-            if (!resolvedShiftId) {
+            const resId = req.body.restaurant_id || 'rich-aroma';
+
+            if (!resolvedShiftId && resId === 'rich-aroma') {
                 const { data: activeShift } = await supabase.from('cash_shifts').select('id').eq('status', 'open').order('opened_at', {ascending:false}).limit(1).maybeSingle();
                 if (activeShift) resolvedShiftId = activeShift.id;
             }
@@ -680,7 +683,8 @@ module.exports = async function handler(req, res) {
                 rico_amount_paid: (paymentMethod === 'rico_balance' || secondaryPaymentMethod === 'rico_balance') ? parseFloat(ricoAmount) : 0,
                 customer_id: customerId,
                 notes: finalNotes,
-                shift_id: resolvedShiftId
+                shift_id: resolvedShiftId,
+                restaurant_id: resId
             };
 
             // HANDLE RICO CASH DEDUCTION (Support for Split)
@@ -690,12 +694,25 @@ module.exports = async function handler(req, res) {
                 
                 if (balance >= deduction) {
                     await supabase.from('customers').update({ rico_balance: balance - deduction }).eq('id', customer.id);
+                    
+                    // LEDGER: Log that this restaurant is owed money for accepting Rico Cash
+                    if (resId !== 'rich-aroma') {
+                        await supabase.from('quimieats_ledger').insert({
+                            restaurant_id: resId,
+                            customer_id: customer.id,
+                            amount: deduction,
+                            type: 'rico_payment',
+                            status: 'pending',
+                            order_id: orderData.id
+                        });
+                    }
+
                     // Log to balance history
                     await supabase.from('balance_history').insert({
                         customer_id: customer.id,
                         type: 'purchase',
                         amount: -deduction,
-                        notes: `Order #${orderNum}${secondaryPaymentMethod ? ' (Split)' : ''}`
+                        notes: `Order #${orderNum}${secondaryPaymentMethod ? ' (Split)' : ''} [${resId}]`
                     });
                 } else return res.status(400).json({ error: "Saldo insuficiente" });
             }
