@@ -1475,6 +1475,9 @@
                         const step2 = document.getElementById('step-2');
                         const step3 = document.getElementById('step-3');
 
+                        // Sanitize status to lowercase for reliable matching
+                        const status = (d.status || '').toLowerCase().trim();
+
                         // Update items list on each poll for real-time changes
                         if (itemList && d.items) {
                             itemList.innerHTML = d.items.map(i => `
@@ -1485,43 +1488,37 @@
                             `).join('');
                         }
 
-                        if (d.status === 'ready' || d.status === 'completed') {
+                        if (status === 'ready' || status === 'completed') {
                             title.innerText = "¡ORDEN LISTA! ☕";
                             if (badge) {
-                                badge.innerText = d.status === 'completed' ? "ENTREGADA" : "ORDEN LISTA";
+                                badge.innerText = status === 'completed' ? "ENTREGADA" : "ORDEN LISTA";
                                 badge.className = "bg-gold text-dark px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-[0.2em] shadow-lg shadow-gold/20";
                             }
                             if (progress) progress.style.width = "100%";
                             if (step2) step2.className = "w-6 h-6 rounded-full bg-gold text-dark flex items-center justify-center text-[10px] font-black shadow-lg";
                             if (step3) step3.className = "w-6 h-6 rounded-full bg-gold text-dark flex items-center justify-center text-[10px] font-black shadow-lg animate-bounce";
-                            msg.innerText = d.status === 'completed' ? "¡Gracias por tu compra! Esperamos verte pronto." : "Tu pedido está listo para ser retirado en barra. ¡Que lo disfrutes!";
+                            msg.innerText = status === 'completed' ? "¡Gracias por tu compra! Esperamos verte pronto." : "Tu pedido está listo para ser retirado en barra. ¡Que lo disfrutes!";
                             msg.className = "text-gold font-black text-xs mb-6 max-w-xs leading-relaxed animate-pulse";
                             icon.innerHTML = '<i class="fas fa-mug-hot"></i>';
                             icon.className = "w-20 h-20 bg-gold text-dark rounded-full flex items-center justify-center text-3xl mb-8 animate-bounce";
                             
-                            if (d.status === 'completed') {
+                            if (status === 'completed') {
                                 clearInterval(interval);
-                                // Optional: Clear order after 30 seconds if completed
                                 setTimeout(() => localStorage.removeItem('ra_active_order'), 30000);
                             }
-                        } else if (['preparing', 'preparing_food', 'preparing_drinks', 'drinks_ready', 'food_ready'].includes(d.status)) {
+                        } else if (['preparing', 'preparing_food', 'preparing_drinks', 'drinks_ready', 'food_ready', 'paid'].includes(status)) {
                             title.innerText = "PREPARANDO... 🔥";
                             if (badge) {
-                                badge.innerText = "EN COCINA";
+                                badge.innerText = status === 'paid' ? "RECIBIDA" : "EN COCINA";
                                 badge.className = "bg-orange-500/20 text-orange-500 border border-orange-500/50 px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-[0.2em]";
                             }
                             if (progress) progress.style.width = "50%";
                             if (step2) step2.className = "w-6 h-6 rounded-full bg-orange-500 text-white flex items-center justify-center text-[10px] font-black shadow-lg animate-pulse";
                             if (step3) step3.className = "w-6 h-6 rounded-full bg-white/5 text-white/20 flex items-center justify-center text-[10px] font-black border border-white/10";
-                            msg.innerText = d.status.includes('ready') ? "¡Avanzando! Parte de tu pedido ya está listo." : "Estamos preparando tu pedido con mucho amor. Casi listo...";
+                            msg.innerText = status.includes('ready') ? "¡Avanzando! Parte de tu pedido ya está listo." : "Estamos preparando tu pedido con mucho amor. Casi listo...";
                             icon.innerHTML = '<i class="fas fa-fire-alt"></i>';
                             icon.className = "w-20 h-20 bg-orange-500/20 text-orange-500 rounded-full flex items-center justify-center text-3xl mb-8 animate-pulse";
-                        } else if (d.status === 'completed') {
-                            clearInterval(interval);
-                            localStorage.removeItem('ra_active_order');
-                            alert("¡Gracias por tu compra! Esperamos verte pronto.");
-                            location.href = '/order';
-                        } else if (d.status === 'cancelled') {
+                        } else if (status === 'cancelled') {
                             clearInterval(interval);
                             title.innerText = "ORDEN CANCELADA";
                             if (badge) {
@@ -1532,7 +1529,7 @@
                             icon.innerHTML = '<i class="fas fa-times"></i>';
                             icon.className = "w-20 h-20 bg-red-500/20 text-red-500 rounded-full flex items-center justify-center text-3xl mb-8";
                         } else {
-                            // Pending / Paid
+                            // Default: Pending / Paid (initial state)
                             title.innerText = "¡ORDEN RECIBIDA! ✅";
                             if (badge) {
                                 badge.innerText = "PAGADA & EN COLA";
