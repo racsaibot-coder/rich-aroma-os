@@ -895,14 +895,37 @@ module.exports = async function handler(req, res) {
 
         // --- QuimiEats Signup ---
         if (action === 'quimieats_signup' && req.method === 'POST') {
-            const { restaurant_name, contact_name, phone, category } = req.body;
+            const { restaurant_name, contact_name, phone, category, logoBase64 } = req.body;
             if (!restaurant_name || !phone) return res.status(400).json({ error: "Nombre y WhatsApp requeridos" });
+
+            let logo_url = null;
+
+            if (logoBase64 && logoBase64.includes('base64')) {
+                try {
+                    const buffer = Buffer.from(logoBase64.split(',')[1], 'base64');
+                    const safeName = restaurant_name.toLowerCase().replace(/[^a-z0-9]/g, '_');
+                    const path = `leads/${Date.now()}_${safeName}.png`;
+                    const contentType = logoBase64.split(';')[0].split(':')[1] || 'image/png';
+
+                    const { error: uploadErr } = await supabase.storage
+                        .from('menu-images')
+                        .upload(path, buffer, { contentType, upsert: true });
+
+                    if (!uploadErr) {
+                        const { data: urlData } = supabase.storage.from('menu-images').getPublicUrl(path);
+                        logo_url = urlData.publicUrl;
+                    }
+                } catch (e) {
+                    console.error("Logo upload failed:", e);
+                }
+            }
 
             const { data, error } = await supabase.from('quimieats_leads').insert({
                 restaurant_name,
                 contact_name,
                 phone: phone.replace(/\D/g, ''),
-                category: category || 'otro'
+                category: category || 'otro',
+                logo_url
             }).select().single();
 
             if (error) throw error;

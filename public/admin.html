@@ -1006,7 +1006,14 @@
             tbody.innerHTML = data.map(l => `
                 <tr>
                     <td class="p-6 text-xs text-gray-400">${new Date(l.created_at).toLocaleDateString()}</td>
-                    <td class="p-6 font-bold text-gray-800 uppercase">${l.restaurant_name}</td>
+                    <td class="p-6">
+                        <div class="flex items-center gap-4">
+                            <div class="w-12 h-12 rounded-xl bg-gray-100 border border-gray-200 flex items-center justify-center overflow-hidden">
+                                ${l.logo_url ? `<img src="${l.logo_url}" class="w-full h-full object-cover">` : '<i class="fas fa-store text-gray-300"></i>'}
+                            </div>
+                            <div class="font-bold text-gray-800 uppercase">${l.restaurant_name}</div>
+                        </div>
+                    </td>
                     <td class="p-6 text-xs font-bold text-gray-500">${l.contact_name}</td>
                     <td class="p-6">
                         <a href="https://wa.me/${l.phone}" class="text-blue-600 font-bold underline">${l.phone}</a>
