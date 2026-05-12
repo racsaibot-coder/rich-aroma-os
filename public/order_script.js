@@ -14,6 +14,10 @@
                 }
             }
         }
+        const supabaseUrl = 'https://zcqubacfcettwawcimsy.supabase.co';
+        const supabaseKey = 'sb_publishable_hRVyru_6sektmVGQyJFfwQ_4b2-7MKq';
+        const supabaseClient = window.supabase.createClient(supabaseUrl, supabaseKey);
+
         let cart = [];
         let currentCustomer = null;
         let menuItems = [];
@@ -590,8 +594,8 @@
             const totalTest = subtotalTest * 1.15;
             
             if (!currentCustomer) {
-                const guestName = document.getElementById('guest-name').value.trim();
-                const guestPhone = document.getElementById('guest-phone').value.trim();
+                const guestName = document.getElementById('check-name')?.value.trim();
+                const guestPhone = document.getElementById('check-phone')?.value.trim();
                 
                 if (totalTest > 250) {
                     if (!guestName || !guestPhone) {
@@ -660,11 +664,12 @@
             const total = subtotal - discount + tax;
 
             try {
+                const tableInfo = document.getElementById('check-table')?.value.trim();
                 const payload = {
                     items, subtotal, tax, discount: discount, total: total,
                     paymentMethod: paymentMethod,
                     fulfillment: fulfillmentType,
-                    notes: `Mobile Order (${fulfillmentType}) ${orderNotes ? '- ' + orderNotes : ''}`
+                    notes: `Mobile Order (${fulfillmentType})${tableInfo ? ' [MESA/GRUPO: ' + tableInfo + ']' : ''} ${orderNotes ? '- ' + orderNotes : ''}`
                 };
                 if (currentCustomer) {
                     payload.customerId = currentCustomer.id;
@@ -742,8 +747,9 @@
         }
 
         // --- TRACKING & ADDON LOGIC ---
-        let statusPollingTimer = null;
+        let statusSubscription = null;
         let trackingTimer = null;
+        let statusPoller = null; // Fallback poller
 
         function startTrackingTimer(orderTime) {
             clearInterval(trackingTimer);
@@ -763,105 +769,320 @@
             }, 1000);
         }
 
-        function showTracking() {
-            document.getElementById('main-view').classList.add('hidden');
-            document.getElementById('fulfillment-selector').classList.add('hidden');
-            document.getElementById('tracking-view').classList.remove('hidden');
-            document.getElementById('tracking-icon-container').classList.remove('hidden');
-            
-            if (activeOrder && activeOrder.payment_method === 'transfer') {
-                document.getElementById('transfer-upload-section').classList.remove('hidden');
-            } else {
-                document.getElementById('transfer-upload-section').classList.add('hidden');
-            }
-            
-            document.getElementById('track-order-num').innerText = activeOrder.order_number || activeOrder.id;
-            const types = { pickup: 'Para Llevar', dinein: 'Restaurante', delivery: 'A Domicilio' };
-            document.getElementById('track-type').innerText = types[activeOrder.fulfillment_type || fulfillmentType];
-            
-            if (activeOrder.created_at) {
-                startTrackingTimer(activeOrder.created_at);
-            } else {
-                startTrackingTimer(new Date().toISOString());
-            }
-            
-            // Addon logic removed per request - show new order button immediately
-            document.getElementById('addon-box').classList.add('hidden');
-            document.getElementById('new-order-btn').classList.remove('hidden');
-            
-            // Set initial state silently
-            if(activeOrder.status === 'preparing') setStep('prep', true);
-            if(activeOrder.status === 'completed' || activeOrder.status === 'ready') setStep('ready', true);
+        // Helper to compress image before upload
+        async function compressImage(file) {
+            return new Promise((resolve) => {
+                const reader = new FileReader();
+                reader.readAsDataURL(file);
+                reader.onload = (e) => {
+                    const img = new Image();
+                    img.src = e.target.result;
+                    img.onload = () => {
+                        const canvas = document.createElement('canvas');
+                        const MAX_WIDTH = 800;
+                        const MAX_HEIGHT = 800;
+                        let width = img.width;
+                        let height = img.height;
 
-            // Start live polling for status
-            clearInterval(statusPollingTimer);
-            statusPollingTimer = setInterval(async () => {
-                try {
-                    // This assumes we add a GET /api/orders/:id endpoint later.
-                    // For now we can fetch the user's past orders or the full orders list to find it
-                    const res = await fetch('/api/orders'); 
-                    if(res.ok) {
-                        const data = await res.json();
-                        const currentOrder = data.orders.find(o => o.id === activeOrder.id);
-                        if(currentOrder) {
-                            // Update UI if paid
-                            if(currentOrder.status === 'paid') {
-                                document.getElementById('transfer-upload-section').classList.add('hidden');
-                                document.getElementById('track-status-desc').innerText = `Orden #${currentOrder.order_number || currentOrder.id} • Pago Confirmado ✅`;
+                        if (width > height) {
+                            if (width > MAX_WIDTH) {
+                                height *= MAX_WIDTH / width;
+                                width = MAX_WIDTH;
                             }
-                            
-                            if(currentOrder.status === 'preparing') setStep('prep');
-                            if(currentOrder.status === 'completed' || currentOrder.status === 'ready') {
-                                setStep('ready');
-                                clearInterval(statusPollingTimer); // Stop polling when done
-                                
-                                // Disable Add-ons and force new order when completed
-                                clearInterval(addonTimer);
-                                document.getElementById('addon-box').classList.add('hidden');
-                                document.getElementById('new-order-btn').classList.remove('hidden');
+                        } else {
+                            if (height > MAX_HEIGHT) {
+                                width *= MAX_HEIGHT / height;
+                                height = MAX_HEIGHT;
                             }
                         }
+                        canvas.width = width;
+                        canvas.height = height;
+                        const ctx = canvas.getContext('2d');
+                        ctx.drawImage(img, 0, 0, width, height);
+                        resolve(canvas.toDataURL('image/jpeg', 0.7));
+                    };
+                };
+            });
+        }
+
+        window.uploadReceipt = async (input) => {
+            if (!input.files || !input.files[0]) return;
+            const statusEl = document.getElementById('upload-status');
+            const btnEl = document.getElementById('upload-btn');
+            
+            statusEl.classList.remove('hidden');
+            btnEl.classList.add('hidden');
+            
+            try {
+                // Reuse existing compressImage if available or define local
+                const base64 = await compressImage(input.files[0]);
+                const res = await fetch(`/api/orders/${activeOrder.id}/receipt`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ imageBase64: base64 })
+                });
+                
+                if (res.ok) {
+                    statusEl.innerText = "¡COMPROBANTE RECIBIDO! ✅";
+                    statusEl.className = "text-[10px] font-black uppercase text-success text-center";
+                } else {
+                    throw new Error("Upload failed");
+                }
+            } catch (e) {
+                console.error(e);
+                statusEl.innerText = "ERROR AL SUBIR. REINTENTA.";
+                statusEl.className = "text-[10px] font-black uppercase text-error text-center";
+                btnEl.classList.remove('hidden');
+            }
+        };
+
+        async function showTracking() {
+            if (!activeOrder) return;
+
+            document.getElementById('main-view').classList.add('hidden');
+            document.getElementById('fulfillment-selector').classList.add('hidden');
+            
+            // Fix: Match order.html ID 'track-modal'
+            const modal = document.getElementById('track-modal');
+            if (modal) {
+                modal.classList.remove('hidden');
+                document.body.style.overflow = 'hidden'; // Stop background scrolling
+            }
+            
+            if (activeOrder.payment_method === 'transfer') {
+                const uploadSection = document.getElementById('transfer-upload-section');
+                if (uploadSection) uploadSection.classList.remove('hidden');
+            }
+            
+            const numEl = document.getElementById('receipt-num');
+            if (numEl) numEl.innerText = `#${activeOrder.order_number || activeOrder.id.slice(-4)}`;
+            
+            startTrackingTimer(activeOrder.created_at || new Date().toISOString());
+
+            // Initial Sync
+            try {
+                const res = await fetch(`/api/orders/${activeOrder.id}`);
+                if (res.ok) {
+                    const latest = await res.json();
+                    activeOrder = latest;
+                    updateTrackingUI(latest, true);
+                }
+            } catch (e) { console.error("Initial track sync failed", e); }
+
+            // REALTIME: Listen only to this specific order
+            if (statusSubscription) statusSubscription.unsubscribe();
+            
+            statusSubscription = supabaseClient
+                .channel(`track_${activeOrder.id}`)
+                .on('postgres_changes', { 
+                    event: 'UPDATE', 
+                    schema: 'public', 
+                    table: 'orders', 
+                    filter: `id=eq.${activeOrder.id}` 
+                }, payload => {
+                    console.log('Realtime status update:', payload.new.status);
+                    activeOrder = payload.new;
+                    updateTrackingUI(payload.new);
+                })
+                .subscribe();
+
+            // FALLBACK POLLING: Every 10 seconds just in case Realtime fails
+            clearInterval(statusPoller);
+            statusPoller = setInterval(async () => {
+                try {
+                    const res = await fetch(`/api/orders/${activeOrder.id}`);
+                    if (res.ok) {
+                        const latest = await res.json();
+                        if (latest.status !== activeOrder.status) {
+                            console.log('Polling status update:', latest.status);
+                            activeOrder = latest;
+                            updateTrackingUI(latest);
+                        }
                     }
-                } catch(e) { console.error('Status poll error', e); }
-            }, 3000);
+                } catch (e) { console.error("Polling sync failed", e); }
+            }, 10000);
+        }
+
+        function updateTrackingUI(order, silent = false) {
+            if (!order || !order.status) return;
+            
+            const status = order.status.toLowerCase(); // Case-insensitive safety
+            const badge = document.getElementById('status-badge');
+            const title = document.querySelector('#track-modal h2');
+            const msg = document.getElementById('track-msg');
+            const icon = document.getElementById('track-icon');
+            const progress = document.getElementById('track-progress-line');
+            
+            // Show delivery step if it's a delivery order
+            const isDelivery = order.fulfillment_type === 'delivery';
+            const deliveryUI = document.getElementById('step-delivery-ui');
+            if (deliveryUI) {
+                if (isDelivery) deliveryUI.classList.remove('hidden');
+                else deliveryUI.classList.add('hidden');
+            }
+
+            if (badge) {
+                badge.innerText = status.toUpperCase();
+                badge.classList.remove('animate-pulse');
+            }
+
+            // Received / Paid state
+            if (['pending', 'paid', 'pending_verification'].includes(status)) {
+                if (title) title.innerText = "¡ORDEN RECIBIDA! ✅";
+                
+                let statusText = "Tu pedido ha sido enviado. Prepárate para el mejor sabor.";
+                let badgeText = "RECIBIDA";
+
+                if (status === 'paid') {
+                    statusText = "Tu pago ha sido confirmado. Estamos procesando tu orden.";
+                    badgeText = "PAGADA & EN COLA";
+                } else if (status === 'pending' && order.payment_method === 'cash') {
+                    statusText = "Orden recibida. Favor proceder a caja para realizar tu pago.";
+                    badgeText = "PAGO PENDIENTE";
+                } else if (status === 'pending_verification') {
+                    statusText = "Estamos verificando tu comprobante. Danos un momento...";
+                    badgeText = "VERIFICANDO PAGO";
+                }
+
+                if (msg) msg.innerText = statusText;
+                if (badge) badge.innerText = badgeText;
+                if (progress) progress.style.width = "0%";
+            }
+
+            // Preparing state
+            if (['preparing', 'preparing_food', 'preparing_drinks'].includes(status)) {
+                setStep('prep', silent);
+                if (title) title.innerText = "PREPARANDO... 🔥";
+                if (msg) msg.innerText = "Estamos preparando tu pedido con mucho amor. Casi listo...";
+                if (progress) progress.style.width = isDelivery ? "33%" : "50%";
+                if (icon) {
+                    icon.innerHTML = '<i class="fas fa-fire-alt"></i>';
+                    icon.className = "w-20 h-20 bg-orange-500/20 text-orange-500 rounded-full flex items-center justify-center text-3xl mb-8 animate-pulse";
+                }
+            }
+            
+            // Ready / Shipped state
+            if (['ready', 'drinks_ready', 'food_ready', 'shipped'].includes(status)) {
+                if (status === 'shipped') {
+                    setStep('shipped', silent);
+                    if (title) title.innerText = "¡EN CAMINO! 🛵";
+                    if (msg) msg.innerText = "Tu pedido ya salió de nuestra tienda y va en camino a tu ubicación.";
+                    if (progress) progress.style.width = "75%";
+                    if (icon) {
+                        icon.innerHTML = '<i class="fas fa-motorcycle"></i>';
+                        icon.className = "w-20 h-20 bg-blue-500/20 text-blue-500 rounded-full flex items-center justify-center text-3xl mb-8 animate-bounce";
+                    }
+                } else {
+                    setStep('ready', silent);
+                    if (title) title.innerText = "¡ORDEN LISTA! ☕";
+                    if (msg) msg.innerText = isDelivery ? "Tu pedido está listo y esperando al repartidor." : "Tu pedido está listo para ser retirado en barra. ¡Que lo disfrutes!";
+                    if (progress) progress.style.width = isDelivery ? "66%" : "100%";
+                    if (icon) {
+                        icon.innerHTML = '<i class="fas fa-mug-hot"></i>';
+                        icon.className = "w-20 h-20 bg-gold/20 text-gold rounded-full flex items-center justify-center text-3xl mb-8 animate-bounce-in";
+                    }
+                }
+            }
+            
+            // Completed state
+            if (status === 'completed') {
+                setStep('ready', silent); // Mark final step as done
+                if (isDelivery) setStep('shipped', true);
+                
+                if (title) title.innerText = "¡ENTREGADA! ☕";
+                if (msg) msg.innerText = "¡Gracias por tu compra! Esperamos que disfrutes tu pedido.";
+                if (progress) progress.style.width = "100%";
+                if (icon) {
+                    icon.innerHTML = '<i class="fas fa-check-circle"></i>';
+                    icon.className = "w-20 h-20 bg-success/20 text-success rounded-full flex items-center justify-center text-3xl mb-8";
+                }
+                if (statusSubscription) {
+                    setTimeout(() => statusSubscription.unsubscribe(), 5000);
+                }
+            }
+
+            if (status === 'cancelled') {
+                if (title) title.innerText = "ORDEN CANCELADA";
+                
+                // Parse rejection reason from notes if available
+                let reason = "Esta orden ha sido cancelada o movida. Contacta a caja si tienes dudas.";
+                if (order.notes && order.notes.includes('[REJECTED]')) {
+                    reason = `Esta orden fue cancelada. Motivo: ${order.notes.replace('[REJECTED]', '').trim()}`;
+                }
+                
+                if (msg) msg.innerText = reason;
+                if (msg) msg.className = "text-red-400 text-sm mb-6 max-w-xs leading-relaxed font-bold";
+
+                if (badge) {
+                    badge.innerText = "CANCELADA";
+                    badge.className = "bg-red-500/20 text-red-500 border border-red-500/50 px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-[0.2em]";
+                }
+
+                if (icon) {
+                    icon.innerHTML = '<i class="fas fa-times"></i>';
+                    icon.className = "w-20 h-20 bg-red-500/20 text-red-500 rounded-full flex items-center justify-center text-3xl mb-8";
+                }
+                if (statusSubscription) {
+                    setTimeout(() => statusSubscription.unsubscribe(), 2000);
+                }
+            }
         }
 
         function showTrackingIfActive() {
             if(activeOrder) {
                 document.getElementById('main-view').classList.add('hidden');
                 document.getElementById('fulfillment-selector').classList.add('hidden');
-                document.getElementById('tracking-view').classList.remove('hidden');
+                // Fix: track-modal instead of tracking-view
+                const modal = document.getElementById('track-modal');
+                if (modal) modal.classList.remove('hidden');
             }
         }
 
 // Audio Chimes for customer
         const prepChime = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3'); // soft ding
         const readyChime = new Audio('https://assets.mixkit.co/active_storage/sfx/2013/2013-preview.mp3'); // happy chime
+        const shippedChime = new Audio('https://assets.mixkit.co/active_storage/sfx/1003/1003-preview.mp3'); // motorcycle rev or beep
         let currentStepState = 'pending';
 
         function setStep(step, silent = false) {
+            const s1 = document.getElementById('step-1');
+            const s2 = document.getElementById('step-2');
+            const s3 = document.getElementById('step-3');
+            const s4 = document.getElementById('step-4');
+
+            // Step 1 is always active if we are tracking
+            if (s1) {
+                s1.className = "w-6 h-6 rounded-full bg-gold text-dark flex items-center justify-center text-[10px] font-black shadow-lg shadow-gold/20";
+            }
+
             if(step === 'prep') {
                 if (currentStepState !== 'prep' && !silent) {
                     prepChime.play().catch(e=>console.log(e));
                 }
                 currentStepState = 'prep';
                 
-                document.getElementById('step-prep-icon').classList.replace('bg-white/10', 'bg-gold');
-                document.getElementById('step-prep-icon').classList.replace('text-white/50', 'text-dark');
-                document.getElementById('step-prep-text').classList.replace('text-white/50', 'text-white');
+                if (s2) s2.className = "w-6 h-6 rounded-full bg-orange-500 text-white flex items-center justify-center text-[10px] font-black shadow-lg animate-pulse";
             }
+
             if(step === 'ready') {
                 if (currentStepState !== 'ready' && !silent) {
                     readyChime.play().catch(e=>console.log(e));
                 }
                 currentStepState = 'ready';
                 
-                document.getElementById('step-ready-icon').classList.replace('bg-white/10', 'bg-gold');
-                document.getElementById('step-ready-icon').classList.replace('text-white/50', 'text-dark');
-                document.getElementById('step-ready-text').classList.replace('text-white/50', 'text-white');
-                document.getElementById('track-status-title').innerText = "¡Orden Lista!";
-                const pulseEl = document.querySelector('.animate-pulse');
-                if(pulseEl) pulseEl.classList.remove('animate-pulse');
+                if (s2) s2.className = "w-6 h-6 rounded-full bg-gold text-dark flex items-center justify-center text-[10px] font-black shadow-lg";
+                if (s3) s3.className = "w-6 h-6 rounded-full bg-gold text-dark flex items-center justify-center text-[10px] font-black shadow-lg animate-bounce";
+            }
+
+            if(step === 'shipped') {
+                if (currentStepState !== 'shipped' && !silent) {
+                    shippedChime.play().catch(e=>console.log(e));
+                }
+                currentStepState = 'shipped';
+
+                if (s2) s2.className = "w-6 h-6 rounded-full bg-gold text-dark flex items-center justify-center text-[10px] font-black shadow-lg";
+                if (s3) s3.className = "w-6 h-6 rounded-full bg-gold text-dark flex items-center justify-center text-[10px] font-black shadow-lg";
+                if (s4) s4.className = "w-6 h-6 rounded-full bg-blue-500 text-white flex items-center justify-center text-[10px] font-black shadow-lg animate-bounce";
             }
         }
 
@@ -903,6 +1124,11 @@
 
         function newOrder() {
             activeOrder = null;
+            document.body.style.overflow = 'auto'; // Restore scrolling
+            if (statusSubscription) {
+                statusSubscription.unsubscribe();
+                statusSubscription = null;
+            }
             clearInterval(addonTimer);
             isAddonMode = false;
             document.getElementById('tracking-view').classList.add('hidden');
@@ -912,9 +1138,15 @@
             
             // Reset steps
             ['prep', 'ready'].forEach(s => {
-                document.getElementById(`step-${s}-icon`).classList.replace('bg-gold', 'bg-white/10');
-                document.getElementById(`step-${s}-icon`).classList.replace('text-dark', 'text-white/50');
-                document.getElementById(`step-${s}-text`).classList.replace('text-white', 'text-white/50');
+                const icon = document.getElementById(`step-${s}-icon`);
+                const text = document.getElementById(`step-${s}-text`);
+                if (icon) {
+                    icon.classList.replace('bg-gold', 'bg-white/10');
+                    icon.classList.replace('text-dark', 'text-white/50');
+                }
+                if (text) {
+                    text.classList.replace('text-white', 'text-white/50');
+                }
             });
         }
 
@@ -940,8 +1172,30 @@
             if (savedActive) {
                 try {
                     activeOrder = JSON.parse(savedActive);
+                    
+                    // Verify with backend if the order is still "trackable"
+                    const res = await fetch(`/api/orders/${activeOrder.id}`);
+                    if (res.ok) {
+                        const latest = await res.json();
+                        // If order is very old or already finalized long ago, don't show it
+                        const isRecent = (new Date() - new Date(latest.created_at)) < (12 * 60 * 60 * 1000); // 12 hours
+                        if (['completed', 'cancelled'].includes(latest.status) && !isRecent) {
+                            localStorage.removeItem('ra_active_order');
+                            activeOrder = null;
+                        } else {
+                            activeOrder = latest;
+                            showTracking();
+                        }
+                    } else {
+                        // Order not found in DB
+                        localStorage.removeItem('ra_active_order');
+                        activeOrder = null;
+                    }
+                } catch(e) { 
+                    console.error("Restoration sync failed", e);
+                    // Show whatever we had locally as fallback
                     showTracking();
-                } catch(e) { localStorage.removeItem('ra_active_order'); }
+                }
             }
 
             // Auto login logic for testing

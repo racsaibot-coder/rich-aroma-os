@@ -31,6 +31,14 @@
       "dest": "/public/partner.html"
     },
     {
+      "src": "/test-pos",
+      "dest": "/public/test-pos-layout.html"
+    },
+    {
+      "src": "/test-tracking",
+      "dest": "/public/test-tracking.html"
+    },
+    {
       "src": "/os/?",
       "dest": "/public/os.html"
     },

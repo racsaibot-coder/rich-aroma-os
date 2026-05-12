@@ -228,13 +228,59 @@
         const startTimes = {};
         let previousOrderIds = new Set(); // To track new orders for the DING
 
-        // Realtime Subscription
+        // Optimized Realtime: Only fetch when absolutely necessary (e.g., initial load or complex sync)
+        // For standard updates, we patch the local 'orders' array using the payload.
         const channel = db.channel('orders')
-            .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, payload => {
-                console.log('Order update:', payload);
-                loadOrders();
+            .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'orders' }, payload => {
+                console.log('New order received:', payload.new);
+                const order = payload.new;
+                // Only add if it matches our "pending" filters
+                if (['pending', 'paid', 'preparing', 'partial_paid'].includes(order.status)) {
+                    orders.unshift(order);
+                    checkNewOrderDing([order.id]);
+                    render();
+                }
+            })
+            .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'orders' }, payload => {
+                console.log('Order updated:', payload.new);
+                const updated = payload.new;
+                const index = orders.findIndex(o => o.id === updated.id);
+                
+                const isStillPending = ['pending', 'paid', 'preparing', 'partial_paid'].includes(updated.status);
+                
+                if (index !== -1) {
+                    if (isStillPending) {
+                        orders[index] = updated;
+                    } else {
+                        // Order was bumped or cancelled, remove from view
+                        orders.splice(index, 1);
+                    }
+                } else if (isStillPending) {
+                    // New pending order we didn't have before
+                    orders.unshift(updated);
+                    checkNewOrderDing([updated.id]);
+                }
+                render();
+            })
+            .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'orders' }, payload => {
+                orders = orders.filter(o => o.id !== payload.old.id);
+                render();
             })
             .subscribe();
+
+        function checkNewOrderDing(newIds) {
+            let hasNew = false;
+            for (let id of newIds) {
+                if (!previousOrderIds.has(id)) {
+                    hasNew = true;
+                    previousOrderIds.add(id);
+                }
+            }
+            if (hasNew && previousOrderIds.size > 1) { // Size > 1 to avoid ding on first boot
+                const audio = document.getElementById('dingSound');
+                if (audio) audio.play().catch(e => console.log('Audio autoplay blocked', e));
+            }
+        }
 
         async function loadDrivers() {
             try {
@@ -258,38 +304,35 @@
                 const data = await res.json();
                 
                 const newOrders = (data.orders || []).filter(o => 
-                    o.status === 'pending' || 
-                    o.status === 'paid' || o.status === 'preparing' || 
-                    o.status === 'partial_paid'
+                    ['pending', 'paid', 'preparing', 'partial_paid'].includes(o.status)
                 );
 
-                // DING logic
-                let hasNew = false;
-                const currentIds = new Set(newOrders.map(o => o.id));
-                for (let id of currentIds) {
-                    if (!previousOrderIds.has(id)) {
-                        hasNew = true;
-                        break;
-                    }
+                // Initial tracking for DING
+                if (previousOrderIds.size === 0) {
+                    newOrders.forEach(o => previousOrderIds.add(o.id));
                 }
-                
-                // Only play ding if we already loaded initially and a new ID appears
-                if (hasNew && previousOrderIds.size > 0) {
-                    const audio = document.getElementById('dingSound');
-                    if (audio) audio.play().catch(e => console.log('Audio autoplay blocked', e));
-                }
-                previousOrderIds = currentIds;
+
                 orders = newOrders;
                 
-                // Debug Mode: Update timestamp
                 const time = new Date().toLocaleTimeString();
                 const el = document.getElementById('lastUpdated');
-                if(el) el.textContent = `Last Updated: ${time}`;
+                if(el) el.textContent = `Last Synced: ${time}`;
 
                 render();
             } catch (e) {
                 console.error("Error fetching orders:", e);
             }
+        }
+
+        function notifyWhatsApp(phone, name, items, orderNum) {
+            if (!phone) return alert("Esta orden no tiene número de teléfono.");
+            const cleanPhone = phone.replace(/\D/g, '');
+            const customerName = name || 'cliente';
+            const itemsList = items.map(i => `${i.qty || 1}x ${i.name}`).join(', ');
+            
+            const message = `Hola ${customerName}! En Rich Aroma estamos trabajando en tu orden #${orderNum} (${itemsList}). ¡Estará lista en un momento! ☕🔥`;
+            const url = `https://wa.me/${cleanPhone}?text=${encodeURIComponent(message)}`;
+            window.open(url, '_blank');
         }
 
         function render() {
@@ -308,6 +351,9 @@
                 const secs = elapsed % 60;
                 const isUrgent = mins >= 10; // Red if waiting > 10 mins
 
+                const custName = order.customers?.name || (order.notes?.match(/\[GUEST: (.*?)\]/)?.[1]) || 'Invitado';
+                const custPhone = order.customers?.phone || (order.notes?.match(/\[PHONE: (.*?)\]/)?.[1]) || '';
+
                 // Driver status
                 let driverSection = '';
                 if (order.driver_id) {
@@ -318,22 +364,35 @@
                 
                 return `<div class="order-card ${isUrgent ? 'urgent' : ''}">
                     <div class="order-header">
-                        <span class="order-num">#${order.order_number}</span>
-                        <div class="order-time">
-                            <span>⏱</span>
-                            <span class="timer ${isUrgent ? 'urgent' : ''}">${mins}:${String(secs).padStart(2, '0')}</span>
+                        <div style="display:flex; flex-direction:column; gap:2px">
+                            <span class="order-num">#${order.order_number}</span>
+                            <span style="font-size:0.7rem; color:rgba(255,255,255,0.4); font-weight:bold">${custName.toUpperCase()}</span>
+                        </div>
+                        <div style="display:flex; align-items:center; gap:10px">
+                            ${custPhone ? `<button onclick="notifyWhatsApp('${custPhone}', '${custName}', ${JSON.stringify(order.items).replace(/"/g, '&quot;')}, '${order.order_number}')" style="background:#25d366; color:white; border:none; padding:5px 8px; border-radius:5px; font-size:10px; cursor:pointer"><i class="fab fa-whatsapp"></i></button>` : ''}
+                            <div class="order-time">
+                                <span>⏱</span>
+                                <span class="timer ${isUrgent ? 'urgent' : ''}">${mins}:${String(secs).padStart(2, '0')}</span>
+                            </div>
                         </div>
                     </div>
                     <div class="order-items">
-                        ${order.items.map(item => `
+                        ${order.items.map(item => {
+                            const drinkUpgrade = (item.mods || []).find(m => 
+                                m.name.toLowerCase().includes('americano') || 
+                                m.name.toLowerCase().includes('latte') ||
+                                m.name.toLowerCase().includes('cappuccino')
+                            );
+                            
+                            return `
                             <div class="order-item">
                                 <span class="item-qty">${item.qty || 1}</span>
                                 <div class="item-details">
-                                    <div class="item-name">${item.name}</div>
+                                    <div class="item-name">${item.name} ${drinkUpgrade ? `<span style="color:#ef4444; font-weight:900; margin-left:8px;">⚡ ${drinkUpgrade.name.toUpperCase()}</span>` : ''}</div>
                                     ${item.mods && item.mods.length ? `<div class="item-mods">${item.mods.map(m => m.name).join(', ')}</div>` : ''}
                                 </div>
-                            </div>
-                        `).join('')}
+                            </div>`;
+                        }).join('')}
                     </div>
                     ${order.notes ? `<div style="padding:0.5rem 1rem; color:#fbbf24; font-weight:600; font-size:0.9rem; border-top:1px dashed rgba(255,255,255,0.1)">📝 ${order.notes}</div>` : ''}
                     ${driverSection}
@@ -349,14 +408,17 @@
         
         async function markPreparing(orderId) {
             // Optimistic update
-            const o = activeOrders.find(x => x.id === orderId);
+            const o = orders.find(x => x.id === orderId);
             if (o) o.status = 'preparing';
             render();
             
             try {
                 await fetch(`/api/orders/${orderId}`, {
                     method: 'PATCH',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer TEST_TOKEN_ADMIN'
+                    },
                     body: JSON.stringify({ status: 'preparing' })
                 });
             } catch(e) {

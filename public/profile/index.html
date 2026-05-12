@@ -170,6 +170,102 @@
                 <p class="text-[10px] font-black text-white/30 uppercase tracking-widest mb-1">Visitas Totales</p>
                 <p class="text-2xl font-bold text-white" id="stats-visits">0</p>
             </div>
+            <div class="bg-[#1a1714] border border-gold/10 p-4 rounded-2xl text-center shadow-lg w-full">
+                <p class="text-[10px] font-black text-gold/40 uppercase tracking-widest mb-1">Rico Points</p>
+                <p class="text-2xl font-bold text-gold" id="stats-points">0</p>
+            </div>
+        </div>
+
+        <!-- NEW: QUEST BOARD (CHALLENGES) -->
+        <div class="bg-[#1a1714] p-6 rounded-3xl border border-white/5 space-y-4">
+            <div class="flex justify-between items-center">
+                <h3 class="font-black text-xs text-gold uppercase tracking-widest">Retos del Mes (UGC)</h3>
+                <span class="bg-gold/10 text-gold text-[8px] font-black px-2 py-1 rounded-full border border-gold/20 uppercase">Gana Puntos</span>
+            </div>
+            
+            <div class="space-y-3">
+                <!-- Challenge 1 -->
+                <div class="flex items-center gap-4 bg-black/40 p-4 rounded-2xl border border-white/5 group active:scale-95 transition-all">
+                    <div class="w-12 h-12 bg-blue-500/10 text-blue-400 rounded-xl flex items-center justify-center text-xl shadow-inner">
+                        <i class="fab fa-instagram"></i>
+                    </div>
+                    <div class="flex-1">
+                        <h4 class="text-sm font-bold text-white">Story Maker</h4>
+                        <p class="text-[10px] text-white/40 italic">Sube una story y etiquétanos</p>
+                    </div>
+                    <div class="text-right">
+                        <span class="text-xs font-black text-gold">+50</span>
+                        <p class="text-[7px] text-gray-600 font-bold uppercase">Points</p>
+                    </div>
+                </div>
+
+                <!-- Challenge 2 -->
+                <div class="flex items-center gap-4 bg-black/40 p-4 rounded-2xl border border-white/5 group active:scale-95 transition-all">
+                    <div class="w-12 h-12 bg-green-500/10 text-green-400 rounded-xl flex items-center justify-center text-xl shadow-inner">
+                        <i class="fas fa-map-marker-alt"></i>
+                    </div>
+                    <div class="flex-1">
+                        <h4 class="text-sm font-bold text-white">Local Legend</h4>
+                        <p class="text-[10px] text-white/40 italic">Danos 5 estrellas en Google</p>
+                    </div>
+                    <div class="text-right">
+                        <span class="text-xs font-black text-gold">+100</span>
+                        <p class="text-[7px] text-gray-600 font-bold uppercase">Points</p>
+                    </div>
+                </div>
+
+                <!-- Challenge 3 -->
+                <div class="flex items-center gap-4 bg-black/40 p-4 rounded-2xl border border-white/5 group active:scale-95 transition-all">
+                    <div class="w-12 h-12 bg-purple-500/10 text-purple-400 rounded-xl flex items-center justify-center text-xl shadow-inner">
+                        <i class="fas fa-camera-retro"></i>
+                    </div>
+                    <div class="flex-1">
+                        <h4 class="text-sm font-bold text-white">Coffee Artist</h4>
+                        <p class="text-[10px] text-white/40 italic">Post creativo con tu bebida</p>
+                    </div>
+                    <div class="text-right">
+                        <span class="text-xs font-black text-gold">+150</span>
+                        <p class="text-[7px] text-gray-600 font-bold uppercase">Points</p>
+                    </div>
+                </div>
+            </div>
+
+            <button onclick="alert('Sube tu captura o link a nuestro WhatsApp para reclamar tus puntos.')" class="w-full py-3 bg-white/5 border border-white/10 rounded-xl text-[9px] font-black text-white/40 uppercase tracking-[0.2em] hover:text-gold transition-colors">
+                ¿Cómo reclamar mis puntos?
+            </button>
+        </div>
+
+        <!-- NEW: UNLOCKABLE PRIZES -->
+        <div class="bg-[#1a1714] p-6 rounded-3xl border border-white/5 space-y-6">
+            <h3 class="font-black text-xs text-gold uppercase tracking-widest">Próximos Premios</h3>
+            
+            <!-- Progress Tracker -->
+            <div class="space-y-2">
+                <div class="flex justify-between text-[10px] font-black uppercase tracking-widest">
+                    <span class="text-white/40">Progreso de Nivel</span>
+                    <span class="text-gold" id="progress-percent">0%</span>
+                </div>
+                <div class="w-full h-3 bg-black rounded-full overflow-hidden border border-white/5 p-0.5">
+                    <div id="progress-bar" class="h-full bg-gradient-to-r from-gold to-yellow-200 rounded-full transition-all duration-1000" style="width: 0%"></div>
+                </div>
+                <p class="text-[9px] text-white/20 italic text-center">Faltan <span id="points-needed" class="text-gold/50">---</span> puntos para tu próximo regalo</p>
+            </div>
+
+            <!-- Prizes Gallery -->
+            <div class="grid grid-cols-2 gap-3">
+                <!-- Prize 1 -->
+                <div class="bg-black/20 p-4 rounded-2xl border border-white/5 flex flex-col items-center text-center space-y-2 opacity-40 grayscale">
+                    <div class="text-2xl">☕</div>
+                    <h5 class="text-[10px] font-black text-white uppercase">Café de la Casa</h5>
+                    <span class="text-[8px] bg-white/10 px-2 py-0.5 rounded-full text-white/60">250 Pts</span>
+                </div>
+                <!-- Prize 2 -->
+                <div class="bg-black/20 p-4 rounded-2xl border border-white/5 flex flex-col items-center text-center space-y-2 opacity-40 grayscale">
+                    <div class="text-2xl">🥐</div>
+                    <h5 class="text-[10px] font-black text-white uppercase">20% Repostería</h5>
+                    <span class="text-[8px] bg-white/10 px-2 py-0.5 rounded-full text-white/60">500 Pts</span>
+                </div>
+            </div>
         </div>
         
         <div class="bg-[#1a1714] p-6 rounded-2xl border border-white/5">
@@ -239,6 +335,34 @@
             
             document.getElementById('stats-visits').innerText = customer.visits || 0;
             document.getElementById('user-since').innerText = new Date(customer.created_at || Date.now()).toLocaleDateString();
+
+            // Handle Points and Rewards Progress
+            const points = parseInt(customer.points || 0);
+            const statsPointsEl = document.getElementById('stats-points');
+            if (statsPointsEl) statsPointsEl.innerText = points;
+
+            const nextGoal = points < 250 ? 250 : (points < 500 ? 500 : 1000);
+            const progress = Math.min(100, (points / nextGoal) * 100);
+            
+            const bar = document.getElementById('progress-bar');
+            const percentEl = document.getElementById('progress-percent');
+            const neededEl = document.getElementById('points-needed');
+            
+            if (bar) bar.style.width = `${progress}%`;
+            if (percentEl) percentEl.innerText = `${Math.floor(progress)}%`;
+            if (neededEl) neededEl.innerText = Math.max(0, nextGoal - points);
+
+            // Update Prize Card Opacity based on points
+            document.querySelectorAll('.bg-black\\/20.p-4.rounded-2xl').forEach(card => {
+                const ptsMatch = card.innerText.match(/(\d+)\s*Pts/);
+                if (ptsMatch) {
+                    const required = parseInt(ptsMatch[1]);
+                    if (points >= required) {
+                        card.classList.remove('opacity-40', 'grayscale');
+                        card.classList.add('border-gold/30', 'bg-gold/5');
+                    }
+                }
+            });
 
             fetchHistory(customer.id);
         }

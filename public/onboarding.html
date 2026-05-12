@@ -1,208 +1,169 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SaaS Onboarding | Rich Aroma OS</title>
+    <link rel="icon" type="image/png" href="/favicon.png">    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Configura tu Tienda | QuimiEats</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: { gold: '#C9A66B', dark: '#0D0D0D', cyan: '#00F2FF' }
+                }
+            }
+        }
+    </script>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap');
-        body { font-family: 'Inter', sans-serif; background-color: #F9FAFB; }
-        .step-active { color: #2563EB; border-bottom: 2px solid #2563EB; }
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap');
+        body { background-color: #0D0D0D; color: white; font-family: 'Inter', sans-serif; }
+        .glass { background: rgba(255, 255, 255, 0.03); backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.05); }
+        .step-inactive { opacity: 0.3; pointer-events: none; }
     </style>
 </head>
-<body class="p-4 md:p-12">
-    <div class="max-w-5xl mx-auto">
-        <header class="mb-12 flex justify-between items-center">
-            <div>
-                <h1 class="text-3xl font-extrabold text-gray-900 tracking-tight">Restaurant Launchpad</h1>
-                <p class="text-gray-500">Configure your new restaurant in minutes.</p>
-            </div>
-            <button onclick="window.location.href='/admin'" class="text-sm font-bold text-gray-400 hover:text-gray-900">
-                <i class="fas fa-times mr-2"></i> Exit
-            </button>
-        </header>
+<body class="min-h-screen flex items-center justify-center p-6">
 
-        <!-- Stepper -->
-        <div class="flex gap-8 mb-12 border-b border-gray-200">
-            <button id="step-btn-1" class="pb-4 font-bold step-active">1. Brand</button>
-            <button id="step-btn-2" class="pb-4 font-bold text-gray-400">2. Menu & Modifiers</button>
-            <button id="step-btn-3" class="pb-4 font-bold text-gray-400">3. Inventory & Recipes</button>
+    <div class="w-full max-w-md space-y-8">
+        <!-- Header -->
+        <div class="text-center space-y-2">
+            <h1 class="text-3xl font-black uppercase tracking-tighter">¡Bienvenido Chef!</h1>
+            <p class="text-white/40 text-xs font-bold uppercase tracking-widest">Configura tu tienda en 2 minutos</p>
         </div>
 
-        <!-- STEP 1: BRAND -->
-        <div id="step-1" class="space-y-8 bg-white p-8 rounded-3xl shadow-sm border border-gray-100">
-            <h2 class="text-2xl font-bold">Brand Identity</h2>
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
-                <div class="space-y-4">
-                    <div>
-                        <label class="block text-xs font-black uppercase text-gray-400 mb-1">Restaurant Name</label>
-                        <input type="text" id="brand-name" placeholder="e.g. Cali Coffee" class="w-full border rounded-xl p-4 text-lg outline-none focus:border-blue-500 bg-gray-50">
-                    </div>
-                    <div>
-                        <label class="block text-xs font-black uppercase text-gray-400 mb-1">Brand Color</label>
-                        <input type="color" id="brand-color" value="#C9A66B" class="w-full h-12 rounded-xl cursor-pointer">
-                    </div>
-                </div>
-                <div class="space-y-4">
-                    <label class="block text-xs font-black uppercase text-gray-400 mb-1">Logo URL</label>
-                    <input type="text" id="brand-logo" placeholder="https://..." class="w-full border rounded-xl p-4 text-lg outline-none focus:border-blue-500 bg-gray-50">
-                    <p class="text-xs text-gray-400 italic">This logo will appear on the storefront and receipts.</p>
-                </div>
-            </div>
-            <div class="flex justify-end pt-8">
-                <button onclick="goToStep(2)" class="bg-blue-600 text-white px-8 py-4 rounded-2xl font-bold hover:bg-blue-700 transition shadow-lg shadow-blue-600/20">
-                    Next: Build Menu <i class="fas fa-arrow-right ml-2"></i>
-                </button>
-            </div>
+        <!-- Progress Track -->
+        <div class="flex justify-between px-10 relative">
+            <div class="absolute top-1/2 left-0 w-full h-0.5 bg-white/5 -translate-y-1/2 -z-10"></div>
+            <div id="dot-1" class="w-8 h-8 rounded-full bg-cyan text-dark flex items-center justify-center text-xs font-black">1</div>
+            <div id="dot-2" class="w-8 h-8 rounded-full bg-white/10 text-white/40 flex items-center justify-center text-xs font-black">2</div>
+            <div id="dot-3" class="w-8 h-8 rounded-full bg-white/10 text-white/40 flex items-center justify-center text-xs font-black">3</div>
         </div>
 
-        <!-- STEP 2: MENU -->
-        <div id="step-2" class="hidden space-y-8 bg-white p-8 rounded-3xl shadow-sm border border-gray-100">
-            <div class="flex justify-between items-center">
-                <h2 class="text-2xl font-bold">Menu Builder</h2>
-                <button onclick="addMenuRow()" class="bg-gray-100 hover:bg-gray-200 text-gray-900 px-4 py-2 rounded-xl font-bold text-sm">
-                    <i class="fas fa-plus mr-2"></i> Add Item
-                </button>
+        <!-- Step 1: Verify & PIN -->
+        <div id="step-1" class="glass p-8 rounded-[2.5rem] space-y-6">
+            <div class="text-center">
+                <h2 class="text-xl font-black uppercase">Seguridad</h2>
+                <p class="text-[10px] text-white/40 font-bold uppercase mt-1">Este es tu PIN maestro para entrar al OS</p>
+            </div>
+            <div class="text-center py-6">
+                <div id="display-pin" class="text-6xl font-black text-cyan tracking-widest">----</div>
+                <p class="text-[9px] text-cyan font-black uppercase mt-4">Anótalo bien. Lo usarás para ver tus pedidos.</p>
+            </div>
+            <button onclick="nextStep(2)" class="w-full bg-white text-dark py-5 rounded-2xl font-black uppercase tracking-widest">Siguiente</button>
+        </div>
+
+        <!-- Step 2: First Product -->
+        <div id="step-2" class="hidden glass p-8 rounded-[2.5rem] space-y-6">
+            <div class="text-center">
+                <h2 class="text-xl font-black uppercase">Tu Primer Plato</h2>
+                <p class="text-[10px] text-white/40 font-bold uppercase mt-1">Sube lo que vas a vender hoy</p>
             </div>
             
-            <div class="overflow-x-auto">
-                <table class="w-full">
-                    <thead>
-                        <tr class="text-left text-xs font-black uppercase text-gray-400">
-                            <th class="pb-4 pr-4">Item Name</th>
-                            <th class="pb-4 pr-4">Category</th>
-                            <th class="pb-4 pr-4">Price (L)</th>
-                            <th class="pb-4 pr-4">Image URL</th>
-                            <th class="pb-4">Modifiers</th>
-                        </tr>
-                    </thead>
-                    <tbody id="menu-rows" class="space-y-2">
-                        <!-- Initial Row -->
-                        <tr class="menu-row">
-                            <td class="pr-4 pb-2"><input type="text" class="item-name w-full border rounded-lg p-2 text-sm" placeholder="e.g. Latte"></td>
-                            <td class="pr-4 pb-2">
-                                <select class="item-cat border rounded-lg p-2 text-sm w-full">
-                                    <option value="coffee">Coffee</option>
-                                    <option value="drinks">Drinks</option>
-                                    <option value="food">Food</option>
-                                </select>
-                            </td>
-                            <td class="pr-4 pb-2"><input type="number" class="item-price w-full border rounded-lg p-2 text-sm" placeholder="0.00"></td>
-                            <td class="pr-4 pb-2"><input type="text" class="item-img w-full border rounded-lg p-2 text-sm" placeholder="https://..."></td>
-                            <td class="pb-2"><input type="text" class="item-mods w-full border rounded-lg p-2 text-sm" placeholder="Milk, Size"></td>
-                        </tr>
-                    </tbody>
-                </table>
+            <div class="space-y-4">
+                <div class="flex items-center gap-4 bg-white/5 border border-white/10 p-4 rounded-2xl">
+                    <div id="product-preview" class="w-20 h-20 rounded-xl bg-white/5 border-2 border-dashed border-white/10 flex items-center justify-center text-white/10 text-xl overflow-hidden">
+                        <i class="fas fa-camera"></i>
+                    </div>
+                    <div class="flex-1">
+                        <input type="file" id="product-img" class="hidden" onchange="handleProductImg(this)">
+                        <button onclick="document.getElementById('product-img').click()" class="text-[10px] font-black uppercase tracking-widest text-cyan">Subir Foto</button>
+                    </div>
+                </div>
+                <input type="text" id="product-name" placeholder="Nombre del Plato" class="w-full bg-white/5 border border-white/10 p-4 rounded-xl outline-none focus:border-cyan">
+                <input type="number" id="product-price" placeholder="Precio (Lempiras)" class="w-full bg-white/5 border border-white/10 p-4 rounded-xl outline-none focus:border-cyan">
             </div>
 
-            <div class="flex justify-between pt-8 border-t">
-                <button onclick="goToStep(1)" class="text-gray-400 font-bold px-8 py-4">Back</button>
-                <button onclick="goToStep(3)" class="bg-blue-600 text-white px-8 py-4 rounded-2xl font-bold hover:bg-blue-700 transition shadow-lg shadow-blue-600/20">
-                    Next: Setup Inventory <i class="fas fa-arrow-right ml-2"></i>
-                </button>
-            </div>
+            <button id="save-product-btn" onclick="saveFirstProduct()" class="w-full bg-cyan text-dark py-5 rounded-2xl font-black uppercase tracking-widest">Publicar Plato</button>
         </div>
 
-        <!-- STEP 3: INVENTORY -->
-        <div id="step-3" class="hidden space-y-8 bg-white p-8 rounded-3xl shadow-sm border border-gray-100">
-            <h2 class="text-2xl font-bold">Inventory & Recipe Logic</h2>
-            <p class="text-gray-500">List your raw ingredients and we'll help you tie them to your menu.</p>
+        <!-- Step 3: Success -->
+        <div id="step-3" class="hidden glass p-8 rounded-[2.5rem] space-y-8 text-center">
+            <div class="w-20 h-20 bg-green-500/20 text-green-500 rounded-full flex items-center justify-center text-3xl mx-auto border border-green-500/30">
+                <i class="fas fa-check"></i>
+            </div>
+            <div class="space-y-2">
+                <h2 class="text-2xl font-black uppercase">¡Estás en Vivo!</h2>
+                <p class="text-sm text-white/40">Tu tienda ya aparece en QuimiEats.com</p>
+            </div>
             
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
-                <div class="space-y-4">
-                    <h3 class="text-sm font-black uppercase text-gray-400">Common Ingredients</h3>
-                    <div id="ingredient-pills" class="flex flex-wrap gap-2">
-                        <button onclick="addIngredient('Coffee Beans', 'g')" class="px-3 py-1 bg-gray-100 rounded-full text-xs font-bold hover:bg-blue-100 hover:text-blue-600 transition">☕ Coffee Beans (g)</button>
-                        <button onclick="addIngredient('Whole Milk', 'ml')" class="px-3 py-1 bg-gray-100 rounded-full text-xs font-bold hover:bg-blue-100 hover:text-blue-600 transition">🥛 Whole Milk (ml)</button>
-                        <button onclick="addIngredient('Sugar', 'g')" class="px-3 py-1 bg-gray-100 rounded-full text-xs font-bold hover:bg-blue-100 hover:text-blue-600 transition">🍬 Sugar (g)</button>
-                        <button onclick="addIngredient('Cups', 'unit')" class="px-3 py-1 bg-gray-100 rounded-full text-xs font-bold hover:bg-blue-100 hover:text-blue-600 transition">🥤 Cups (unit)</button>
-                    </div>
-                </div>
-                
-                <div class="space-y-4">
-                    <h3 class="text-sm font-black uppercase text-gray-400">Your Inventory List</h3>
-                    <div id="my-inventory" class="space-y-2">
-                        <!-- Injected via JS -->
-                    </div>
-                </div>
+            <div class="p-4 bg-white/5 rounded-2xl border border-white/10">
+                <p class="text-[10px] font-black text-cyan uppercase mb-2">Tu Dashboard de Cocina</p>
+                <a id="os-link" href="/os" class="text-xs font-bold text-white underline break-all">quimieats.com/os</a>
+                <p class="text-[8px] text-white/20 mt-2 uppercase">Usa tu PIN para ver los pedidos que entren</p>
             </div>
 
-            <div class="flex justify-between pt-8 border-t">
-                <button onclick="goToStep(2)" class="text-gray-400 font-bold px-8 py-4">Back</button>
-                <button onclick="finishOnboarding()" class="bg-green-600 text-white px-12 py-4 rounded-2xl font-bold hover:bg-green-700 transition shadow-lg shadow-green-600/20">
-                    Launch Restaurant <i class="fas fa-rocket ml-2"></i>
-                </button>
-            </div>
+            <button onclick="window.location.href='/os'" class="w-full bg-white text-dark py-5 rounded-2xl font-black uppercase tracking-widest">Ir al Panel de Control</button>
         </div>
     </div>
 
     <script>
-        let currentStep = 1;
-        const ingredients = [];
+        const urlParams = new URLSearchParams(window.location.search);
+        const resId = urlParams.get('resId');
+        const tempPin = urlParams.get('pin');
+        let productImageBase64 = null;
 
-        function goToStep(s) {
-            document.getElementById(`step-${currentStep}`).classList.add('hidden');
-            document.getElementById(`step-btn-${currentStep}`).className = "pb-4 font-bold text-gray-400";
+        if (!resId || !tempPin) window.location.href = '/';
+
+        document.getElementById('display-pin').innerText = tempPin;
+
+        function nextStep(step) {
+            document.querySelectorAll('[id^="step-"]').forEach(s => s.classList.add('hidden'));
+            document.getElementById(`step-${step}`).classList.remove('hidden');
             
-            currentStep = s;
-            
-            document.getElementById(`step-${currentStep}`).classList.remove('hidden');
-            document.getElementById(`step-btn-${currentStep}`).className = "pb-4 font-bold step-active";
+            // Update dots
+            for(let i=1; i<=3; i++) {
+                const dot = document.getElementById(`dot-${i}`);
+                if (i <= step) {
+                    dot.classList.add('bg-cyan', 'text-dark');
+                    dot.classList.remove('bg-white/10', 'text-white/40');
+                }
+            }
         }
 
-        function addMenuRow() {
-            const tbody = document.getElementById('menu-rows');
-            const tr = document.createElement('tr');
-            tr.className = "menu-row";
-            tr.innerHTML = `
-                <td class="pr-4 pb-2"><input type="text" class="item-name w-full border rounded-lg p-2 text-sm" placeholder="e.g. Latte"></td>
-                <td class="pr-4 pb-2">
-                    <select class="item-cat border rounded-lg p-2 text-sm w-full">
-                        <option value="coffee">Coffee</option>
-                        <option value="drinks">Drinks</option>
-                        <option value="food">Food</option>
-                    </select>
-                </td>
-                <td class="pr-4 pb-2"><input type="number" class="item-price w-full border rounded-lg p-2 text-sm" placeholder="0.00"></td>
-                <td class="pb-2"><input type="text" class="item-mods w-full border rounded-lg p-2 text-sm" placeholder="Milk Type, Size"></td>
-            `;
-            tbody.appendChild(tr);
+        function handleProductImg(input) {
+            const file = input.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                productImageBase64 = e.target.result;
+                document.getElementById('product-preview').innerHTML = `<img src="${productImageBase64}" class="w-full h-full object-cover">`;
+            };
+            reader.readAsDataURL(file);
         }
 
-        function addIngredient(name, unit) {
-            if (ingredients.some(i => i.name === name)) return;
-            ingredients.push({ name, unit });
-            renderIngredients();
-        }
+        async function saveFirstProduct() {
+            const name = document.getElementById('product-name').value;
+            const price = document.getElementById('product-price').value;
 
-        function renderIngredients() {
-            const container = document.getElementById('my-inventory');
-            container.innerHTML = ingredients.map((ing, idx) => `
-                <div class="flex justify-between items-center bg-gray-50 p-3 rounded-xl border border-gray-100">
-                    <div class="flex items-center gap-3">
-                        <span class="text-sm font-bold text-gray-700">${ing.name}</span>
-                        <span class="text-[10px] font-black uppercase text-gray-400 bg-white px-2 py-0.5 rounded border">${ing.unit}</span>
-                    </div>
-                    <button onclick="removeIngredient(${idx})" class="text-gray-300 hover:text-red-500"><i class="fas fa-times"></i></button>
-                </div>
-            `).join('');
-        }
+            if (!name || !price || !productImageBase64) return alert("Sube una foto, nombre y precio");
 
-        function removeIngredient(idx) {
-            ingredients.splice(idx, 1);
-            renderIngredients();
-        }
+            const btn = document.getElementById('save-product-btn');
+            btn.innerText = "PUBLICANDO..."; btn.disabled = true;
 
-        async function finishOnboarding() {
-            // This would call a series of API endpoints to:
-            // 1. Create the tenant/restaurant
-            // 2. Insert menu items
-            // 3. Create modifier groups
-            // 4. Create inventory items
-            alert("Creating restaurant... This would be the final sync step.");
-            window.location.href = '/admin';
+            try {
+                const res = await fetch('/api/store?action=partner_save_item', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        restaurant_id: resId,
+                        name,
+                        price,
+                        category: 'Principal',
+                        imageBase64: productImageBase64
+                    })
+                });
+
+                if (res.ok) {
+                    nextStep(3);
+                } else {
+                    const data = await res.json();
+                    alert("Error: " + data.error);
+                    btn.innerText = "REINTENTAR"; btn.disabled = false;
+                }
+            } catch (e) {
+                alert("Error de conexión");
+                btn.innerText = "REINTENTAR"; btn.disabled = false;
+            }
         }
     </script>
 </body>

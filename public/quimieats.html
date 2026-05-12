@@ -22,6 +22,11 @@
         .glass { background: rgba(255, 255, 255, 0.03); backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.05); }
         .neon-text { text-shadow: 0 0 10px rgba(0, 242, 255, 0.5); }
         .hero-gradient { background: radial-gradient(circle at 50% 50%, rgba(0, 242, 255, 0.1) 0%, transparent 50%); }
+        .hide-scrollbar::-webkit-scrollbar { display: none; }
+        .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        .cat-pill.active { background: #00F2FF; color: #0D0D0D; border-color: #00F2FF; }
+        .partner-card { background: rgba(255, 255, 255, 0.02); border: 1px solid rgba(255, 255, 255, 0.05); transition: all 0.3s ease; }
+        .partner-card:hover { border-color: rgba(0, 242, 255, 0.3); transform: translateY(-4px); background: rgba(255, 255, 255, 0.04); }
     </style>
 </head>
 <body class="min-h-screen">
@@ -69,31 +74,60 @@
         </div>
     </section>
 
+    <!-- Categories Section (Uber Eats Style) -->
+    <section class="sticky top-0 z-40 bg-dark/80 backdrop-blur-md border-b border-white/5 py-4 overflow-x-auto hide-scrollbar">
+        <div class="max-w-6xl mx-auto px-6 flex gap-4 min-w-max">
+            <button onclick="filterCategory('all')" class="cat-pill active px-6 py-2 rounded-full border border-white/10 text-[10px] font-black uppercase tracking-widest transition-all">Todos</button>
+            <button onclick="filterCategory('restaurante')" class="cat-pill px-6 py-2 rounded-full border border-white/10 text-[10px] font-black uppercase tracking-widest transition-all">Restaurantes</button>
+            <button onclick="filterCategory('reposteria')" class="cat-pill px-6 py-2 rounded-full border border-white/10 text-[10px] font-black uppercase tracking-widest transition-all">Café & Repostería</button>
+            <button onclick="filterCategory('bebidas')" class="cat-pill px-6 py-2 rounded-full border border-white/10 text-[10px] font-black uppercase tracking-widest transition-all">Bebidas</button>
+            <button onclick="filterCategory('hamburguesas')" class="cat-pill px-6 py-2 rounded-full border border-white/10 text-[10px] font-black uppercase tracking-widest transition-all">Hamburguesas</button>
+            <button onclick="filterCategory('pizza')" class="cat-pill px-6 py-2 rounded-full border border-white/10 text-[10px] font-black uppercase tracking-widest transition-all">Pizza</button>
+        </div>
+    </section>
+
     <!-- Partners Section -->
-    <section id="partners" class="py-32 bg-white/2 overflow-hidden border-y border-white/5">
+    <section id="partners" class="py-20 overflow-hidden">
         <div class="max-w-6xl mx-auto px-6">
-            <div class="text-center mb-20 space-y-2">
-                <h4 class="text-cyan font-black text-xs uppercase tracking-[0.4em]">First Members</h4>
-                <h3 class="text-4xl font-black uppercase tracking-tight">Nuestra Red de Aliados</h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8" id="partners-container">
+                <!-- Loading State -->
+                <div class="animate-pulse bg-white/5 h-64 rounded-[2.5rem]"></div>
+                <div class="animate-pulse bg-white/5 h-64 rounded-[2.5rem]"></div>
+                <div class="animate-pulse bg-white/5 h-64 rounded-[2.5rem]"></div>
             </div>
-            
-            <div class="flex flex-wrap justify-center gap-12 items-center">
-                <!-- Rich Aroma (The Pioneer) -->
-                <div class="flex flex-col items-center gap-4 transition-all duration-500 hover:scale-105 group cursor-pointer" onclick="window.location.href='/order?ref=quimieats'">
-                    <div class="relative">
-                        <img src="/rico-logo.png" class="w-32 h-32 rounded-full border-4 border-gold/30 shadow-2xl group-hover:border-cyan transition-all">
-                        <div class="absolute -bottom-2 left-1/2 -translate-x-1/2 bg-cyan text-dark text-[8px] font-black px-2 py-0.5 rounded-full shadow-lg">LIVE</div>
-                    </div>
-                    <div class="text-center">
-                        <span class="text-xs font-black text-gold uppercase tracking-widest block">Rich Aroma Coffee</span>
-                        <button class="mt-2 bg-white/5 border border-white/10 px-4 py-1.5 rounded-lg text-[8px] font-black uppercase text-cyan group-hover:bg-cyan group-hover:text-dark transition-all">Pedir Ahora</button>
+        </div>
+    </section>
+
+    <!-- Social Proof / Feed Section -->
+    <section class="py-20 border-b border-white/5 overflow-hidden">
+        <div class="max-w-6xl mx-auto px-6">
+            <div class="flex items-center gap-4 mb-10">
+                <div class="flex -space-x-3">
+                    <div class="w-10 h-10 rounded-full border-2 border-dark bg-cyan/20 flex items-center justify-center text-[10px] font-black text-cyan">A</div>
+                    <div class="w-10 h-10 rounded-full border-2 border-dark bg-gold/20 flex items-center justify-center text-[10px] font-black text-gold">M</div>
+                    <div class="w-10 h-10 rounded-full border-2 border-dark bg-blue-500/20 flex items-center justify-center text-[10px] font-black text-blue-400">J</div>
+                </div>
+                <div>
+                    <p class="text-[10px] font-black uppercase tracking-widest text-white/40"><span class="text-cyan">32 personas</span> comprando ahora en Quimistán</p>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4" id="social-feed">
+                <!-- Activity Injected Here -->
+                <div class="glass p-5 rounded-3xl flex items-center gap-4 animate-in fade-in slide-in-from-right-8 duration-700">
+                    <div class="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center text-xs">🥑</div>
+                    <div>
+                        <p class="text-[10px] font-bold text-white/60">Alguien pidió <span class="text-white">Baleadas</span></p>
+                        <p class="text-[8px] text-white/20 uppercase font-black">Hace 2 minutos</p>
                     </div>
                 </div>
-
-                <!-- Placeholders -->
-                <div class="w-24 h-24 rounded-full border-2 border-dashed border-white/10 flex items-center justify-center text-white/10 text-[10px] font-black uppercase text-center p-4">Tu Logo Aquí</div>
-                <div class="w-24 h-24 rounded-full border-2 border-dashed border-white/10 flex items-center justify-center text-white/10 text-[10px] font-black uppercase text-center p-4">Tu Logo Aquí</div>
-                <div class="w-24 h-24 rounded-full border-2 border-dashed border-white/10 flex items-center justify-center text-white/10 text-[10px] font-black uppercase text-center p-4">Tu Logo Aquí</div>
+                <div class="glass p-5 rounded-3xl flex items-center gap-4 animate-in fade-in slide-in-from-right-8 duration-1000">
+                    <div class="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center text-xs">☕</div>
+                    <div>
+                        <p class="text-[10px] font-bold text-white/60">Oscar cargó <span class="text-cyan">L.500</span> de Rico Cash</p>
+                        <p class="text-[8px] text-white/20 uppercase font-black">Hace 5 minutos</p>
+                    </div>
+                </div>
             </div>
         </div>
     </section>
@@ -163,6 +197,99 @@
 
     <script>
         let logoBase64 = null;
+        let allPartners = [];
+
+        window.onload = () => {
+            loadPartners();
+            startSocialSim();
+        };
+
+        async function loadPartners() {
+            try {
+                const res = await fetch('/api/store?action=get_restaurants');
+                allPartners = await res.json();
+                renderPartners(allPartners);
+            } catch (e) {
+                console.error("Load Partners failed", e);
+            }
+        }
+
+        function filterCategory(cat) {
+            // Update active pill
+            document.querySelectorAll('.cat-pill').forEach(p => p.classList.remove('active'));
+            event.target.classList.add('active');
+
+            if (cat === 'all') {
+                renderPartners(allPartners);
+            } else {
+                const filtered = allPartners.filter(p => (p.category || '').toLowerCase() === cat);
+                renderPartners(filtered);
+            }
+        }
+
+        function renderPartners(partners) {
+            const container = document.getElementById('partners-container');
+            
+            if (partners.length === 0) {
+                container.innerHTML = `
+                    <div class="col-span-full py-20 text-center space-y-4">
+                        <div class="text-4xl">🏜️</div>
+                        <p class="text-white/20 font-black uppercase tracking-widest text-xs">No hay aliados en esta categoría aún</p>
+                    </div>`;
+                return;
+            }
+
+            container.innerHTML = partners.map(p => `
+                <div class="partner-card rounded-[2.5rem] overflow-hidden cursor-pointer" onclick="window.location.href='/order?restaurantId=${p.id}&ref=quimieats'">
+                    <div class="relative h-48 bg-white/5">
+                        <img src="${p.logo_url || '/favicon.png'}" class="w-full h-full object-cover">
+                        <div class="absolute top-4 right-4 bg-dark/60 backdrop-blur-md text-white text-[10px] font-black px-3 py-1 rounded-full border border-white/10">
+                            ${p.id === 'rich-aroma' ? 'PRO' : 'ALIADO'}
+                        </div>
+                    </div>
+                    <div class="p-8 space-y-4">
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <h4 class="text-xl font-black uppercase tracking-tight">${p.name}</h4>
+                                <p class="text-[10px] text-cyan font-black uppercase tracking-widest mt-1">${p.category || 'Restaurante'}</p>
+                            </div>
+                            <div class="bg-cyan/10 text-cyan text-[10px] font-black px-2 py-1 rounded-lg">4.9 ⭐</div>
+                        </div>
+                        <div class="flex items-center gap-4 text-[10px] font-bold text-white/40 uppercase tracking-widest">
+                            <span><i class="fas fa-motorcycle mr-1"></i> L. 40</span>
+                            <span>&bull;</span>
+                            <span><i class="fas fa-clock mr-1"></i> 20-30 min</span>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function startSocialSim() {
+            const feed = document.getElementById('social-feed');
+            const activities = [
+                { emoji: '🍕', text: 'Alguien pidió Pizza Gigante', user: 'Maria' },
+                { emoji: '🌮', text: '3 órdenes de Tacos saliendo', user: 'Juan' },
+                { emoji: '🥤', text: 'Licuado de Fresa preparado', user: 'Ana' },
+                { emoji: '💰', text: 'Recarga de L.200 exitosa', user: 'Carlos' },
+                { emoji: '🍔', text: 'Doble Bacon Cheese en camino', user: 'Luis' }
+            ];
+
+            setInterval(() => {
+                const act = activities[Math.floor(Math.random() * activities.length)];
+                const div = document.createElement('div');
+                div.className = "glass p-5 rounded-3xl flex items-center gap-4 animate-in fade-in slide-in-from-right-8 duration-700";
+                div.innerHTML = `
+                    <div class="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center text-xs">${act.emoji}</div>
+                    <div>
+                        <p class="text-[10px] font-bold text-white/60">${act.user} pidió <span class="text-white">${act.text.split(' ').slice(-1)}</span></p>
+                        <p class="text-[8px] text-white/20 uppercase font-black">Justo ahora</p>
+                    </div>
+                `;
+                feed.prepend(div);
+                if (feed.children.length > 4) feed.removeChild(feed.lastChild);
+            }, 8000);
+        }
 
         function handleLogoSelect(input) {
             const file = input.files[0];
@@ -213,15 +340,13 @@
                     body: JSON.stringify({ restaurant_name, contact_name, phone, category, logoBase64 })
                 });
 
-                if (res.ok) {
-                    alert("¡Excelente! Hemos recibido tu solicitud. Nos pondremos en contacto contigo pronto.");
-                    btn.innerText = "SOLICITUD ENVIADA";
-                    btn.className = "w-full bg-cyan text-dark py-6 rounded-[2.5rem] font-black uppercase tracking-[0.3em] shadow-2xl";
-                    document.querySelectorAll('input').forEach(i => i.value = '');
-                    document.getElementById('logo-preview').innerHTML = '<i class="fas fa-image"></i>';
-                    logoBase64 = null;
+                const data = await res.json();
+
+                if (res.ok && data.success) {
+                    // Redirect to the onboarding wizard with credentials
+                    window.location.href = data.setupUrl;
                 } else {
-                    throw new Error("Error en el envío");
+                    throw new Error(data.error || "Error en el envío");
                 }
             } catch (e) {
                 alert(e.message);

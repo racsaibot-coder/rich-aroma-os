@@ -1,5 +1,10 @@
 const { supabase } = require('./lib/supabase');
 
+// Egress Optimization: Menu Cache (2 minutes)
+let menuCache = null;
+let lastMenuFetch = 0;
+const MENU_CACHE_TTL = 120 * 1000;
+
 // VIP LOGIC HELPERS
 const VIP_MONTHLY_RELOAD = 500.00;
 const HONDURAS_TZ = 'America/Tegucigalpa';
@@ -490,27 +495,37 @@ module.exports = async function handler(req, res) {
             return res.json({ message: "Login successful", customer: synced });
         }
 
-        // MENU (Bulletproof version)
+        // GET RESTAURANTS
+        if (action === 'get_restaurants' && req.method === 'GET') {
+            // We use a broader select and filter manually to avoid 500s if 'category' column isn't in schema cache yet
+            const { data, error } = await supabase.from('restaurants').select('*').eq('status', 'active');
+            if (error) throw error;
+            return res.json(data || []);
+        }
+
+        // MENU (Egress Optimized)
         if (action === 'menu' && req.method === 'GET') {
             const isAdmin = req.query.admin === 'true';
             const resId = req.query.restaurantId || 'rich-aroma';
+            const now = Date.now();
+
+            // 1. Serve from cache if fresh (only for default restaurant)
+            if (!isAdmin && resId === 'rich-aroma' && menuCache && (now - lastMenuFetch < MENU_CACHE_TTL)) {
+                return res.json(menuCache);
+            }
             
             const [rItems, rModGroups, rModOptions, rItemModGroups] = await Promise.all([
-                supabase.from('menu_items').select('*').eq('restaurant_id', resId).order('name'),
-                supabase.from('modifier_groups').select('*').eq('restaurant_id', resId),
-                supabase.from('modifier_options').select('*').order('name'),
-                supabase.from('item_modifier_groups').select('*')
+                supabase.from('menu_items')
+                    .select('id, name, price, available, image_url, category, base_recipe, restaurant_id')
+                    .eq('restaurant_id', resId)
+                    .order('name'),
+                supabase.from('modifier_groups').select('id, name, restaurant_id').eq('restaurant_id', resId),
+                supabase.from('modifier_options').select('id, name, price').order('name'),
+                supabase.from('item_modifier_groups').select('menu_item_id, modifier_group_id')
             ]);
 
             if (rItems.error) console.error("Items Error:", rItems.error);
-            const filteredItems = (rItems.data || []).filter(i => isAdmin || i.available !== false).map(item => {
-                // Remove heavy base64 data only if it exceeds 50KB
-                const cleanItem = { ...item };
-                if (cleanItem.image_url && cleanItem.image_url.startsWith('data:') && cleanItem.image_url.length > 50000) {
-                    delete cleanItem.image_url;
-                }
-                return cleanItem;
-            });
+            const filteredItems = (rItems.data || []).filter(i => isAdmin || i.available !== false);
 
             const categoryMeta = {
                 combos: { name: 'Combos', icon: '🔥' },
@@ -531,7 +546,8 @@ module.exports = async function handler(req, res) {
                     price: parseFloat(item.price) || 0,
                     available: item.available,
                     image_url: item.image_url || 'https://images.unsplash.com/photo-1510591509098-f4fdc6d0ff04?w=400&q=80',
-                    category: rawCat
+                    category: rawCat,
+                    base_recipe: item.base_recipe
                 });
             });
 
@@ -541,22 +557,30 @@ module.exports = async function handler(req, res) {
                 items: grouped[catId]
             }));
 
-            return res.json({ 
+            const responseData = { 
                 items: filteredItems, 
                 categories,
                 modGroups: rModGroups.data || [], 
                 modOptions: rModOptions.data || [], 
                 itemModGroups: rItemModGroups.data || [],
                 taxRate: 0.00 
-            });
+            };
+
+            // 2. Update Cache
+            if (!isAdmin && resId === 'rich-aroma') {
+                menuCache = responseData;
+                lastMenuFetch = now;
+            }
+
+            return res.json(responseData);
         }
 
-        // ORDERS GET
+        // ORDERS GET (Egress Optimized)
         if (action === 'orders' && req.method === 'GET') {
             const timeLimit = new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString();
             const { data, error } = await supabase
                 .from('orders')
-                .select('*, customers(name, phone)')
+                .select('id, order_number, created_at, status, total, items, payment_method, customer_id, restaurant_id, customers(name, phone)')
                 .gte('created_at', timeLimit)
                 .in('status', ['pending', 'paid', 'preparing', 'ready', 'completed', 'drinks_ready', 'food_ready', 'cancelled'])
                 .order('created_at', { ascending: false });
@@ -837,6 +861,26 @@ module.exports = async function handler(req, res) {
                 }
                 // 2. Inventory Deduction
                 await deductInventory(order, supabase);
+
+                // 3. LEDGER SETTLEMENT (FOR RICO CASH)
+                if (order.status === 'completed' && order.payment_method === 'rico_cash') {
+                    try {
+                        const { data: res } = await supabase.from('restaurants').select('commission_rate').eq('id', order.restaurant_id).single();
+                        const rate = (res && res.commission_rate !== null) ? res.commission_rate : 15;
+                        const gross = parseFloat(order.total);
+                        const netAmount = gross * (1 - (rate / 100));
+
+                        await supabase.from('quimieats_ledger').insert({
+                            restaurant_id: order.restaurant_id,
+                            customer_id: order.customer_id,
+                            order_id: order.id,
+                            amount: netAmount,
+                            type: 'rico_payment',
+                            status: 'pending'
+                        });
+                        console.log(`[Ledger] Settled order ${order.id}. Net: ${netAmount}`);
+                    } catch (le) { console.error("Ledger error:", le); }
+                }
             }
             return res.json(order);
         }
@@ -946,43 +990,55 @@ module.exports = async function handler(req, res) {
             return res.json({ success: true, data });
         }
 
-        // --- QuimiEats Signup ---
+        // --- QuimiEats Signup (Auto-Onboarding) ---
         if (action === 'quimieats_signup' && req.method === 'POST') {
             const { restaurant_name, contact_name, phone, category, logoBase64 } = req.body;
             if (!restaurant_name || !phone) return res.status(400).json({ error: "Nombre y WhatsApp requeridos" });
 
             let logo_url = null;
-
             if (logoBase64 && logoBase64.includes('base64')) {
                 try {
                     const buffer = Buffer.from(logoBase64.split(',')[1], 'base64');
                     const safeName = restaurant_name.toLowerCase().replace(/[^a-z0-9]/g, '_');
-                    const path = `leads/${Date.now()}_${safeName}.png`;
-                    const contentType = logoBase64.split(';')[0].split(':')[1] || 'image/png';
-
-                    const { error: uploadErr } = await supabase.storage
-                        .from('menu-images')
-                        .upload(path, buffer, { contentType, upsert: true });
-
+                    const path = `logos/${Date.now()}_${safeName}.png`;
+                    const { error: uploadErr } = await supabase.storage.from('menu-images').upload(path, buffer, { contentType: 'image/png' });
                     if (!uploadErr) {
                         const { data: urlData } = supabase.storage.from('menu-images').getPublicUrl(path);
                         logo_url = urlData.publicUrl;
                     }
-                } catch (e) {
-                    console.error("Logo upload failed:", e);
-                }
+                } catch (e) { console.error("Logo upload fail", e); }
             }
 
-            const { data, error } = await supabase.from('quimieats_leads').insert({
-                restaurant_name,
-                contact_name,
-                phone: phone.replace(/\D/g, ''),
-                category: category || 'otro',
-                logo_url
+            const resId = restaurant_name.toLowerCase().trim().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '') + '-' + Math.floor(Math.random()*1000);
+
+            // 1. Create Restaurant (Pending Setup)
+            const { data: restaurant, error: resErr } = await supabase.from('restaurants').insert({
+                id: resId,
+                name: restaurant_name,
+                logo_url: logo_url,
+                contact_phone: phone,
+                category: category || 'restaurante',
+                status: 'pending_setup'
             }).select().single();
 
-            if (error) throw error;
-            return res.json({ success: true, data });
+            if (resErr) return res.status(500).json({ error: resErr.message });
+
+            // 2. Create Owner Employee (Default PIN: last 4 digits of phone)
+            const defaultPin = phone.replace(/\D/g, '').slice(-4);
+            await supabase.from('employees').insert({
+                restaurant_id: resId,
+                name: contact_name,
+                pin: defaultPin,
+                role: 'admin',
+                status: 'active'
+            });
+
+            return res.json({ 
+                success: true, 
+                restaurantId: resId, 
+                tempPin: defaultPin,
+                setupUrl: `/onboarding.html?resId=${resId}&pin=${defaultPin}`
+            });
         }
 
         // --- Partner Self-Service Menu ---
@@ -992,33 +1048,33 @@ module.exports = async function handler(req, res) {
 
             let image_url = null;
             if (imageBase64 && imageBase64.includes('base64')) {
-                const buffer = Buffer.from(imageBase64.split(',')[1], 'base64');
-                const safeName = name.toLowerCase().replace(/[^a-z0-9]/g, '_');
-                const path = `partners/${restaurant_id}/${Date.now()}_${safeName}.png`;
-                const contentType = imageBase64.split(';')[0].split(':')[1] || 'image/png';
-                
-                const { error: uploadErr } = await supabase.storage
-                    .from('menu-images')
-                    .upload(path, buffer, { contentType, upsert: true });
-                
-                if (!uploadErr) {
-                    const { data: urlData } = supabase.storage.from('menu-images').getPublicUrl(path);
-                    image_url = urlData.publicUrl;
-                }
+                try {
+                    const buffer = Buffer.from(imageBase64.split(',')[1], 'base64');
+                    const path = `menu/${restaurant_id}/${Date.now()}.png`;
+                    const { error: uploadErr } = await supabase.storage.from('menu-images').upload(path, buffer, { contentType: 'image/png' });
+                    if (!uploadErr) {
+                        const { data: urlData } = supabase.storage.from('menu-images').getPublicUrl(path);
+                        image_url = urlData.publicUrl;
+                    }
+                } catch (e) { console.error("Item image upload fail", e); }
             }
 
-            const { data, error } = await supabase.from('menu_items').insert({
-                id: name.toLowerCase().replace(/[^a-z0-9]/g, '_') + '_' + Date.now(),
-                name,
-                price: parseFloat(price) || 0,
-                category: category || 'otros',
-                image_url,
+            // 1. Insert Menu Item
+            const { error: itemErr } = await supabase.from('menu_items').insert({
                 restaurant_id,
+                name,
+                price: parseFloat(price),
+                category: category || 'General',
+                image_url,
                 available: true
-            }).select().single();
+            });
 
-            if (error) throw error;
-            return res.json({ success: true, data });
+            if (itemErr) return res.status(500).json({ error: itemErr.message });
+
+            // 2. AUTO-ACTIVATE RESTAURANT
+            await supabase.from('restaurants').update({ status: 'active' }).eq('id', restaurant_id);
+
+            return res.json({ success: true });
         }
 
         return res.status(404).json({ error: 'Action not found' });

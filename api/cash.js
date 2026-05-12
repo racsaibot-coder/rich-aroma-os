@@ -200,6 +200,14 @@ export default async function handler(req, res) {
         const declared_card = parseFloat(declaredCard) || 0;
         const declared_transfer = parseFloat(declaredTransfer) || 0;
         
+        // Since DB columns declared_card and declared_transfer are missing,
+        // we store them in the notes field as a JSON string for audit.
+        const auditNotes = JSON.stringify({
+            user_notes: notes || '',
+            declared_card: declared_card,
+            declared_transfer: declared_transfer
+        });
+
         const { data: updated, error: closeErr } = await supabase
             .from('cash_shifts')
             .update({
@@ -208,9 +216,7 @@ export default async function handler(req, res) {
                 closing_amount_declared: declared,
                 expected_amount: expected,
                 discrepancy: diff,
-                declared_card: declared_card,
-                declared_transfer: declared_transfer,
-                notes: notes
+                notes: auditNotes
             })
             .eq('id', shiftId)
             .select()

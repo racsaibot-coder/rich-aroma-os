@@ -22,11 +22,18 @@ module.exports = async function handler(req, res) {
     // RBAC HELPER: Verify Admin
     const verifyAdmin = async (token) => {
         if (!token) return false;
-        const pin = token.replace('Bearer ', '').trim();
+        // Strip Bearer prefix and any surrounding whitespace
+        const pin = token.replace(/^Bearer\s+/i, '').trim();
+        
         // 4574 is Oscar's Master Admin PIN
         if (pin === '4574' || pin === '3620' || pin === 'EMP-admin') return true; 
-        const { data } = await supabase.from('employees').select('role').eq('pin', pin).single();
-        return data?.role?.toLowerCase().trim() === 'admin';
+        
+        try {
+            const { data } = await supabase.from('employees').select('role').eq('pin', pin).single();
+            return data?.role?.toLowerCase().trim() === 'admin';
+        } catch (e) {
+            return false;
+        }
     };
 
     // STAFF LOGIN
@@ -521,6 +528,7 @@ module.exports = async function handler(req, res) {
             name: lead.restaurant_name,
             logo_url: lead.logo_url,
             contact_phone: lead.phone,
+            category: lead.category || 'restaurante',
             status: 'active'
         }).select().single();
 

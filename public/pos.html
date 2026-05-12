@@ -11,6 +11,16 @@
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <script>
+        // AGGRESSIVE CACHE NUKE v3.3.0
+        const POS_VERSION = '3.3.0';
+        if (localStorage.getItem('ra_pos_version') !== POS_VERSION) {
+            localStorage.setItem('ra_pos_version', POS_VERSION);
+            console.log("New POS version detected, nuking cache and reloading...");
+            localStorage.clear(); 
+            window.location.reload(true);
+        }
+    </script>
     <style>
         .blink-urgent { animation: pulse-red 2s infinite; }
         @keyframes pulse-red {
@@ -668,6 +678,16 @@
         }
     }
 
+    function notifyWhatsApp(phone, name, total, orderNum) {
+        if (!phone) return alert("Esta orden no tiene número de teléfono.");
+        const cleanPhone = phone.replace(/\D/g, '');
+        const customerName = name || 'cliente';
+        
+        const message = `Hola ${customerName}! Soy el cajero de Rich Aroma. Estamos trabajando en tu orden #${orderNum} por L. ${total}. ¡Te avisaremos cuando esté lista! ☕`;
+        const url = `https://wa.me/${cleanPhone}?text=${encodeURIComponent(message)}`;
+        window.open(url, '_blank');
+    }
+
     function renderLiveFeed() {
         const container = document.getElementById('live-order-feed');
         document.getElementById('live-order-count').innerText = liveOrders.length;
@@ -696,6 +716,8 @@
             if (o.status === 'ready') statusClass = "bg-green-900 text-green-200 border border-green-700 animate-pulse";
             
             let name = "Walk-in";
+            let phone = o.customers?.phone || "";
+
             if (o.customers && o.customers.name) {
                 name = o.customers.name;
             } else if (o.notes) {
@@ -706,6 +728,12 @@
                     const match = o.notes.match(/\[GUEST:\s*([^|\]]+)/);
                     if (match) name = match[1].trim();
                 }
+                
+                // Extract phone from notes if guest
+                if (!phone && o.notes.includes('[PHONE:')) {
+                    const pMatch = o.notes.match(/\[PHONE:\s*([^\]]+)\]/);
+                    if (pMatch) phone = pMatch[1].trim();
+                }
             }
 
             html += '<div class="p-3 rounded-xl bg-gray-800 border border-white/5 shadow-lg mb-2 ' + (isReady ? 'ring-2 ring-green-500 shadow-[0_0_15px_rgba(34,197,94,0.3)]' : '') + '">';
@@ -715,6 +743,12 @@
             html += '            <span class="text-[10px] font-black text-gray-500 tracking-tighter">#' + orderNumDisplay + '</span>';
             html += '            <span class="text-[9px] px-2 py-0.5 rounded-full font-black uppercase ' + statusClass + '">' + o.status + '</span>';
             html += '        </div>';
+            
+            // Add WhatsApp Icon if phone exists
+            if (phone) {
+                html += `        <button onclick="notifyWhatsApp('${phone}', '${name}', '${o.total}', '${orderNumDisplay}')" class="ml-2 bg-[#25d366]/20 text-[#25d366] px-2 py-1 rounded text-[10px] hover:bg-[#25d366] hover:text-white transition-all"><i class="fab fa-whatsapp"></i></button>`;
+            }
+
             html +=          recallBtn;
             html += '    </div>';
             html += '    <div class="font-bold text-white text-sm truncate">' + name + '</div>';
@@ -1233,7 +1267,7 @@
             customerId: currentCustomerId,
             shiftId: currentShiftId,
             fulfillmentType: fulfillmentType,
-            status: 'pending',
+            status: currentOrderId ? (recalledOrderStatus || 'pending') : 'pending',
             notes: document.getElementById('guest-name-input').value.trim() ? `[CLIENTE: ${document.getElementById('guest-name-input').value.trim()}]` : null
         };
 
@@ -1268,6 +1302,7 @@
         cart = [];
         currentOrderId = null;
         currentCustomerId = null;
+        recalledOrderStatus = null;
         window.loadedCustomer = null;
         document.getElementById('guest-name-input').value = "";
         document.getElementById('main-charge-btn').innerText = "CHARGE (Enter)";
@@ -1275,37 +1310,42 @@
         saveCartState();
     }
 
+    let recalledOrderStatus = null;
+
     async function recallOrder(id) {
         const order = liveOrders.find(o => o.id === id);
         if (!order) return;
-        
+
         if (cart.length > 0 && !confirm("¿Vaciar carrito actual para recuperar esta orden?")) return;
-        
+
         // Reconstruct Cart
         cart = (order.items || []).map(i => ({
             ...i,
             qty: i.qty || i.quantity || 1,
-            finalPrice: i.price,
+            // CRITICAL FIX: Use finalPrice if it exists to preserve upgrades/mods pricing
+            finalPrice: i.finalPrice || i.price || 0, 
             mods: i.mods || []
         }));
-        
+
         currentOrderId = order.id;
         currentCustomerId = order.customer_id;
-        
-        // Restore Guest Name if present
-        if (order.notes && order.notes.includes('[CLIENTE:')) {
+        recalledOrderStatus = order.status; // Store to prevent accidental completion
+
+        // Restore Guest Name if present in notes or customer record
+        if (order.customers && order.customers.name) {
+            document.getElementById('guest-name-input').value = order.customers.name;
+        } else if (order.notes) {
             const match = order.notes.match(/\[CLIENTE:\s*([^\]]+)\]/);
             if (match) document.getElementById('guest-name-input').value = match[1].trim();
         }
 
         renderCart();
-        
+
         // Change Charge Button Label
         document.getElementById('main-charge-btn').innerText = "UPDATE & CHARGE";
-        
+
         alert("✅ Orden Recuperada - Puedes agregar más o cobrar.");
     }
-
     async function processCobrar() {
         const selectedItems = isSplitMode 
             ? cart.filter((_, i) => selectedIndices.includes(i))
@@ -1543,28 +1583,44 @@
 
     async function endShift() {
         if (!currentShiftId) return alert("No hay una sesión activa para cerrar.");
+
+        // Use the new Modal instead of prompt
+        const modal = document.getElementById('shift-close-modal');
+        document.getElementById('close-opening-base').innerText = startingCash.toFixed(2);
+        document.getElementById('close-actual-cash').value = "";
+        document.getElementById('close-actual-card').value = "";
+        document.getElementById('close-actual-transfer').value = "";
+        modal.classList.remove('hidden');
+    }
+    async function submitShiftClosure() {
+        const cashInput = document.getElementById('close-actual-cash').value;
+        const cardInput = document.getElementById('close-actual-card').value;
+        const transferInput = document.getElementById('close-actual-transfer').value;
         
-        const cash = prompt("💰 CIERRE DE CAJA\n\nIngrese el TOTAL DE EFECTIVO físico en caja\n(Incluyendo la base de L. " + startingCash + "):");
-        if (cash === null || cash === "") return;
+        if (!cashInput) return alert("Por favor ingrese el total de efectivo");
+
+        const amount = parseFloat(cashInput);
+        const card = parseFloat(cardInput) || 0;
+        const transfer = parseFloat(transferInput) || 0;
         
-        const amount = parseFloat(cash);
-        if (isNaN(amount)) return alert("Monto inválido");
+        const btn = document.getElementById('close-shift-btn');
+        const ogText = btn.innerText;
+        btn.disabled = true;
+        btn.innerText = "CERRANDO...";
 
         try {
             const res = await fetch('/api/cash/close-shift', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer EMP-admin' },
-                body: JSON.stringify({ shiftId: currentShiftId, closingAmount: amount })
+                body: JSON.stringify({ 
+                    shiftId: currentShiftId, 
+                    closingAmount: amount,
+                    declaredCard: card,
+                    declaredTransfer: transfer
+                })
             });
 
-            const text = await res.text();
-            let data;
-            try {
-                data = JSON.parse(text);
-            } catch (e) {
-                console.error("Non-JSON response:", text);
-                throw new Error("Server returned an invalid response. Please contact admin.");
-            }
+            const data = await res.json();
 
             if (res.ok) {
                 // Clear Local Session
@@ -1573,17 +1629,28 @@
                 currentCashier = null;
                 window.currentEmployee = null;
 
+                document.getElementById('shift-close-modal').classList.add('hidden');
                 await fetchStoreStatus();
                 showShiftReport(data.report);
             } else {
-                alert("Error al cerrar caja: " + (data.error || text || "Error desconocido"));
+                alert("Error al cerrar caja: " + (data.error || "Error desconocido"));
+                btn.disabled = false;
+                btn.innerText = ogText;
             }
         } catch(e) { 
             console.error("Close Shift Catch:", e);
-            alert("Error: " + e.message); 
-        }    }
+            alert("Error de conexión al cerrar."); 
+            btn.disabled = false;
+            btn.innerText = ogText;
+        }
+    }
+
+    function closeShiftModal() {
+        document.getElementById('shift-close-modal').classList.add('hidden');
+    }
 
     async function toggleStoreStatus(checkbox) {
+
         const res = await fetch('/api/store/status', {
             method: 'PATCH',
             headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer EMP-admin' },
@@ -1694,15 +1761,25 @@
         const isMembership = o.items && o.items.some(i => i.id === 'vip_membership');
         
         container.innerHTML = `
-            <div class="text-center">
+            <div class="text-center space-y-4">
                 <h4 class="text-2xl font-bold">${isCash ? 'Cobro en Efectivo' : (isMembership ? '👑 Membresía VIP' : 'Verificar Pago')}</h4>
-                <p class="text-4xl font-black my-4">L. ${o.total}</p>
-                ${isCash ? '' : `<div class="bg-gray-100 p-4 rounded mb-4 italic text-sm">Verifica la transferencia en tu banca móvil...</div>`}
+                <p class="text-4xl font-black">L. ${o.total}</p>
+                
+                ${o.receipt_url ? `
+                    <div class="my-4">
+                        <p class="text-[10px] font-black text-gray-400 uppercase mb-2">Comprobante Subido:</p>
+                        <a href="${o.receipt_url}" target="_blank" class="block border-2 border-blue-500 rounded-xl overflow-hidden shadow-xl">
+                            <img src="${o.receipt_url}" class="w-full max-h-64 object-contain bg-gray-900">
+                        </a>
+                        <p class="text-[9px] text-blue-500 font-bold mt-2 italic">Haz click en la imagen para ver en grande</p>
+                    </div>
+                ` : (isCash ? '' : `<div class="bg-gray-100 p-4 rounded mb-4 italic text-sm">Verifica la transferencia en tu banca móvil...</div>`)}
+
                 <div class="flex gap-4">
                     <button onclick="approveTransfer('${o.id}')" class="flex-1 bg-green-600 text-white font-bold py-4 rounded-xl shadow-lg hover:bg-green-700 transition-all">Aprobar</button>
                     <button onclick="rejectOrder('${o.id}', '${o.order_number}', '${o.customers?.phone || ''}', '${o.customers?.name || ''}')" class="flex-1 bg-red-100 text-red-600 font-bold py-4 rounded-xl border border-red-200 hover:bg-red-200 transition-all">Rechazar</button>
                 </div>
-                <button onclick="closeVerifyModal()" class="w-full mt-4 text-gray-400 font-bold py-2">Cerrar</button>
+                <button onclick="closeVerifyModal()" class="w-full mt-2 text-gray-400 font-bold py-2">Cerrar</button>
             </div>
         `;
     }
@@ -1732,50 +1809,92 @@
             return;
         }
         
-        // Ensure all fields exist and are numbers
         const opening = parseFloat(r.opening_amount || 0);
         const cashSales = parseFloat(r.sales?.cash || 0);
-        const closing = parseFloat(r.closing_amount || 0);
+        
+        // Use declared values from server response, or parse from notes for re-opened reports
+        let closing = parseFloat(r.declared?.cash || r.closing_amount_declared || r.closing_amount || 0);
+        let cardActual = parseFloat(r.declared?.card || 0);
+        let transferActual = parseFloat(r.declared?.transfer || 0);
+
+        // Audit parsing for re-opened reports
+        if (r.notes && r.notes.startsWith('{')) {
+            try {
+                const audit = JSON.parse(r.notes);
+                if (audit.declared_card) cardActual = parseFloat(audit.declared_card);
+                if (audit.declared_transfer) transferActual = parseFloat(audit.declared_transfer);
+            } catch(e) { console.error("Audit parse failed", e); }
+        }
+        
         const transactions = parseFloat(r.transactions || 0);
-        const expected = opening + cashSales + transactions;
+        const expected = opening + cashSales - transactions; // Note: transactions are positive in report but represent drops
         const diff = closing - expected;
-        const ricoSales = parseFloat(r.sales?.rico_balance || 0);
+        
+        const cardExpected = parseFloat(r.sales?.card || 0);
+        const transferExpected = parseFloat(r.sales?.transfer || 0);
         const orderCount = parseInt(r.order_count || 0);
         
         content.innerHTML = `
-            <div class="p-6 bg-gray-900 text-gold rounded-2xl font-mono text-sm space-y-3 border border-white/10 shadow-2xl">
-                <div class="flex justify-between border-b border-white/10 pb-2">
-                    <span class="text-gray-400">Starting Float:</span>
-                    <span class="font-black text-white">L. ${opening.toFixed(2)}</span>
-                </div>
-                <div class="flex justify-between">
-                    <span class="text-gray-400">Cash Sales:</span>
-                    <span class="font-black text-white">+ L. ${cashSales.toFixed(2)}</span>
-                </div>
-                <div class="flex justify-between text-blue-400 border-t border-white/10 pt-2">
-                    <span>Expected in Drawer:</span>
-                    <span class="font-black">L. ${expected.toFixed(2)}</span>
-                </div>
-                <div class="flex justify-between text-yellow-400">
-                    <span>Actual in Drawer:</span>
-                    <span class="font-black">L. ${closing.toFixed(2)}</span>
-                </div>
-                <div class="flex justify-between text-xl font-black p-3 rounded-xl ${diff >= 0 ? 'bg-green-900/30 text-green-400' : 'bg-red-900/30 text-red-400'}">
-                    <span>DISCREPANCY:</span>
-                    <span>L. ${diff.toFixed(2)}</span>
-                </div>
-                <div class="mt-4 pt-4 border-t border-white/10 space-y-1">
-                    <div class="flex justify-between text-[10px]">
-                        <span class="text-gray-500 uppercase">Rico Cash Sales:</span>
-                        <span class="text-white">L. ${ricoSales.toFixed(2)}</span>
+            <div class="p-6 bg-gray-900 rounded-3xl border border-white/10 shadow-2xl space-y-6">
+                <!-- Main Cash Audit -->
+                <div class="space-y-3">
+                    <h4 class="text-[10px] font-black text-gray-500 uppercase tracking-[0.2em] border-b border-white/5 pb-2">Physical Cash Audit</h4>
+                    
+                    <div class="flex justify-between items-center text-xs">
+                        <span class="text-gray-400">Opening Float / Base:</span>
+                        <span class="font-bold text-white font-mono">L. ${opening.toFixed(2)}</span>
                     </div>
-                    <div class="flex justify-between text-[10px]">
-                        <span class="text-gray-500 uppercase">Total Orders:</span>
-                        <span class="text-white">${orderCount}</span>
+                    
+                    <div class="flex justify-between items-center text-xs">
+                        <span class="text-gray-400">Cash Sales:</span>
+                        <span class="font-bold text-white font-mono">+ L. ${cashSales.toFixed(2)}</span>
+                    </div>
+
+                    <div class="flex justify-between items-center text-xs">
+                        <span class="text-gray-400">Drops / Payouts:</span>
+                        <span class="font-bold text-red-400 font-mono">- L. ${Math.abs(transactions).toFixed(2)}</span>
+                    </div>
+
+                    <div class="flex justify-between items-center pt-2 border-t border-dashed border-white/10">
+                        <span class="text-blue-400 font-bold text-xs uppercase">Expected Total:</span>
+                        <span class="font-black text-blue-400 font-mono text-lg underline">L. ${expected.toFixed(2)}</span>
+                    </div>
+
+                    <div class="flex justify-between items-center">
+                        <span class="text-yellow-500 font-bold text-xs uppercase">Actual (Typed):</span>
+                        <span class="font-black text-yellow-500 font-mono text-lg">L. ${closing.toFixed(2)}</span>
+                    </div>
+
+                    <div class="mt-4 p-4 rounded-2xl ${Math.abs(diff) < 1 ? 'bg-green-500/10 border border-green-500/20' : 'bg-red-500/10 border border-red-500/20'} flex justify-between items-center">
+                        <span class="${Math.abs(diff) < 1 ? 'text-green-500' : 'text-red-500'} font-black text-xs uppercase">Discrepancy:</span>
+                        <span class="${Math.abs(diff) < 1 ? 'text-green-400' : 'text-red-400'} font-black font-mono text-xl">L. ${diff.toFixed(2)}</span>
+                    </div>
+                </div>
+
+                <!-- Digital Sales Audit -->
+                <div class="space-y-3 pt-4 border-t border-white/5">
+                    <h4 class="text-[10px] font-black text-gray-500 uppercase tracking-[0.2em] mb-3">Digital Sales Verification</h4>
+                    
+                    <div class="space-y-1">
+                        <div class="flex justify-between text-[11px]">
+                            <span class="text-gray-400">Card (System vs Typed):</span>
+                            <span class="text-white font-bold">L. ${cardExpected.toFixed(2)} / <span class="text-blue-400">L. ${cardActual.toFixed(2)}</span></span>
+                        </div>
+                        <div class="flex justify-between text-[11px]">
+                            <span class="text-gray-400">Transfer (System vs Typed):</span>
+                            <span class="text-white font-bold">L. ${transferExpected.toFixed(2)} / <span class="text-blue-400">L. ${transferActual.toFixed(2)}</span></span>
+                        </div>
+                    </div>
+
+                    <div class="flex justify-between text-[11px] pt-2 border-t border-white/5">
+                        <span class="text-gray-400 uppercase font-black">Total Shift Orders:</span>
+                        <span class="text-gold font-black">${orderCount}</span>
                     </div>
                 </div>
             </div>
         `;
+        document.getElementById('shiftReportModal').classList.remove('hidden');
+    }
         document.getElementById('shiftReportModal').classList.remove('hidden');
     }
 
@@ -1791,6 +1910,53 @@
 <button id="verifyPaymentAlert" class="hidden fixed bottom-4 right-4 z-50 bg-red-600 text-white font-bold text-xl py-4 px-6 rounded-full shadow-2xl animate-bounce hover:bg-red-700 transition" onclick="openVerifyModal()">
   🚨 ¡Verificar Pago! <span id="verifyCount" class="bg-white text-red-600 text-sm px-2 py-1 rounded-full ml-2">1</span>
 </button>
+
+<!-- SHIFT CLOSE (INPUT) MODAL -->
+<div id="shift-close-modal" class="hidden fixed inset-0 bg-black bg-opacity-90 z-[300] flex items-center justify-center p-4">
+    <div class="bg-white rounded-3xl shadow-2xl max-w-sm w-full overflow-hidden border-t-8 border-orange-500">
+        <div class="p-8 space-y-6">
+            <div class="text-center">
+                <div class="w-16 h-16 bg-orange-100 text-orange-600 rounded-full flex items-center justify-center mx-auto mb-4 text-2xl">
+                    <i class="fas fa-lock"></i>
+                </div>
+                <h3 class="text-2xl font-black uppercase tracking-tighter">Cierre de Caja</h3>
+                <p class="text-gray-500 text-xs font-bold uppercase mt-1">Ingrese efectivo físico final</p>
+            </div>
+
+            <div class="bg-gray-50 p-4 rounded-2xl space-y-2 border border-gray-100 text-center">
+                <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest">Base de Apertura</p>
+                <p class="text-xl font-mono font-black text-gray-700">L. <span id="close-opening-base">0.00</span></p>
+            </div>
+
+            <div class="space-y-4">
+                <div class="space-y-1">
+                    <label class="text-[9px] font-black text-gray-400 uppercase tracking-widest ml-1">Efectivo Físico Total</label>
+                    <div class="relative">
+                        <span class="absolute left-4 top-1/2 -translate-y-1/2 font-black text-gray-400 text-lg">L.</span>
+                        <input type="number" id="close-actual-cash" placeholder="0.00" class="w-full bg-gray-100 border-2 border-transparent focus:border-orange-500 focus:bg-white p-4 pl-10 rounded-2xl text-2xl font-black outline-none transition-all">
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-3">
+                    <div class="space-y-1">
+                        <label class="text-[9px] font-black text-gray-400 uppercase tracking-widest ml-1">Ventas Tarjeta</label>
+                        <input type="number" id="close-actual-card" placeholder="0.00" class="w-full bg-gray-50 border-2 border-transparent focus:border-blue-500 p-3 rounded-xl text-lg font-bold outline-none">
+                    </div>
+                    <div class="space-y-1">
+                        <label class="text-[9px] font-black text-gray-400 uppercase tracking-widest ml-1">Transferencias</label>
+                        <input type="number" id="close-actual-transfer" placeholder="0.00" class="w-full bg-gray-50 border-2 border-transparent focus:border-blue-500 p-3 rounded-xl text-lg font-bold outline-none">
+                    </div>
+                </div>
+                <p class="text-[8px] text-gray-400 italic px-1">Ingrese los totales según sus reportes de POS y Banca Móvil.</p>
+            </div>
+
+            <div class="flex gap-3 pt-4">
+                <button onclick="closeShiftModal()" class="w-1/3 py-4 text-gray-400 font-bold hover:bg-gray-50 rounded-xl transition-all">CANCELAR</button>
+                <button id="close-shift-btn" onclick="submitShiftClosure()" class="flex-1 bg-orange-600 text-white font-black py-4 rounded-xl shadow-lg shadow-orange-600/20 hover:bg-orange-700 active:scale-95 transition-all uppercase tracking-widest">FINALIZAR TURNO</button>
+            </div>
+        </div>
+    </div>
+</div>
 
 <div id="verifyModal" class="hidden fixed inset-0 bg-black bg-opacity-75 z-50 flex items-center justify-center p-4">
   <div class="bg-white rounded-lg p-6 max-w-lg w-full max-h-[90vh] overflow-y-auto">
