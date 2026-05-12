@@ -239,17 +239,41 @@
 
     async function restoreShift() {
         const modal = document.getElementById('shift-modal');
+        
+        // 1. ALWAYS ask the server first (Source of Truth)
+        try {
+            const token = 'EMP-admin';
+            const res = await fetch('/api/cash/current-shift', { headers: { 'Authorization': `Bearer ${token}` } });
+            if (res.ok) {
+                const data = await res.json();
+                if (data && data.shift && data.shift.status === 'open') {
+                    window.activeDBShift = data.shift;
+                    currentShiftId = data.shift.id;
+                    startingCash = data.shift.opening_amount;
+                    console.log("✅ Server confirms active shift:", currentShiftId);
+                } else {
+                    window.activeDBShift = null;
+                }
+            }
+        } catch (e) { console.error("Shift DB sync failed", e); }
+
+        // 2. Check if we already have a cashier logged in locally
         const saved = localStorage.getItem('pos_active_shift');
-        if (saved) {
+        if (saved && window.activeDBShift) {
             try {
                 const s = JSON.parse(saved);
-                currentShiftId = s.shiftId;
-                currentCashier = s.cashier;
-                startingCash = s.startingCash;
-                modal.classList.add('hidden');
-                return;
+                // Only restore if the local ID matches the server ID
+                if (s.shiftId === window.activeDBShift.id) {
+                    currentShiftId = s.shiftId;
+                    currentCashier = s.cashier;
+                    startingCash = s.startingCash;
+                    modal.classList.add('hidden');
+                    return;
+                }
             } catch(e) {}
         }
+
+        // 3. If no local session OR shift IDs don't match, force login
         renderShiftModal();
         modal.classList.remove('hidden');
     }
