@@ -147,7 +147,8 @@ module.exports = async (req, res) => {
             const { data, error } = await supabase.from('orders').insert({
                 id: orderId,
                 items, total, payment_method: paymentMethod, customer_id: customerId, 
-                notes, fulfillment: fulfillment || fulfillment_type, status: 'pending', restaurant_id: 'rich-aroma'
+                notes: `[FULFILLMENT: ${fulfillment || fulfillment_type || 'pickup'}] ` + (notes || ''), 
+                status: 'pending', restaurant_id: 'rich-aroma'
             }).select().single();
             
             if (error) throw error;
