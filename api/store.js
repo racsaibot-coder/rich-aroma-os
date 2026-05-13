@@ -151,9 +151,16 @@ module.exports = async (req, res) => {
             const { data, error } = await supabase.from('orders').insert({
                 id: orderId,
                 order_number: nextOrderNumber,
-                items, total, payment_method: paymentMethod, customer_id: customerId, 
+                items, 
+                total, 
+                subtotal: total, // Defaulting subtotal to total for now
+                tax: 0,
+                discount: 0,
+                payment_method: paymentMethod, 
+                customer_id: customerId, 
                 notes: `[FULFILLMENT: ${fulfillment || fulfillment_type || 'pickup'}] ` + (notes || ''), 
-                status: 'pending', restaurant_id: 'rich-aroma'
+                status: 'pending', 
+                restaurant_id: 'rich-aroma'
             }).select().single();
             
             if (error) throw error;
