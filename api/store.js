@@ -50,16 +50,17 @@ module.exports = async (req, res) => {
             const isAdmin = req.query.admin === 'true';
             const resId = req.query.restaurantId || 'rich-aroma';
             const now = Date.now();
+            const skipCache = req.query.refresh === 'true';
 
-            if (!isAdmin && resId === 'rich-aroma' && menuCache && (now - lastMenuFetch < MENU_CACHE_TTL)) {
+            if (!skipCache && !isAdmin && resId === 'rich-aroma' && menuCache && (now - lastMenuFetch < MENU_CACHE_TTL)) {
                 return res.json(menuCache);
             }
             
             const [rItems, rModGroups, rModOptions, rItemModGroups] = await Promise.all([
-                supabase.from('menu_items').select('id, name, price, available, image_url, category, base_recipe, restaurant_id').eq('restaurant_id', resId).order('name'),
-                supabase.from('modifier_groups').select('id, name, restaurant_id').eq('restaurant_id', resId),
-                supabase.from('modifier_options').select('id, name, price, group_id, is_default, price_adjustment').order('name'),
-                supabase.from('item_modifier_groups').select('menu_item_id, modifier_group_id')
+                supabase.from('menu_items').select('*').eq('restaurant_id', resId).order('name'),
+                supabase.from('modifier_groups').select('*').eq('restaurant_id', resId),
+                supabase.from('modifier_options').select('*').order('name'),
+                supabase.from('item_modifier_groups').select('*')
             ]);
 
             const filteredItems = (rItems.data || []).filter(i => isAdmin || i.available !== false);
