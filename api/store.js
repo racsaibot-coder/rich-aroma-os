@@ -140,7 +140,12 @@ module.exports = async (req, res) => {
         // --- 5. CREATE ORDER (POST) ---
         if (req.method === 'POST' && (!action || action === 'orders')) {
             const { items, total, paymentMethod, customerId, notes, fulfillment, fulfillment_type, guestPhone } = req.body;
+            
+            // Generate unique order ID (consistent with server.js)
+            const orderId = 'ord_' + Date.now() + Math.random().toString(36).substr(2, 5);
+            
             const { data, error } = await supabase.from('orders').insert({
+                id: orderId,
                 items, total, payment_method: paymentMethod, customer_id: customerId, 
                 notes, fulfillment_type: fulfillment_type || fulfillment, status: 'pending', restaurant_id: 'rich-aroma'
             }).select().single();
