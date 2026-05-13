@@ -144,8 +144,13 @@ module.exports = async (req, res) => {
             // Generate unique order ID (consistent with server.js)
             const orderId = 'ord_' + Date.now() + Math.random().toString(36).substr(2, 5);
             
+            // Get next order number
+            const { data: lastOrder } = await supabase.from('orders').select('order_number').order('order_number', { ascending: false }).limit(1).single();
+            const nextOrderNumber = (lastOrder?.order_number || 1000) + 1;
+
             const { data, error } = await supabase.from('orders').insert({
                 id: orderId,
+                order_number: nextOrderNumber,
                 items, total, payment_method: paymentMethod, customer_id: customerId, 
                 notes: `[FULFILLMENT: ${fulfillment || fulfillment_type || 'pickup'}] ` + (notes || ''), 
                 status: 'pending', restaurant_id: 'rich-aroma'
