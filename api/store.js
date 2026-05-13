@@ -145,8 +145,8 @@ module.exports = async (req, res) => {
             const orderId = 'ord_' + Date.now() + Math.random().toString(36).substr(2, 5);
             
             // Get next order number
-            const { data: lastOrder } = await supabase.from('orders').select('order_number').order('order_number', { ascending: false }).limit(1).single();
-            const nextOrderNumber = (lastOrder?.order_number || 1000) + 1;
+            const { data: lastOrders } = await supabase.from('orders').select('order_number').order('order_number', { ascending: false }).limit(1);
+            const nextOrderNumber = (lastOrders && lastOrders[0] ? lastOrders[0].order_number : 1000) + 1;
 
             const { data, error } = await supabase.from('orders').insert({
                 id: orderId,
