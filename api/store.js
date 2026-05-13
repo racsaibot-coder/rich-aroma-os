@@ -5,8 +5,6 @@ let menuCache = null;
 let lastMenuFetch = 0;
 const MENU_CACHE_TTL = 120 * 1000;
 
-// VIP LOGIC HELPERS
-const VIP_MONTHLY_RELOAD = 500.00;
 const HONDURAS_TZ = 'America/Tegucigalpa';
 
 function getHondurasDate() {
@@ -22,15 +20,27 @@ function getHondurasDate() {
     }
 }
 
-async function syncMembershipState(customer) {
-    if (!customer) return customer;
-    const isVip = customer.is_vip === true || (Array.isArray(customer.tags) && customer.tags.includes('VIP'));
-    if (!isVip) return customer;
-    return customer; // Simplified for now
-}
+// --- LOYALTY HELPERS ---
+async function awardPoints(customerId, amount, supabase) {
+    if (!customerId || amount <= 0) return;
+    try {
+        const { data: customer } = await supabase.from('customers').select('points').eq('id', customerId).single();
+        if (!customer) return;
+        
+        const newPoints = (parseInt(customer.points) || 0) + Math.floor(parseFloat(amount));
+        
+        await supabase.from('customers')
+            .update({ 
+                points: newPoints,
+                visits: supabase.rpc('increment_visits') // We'll use a direct update if RPC fails
+            })
+            .eq('id', customerId);
+            
+        // Fallback for visits if RPC isn't setup
+        const { data: c2 } = await supabase.from('customers').select('visits').eq('id', customerId).single();
+        await supabase.from('customers').update({ visits: (parseInt(c2.visits) || 0) + 1 }).eq('id', customerId);
 
-async function syncDailyReload(customer) {
-    return customer; // Simplified for now
+    } catch (e) { console.error("Award Points Fail:", e); }
 }
 
 module.exports = async (req, res) => {
@@ -49,7 +59,6 @@ module.exports = async (req, res) => {
             const resId = req.query.restaurantId || 'rich-aroma';
             const now = Date.now();
 
-            // Serve from cache if fresh (only for public rich-aroma view)
             if (!isAdmin && resId === 'rich-aroma' && menuCache && (now - lastMenuFetch < MENU_CACHE_TTL)) {
                 return res.json(menuCache);
             }
@@ -126,32 +135,17 @@ module.exports = async (req, res) => {
             return res.json({ orders: data || [] });
         }
 
-        // --- 3. STORE STATUS ---
-        if (action === 'store_status') {
-            if (req.method === 'GET') {
-                // Simplified: Check if any shift is open in the last 15 hours
-                const fifteenHoursAgo = new Date(Date.now() - 15 * 60 * 60 * 1000).toISOString();
-                const { data: shifts } = await supabase.from('cash_shifts').select('id').eq('status', 'open').gte('opened_at', fifteenHoursAgo);
-                return res.json({ isOpen: (shifts && shifts.length > 0) });
-            }
-            if (req.method === 'PATCH') {
-                // Handle manual override if needed
-                return res.json({ success: true });
-            }
-        }
-
-        // --- 4. CUSTOMER LOOKUP ---
+        // --- 3. CUSTOMER LOOKUP ---
         if (action === 'customer_by_phone' && req.method === 'GET') {
             const { query } = req.query;
             const { data: customer } = await supabase.from('customers').select('*').eq('phone', query).maybeSingle();
             return res.json(customer || { id: null });
         }
 
-        // --- 5. CREATE ORDER ---
+        // --- 4. CREATE ORDER (With Loyalty Award) ---
         if (req.method === 'POST' && !action) {
             const { items, total, paymentMethod, customerId, notes, fulfillment } = req.body;
             
-            // Basic creation logic
             const { data, error } = await supabase.from('orders').insert({
                 items, total, 
                 payment_method: paymentMethod, 
@@ -163,6 +157,12 @@ module.exports = async (req, res) => {
             }).select().single();
             
             if (error) throw error;
+
+            // AWARD POINTS INSTANTLY
+            if (customerId) {
+                await awardPoints(customerId, total, supabase);
+            }
+
             return res.json(data);
         }
 
