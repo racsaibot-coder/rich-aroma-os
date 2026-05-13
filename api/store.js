@@ -26,20 +26,12 @@ async function awardPoints(customerId, amount, supabase) {
     try {
         const { data: customer } = await supabase.from('customers').select('points').eq('id', customerId).single();
         if (!customer) return;
-        
         const newPoints = (parseInt(customer.points) || 0) + Math.floor(parseFloat(amount));
+        await supabase.from('customers').update({ points: newPoints }).eq('id', customerId);
         
-        await supabase.from('customers')
-            .update({ 
-                points: newPoints,
-                visits: supabase.rpc('increment_visits') // We'll use a direct update if RPC fails
-            })
-            .eq('id', customerId);
-            
-        // Fallback for visits if RPC isn't setup
+        // Auto-increment visits
         const { data: c2 } = await supabase.from('customers').select('visits').eq('id', customerId).single();
         await supabase.from('customers').update({ visits: (parseInt(c2.visits) || 0) + 1 }).eq('id', customerId);
-
     } catch (e) { console.error("Award Points Fail:", e); }
 }
 
@@ -53,7 +45,7 @@ module.exports = async (req, res) => {
     const { action, id } = req.query;
 
     try {
-        // --- 1. MENU (Egress Optimized) ---
+        // --- 1. MENU (GET) ---
         if (action === 'menu' && req.method === 'GET') {
             const isAdmin = req.query.admin === 'true';
             const resId = req.query.restaurantId || 'rich-aroma';
@@ -64,104 +56,80 @@ module.exports = async (req, res) => {
             }
             
             const [rItems, rModGroups, rModOptions, rItemModGroups] = await Promise.all([
-                supabase.from('menu_items')
-                    .select('id, name, price, available, image_url, category, base_recipe, restaurant_id')
-                    .eq('restaurant_id', resId)
-                    .order('name'),
+                supabase.from('menu_items').select('id, name, price, available, image_url, category, base_recipe, restaurant_id').eq('restaurant_id', resId).order('name'),
                 supabase.from('modifier_groups').select('id, name, restaurant_id').eq('restaurant_id', resId),
                 supabase.from('modifier_options').select('id, name, price, group_id, is_default, price_adjustment').order('name'),
                 supabase.from('item_modifier_groups').select('menu_item_id, modifier_group_id')
             ]);
 
             const filteredItems = (rItems.data || []).filter(i => isAdmin || i.available !== false);
-
-            const categoryMeta = {
-                combos: { name: 'Combos', icon: '🔥' },
-                calientes: { name: 'Calientes', icon: '☕' },
-                heladas: { name: 'Heladas', icon: '🥤' },
-                comida: { name: 'Comida', icon: '🥐' },
-                drinks: { name: 'Bebidas', icon: '🥤' },
-                coffee: { name: 'Café', icon: '☕' }
-            };
-
+            const categoryMeta = { combos: { name: 'Combos', icon: '🔥' }, calientes: { name: 'Calientes', icon: '☕' }, heladas: { name: 'Heladas', icon: '🥤' }, comida: { name: 'Comida', icon: '🥐' } };
             const grouped = {};
             filteredItems.forEach(item => {
                 const rawCat = (item.category || 'otros').toLowerCase();
                 if (!grouped[rawCat]) grouped[rawCat] = [];
-                grouped[rawCat].push({
-                    id: item.id,
-                    name: item.name,
-                    price: parseFloat(item.price) || 0,
-                    available: item.available,
-                    image_url: item.image_url,
-                    category: rawCat,
-                    base_recipe: item.base_recipe
-                });
+                grouped[rawCat].push({ id: item.id, name: item.name, price: parseFloat(item.price) || 0, available: item.available, image_url: item.image_url, category: rawCat, base_recipe: item.base_recipe });
             });
+            const categories = Object.keys(grouped).map(catId => ({ id: catId, name: categoryMeta[catId]?.name || (catId.charAt(0).toUpperCase() + catId.slice(1)), items: grouped[catId] }));
+            const responseData = { items: filteredItems, categories, modGroups: rModGroups.data || [], modOptions: rModOptions.data || [], itemModGroups: rItemModGroups.data || [], taxRate: 0.00 };
 
-            const categories = Object.keys(grouped).map(catId => ({
-                id: catId,
-                name: categoryMeta[catId]?.name || (catId.charAt(0).toUpperCase() + catId.slice(1)),
-                items: grouped[catId]
-            }));
-
-            const responseData = { 
-                items: filteredItems, 
-                categories,
-                modGroups: rModGroups.data || [], 
-                modOptions: rModOptions.data || [], 
-                itemModGroups: rItemModGroups.data || [],
-                taxRate: 0.00 
-            };
-
-            if (!isAdmin && resId === 'rich-aroma') {
-                menuCache = responseData;
-                lastMenuFetch = now;
-            }
-
+            if (!isAdmin && resId === 'rich-aroma') { menuCache = responseData; lastMenuFetch = now; }
             return res.json(responseData);
         }
 
-        // --- 2. ORDERS GET (Egress Optimized) ---
+        // --- 2. ORDERS (GET) ---
         if (action === 'orders' && req.method === 'GET') {
             const timeLimit = new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString();
-            const { data, error } = await supabase
-                .from('orders')
-                .select('id, order_number, created_at, status, total, items, payment_method, customer_id, restaurant_id, customers(name, phone)')
+            const { data, error } = await supabase.from('orders')
+                .select('id, order_number, created_at, status, total, items, payment_method, customer_id, restaurant_id, customers(name, phone), receipt_url, notes')
                 .gte('created_at', timeLimit)
-                .in('status', ['pending', 'paid', 'preparing', 'ready', 'completed', 'drinks_ready', 'food_ready', 'cancelled'])
                 .order('created_at', { ascending: false });
             if (error) throw error;
             return res.json({ orders: data || [] });
         }
 
-        // --- 3. CUSTOMER LOOKUP ---
-        if (action === 'customer_by_phone' && req.method === 'GET') {
-            const { query } = req.query;
-            const { data: customer } = await supabase.from('customers').select('*').eq('phone', query).maybeSingle();
-            return res.json(customer || { id: null });
+        // --- 3. SINGLE ORDER (GET) ---
+        if (id && req.method === 'GET') {
+            const { data, error } = await supabase.from('orders').select('*').eq('id', id).single();
+            if (error) return res.status(404).json({ error: "Order not found" });
+            return res.json(data);
         }
 
-        // --- 4. CREATE ORDER (With Loyalty Award) ---
-        if (req.method === 'POST' && !action) {
-            const { items, total, paymentMethod, customerId, notes, fulfillment } = req.body;
+        // --- 4. ORDER UPDATE (PATCH) ---
+        if (action === 'order_update' || (id && req.method === 'PATCH')) {
+            const orderId = id || req.body.id;
+            const { status, notes, items, total } = req.body;
             
+            const updates = {};
+            if (status) updates.status = status;
+            if (notes) updates.notes = notes;
+            if (items) updates.items = items;
+            if (total) updates.total = total;
+
+            const { data, error } = await supabase.from('orders').update(updates).eq('id', orderId).select().single();
+            if (error) throw error;
+            return res.json(data);
+        }
+
+        // --- 5. CREATE ORDER (POST) ---
+        if (req.method === 'POST' && !action) {
+            const { items, total, paymentMethod, customerId, notes, fulfillment, guestPhone } = req.body;
             const { data, error } = await supabase.from('orders').insert({
-                items, total, 
-                payment_method: paymentMethod, 
-                customer_id: customerId, 
-                notes, 
-                fulfillment,
-                status: 'pending',
-                restaurant_id: 'rich-aroma'
+                items, total, payment_method: paymentMethod, customer_id: customerId, 
+                notes, fulfillment, status: 'pending', restaurant_id: 'rich-aroma'
             }).select().single();
             
             if (error) throw error;
 
-            // AWARD POINTS INSTANTLY
-            if (customerId) {
-                await awardPoints(customerId, total, supabase);
-            }
+            try {
+                let finalId = customerId;
+                if (!finalId && guestPhone) {
+                    const cleanPhone = guestPhone.replace(/\D/g, '');
+                    const { data: guest } = await supabase.from('customers').select('id').eq('phone', cleanPhone).maybeSingle();
+                    if (guest) finalId = guest.id;
+                }
+                if (finalId) await awardPoints(finalId, total, supabase);
+            } catch (le) { console.error("Guest loyalty fail:", le); }
 
             return res.json(data);
         }
