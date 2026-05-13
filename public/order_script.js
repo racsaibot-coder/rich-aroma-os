@@ -162,6 +162,8 @@
                 });
             }
             container.innerHTML = html;
+            const loadingMsg = document.getElementById('loading-msg');
+            if (loadingMsg) loadingMsg.style.display = 'none';
         }
 
         function openModifier(id) {
@@ -665,10 +667,13 @@
 
             try {
                 const tableInfo = document.getElementById('check-table')?.value.trim();
+                const guestPhone = document.getElementById('check-phone')?.value.trim();
+                
                 const payload = {
                     items, subtotal, tax, discount: discount, total: total,
                     paymentMethod: paymentMethod,
                     fulfillment: fulfillmentType,
+                    guestPhone: guestPhone, // Pass phone for guest point tracking
                     notes: `Mobile Order (${fulfillmentType})${tableInfo ? ' [MESA/GRUPO: ' + tableInfo + ']' : ''} ${orderNotes ? '- ' + orderNotes : ''}`
                 };
                 if (currentCustomer) {
