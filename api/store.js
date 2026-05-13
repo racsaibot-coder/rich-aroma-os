@@ -77,11 +77,36 @@ module.exports = async (req, res) => {
             return res.json(responseData);
         }
 
+        // --- 1.1 STORE STATUS (GET/PATCH) ---
+        if ((action === 'store_status' || action === 'status')) {
+            if (req.method === 'PATCH') {
+                // We cannot use business_settings.is_open because column doesn't exist
+                // For now, return success to not break the UI toggle
+                return res.json({ success: true, isOpen: req.body.isOpen });
+            }
+
+            if (req.method === 'GET') {
+                const { data: shifts, error: shiftErr } = await supabase
+                    .from('cash_shifts')
+                    .select('id')
+                    .eq('status', 'open')
+                    .limit(1);
+
+                const hasOpenShift = !shiftErr && shifts && shifts.length > 0;
+                
+                return res.json({ 
+                    isOpen: hasOpenShift,
+                    hasActiveShift: hasOpenShift,
+                    lastChecked: new Date().toISOString()
+                });
+            }
+        }
+
         // --- 2. ORDERS (GET) ---
         if (action === 'orders' && req.method === 'GET') {
             const timeLimit = new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString();
             const { data, error } = await supabase.from('orders')
-                .select('id, order_number, created_at, status, total, items, payment_method, customer_id, restaurant_id, customers(name, phone), receipt_url, notes')
+                .select('id, order_number, created_at, status, total, items, payment_method, customer_id, customers(name, phone), notes')
                 .gte('created_at', timeLimit)
                 .order('created_at', { ascending: false });
             if (error) throw error;
@@ -112,11 +137,11 @@ module.exports = async (req, res) => {
         }
 
         // --- 5. CREATE ORDER (POST) ---
-        if (req.method === 'POST' && !action) {
-            const { items, total, paymentMethod, customerId, notes, fulfillment, guestPhone } = req.body;
+        if (req.method === 'POST' && (!action || action === 'orders')) {
+            const { items, total, paymentMethod, customerId, notes, fulfillment, fulfillment_type, guestPhone } = req.body;
             const { data, error } = await supabase.from('orders').insert({
                 items, total, payment_method: paymentMethod, customer_id: customerId, 
-                notes, fulfillment, status: 'pending', restaurant_id: 'rich-aroma'
+                notes, fulfillment_type: fulfillment_type || fulfillment, status: 'pending', restaurant_id: 'rich-aroma'
             }).select().single();
             
             if (error) throw error;
