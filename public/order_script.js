@@ -55,7 +55,9 @@
                 {id:'Combos', n:'Combos', i:'🔥'},
                 {id:'Calientes', n:'Café', i:'☕'},
                 {id:'Heladas', n:'Heladas', i:'🥤'},
-                {id:'Comida', n:'Comida', i:'🥐'}
+                {id:'Comida', n:'Comida', i:'🥐'},
+                {id:'Postres', n:'Postres', i:'🍰'},
+                {id:'Menú Secreto', n:'Secreto', i:'🤫'}
             ];
             const nav = document.getElementById('sticky-cats');
             if (nav) {
@@ -95,6 +97,7 @@
 
         function optimizeImg(url) {
             if (!url) return "";
+            if (url.startsWith('data:')) return url;
             if (url.includes('supabase.co') && url.includes('/object/public/')) {
                 return url.replace('/object/public/', '/render/image/public/') + '?width=400&quality=75&format=webp';
             }
@@ -124,16 +127,18 @@
                 const itemName = (item.name || '').toLowerCase();
                 const catLower = cat.toLowerCase();
                 
-                if (catLower === 'hot_drinks' || catLower === 'coffee') cat = 'Calientes';
-                else if (catLower === 'cold_drinks' || catLower === 'drinks') cat = 'Heladas';
-                else if (catLower === 'food') cat = 'Comida';
+                if (catLower === 'hot_drinks' || catLower === 'coffee' || catLower.includes('caliente')) cat = 'Café';
+                else if (catLower === 'cold_drinks' || catLower === 'drinks' || catLower.includes('helada')) cat = 'Heladas';
+                else if (catLower === 'food' || catLower.includes('comida')) cat = 'Comida';
+                else if (catLower === 'pastry' || catLower.includes('postre') || catLower.includes('reposteria')) cat = 'Postres';
+                else if (catLower === 'secret' || catLower.includes('secreto')) cat = 'Menú Secreto';
                 else if (catLower === 'combos' || catLower === 'combo' || catLower.includes('paquete') || itemName.includes('combo') || itemName.includes('paquete')) cat = 'Combos';
                 
                 if(!categories[cat]) categories[cat] = [];
                 categories[cat].push(item);
             });
 
-            const categoryOrder = ['Café', 'Bebidas', 'Combos', 'Comida', 'Postres', 'Otros'];
+            const categoryOrder = ['Combos', 'Café', 'Heladas', 'Comida', 'Postres', 'Menú Secreto', 'Otros'];
             const sortedCategories = Object.keys(categories).sort((a, b) => {
                 let indexA = categoryOrder.indexOf(a);
                 let indexB = categoryOrder.indexOf(b);
