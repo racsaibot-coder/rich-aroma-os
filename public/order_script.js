@@ -43,9 +43,27 @@
                     modGroups = data.modGroups || [];
                     modOptions = data.modOptions || [];
                     itemModGroups = data.itemModGroups || [];
+                    initStickyCats();
                     renderMenu();
                 }
             } catch(e) { console.error('Error loading menu', e); }
+        }
+
+        function initStickyCats() {
+            const cats = [
+                {id:'all', n:'Todo', i:'🌟'},
+                {id:'Combos', n:'Combos', i:'🔥'},
+                {id:'Calientes', n:'Café', i:'☕'},
+                {id:'Heladas', n:'Heladas', i:'🥤'},
+                {id:'Comida', n:'Comida', i:'🥐'}
+            ];
+            const nav = document.getElementById('sticky-cats');
+            if (nav) {
+                nav.innerHTML = cats.map(c => `
+                    <button onclick="filterCategory('${c.id}', this)" class="cat-btn flex-shrink-0 px-6 py-2 rounded-full border border-white/10 bg-white/5 text-white/70 text-sm font-bold hover:bg-white/10 transition-colors ${c.id === 'all' ? 'border-gold bg-gold text-dark' : ''}">
+                        <span>${c.i}</span> <span>${c.n}</span>
+                    </button>`).join('');
+            }
         }
 
         function setFulfillment(type) {
@@ -59,7 +77,7 @@
             activeBtn.classList.add('bg-gold', 'text-dark', 'border-gold');
         }
 
-        let activeCategory = 'Combos';
+        let activeCategory = 'all';
 
         function filterCategory(cat, btnEl) {
             activeCategory = cat;
