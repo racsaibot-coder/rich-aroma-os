@@ -2687,7 +2687,9 @@
             confirmText: 'Siguiente'
         });
         if (cash === null) return;
-        const amountCash = parseFloat(cash) || 0;
+        // Clean and parse
+        const cleanCash = cash.toString().replace(/,/g, '').trim();
+        const amountCash = parseFloat(cleanCash) || 0;
 
         const card = await showUIModal({
             title: 'Cierre de Caja (2/3)',
@@ -2697,7 +2699,8 @@
             confirmText: 'Siguiente'
         });
         if (card === null) return;
-        const amountCard = parseFloat(card) || 0;
+        const cleanCard = card.toString().replace(/,/g, '').trim();
+        const amountCard = parseFloat(cleanCard) || 0;
 
         const transfer = await showUIModal({
             title: 'Cierre de Caja (3/3)',
@@ -2707,9 +2710,10 @@
             confirmText: 'Finalizar Cierre'
         });
         if (transfer === null) return;
-        const amountTransfer = parseFloat(transfer) || 0;
+        const cleanTransfer = transfer.toString().replace(/,/g, '').trim();
+        const amountTransfer = parseFloat(cleanTransfer) || 0;
 
-        console.log(`[L-Debug] Initiating shift close. Cash: ${amountCash}, Card: ${amountCard}, Transfer: ${amountTransfer}`);
+        console.log(`[Shift-Close] Captured Inputs: Cash=${amountCash}, Card=${amountCard}, Transfer=${amountTransfer}`);
 
         try {
             const res = await fetch('/api/cash/close-shift', {
