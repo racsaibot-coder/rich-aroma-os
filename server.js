@@ -24,6 +24,11 @@ const supabaseUrl = process.env.SUPABASE_URL || 'https://zcqubacfcettwawcimsy.su
 const supabaseKey = process.env.SUPABASE_ANON_KEY || 'sb_publishable_hRVyru_6sektmVGQyJFfwQ_4b2-7MKq';
 const supabase = createClient(supabaseUrl, supabaseKey);
 
+// Egress Optimization: Menu Cache (2 minutes)
+let menuCache = null;
+let lastMenuFetch = 0;
+const MENU_CACHE_TTL = 120 * 1000; 
+
 // Middleware
 app.use(cors());
 app.use((req, res, next) => {
@@ -1002,8 +1007,17 @@ app.post('/api/auth/register', async (req, res) => {
 app.get('/api/menu', async (req, res) => {
     try {
         const isAdmin = req.query.admin === 'true';
+        const now = Date.now();
+
+        // 1. Serve from cache if fresh and not admin
+        if (!isAdmin && menuCache && (now - lastMenuFetch < MENU_CACHE_TTL)) {
+            return res.json(menuCache);
+        }
         
-        const { data: items, error: e1 } = await supabase.from('menu_items').select('*').order('name');
+        const { data: items, error: e1 } = await supabase.from('menu_items')
+            .select('*')
+            .order('name');
+            
         const { data: modGroups, error: e2 } = await supabase.from('modifier_groups').select('*').order('name');
         const { data: modOptions, error: e3 } = await supabase.from('modifier_options').select('*').order('name');
         const { data: itemModGroups, error: e4 } = await supabase.from('item_modifier_groups').select('*');
@@ -1052,7 +1066,7 @@ app.get('/api/menu', async (req, res) => {
             modifiersMap[m.id] = { name: m.name, price: parseFloat(m.price) || 0 };
         });
 
-        res.json({ 
+        const responseData = { 
             categories, 
             modifiers: modifiersMap, 
             taxRate: 0.15, 
@@ -1060,7 +1074,15 @@ app.get('/api/menu', async (req, res) => {
             modGroups: modGroups || [],
             modOptions: modOptions || [],
             itemModGroups: itemModGroups || []
-        });
+        };
+
+        // 3. Update Cache (only for non-admin requests)
+        if (!isAdmin) {
+            menuCache = responseData;
+            lastMenuFetch = now;
+        }
+
+        res.json(responseData);
     } catch (err) {
         console.error("Critical menu error:", err);
         res.status(500).json({ error: "Internal server error loading menu" });
@@ -1074,13 +1096,58 @@ app.patch('/api/menu/items/:id', ensureAuthenticated, async (req, res) => {
     res.json(data);
 });
 
+app.post('/api/orders/:id/receipt', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { imageBase64 } = req.body;
+        if (!imageBase64) return res.status(400).json({ error: "Missing image" });
+
+        const base64Data = imageBase64.replace(/^data:image\/\w+;base64,/, "");
+        const buffer = Buffer.from(base64Data, 'base64');
+        const fileName = `receipts/${id}_${Date.now()}.jpg`;
+
+        const { data, error: uploadError } = await supabase.storage
+            .from('menu-images') // Reusing existing bucket or use 'receipts' if you prefer
+            .upload(fileName, buffer, { contentType: 'image/jpeg', upsert: true });
+
+        if (uploadError) throw uploadError;
+
+        const { data: { publicUrl } } = supabase.storage.from('menu-images').getPublicUrl(fileName);
+
+        await supabase.from('orders').update({ 
+            receipt_url: publicUrl,
+            status: 'pending_verification' // Move to verification queue
+        }).eq('id', id);
+
+        res.json({ success: true, url: publicUrl });
+    } catch (err) {
+        console.error("Receipt upload error:", err);
+        res.status(500).json({ error: err.message });
+    }
+});
+
+app.get('/api/orders/:id', async (req, res) => {
+    try {
+        const { data, error } = await supabase
+            .from('orders')
+            .select('id, order_number, status, created_at, fulfillment_type, payment_method, total, items, notes, receipt_url')
+            .eq('id', req.params.id)
+            .single();
+
+        if (error) return res.status(404).json({ error: "Order not found" });
+        res.json(data);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
 // ORDERS
 app.get('/api/orders', ensureAuthenticated, async (req, res) => {
     // Admin or Staff can see orders
     const client = req.supabase || supabase;
     const { data, error } = await client
         .from('orders')
-        .select('*, customers(name)')
+        .select('id, created_at, status, total, items, payment_method, customer_id, customers(name)')
         .order('created_at', { ascending: false })
         .limit(100);
     res.json({ orders: data || [] });
@@ -1168,6 +1235,7 @@ app.post('/api/orders', async (req, res) => {
             total: finalOrderData.total,
             status: 'pending',
             payment_method: paymentMethod,
+            fulfillment: req.body.fulfillment, // Save fulfillment type to DB
             customer_id: finalCustomerId,
             discount_code: req.body.discountCode,
             notes: (!finalCustomerId ? `[GUEST: ${customerName || 'N/A'}] [PHONE: ${customerPhone || 'N/A'}] ` : '') + (req.body.notes || '')
@@ -2484,12 +2552,13 @@ app.post('/api/driver/orders/:id/claim', async (req, res) => {
 app.patch('/api/orders/:id/assign', ensureAuthenticated, async (req, res) => {
     const { driverId } = req.body;
     const client = req.supabase || supabase;
-    
+
     const { data, error } = await client
         .from('orders')
-        .update({ 
+        .update({
             driver_id: driverId,
-            delivery_status: 'assigned'
+            delivery_status: 'assigned',
+            status: 'shipped' // Update main status so customer sees "En Camino"
         })
         .eq('id', req.params.id)
         .select()
@@ -2498,7 +2567,6 @@ app.patch('/api/orders/:id/assign', ensureAuthenticated, async (req, res) => {
     if (error) return res.status(500).json({ error: error.message });
     res.json(data);
 });
-
 app.patch('/api/orders/:id/delivery-status', async (req, res) => {
     const { status } = req.body; 
     // status: 'out_for_delivery', 'delivered'
@@ -3239,43 +3307,73 @@ app.post('/api/cash/close-shift', ensureAuthenticated, async (req, res) => {
         const closedAt = new Date().toISOString();
 
         // 2. Calculate Sales Breakdown (Orders)
+        // CRITICAL FIX: Only include orders that are explicitly tied to this shift_id.
+        // Previously it was fetching everything by date, which included mobile orders from outside the shift.
         const { data: allOrders, error: ordersError } = await client
             .from('orders')
-            .select('total, payment_method, subtotal')
-            .gte('created_at', shift.opened_at)
-            .lte('created_at', closedAt)
+            .select('total, payment_method, secondary_payment_method, rico_amount_paid, subtotal, shift_id')
+            .eq('shift_id', shiftId)
             .not('status', 'eq', 'cancelled');
 
         if (ordersError) console.error("[Shift] Error fetching orders:", ordersError);
 
         const salesBreakdown = (allOrders || []).reduce((acc, o) => {
-            const method = o.payment_method || 'other';
             const total = parseFloat(o.total) || 0;
-            acc[method] = (acc[method] || 0) + total;
-            acc.total_gross = (acc.total_gross || 0) + total;
-            acc.total_points = (acc.total_points || 0) + Math.floor(parseFloat(o.subtotal) || 0);
+            const ricoPaid = parseFloat(o.rico_amount_paid) || 0;
+            const remainingTotal = total - ricoPaid;
+            
+            // 1. Account for the portion paid with Rico Cash
+            acc.rico_balance += ricoPaid;
+
+            // 2. Account for the remaining portion (Cash, Card, or Transfer)
+            const method = o.secondary_payment_method || o.payment_method || 'other';
+            if (acc[method] !== undefined) {
+                acc[method] += remainingTotal;
+            } else {
+                acc['other'] = (acc['other'] || 0) + remainingTotal;
+            }
+
+            acc.total_gross += total;
+            acc.total_points += Math.floor(parseFloat(o.subtotal) || 0);
             return acc;
-        }, { cash: 0, rico_balance: 0, transfer: 0, card: 0, total_gross: 0, total_points: 0 });
+        }, { cash: 0, rico_balance: 0, transfer: 0, card: 0, other: 0, total_gross: 0, total_points: 0 });
 
         const cashSales = salesBreakdown.cash || 0;
         const cardSales = salesBreakdown.card || 0;
         const transferSales = salesBreakdown.transfer || 0;
 
-        // 3. Calculate Transactions (Payouts/Drops)
+        // 3. Calculate Transactions (Payouts/Drops/Reloads)
         const { data: transactions, error: transError } = await client
             .from('cash_transactions')
-            .select('amount')
+            .select('amount, type, notes')
             .eq('shift_id', shiftId);
 
         if (transError) console.error("[Shift] Error fetching transactions:", transError);
 
-        const totalTransactions = (transactions || []).reduce((sum, t) => sum + (parseFloat(t.amount) || 0), 0);
+        let payouts = 0;
+        let drops = 0;
+        let cashReloads = 0;
+        
+        (transactions || []).forEach(t => {
+            const amt = parseFloat(t.amount) || 0;
+            if (t.type === 'payout') payouts += amt;
+            else if (t.type === 'drop') {
+                if (t.notes && t.notes.includes('RECARGA:')) {
+                    cashReloads += amt;
+                } else {
+                    drops += amt;
+                }
+            }
+            else if (t.type === 'reload') cashReloads += amt;
+        });
+
+        const totalNetOutflow = payouts + drops - cashReloads;
 
         // 4. Calculate Expected
-        // Cash: Expected = Opening + Cash Sales + Transactions (negative for payouts)
+        // Cash: Expected = Opening + Cash Sales + Reloads - Payouts - Drops
         const openingAmount = parseFloat(shift.opening_amount) || 0;
         const declCash = parseFloat(closingAmount) || 0;
-        const expCash = openingAmount + cashSales + totalTransactions;
+        const expCash = openingAmount + cashSales - totalNetOutflow;
         const discCash = declCash - expCash;
 
         // Card & Transfer
@@ -3323,11 +3421,16 @@ app.post('/api/cash/close-shift', ensureAuthenticated, async (req, res) => {
             report: {
                 opening_amount: openingAmount,
                 sales: salesBreakdown,
-                transactions: totalTransactions,
+                transactions: totalNetOutflow,
                 audit: {
                     cash: { expected: expCash, declared: declCash, discrepancy: discCash },
                     card: { expected: cardSales, declared: declCard, discrepancy: discCard },
                     transfer: { expected: transferSales, declared: declTransfer, discrepancy: discTransfer }
+                },
+                declared: {
+                    cash: declCash,
+                    card: declCard,
+                    transfer: declTransfer
                 },
                 order_count: (allOrders || []).length,
                 notes: notes || ''

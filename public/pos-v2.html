@@ -597,16 +597,26 @@
                 inputContainer.classList.remove('hidden');
                 inputEl.placeholder = inputPlaceholder;
                 inputEl.value = '';
+                inputEl.onkeyup = (e) => {
+                    if (e.key === 'Enter') handleConfirm();
+                };
             } else {
                 inputContainer.classList.add('hidden');
+                inputEl.onkeyup = null;
             }
 
             modal.classList.remove('hidden');
             if (showInput) setTimeout(() => inputEl.focus(), 100);
 
             const handleConfirm = () => {
-                const val = showInput ? inputEl.value : true;
-                if (showInput && (val === null || val === undefined || val === '')) return;
+                let val = showInput ? inputEl.value : true;
+                if (showInput) {
+                    if (val === null || val === undefined || val.toString().trim() === '') return;
+                    // Robust numeric cleaning
+                    if (typeof val === 'string') {
+                        val = val.replace(/,/g, ''); 
+                    }
+                }
                 cleanup();
                 resolve(val);
             };
@@ -618,6 +628,7 @@
 
             const cleanup = () => {
                 modal.classList.add('hidden');
+                inputEl.onkeyup = null;
             };
 
             confirmBtn.onclick = handleConfirm;
@@ -3309,7 +3320,7 @@
                 <p id="ui-modal-msg" class="text-gray-500 font-medium text-sm leading-relaxed">---</p>
             </div>
             <div id="ui-modal-input-container" class="hidden">
-                <input type="text" id="ui-modal-input" class="w-full bg-gray-50 border-2 border-gray-100 rounded-2xl p-4 text-center text-2xl font-black focus:border-gold outline-none transition-all" placeholder="0.00">
+                <input type="number" step="0.01" inputmode="decimal" id="ui-modal-input" class="w-full bg-gray-50 border-2 border-gray-200 rounded-2xl p-4 text-center text-2xl font-black focus:border-gold outline-none transition-all" placeholder="0.00">
             </div>
             <div class="grid grid-cols-2 gap-3 pt-2">
                 <button id="ui-modal-cancel" class="py-4 bg-gray-100 text-gray-400 font-bold rounded-2xl active:scale-95 transition-all text-sm uppercase">Cancelar</button>
