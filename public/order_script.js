@@ -553,8 +553,35 @@
             } catch (e) { console.error(e); }
             loadMenu();
             setFulfillment('pickup');
+            
             const savedActive = localStorage.getItem('ra_active_order');
-            if (savedActive) { try { activeOrder = JSON.parse(savedActive); showTracking(); } catch(e) {} }
+            if (savedActive) {
+                try {
+                    const localOrder = JSON.parse(savedActive);
+                    // Verify with server if order is still active
+                    const vres = await fetch(`/api/orders/${localOrder.id}`);
+                    if (vres.ok) {
+                        const latestOrder = await vres.json();
+                        const status = (latestOrder.status || '').toLowerCase();
+                        const activeStatuses = ['pending', 'paid', 'preparing', 'ready', 'drinks_ready', 'food_ready'];
+                        
+                        if (activeStatuses.includes(status)) {
+                            activeOrder = latestOrder;
+                            showTracking();
+                        } else {
+                            // Order is finished, clear it
+                            localStorage.removeItem('ra_active_order');
+                        }
+                    } else {
+                        // Order not found on server anymore
+                        localStorage.removeItem('ra_active_order');
+                    }
+                } catch(e) {
+                    console.error("Error verifying active order:", e);
+                    localStorage.removeItem('ra_active_order');
+                }
+            }
+
             const phone = localStorage.getItem('ra_customer_phone') || localStorage.getItem('ra_phone');
             if (phone) {
                 fetch(`/api/customer/profile?phone=${encodeURIComponent(phone)}`)
