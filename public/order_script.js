@@ -3,13 +3,14 @@
                 extend: {
                     colors: {
                         gold: '#C9A66B',
-                        dark: '#1E1610',
-                        charcoal: '#2C241E',
-                        cream: '#F5F5F0'
+                        dark: '#120C09',
+                        charcoal: '#1E1610',
+                        success: '#10B981',
+                        error: '#EF4444'
                     },
                     fontFamily: {
-                        sans: ['Inter', 'sans-serif'],
-                        display: ['Playfair Display', 'serif']
+                        sans: ['Inter', 'system-ui', 'sans-serif'],
+                        display: ['Georgia', 'serif']
                     }
                 }
             }
@@ -29,10 +30,9 @@
         
         let fulfillmentType = 'pickup'; // default
         let activeOrder = null;
-        let addonTimer = null;
+        let statusSubscription = null;
         let isAddonMode = false;
         let currentSelectedPayment = 'cash';
-        let currentSecondaryPayment = 'cash';
 
         async function loadMenu() {
             try {
@@ -64,19 +64,6 @@
                     <button id="cat-btn-${c.id.replace(/\s+/g, '')}" onclick="filterCategory('${c.id}', this)" class="cat-btn flex-shrink-0 px-6 py-2.5 rounded-full border border-white/10 bg-white/5 text-white/40 text-[10px] font-black uppercase tracking-widest hover:bg-white/10 transition-all">
                         <span>${c.i}</span> <span>${c.n}</span>
                     </button>`).join('');
-            }
-        }
-
-        function setFulfillment(type) {
-            fulfillmentType = type;
-            document.querySelectorAll('.fulfillment-btn').forEach(btn => {
-                btn.classList.remove('bg-gold', 'text-dark', 'border-gold');
-                btn.classList.add('bg-transparent', 'text-white/70', 'border-white/20');
-            });
-            const activeBtn = document.getElementById('btn-' + type);
-            if (activeBtn) {
-                activeBtn.classList.remove('bg-transparent', 'text-white/70', 'border-white/20');
-                activeBtn.classList.add('bg-gold', 'text-dark', 'border-gold');
             }
         }
 
@@ -179,13 +166,7 @@
         function setupScrollSpy() {
             const sections = document.querySelectorAll('.menu-section');
             const navButtons = document.querySelectorAll('.cat-btn');
-            
-            const options = {
-                root: null,
-                rootMargin: '-130px 0px -40% 0px',
-                threshold: 0
-            };
-
+            const options = { root: null, rootMargin: '-130px 0px -40% 0px', threshold: 0 };
             const observer = new IntersectionObserver((entries) => {
                 entries.forEach(entry => {
                     if (entry.isIntersecting) {
@@ -203,7 +184,6 @@
                     }
                 });
             }, options);
-
             sections.forEach(section => observer.observe(section));
         }
 
@@ -223,251 +203,180 @@
                 currentMods[groupId] = defaultOpt ? [defaultOpt.id] : [];
             });
 
-            if (currentItem.base_recipe) {
-                for (const groupId in currentMods) {
-                    if (currentMods[groupId].length > 0) {
-                        const selectedOptId = currentMods[groupId][0];
-                        const selectedOpt = modOptions.find(o => o.id === selectedOptId);
-                        if (selectedOpt && currentItem.base_recipe[selectedOpt.name]) {
-                            const recipe = currentItem.base_recipe[selectedOpt.name];
-                            for (const [targetGroupId, targetOptionId] of Object.entries(recipe)) {
-                                if (currentMods[targetGroupId]) {
-                                    currentMods[targetGroupId] = [targetOptionId];
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-
-            const container = document.getElementById('mod-dynamic-container');
+            const container = document.getElementById('mod-options');
             let html = '';
-
             relevantGroups.forEach(groupId => {
                 const group = modGroups.find(g => g.id === groupId);
                 if (!group) return;
                 const options = modOptions.filter(o => o.group_id === groupId);
-
-                html += `<div class="mb-6"><h3 class="text-white/60 uppercase text-xs tracking-widest font-bold mb-3">${group.name}</h3><div class="grid grid-cols-2 gap-3">`;
+                html += `<div class="space-y-4">
+                    <p class="text-[10px] font-black text-gold uppercase tracking-[0.3em]">${group.name}</p>
+                    <div class="grid grid-cols-2 gap-3">`;
                 options.forEach(opt => {
-                    const sel = currentMods[groupId].includes(opt.id) ? 'border-2 border-gold bg-gold/10 text-gold' : 'border border-white/10 bg-white/5 text-white';
-                    html += `<button onclick="toggleDynamicMod('${group.id}', '${opt.id}', 1)" id="mod-btn-${opt.id}" class="mod-btn transition-colors duration-200 p-4 rounded-2xl font-bold text-sm text-left flex justify-between items-center ${sel}"><span>${opt.name}</span>${opt.price_adjustment > 0 ? `<span class="text-xs opacity-70">+L.${opt.price_adjustment}</span>` : ''}</button>`;
+                    const sel = currentMods[groupId].includes(opt.id) ? 'border-gold bg-gold/10 text-gold' : 'border-white/10 bg-white/5 text-white/60';
+                    html += `<button onclick="toggleMod('${group.id}', '${opt.id}')" id="mbtn-${opt.id}" class="mod-btn p-5 rounded-[1.5rem] border font-bold text-xs text-center transition-all ${sel}">${opt.name}</button>`;
                 });
                 html += `</div></div>`;
             });
             
-            html += `<div class="mb-6"><h3 class="text-white/60 uppercase text-xs tracking-widest font-bold mb-3">Instrucciones para este plato</h3><input type="text" id="mod-note" placeholder="Ej. Sin cebolla..." class="w-full p-4 bg-white/5 border border-white/10 text-white rounded-2xl text-base focus:outline-none focus:border-gold"></div>`;
-            
             container.innerHTML = html;
-            document.getElementById('mod-item-name').innerText = currentItem.name;
-            updateDynamicModPrice();
-            document.getElementById('mod-confirm-text').innerText = isAddonMode ? 'Agregar a Orden Activa' : 'Agregar';
-            document.getElementById('modifier-modal').classList.remove('hidden');
+            document.getElementById('mod-name').innerText = currentItem.name;
+            document.getElementById('mod-price').innerText = `L ${(Number(currentItem.price) || 0).toFixed(2)}`;
+            document.getElementById('mod-qty').innerText = "1";
+            document.getElementById('mod-note').value = "";
+            document.getElementById('mod-drawer').classList.add('active');
+            document.getElementById('mod-overlay').classList.remove('hidden');
+            setTimeout(() => document.getElementById('mod-overlay').style.opacity = "1", 10);
+            updateModPrice();
         }
 
         function openNoteOnlyModal() {
             currentMods = {};
-            const container = document.getElementById('mod-dynamic-container');
-            container.innerHTML = `<div class="mb-6"><h3 class="text-white/60 uppercase text-xs tracking-widest font-bold mb-3">Instrucciones para este plato</h3><input type="text" id="mod-note" placeholder="Ej. Bien caliente..." class="w-full p-4 bg-white/5 border border-white/10 text-white rounded-2xl text-base focus:outline-none focus:border-gold"></div>`;
-            document.getElementById('mod-item-name').innerText = currentItem.name;
-            const price = Number(currentItem.price) || 0;
-            document.getElementById('mod-item-price').innerText = `L. ${price.toFixed(2)}`;
-            document.getElementById('mod-final-price').innerText = `L. ${price.toFixed(2)}`;
-            document.getElementById('mod-confirm-text').innerText = isAddonMode ? 'Agregar a Orden Activa' : 'Agregar';
-            document.getElementById('modifier-modal').classList.remove('hidden');
+            document.getElementById('mod-options').innerHTML = "";
+            document.getElementById('mod-name').innerText = currentItem.name;
+            document.getElementById('mod-price').innerText = `L ${(Number(currentItem.price) || 0).toFixed(2)}`;
+            document.getElementById('mod-qty').innerText = "1";
+            document.getElementById('mod-note').value = "";
+            document.getElementById('mod-drawer').classList.add('active');
+            document.getElementById('mod-overlay').classList.remove('hidden');
+            setTimeout(() => document.getElementById('mod-overlay').style.opacity = "1", 10);
+            updateModPrice();
         }
 
-        function closeModal() { document.getElementById('modifier-modal').classList.add('hidden'); }
+        window.closeModifier = () => {
+            document.getElementById('mod-drawer').classList.remove('active');
+            document.getElementById('mod-overlay').style.opacity = "0";
+            setTimeout(() => document.getElementById('mod-overlay').classList.add('hidden'), 400);
+        };
 
-        function toggleDynamicMod(groupId, optionId, maxSelections) {
-            let selected = currentMods[groupId] || [];
-            if (selected.includes(optionId)) selected = selected.filter(id => id !== optionId);
-            else {
-                if (maxSelections === 1) selected = [optionId];
-                else {
-                    if (selected.length < maxSelections) selected.push(optionId);
-                    else { selected.shift(); selected.push(optionId); }
-                }
-            }
-            currentMods[groupId] = selected;
-            
-            const options = modOptions.filter(o => o.group_id === groupId);
+        window.changeQty = (n) => {
+            let q = parseInt(document.getElementById('mod-qty').innerText) + n;
+            if(q < 1) q = 1;
+            document.getElementById('mod-qty').innerText = q;
+            updateModPrice();
+        };
+
+        function toggleMod(gid, oid) {
+            currentMods[gid] = [oid];
+            const options = modOptions.filter(o => o.group_id === gid);
             options.forEach(opt => {
-                const btn = document.getElementById(`mod-btn-${opt.id}`);
-                if (btn) {
-                    btn.className = `mod-btn transition-colors duration-200 p-4 rounded-2xl font-bold text-sm text-left flex justify-between items-center ${selected.includes(opt.id) ? 'border-2 border-gold bg-gold/10 text-gold' : 'border border-white/10 bg-white/5 text-white'}`;
-                }
+                const btn = document.getElementById(`mbtn-${opt.id}`);
+                if(opt.id === oid) { btn.classList.remove('border-white/10', 'bg-white/5', 'text-white/60'); btn.classList.add('border-gold', 'bg-gold/10', 'text-gold'); }
+                else { btn.classList.add('border-white/10', 'bg-white/5', 'text-white/60'); btn.classList.remove('border-gold', 'bg-gold/10', 'text-gold'); }
             });
-            updateDynamicModPrice();
+            updateModPrice();
         }
 
-        function updateDynamicModPrice() {
+        function updateModPrice() {
             let total = Number(currentItem.price) || 0;
-            for (const groupId in currentMods) {
-                currentMods[groupId].forEach(optId => {
-                    const opt = modOptions.find(o => o.id === optId);
-                    if (opt) total += (parseFloat(opt.price_adjustment) || 0);
+            for (const gid in currentMods) {
+                currentMods[gid].forEach(oid => {
+                    const o = modOptions.find(x => x.id === oid);
+                    if(o) total += (parseFloat(o.price_adjustment) || 0);
                 });
             }
-            document.getElementById('mod-item-price').innerText = `L. ${total.toFixed(2)}`;
-            document.getElementById('mod-final-price').innerText = `L. ${total.toFixed(2)}`;
+            const qty = parseInt(document.getElementById('mod-qty').innerText);
+            document.getElementById('mod-price').innerText = `L ${(total * qty).toFixed(2)}`;
         }
 
-        function confirmItem() {
+        window.add = () => {
             const mods = [];
-            for (const groupId in currentMods) {
-                currentMods[groupId].forEach(optId => {
-                    const opt = modOptions.find(o => o.id === optId);
-                    if (opt) mods.push({ name: opt.name });
+            let itemPrice = Number(currentItem.price) || 0;
+            for (const gid in currentMods) {
+                currentMods[gid].forEach(oid => {
+                    const o = modOptions.find(x => x.id === oid);
+                    if(o) { mods.push({name: o.name}); itemPrice += (parseFloat(o.price_adjustment) || 0); }
                 });
             }
             const note = document.getElementById('mod-note').value;
-            if (note) mods.push({ name: `📝 ${note}` });
-
-            const finalPriceText = document.getElementById('mod-final-price').innerText.replace('L. ', '');
-            const finalPrice = parseFloat(finalPriceText) || 0;
-            const cartItem = { 
-                id: currentItem.id, 
-                name: currentItem.name, 
-                price: Number(currentItem.price) || 0, 
-                finalPrice, 
-                mods, 
-                qty: 1 
-            };
-            
-            if (isAddonMode) {
-                submitAddon(cartItem);
-            } else {
-                cart.push(cartItem);
-                updateCartUI();
-            }
-            closeModal();
-        }
+            if(note) mods.push({name: `📝 ${note}`});
+            const qty = parseInt(document.getElementById('mod-qty').innerText);
+            cart.push({ id: currentItem.id, name: currentItem.name, price: itemPrice, finalPrice: itemPrice * qty, mods, qty });
+            updateCartUI();
+            window.closeModifier();
+        };
 
         function updateCartUI() {
-            const total = cart.reduce((sum, item) => sum + (parseFloat(item.finalPrice) || 0), 0);
+            const total = cart.reduce((sum, item) => sum + item.finalPrice, 0);
             const counter = document.getElementById('cart-count-text');
             const totalEl = document.getElementById('cart-total-text');
             if (counter) counter.innerText = `${cart.length} Artículos`;
             if (totalEl) totalEl.innerText = `L ${total.toFixed(2)}`;
-            
             const cartBar = document.getElementById('cart-bar');
-            if (cartBar) {
-                if (cart.length > 0 && !isAddonMode) {
-                    cartBar.classList.remove('translate-y-[200%]', 'opacity-0');
-                    cartBar.classList.add('translate-y-0', 'opacity-100');
-                } else {
-                    cartBar.classList.add('translate-y-[200%]', 'opacity-0');
-                    cartBar.classList.remove('translate-y-0', 'opacity-100');
-                }
-            }
+            if (cart.length > 0) { cartBar.classList.remove('translate-y-[200%]', 'opacity-0'); cartBar.classList.add('translate-y-0', 'opacity-100'); }
+            else { cartBar.classList.add('translate-y-[200%]', 'opacity-0'); cartBar.classList.remove('translate-y-0', 'opacity-100'); }
         }
 
-        function openCartModal() {
-            const container = document.getElementById('cart-review-items');
-            if (!container) return;
-            
-            if(cart.length === 0) {
-                container.innerHTML = `<div class="text-white/50 text-center py-10 italic">Tu bolsa está vacía</div>`;
-            } else {
+        window.openCheckout = () => {
+            const container = document.getElementById('check-items');
+            if(cart.length === 0) { container.innerHTML = `<div class="text-white/20 text-center py-12 italic">Tu bolsa está vacía</div>`; }
+            else {
                 container.innerHTML = cart.map((item, index) => `
-                    <div class="flex justify-between items-start bg-white/5 border border-white/5 p-5 rounded-[1.5rem]">
+                    <div class="flex justify-between items-start bg-white/5 border border-white/5 p-6 rounded-[2rem]">
                         <div>
-                            <div class="font-black text-white text-sm">${item.name}</div>
-                            ${item.mods && item.mods.length > 0 ? `<div class="text-[10px] font-bold text-white/40 mt-1 uppercase tracking-wider">${item.mods.map(m=>m.name).join(', ')}</div>` : ''}
+                            <div class="font-black text-white text-sm">${item.qty}x ${item.name}</div>
+                            ${item.mods.length ? `<div class="text-[9px] font-bold text-white/30 mt-1 uppercase tracking-wider">${item.mods.map(m=>m.name).join(', ')}</div>` : ''}
                         </div>
                         <div class="flex items-center gap-4">
-                            <span class="font-mono text-gold font-black">L ${(parseFloat(item.finalPrice) || 0).toFixed(2)}</span>
-                            <button onclick="removeCartItem(${index})" class="w-8 h-8 rounded-full bg-red-500/10 text-red-500 flex items-center justify-center text-xs"><i class="fas fa-trash"></i></button>
+                            <span class="font-mono text-gold font-black">L ${item.finalPrice.toFixed(2)}</span>
+                            <button onclick="removeCartItem(${index})" class="w-9 h-9 rounded-xl bg-error/10 text-error flex items-center justify-center text-xs"><i class="fas fa-trash"></i></button>
                         </div>
-                    </div>
-                `).join('');
+                    </div>`).join('');
             }
-            updateCartSummary();
-            renderPaymentOptions();
-            document.getElementById('cart-modal').classList.remove('hidden');
+            updateCheckSummary();
+            document.getElementById('check-drawer').classList.add('active');
+            document.getElementById('check-overlay').classList.remove('hidden');
+            setTimeout(() => document.getElementById('check-overlay').style.opacity = "1", 10);
+        };
+
+        window.closeCheckout = () => {
+            document.getElementById('check-drawer').classList.remove('active');
+            document.getElementById('check-overlay').style.opacity = "0";
+            setTimeout(() => document.getElementById('check-overlay').classList.add('hidden'), 400);
+        };
+
+        window.removeCartItem = (i) => { cart.splice(i, 1); updateCartUI(); window.openCheckout(); };
+
+        function updateCheckSummary() {
+            const subtotal = cart.reduce((sum, item) => sum + item.finalPrice, 0);
+            document.getElementById('check-total').innerText = `L ${subtotal.toFixed(2)}`;
+            if(currentCustomer) {
+                const bal = (parseFloat(currentCustomer.cash_balance) || 0) + (parseFloat(currentCustomer.membership_credit) || 0);
+                document.getElementById('check-rico-val').innerText = `L ${bal.toFixed(2)}`;
+                if(bal >= subtotal) { document.getElementById('pbtn-rico').classList.remove('opacity-40', 'grayscale', 'pointer-events-none'); }
+                else { document.getElementById('pbtn-rico').classList.add('opacity-40', 'grayscale', 'pointer-events-none'); if(currentSelectedPayment === 'rico_balance') setPayment('cash'); }
+            }
         }
 
-        function updateCartSummary() {
-            let subtotal = cart.reduce((sum, item) => sum + (parseFloat(item.finalPrice) || 0), 0);
-            let discount = 0;
-            let discountText = "";
-            
-            const totalBeforeRicoDiscount = subtotal - discount;
-            const ricoBalance = currentCustomer ? ((parseFloat(currentCustomer.cash_balance) || 0) + (parseFloat(currentCustomer.membership_credit) || 0)) : 0;
-            const coversFull = ricoBalance >= totalBeforeRicoDiscount;
-            
-            if (currentSelectedPayment === 'rico_balance' && coversFull && subtotal > 0) {
-                const ricoDiscount = subtotal * 0.10;
-                discount += ricoDiscount;
-                discountText += `<br><span class="text-gold text-[10px] font-black uppercase tracking-widest">- L ${ricoDiscount.toFixed(2)} (RICO CASH 10%)</span>`;
-            }
-            if (discount > subtotal) discount = subtotal;
-            const total = subtotal - discount;
+        window.setFulfill = (type) => {
+            fulfillmentType = type;
+            ['pickup', 'dinein', 'delivery'].forEach(f => {
+                const b = document.getElementById('fbtn-' + f);
+                if(f === type) { b.classList.remove('border-white/5', 'bg-white/5', 'text-white/40'); b.classList.add('border-gold', 'bg-gold/10', 'text-gold'); }
+                else { b.classList.add('border-white/5', 'bg-white/5', 'text-white/40'); b.classList.remove('border-gold', 'bg-gold/10', 'text-gold'); }
+            });
+            if(type === 'dinein') document.getElementById('check-table-ui').classList.remove('hidden');
+            else document.getElementById('check-table-ui').classList.add('hidden');
+            if(type === 'delivery') document.getElementById('check-address-ui').classList.remove('hidden');
+            else document.getElementById('check-address-ui').classList.add('hidden');
+        };
 
-            const subEl = document.getElementById('review-subtotal');
-            const totEl = document.getElementById('review-total');
-            if (subEl) subEl.innerHTML = `L ${subtotal.toFixed(2)} ${discountText}`;
-            if (totEl) totEl.innerText = `L ${total.toFixed(2)}`;
-            window.currentOrderTotal = total;
-            window.currentOrderDiscount = discount;
-        }
-
-        function selectPaymentMethod(method) {
+        window.setPayment = (method) => {
             currentSelectedPayment = method;
-            updateCartSummary();
-            renderPaymentOptions();
-        }
+            ['cash', 'transfer', 'rico_balance'].forEach(p => {
+                const b = document.getElementById('pbtn-' + p);
+                if(p === method) { b.classList.remove('border-white/5', 'bg-white/5', 'text-white/40'); b.classList.add('border-gold', 'bg-gold/10', 'text-gold'); }
+                else { b.classList.add('border-white/5', 'bg-white/5', 'text-white/40'); b.classList.remove('border-gold', 'bg-gold/10', 'text-gold'); }
+            });
+            if(method === 'transfer') document.getElementById('check-bank-ui').classList.remove('hidden');
+            else document.getElementById('check-bank-ui').classList.add('hidden');
+        };
 
-        function renderPaymentOptions() {
-            const container = document.getElementById('payment-selection-container');
-            const buttonContainer = document.getElementById('checkout-options');
-            if (!container || !buttonContainer) return;
-
-            const total = Number(window.currentOrderTotal) || 0;
-            const ricoBalance = currentCustomer ? ((parseFloat(currentCustomer.cash_balance) || 0) + (parseFloat(currentCustomer.membership_credit) || 0)) : 0;
-            const hasAnyRicoCash = ricoBalance > 0;
-            const coversFull = ricoBalance >= total;
-            
-            if (currentSelectedPayment === 'rico_balance' && !hasAnyRicoCash) currentSelectedPayment = 'cash';
-
-            let html = '<div class="space-y-4">';
-            html += '<label class="text-white/40 uppercase text-[10px] tracking-[0.2em] font-black block mb-2">Método de Pago</label>';
-            html += '<div class="grid grid-cols-3 gap-2">';
-            const btnClass = "py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest border transition-all flex justify-center items-center cursor-pointer text-center";
-            const unselClass = "bg-white/5 border-white/5 text-white/40 hover:bg-white/10";
-            const selClass = "bg-gold text-dark border-gold shadow-xl scale-[1.02]";
-            html += `<div onclick="selectPaymentMethod('cash')" class="${btnClass} ${currentSelectedPayment === 'cash' ? selClass : unselClass}">Efectivo</div>`;
-            html += `<div onclick="selectPaymentMethod('transfer')" class="${btnClass} ${currentSelectedPayment === 'transfer' ? selClass : unselClass}">Transf.</div>`;
-            if (hasAnyRicoCash) {
-                html += `<div onclick="selectPaymentMethod('rico_balance')" class="${btnClass} ${currentSelectedPayment === 'rico_balance' ? selClass : unselClass}">Rico Cash</div>`;
-            } else {
-                html += `<div onclick="alert('Tu balance es 0. Recarga en tu perfil para usar Rico Cash.')" class="${btnClass} opacity-30 bg-white/5 border-white/5 text-white/20 cursor-not-allowed">Rico Cash</div>`;
-            }
-            html += '</div>';
-
-            if (currentSelectedPayment === 'rico_balance' && hasAnyRicoCash) {
-                html += `<div class="mt-2 text-center text-[10px] text-gold font-black uppercase tracking-widest">Balance: L. ${ricoBalance.toFixed(2)}${coversFull ? ' <span class="text-success ml-2">• 10% OFF APLICADO</span>' : ''}</div>`;
-            }
-
-            let buttonHtml = '';
-            if (currentSelectedPayment === 'transfer') {
-                buttonHtml = `<button id="final-checkout-btn" onclick="submitOrder('transfer')" class="w-full bg-success text-dark py-5 rounded-[2rem] font-black text-xs uppercase tracking-[0.2em] shadow-xl active:scale-95 transition-all">Confirmar Transferencia <i class="fas fa-check ml-1"></i></button>`;
-            } else {
-                buttonHtml = `<button id="final-checkout-btn" onclick="submitOrder('${currentSelectedPayment}')" class="w-full bg-gold text-dark py-5 rounded-[2rem] font-black text-xs uppercase tracking-[0.2em] shadow-xl active:scale-95 transition-all">Confirmar Orden <i class="fas fa-arrow-right ml-1"></i></button>`;
-            }
-            container.innerHTML = html;
-            buttonContainer.innerHTML = buttonHtml;
-        }
-
-        function removeCartItem(index) { cart.splice(index, 1); updateCartUI(); if(cart.length === 0) closeCartModal(); else openCartModal(); }
-        function closeCartModal() { document.getElementById('cart-modal').classList.add('hidden'); }
-
-        async function submitOrder(paymentMethod = 'cash') {
-            if (cart.length === 0) return;
-            const btn = document.getElementById('final-checkout-btn');
-            const ogText = btn.innerHTML;
-            let orderNotes = document.getElementById('order-notes').value;
+        window.submitFinalOrder = async () => {
+            if(cart.length === 0) return;
+            const btn = document.getElementById('final-btn');
+            const name = document.getElementById('check-name').value.trim();
+            if(!name) return alert("Por favor ingresa tu nombre");
             
             btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Procesando...';
             btn.disabled = true;
@@ -478,113 +387,68 @@
                 if (!itemsMap[key]) itemsMap[key] = { ...item, qty: 0 };
                 itemsMap[key].qty += 1;
             });
-            const items = Object.values(itemsMap);
-            let subtotal = cart.reduce((sum, item) => sum + (parseFloat(item.finalPrice) || 0), 0);
-            let discount = 0;
-            const ricoBalance = currentCustomer ? ((parseFloat(currentCustomer.cash_balance) || 0) + (parseFloat(currentCustomer.membership_credit) || 0)) : 0;
-            const coversFull = ricoBalance >= subtotal;
-            if (paymentMethod === 'rico_balance' && coversFull) discount = (subtotal * 0.10);
-            const total = subtotal - discount;
+            const subtotal = cart.reduce((sum, item) => sum + item.finalPrice, 0);
+            const payload = {
+                items: Object.values(itemsMap), subtotal, tax: 0, discount: 0, total: subtotal, paymentMethod: currentSelectedPayment,
+                fulfillment: fulfillmentType,
+                notes: `Mobile: ${name} (${fulfillmentType})` + (document.getElementById('check-table').value ? ` MESA: ${document.getElementById('check-table').value}` : "")
+            };
+            if(currentCustomer) payload.customerId = currentCustomer.id;
 
             try {
-                const tableInfo = document.getElementById('check-table')?.value.trim();
-                const payload = {
-                    items, subtotal, tax: 0, discount, total, paymentMethod,
-                    fulfillment: fulfillmentType,
-                    notes: `Mobile Order (${fulfillmentType})${tableInfo ? ' [MESA: ' + tableInfo + ']' : ''} ${orderNotes ? '- ' + orderNotes : ''}`
-                };
-                if (currentCustomer) payload.customerId = currentCustomer.id;
                 const res = await fetch('/api/orders', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
-                if (!res.ok) throw new Error('Error saving');
-                const savedOrder = await res.json();
-                cart = []; updateCartUI(); closeCartModal();
-                activeOrder = savedOrder;
-                localStorage.setItem('ra_active_order', JSON.stringify(savedOrder));
+                if(!res.ok) throw new Error('Fail');
+                const saved = await res.json();
+                cart = []; updateCartUI(); window.closeCheckout();
+                activeOrder = saved;
+                localStorage.setItem('ra_active_order', JSON.stringify(saved));
                 showTracking();
-            } catch (err) { alert('Error, intenta de nuevo.'); btn.innerHTML = ogText; btn.disabled = false; }
-        }
+            } catch(e) { alert("Error al enviar. Intenta de nuevo."); btn.innerHTML = "Enviar Pedido Ahora 🚀"; btn.disabled = false; }
+        };
 
-        let statusSubscription = null;
         async function showTracking() {
-            if (!activeOrder) return;
-            const modal = document.getElementById('track-modal');
-            if (modal) { modal.classList.remove('hidden'); document.body.style.overflow = 'hidden'; }
+            if(!activeOrder) return;
+            document.getElementById('track-modal').classList.remove('hidden');
             document.getElementById('receipt-num').innerText = `#${activeOrder.order_number || activeOrder.id.slice(-4)}`;
             updateTrackingUI(activeOrder);
-
-            if (statusSubscription) statusSubscription.unsubscribe();
-            statusSubscription = supabaseClient.channel(`track_${activeOrder.id}`)
-                .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'orders', filter: `id=eq.${activeOrder.id}` }, 
-                payload => { activeOrder = payload.new; updateTrackingUI(payload.new); }).subscribe();
+            if(statusSubscription) statusSubscription.unsubscribe();
+            statusSubscription = supabaseClient.channel(`track_${activeOrder.id}`).on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'orders', filter: `id=eq.${activeOrder.id}` }, p => { activeOrder = p.new; updateTrackingUI(p.new); }).subscribe();
         }
 
         function updateTrackingUI(order) {
             const status = (order.status || 'pending').toLowerCase();
-            const badge = document.getElementById('status-badge');
-            if (badge) badge.innerText = status.toUpperCase();
-            
-            const progress = document.getElementById('track-progress-line');
-            if (progress) {
-                if (['pending', 'paid'].includes(status)) progress.style.width = '10%';
-                if (status.includes('preparing')) progress.style.width = '50%';
-                if (['ready', 'drinks_ready', 'food_ready'].includes(status)) progress.style.width = '80%';
-                if (status === 'completed') progress.style.width = '100%';
-            }
+            document.getElementById('status-badge').innerText = status.toUpperCase();
+            const line = document.getElementById('track-progress-line');
+            if(['pending','paid'].includes(status)) line.style.width = "0%";
+            else if(status.includes('preparing')) { line.style.width = "50%"; document.getElementById('step-2').classList.add('bg-gold','text-dark'); }
+            else if(['ready','drinks_ready','food_ready'].includes(status)) { line.style.width = "100%"; document.getElementById('step-3').classList.add('bg-gold','text-dark'); }
         }
-
-        window.openCheckout = () => openCartModal();
-        window.closeCartModal = () => closeCartModal();
-        window.closeModifier = () => closeModal();
-        window.confirmItem = () => confirmItem();
-        window.newOrder = () => {
-            activeOrder = null; localStorage.removeItem('ra_active_order');
-            document.getElementById('track-modal').classList.add('hidden');
-            document.body.style.overflow = 'auto';
-        };
 
         window.addEventListener('DOMContentLoaded', async () => {
             try {
                 const res = await fetch('/api/store/status');
                 const data = await res.json();
-                if (!data.isOpen) {
-                    document.getElementById('closed-banner')?.classList.remove('hidden');
-                    return;
-                }
+                if (!data.isOpen) { document.getElementById('closed-overlay')?.classList.remove('hidden'); return; }
+                document.getElementById('store-status-text').innerText = "Abierto Ahora";
             } catch (e) { console.error(e); }
             loadMenu();
             setFulfillment('pickup');
-            
+            setPayment('cash');
             const savedActive = localStorage.getItem('ra_active_order');
             if (savedActive) {
                 try {
                     const localOrder = JSON.parse(savedActive);
-                    // Verify with server if order is still active
                     const vres = await fetch(`/api/orders/${localOrder.id}`);
-                    if (vres.ok) {
-                        const latestOrder = await vres.json();
-                        const status = (latestOrder.status || '').toLowerCase();
-                        const activeStatuses = ['pending', 'paid', 'preparing', 'ready', 'drinks_ready', 'food_ready'];
-                        
-                        if (activeStatuses.includes(status)) {
-                            activeOrder = latestOrder;
-                            showTracking();
-                        } else {
-                            // Order is finished, clear it
-                            localStorage.removeItem('ra_active_order');
-                        }
-                    } else {
-                        // Order not found on server anymore
-                        localStorage.removeItem('ra_active_order');
-                    }
-                } catch(e) {
-                    console.error("Error verifying active order:", e);
-                    localStorage.removeItem('ra_active_order');
-                }
+                    if(vres.ok) {
+                        const latest = await vres.json();
+                        const s = (latest.status || '').toLowerCase();
+                        if(['pending','paid','preparing','ready','drinks_ready','food_ready'].includes(s)) { activeOrder = latest; showTracking(); }
+                        else localStorage.removeItem('ra_active_order');
+                    } else localStorage.removeItem('ra_active_order');
+                } catch(e) { localStorage.removeItem('ra_active_order'); }
             }
-
             const phone = localStorage.getItem('ra_customer_phone') || localStorage.getItem('ra_phone');
             if (phone) {
-                fetch(`/api/customer/profile?phone=${encodeURIComponent(phone)}`)
-                .then(r => r.json()).then(u => { if (u && !u.error) currentCustomer = u; });
+                fetch(`/api/customer/profile?phone=${encodeURIComponent(phone)}`).then(r => r.json()).then(u => { if(u && !u.error) { currentCustomer = u; document.getElementById('user-pill').classList.remove('hidden'); document.getElementById('login-btn').classList.add('hidden'); document.getElementById('user-first-name').innerText = u.name.split(' ')[0]; } });
             }
         });
