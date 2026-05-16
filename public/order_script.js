@@ -413,8 +413,20 @@
             if(!activeOrder) return;
             document.getElementById('track-modal').classList.remove('hidden');
             document.getElementById('receipt-num').innerText = `#${activeOrder.order_number || activeOrder.id.slice(-4)}`;
+
+            // Render Items in tracking view
+            const list = document.getElementById('track-items-list');
+            if (list && activeOrder.items) {
+                list.innerHTML = activeOrder.items.map(item => `
+                    <div class="flex justify-between items-center py-2 border-b border-white/5">
+                        <span class="text-white text-xs font-bold">${item.qty}x ${item.name}</span>
+                        <span class="text-gold font-mono text-[10px]">L ${(parseFloat(item.finalPrice || item.price) * item.qty).toFixed(2)}</span>
+                    </div>
+                `).join('');
+            }
+
             updateTrackingUI(activeOrder);
-            
+        ...
             // 1. Realtime Subscription
             if(statusSubscription) statusSubscription.unsubscribe();
             statusSubscription = supabaseClient.channel(`track_${activeOrder.id}`).on('postgres_changes', { 
