@@ -406,22 +406,107 @@
             } catch(e) { alert("Error al enviar. Intenta de nuevo."); btn.innerHTML = "Enviar Pedido Ahora 🚀"; btn.disabled = false; }
         };
 
+        let statusSubscription = null;
+        let pollingInterval = null;
+
         async function showTracking() {
             if(!activeOrder) return;
             document.getElementById('track-modal').classList.remove('hidden');
             document.getElementById('receipt-num').innerText = `#${activeOrder.order_number || activeOrder.id.slice(-4)}`;
             updateTrackingUI(activeOrder);
+            
+            // 1. Realtime Subscription
             if(statusSubscription) statusSubscription.unsubscribe();
-            statusSubscription = supabaseClient.channel(`track_${activeOrder.id}`).on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'orders', filter: `id=eq.${activeOrder.id}` }, p => { activeOrder = p.new; updateTrackingUI(p.new); }).subscribe();
+            statusSubscription = supabaseClient.channel(`track_${activeOrder.id}`).on('postgres_changes', { 
+                event: 'UPDATE', 
+                schema: 'public', 
+                table: 'orders', 
+                filter: `id=eq.${activeOrder.id}` 
+            }, p => { 
+                console.log("Realtime status update:", p.new.status);
+                activeOrder = p.new; 
+                updateTrackingUI(p.new); 
+            }).subscribe();
+
+            // 2. Polling Fallback (every 10s)
+            if(pollingInterval) clearInterval(pollingInterval);
+            pollingInterval = setInterval(async () => {
+                try {
+                    const res = await fetch(`/api/orders/${activeOrder.id}`);
+                    if(res.ok) {
+                        const latest = await res.json();
+                        if (latest.status !== activeOrder.status) {
+                            console.log("Polling status update:", latest.status);
+                            activeOrder = latest;
+                            updateTrackingUI(latest);
+                        }
+                        // Stop polling if finished
+                        const s = (latest.status || '').toLowerCase();
+                        if(['completed', 'cancelled', 'delivered'].includes(s)) {
+                            clearInterval(pollingInterval);
+                        }
+                    }
+                } catch(e) {}
+            }, 10000);
         }
 
         function updateTrackingUI(order) {
             const status = (order.status || 'pending').toLowerCase();
-            document.getElementById('status-badge').innerText = status.toUpperCase();
+            const fulfill = (order.fulfillment || 'pickup').toLowerCase();
+            const badge = document.getElementById('status-badge');
+            const title = document.querySelector('#track-modal h2');
+            const msg = document.getElementById('track-msg');
             const line = document.getElementById('track-progress-line');
-            if(['pending','paid'].includes(status)) line.style.width = "0%";
-            else if(status.includes('preparing')) { line.style.width = "50%"; document.getElementById('step-2').classList.add('bg-gold','text-dark'); }
-            else if(['ready','drinks_ready','food_ready'].includes(status)) { line.style.width = "100%"; document.getElementById('step-3').classList.add('bg-gold','text-dark'); }
+            
+            if (badge) badge.innerText = status.toUpperCase();
+
+            // 1. Update Title and Message
+            if (['pending', 'paid'].includes(status)) {
+                title.innerText = "¡ORDEN RECIBIDA!";
+                msg.innerText = "Tu pedido ha sido enviado. Prepárate para el mejor sabor.";
+                line.style.width = "0%";
+            } else if (status.includes('preparing')) {
+                title.innerText = "PREPARANDO...";
+                msg.innerText = "Nuestros baristas están preparando tu orden con amor.";
+                line.style.width = "50%";
+                updateStepUI(2);
+            } else if (['ready', 'drinks_ready', 'food_ready'].includes(status)) {
+                title.innerText = "¡ORDEN LISTA!";
+                msg.innerText = fulfill === 'delivery' ? "Tu pedido está listo y esperando al repartidor." : "¡Ya puedes pasar por tu pedido a la barra!";
+                line.style.width = fulfill === 'delivery' ? "75%" : "100%";
+                updateStepUI(3);
+            } else if (status === 'shipped' || status === 'out_for_delivery') {
+                title.innerText = "EN CAMINO";
+                msg.innerText = "El repartidor va en camino a tu ubicación.";
+                line.style.width = "90%";
+                updateStepUI(4);
+            } else if (status === 'completed' || status === 'delivered') {
+                title.innerText = "¡ENTREGADA!";
+                msg.innerText = "¡Gracias por elegir Rich Aroma! Esperamos que lo disfrutes.";
+                line.style.width = "100%";
+                updateStepUI(fulfill === 'delivery' ? 4 : 3);
+                if (statusSubscription) statusSubscription.unsubscribe();
+                if (pollingInterval) clearInterval(pollingInterval);
+            }
+
+            // 2. Handle Delivery Step Visibility
+            const deliveryStep = document.getElementById('step-delivery-ui');
+            if (deliveryStep) {
+                if (fulfill === 'delivery') deliveryStep.classList.remove('hidden');
+                else deliveryStep.classList.add('hidden');
+            }
+        }
+
+        function updateStepUI(stepNumber) {
+            for (let i = 1; i <= 4; i++) {
+                const step = document.getElementById(`step-${i}`);
+                if (!step) continue;
+                if (i <= stepNumber) {
+                    step.classList.remove('bg-white/5', 'text-white/20', 'border-white/10');
+                    step.classList.add('bg-gold', 'text-dark', 'border-gold');
+                    step.innerHTML = '<i class="fas fa-check"></i>';
+                }
+            }
         }
 
         window.addEventListener('DOMContentLoaded', async () => {
