@@ -134,7 +134,42 @@ module.exports = async function handler(req, res) {
             return res.json(data);
         }
 
-        // --- 4. Admin Actions ---
+        // --- 4. Loyalty & Rewards ---
+        if (action === 'claim_reward' && req.method === 'POST') {
+            const { customerId, points, rewardName } = req.body;
+            
+            const { data: customer } = await supabase.from('customers').select('points').eq('id', customerId).single();
+            if (!customer || (customer.points || 0) < points) {
+                return res.status(400).json({ error: "Insufficient points" });
+            }
+
+            const newPoints = (customer.points || 0) - points;
+            
+            // Log the claim
+            const { error: logError } = await supabase.from('reward_claims').insert({
+                customer_id: customerId,
+                reward_name: rewardName,
+                points_spent: points,
+                status: 'pending',
+                created_at: new Date().toISOString()
+            });
+
+            if (logError && logError.code === '42P01') {
+                console.log("reward_claims table missing, skipping log but proceeding with point deduction");
+            }
+
+            const { data: updatedCustomer, error: updateError } = await supabase
+                .from('customers')
+                .update({ points: newPoints })
+                .eq('id', customerId)
+                .select()
+                .single();
+
+            if (updateError) throw updateError;
+            return res.json(updatedCustomer);
+        }
+
+        // --- 5. Admin Actions ---
         const isAdminAction = action.startsWith('admin_');
         if (isAdminAction) {
             const adminPin = req.query.adminPin || req.body.adminPin || req.query.adminId;

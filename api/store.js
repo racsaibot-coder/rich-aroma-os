@@ -21,17 +21,26 @@ function getHondurasDate() {
 }
 
 // --- LOYALTY HELPERS ---
-async function awardPoints(customerId, amount, supabase) {
+async function awardPoints(customerId, amount, paymentMethod, supabase) {
     if (!customerId || amount <= 0) return;
     try {
         const { data: customer } = await supabase.from('customers').select('points').eq('id', customerId).single();
         if (!customer) return;
-        const newPoints = (parseInt(customer.points) || 0) + Math.floor(parseFloat(amount));
+
+        // Logic: 1 point per L. 10 spent. Double points for Rico Cash.
+        const multiplier = (paymentMethod === 'rico_balance') ? 2 : 1;
+        const pointsEarned = Math.floor((parseFloat(amount) / 10) * multiplier);
+        
+        if (pointsEarned <= 0) return;
+
+        const newPoints = (parseInt(customer.points) || 0) + pointsEarned;
         await supabase.from('customers').update({ points: newPoints }).eq('id', customerId);
         
         // Auto-increment visits
         const { data: c2 } = await supabase.from('customers').select('visits').eq('id', customerId).single();
         await supabase.from('customers').update({ visits: (parseInt(c2.visits) || 0) + 1 }).eq('id', customerId);
+        
+        console.log(`[Loyalty] Awarded ${pointsEarned} points to ${customerId}`);
     } catch (e) { console.error("Award Points Fail:", e); }
 }
 
@@ -172,7 +181,7 @@ module.exports = async (req, res) => {
                     const { data: guest } = await supabase.from('customers').select('id').eq('phone', cleanPhone).maybeSingle();
                     if (guest) finalId = guest.id;
                 }
-                if (finalId) await awardPoints(finalId, total, supabase);
+                if (finalId) await awardPoints(finalId, total, paymentMethod, supabase);
             } catch (le) { console.error("Guest loyalty fail:", le); }
 
             return res.json(data);

@@ -1629,8 +1629,8 @@ app.patch('/api/orders/:id', ensureAuthenticated, async (req, res) => {
                 .single();
 
             if (customer) {
-                // Calculate Points
-                let pointsBase = Math.floor(parseFloat(updatedOrder.total) || 0);
+                // Calculate Points: 1 point per L. 10 spent
+                let pointsBase = Math.floor((parseFloat(updatedOrder.total) || 0) / 10);
                 let multiplier = 1;
 
                 // Bonus: Rico Balance (2x)

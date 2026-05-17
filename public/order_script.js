@@ -540,6 +540,82 @@
             }
         }
 
+        window.openProfile = () => {
+            if(!currentCustomer) return window.openLogin();
+            document.getElementById('prof-name').innerText = currentCustomer.name;
+            document.getElementById('prof-phone').innerText = currentCustomer.phone;
+            document.getElementById('prof-initial').innerText = currentCustomer.name.charAt(0).toUpperCase();
+            document.getElementById('prof-points').innerText = (currentCustomer.points || 0);
+            const badge = document.getElementById('prof-points-badge');
+            if (badge) badge.innerText = `${currentCustomer.points || 0} PTS`;
+            
+            const bal = (parseFloat(currentCustomer.cash_balance) || 0) + (parseFloat(currentCustomer.membership_credit) || 0);
+            document.getElementById('prof-balance').innerText = `L ${bal.toFixed(2)}`;
+            
+            if(currentCustomer.is_vip) document.getElementById('prof-vip-badge').classList.remove('hidden');
+            else document.getElementById('prof-vip-badge').classList.add('hidden');
+
+            const streak = (currentCustomer.drink_streak || 0) % 7;
+            document.getElementById('prof-streak-count').innerText = `${streak}/6`;
+            document.getElementById('prof-streak-msg').innerText = streak === 6 ? "¡Tu próxima bebida es GRATIS!" : `Faltan ${6-streak} bebidas para tu premio.`;
+
+            renderRewards();
+            
+            document.getElementById('profile-drawer').classList.add('active');
+            document.getElementById('profile-overlay').classList.remove('hidden');
+            setTimeout(() => document.getElementById('profile-overlay').style.opacity = "1", 10);
+            
+            if (window.QRCode) {
+                document.getElementById('prof-qr').innerHTML = "";
+                new QRCode(document.getElementById('prof-qr'), { text: currentCustomer.phone, width: 160, height: 160, colorDark: "#120C09", colorLight: "#ffffff" });
+            }
+        };
+
+        function renderRewards() {
+            const list = document.getElementById('prof-rewards-list');
+            if(!list) return;
+            const rewards = [
+                { p: 30, n: "Upgrade de Tamaño", d: "Sube de 12oz a 16oz gratis", i: "⬆️" },
+                { p: 50, n: "Café Gratis", d: "Cualquier bebida caliente", i: "☕" },
+                { p: 100, n: "Baleada Gratis", d: "Baleada sencilla o con todo", i: "🫓" },
+                { p: 200, n: "Plato Típico", d: "Desayuno o Almuerzo completo", i: "🍽️" }
+            ];
+            const myPoints = currentCustomer.points || 0;
+            list.innerHTML = rewards.map(r => `
+                <div class="glass p-5 rounded-[2rem] flex justify-between items-center border border-white/5">
+                    <div class="flex items-center gap-4">
+                        <div class="text-2xl">${r.i}</div>
+                        <div>
+                            <p class="text-[10px] font-black text-white uppercase">${r.n}</p>
+                            <p class="text-[8px] text-white/40 font-bold uppercase tracking-tighter">${r.d}</p>
+                        </div>
+                    </div>
+                    <button onclick="claimReward(${r.p}, '${r.n}')" class="px-4 py-2 rounded-xl text-[8px] font-black uppercase tracking-widest transition-all ${myPoints >= r.p ? 'bg-gold text-dark' : 'bg-white/5 text-white/20 pointer-events-none'}">
+                        ${r.p} PTS
+                    </button>
+                </div>
+            `).join('');
+        }
+
+        window.claimReward = async (pts, name) => {
+            if(!currentCustomer || (currentCustomer.points || 0) < pts) return;
+            if(!confirm(`¿Canjear ${pts} puntos por: ${name}? Se generará un cupón en tu cuenta.`)) return;
+            
+            try {
+                const res = await fetch('/api/staff?action=claim_reward', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ customerId: currentCustomer.id, points: pts, rewardName: name })
+                });
+                if(res.ok) {
+                    const updated = await res.json();
+                    currentCustomer.points = updated.points;
+                    alert("¡Premio Canjeado! Muéstralo en caja para aplicarlo.");
+                    window.openProfile(); // Refresh
+                }
+            } catch(e) { alert("Error al canjear"); }
+        };
+
         window.addEventListener('DOMContentLoaded', async () => {
             console.log("DOMContentLoaded started");
             try {
