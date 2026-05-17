@@ -522,12 +522,21 @@
         }
 
         window.addEventListener('DOMContentLoaded', async () => {
+            console.log("DOMContentLoaded started");
             try {
+                console.log("Checking store status...");
                 const res = await fetch('/api/store/status');
                 const data = await res.json();
-                if (!data.isOpen) { document.getElementById('closed-overlay')?.classList.remove('hidden'); return; }
+                console.log("Store status:", data.isOpen);
+                if (!data.isOpen) { 
+                    console.log("Store closed, showing overlay");
+                    document.getElementById('closed-overlay')?.classList.remove('hidden'); 
+                    return; 
+                }
                 document.getElementById('store-status-text').innerText = "Abierto Ahora";
-            } catch (e) { console.error(e); }
+            } catch (e) { console.error("Store status error:", e); }
+            
+            console.log("Calling loadMenu...");
             loadMenu();
             setFulfillment('pickup');
             setPayment('cash');
