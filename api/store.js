@@ -273,27 +273,25 @@ module.exports = async (req, res) => {
             const { id } = req.query;
             const { driverId } = req.body;
 
-            // 1. Check Driver's Active Load (Safety Limit)
-            const { data: activeOnes, error: loadErr } = await supabase
+            // 1. Check Driver's Active Load
+            const { data: activeOnes } = await supabase
                 .from('orders')
-                .select('id')
-                .eq('driver_id', driverId)
-                .not('delivery_status', 'eq', 'delivered');
+                .select('id, notes')
+                .is('completed_at', null)
+                .ilike('notes', `%DRIVER: ${driverId}%`);
             
             if (activeOnes && activeOnes.length >= 2) {
                 return res.status(403).json({ error: "Límite alcanzado. Termina tus entregas actuales primero." });
             }
 
-            // 2. Check if already claimed (prevent race conditions)
-            const { data: existing } = await supabase.from('orders').select('driver_id').eq('id', id).single();
-            if (existing && existing.driver_id) return res.status(409).json({ error: "Ya reclamado" });
+            // 2. Assign driver via Notes
+            const { data: order } = await supabase.from('orders').select('notes').eq('id', id).single();
+            if (order.notes.includes('DRIVER:')) return res.status(409).json({ error: "Ya reclamado" });
 
-            // 3. Assign driver
+            const newNotes = order.notes + ` [DRIVER: ${driverId}] [D-STATUS: assigned]`;
+
             const { data, error } = await supabase.from('orders')
-                .update({ 
-                    driver_id: driverId, 
-                    delivery_status: 'assigned' 
-                })
+                .update({ notes: newNotes })
                 .eq('id', id)
                 .select()
                 .single();
@@ -306,45 +304,34 @@ module.exports = async (req, res) => {
             const { id } = req.query;
             const { status, driverId } = req.body;
 
-            const { data: order, error } = await supabase.from('orders')
+            const { data: order } = await supabase.from('orders').select('notes, total, delivery_fee, restaurant_id').eq('id', id).single();
+            const newNotes = order.notes.replace(/\[D-STATUS: .*?\]/, `[D-STATUS: ${status}]`);
+
+            const { data, error } = await supabase.from('orders')
                 .update({ 
-                    delivery_status: status,
-                    status: status === 'delivered' ? 'completed' : 'ready'
+                    notes: newNotes,
+                    status: status === 'delivered' ? 'completed' : 'ready',
+                    completed_at: status === 'delivered' ? new Date().toISOString() : null
                 })
                 .eq('id', id)
-                .eq('driver_id', driverId)
                 .select()
                 .single();
 
             if (error) throw error;
 
-            // --- DELIVERY PAYOUT LOGIC (New) ---
+            // --- DELIVERY PAYOUT LOGIC ---
             if (status === 'delivered') {
                 const totalDeliveryFee = parseFloat(order.delivery_fee || 35);
-                const driverCut = 30; // Flat L.30 for driver
+                const driverCut = 30;
                 const platformCut = totalDeliveryFee - driverCut;
 
-                // 1. Record Driver Earning
-                await supabase.from('quimieats_ledger').insert({
-                    restaurant_id: order.restaurant_id, // Associated with the store for reporting
-                    amount: driverCut, 
-                    type: 'driver_payout_pending', 
-                    order_id: id,
-                    customer_id: driverId, // We use customer_id to store the driver's ID in the ledger
-                    status: 'pending'
-                });
-
-                // 2. Record Platform Delivery Fee (The extra L.5 or L.10)
-                await supabase.from('quimieats_ledger').insert({
-                    restaurant_id: 'platform_profit', 
-                    amount: platformCut, 
-                    type: 'delivery_service_fee', 
-                    order_id: id,
-                    status: 'settled'
-                });
+                await supabase.from('quimieats_ledger').insert([
+                    { restaurant_id: order.restaurant_id, amount: driverCut, type: 'driver_payout_pending', order_id: id, customer_id: driverId, status: 'pending' },
+                    { restaurant_id: 'platform_profit', amount: platformCut, type: 'delivery_service_fee', order_id: id, status: 'settled' }
+                ]);
             }
 
-            return res.json({ success: true, order });
+            return res.json({ success: true, order: data });
         }
 
         // --- 2. ORDERS (GET) ---
