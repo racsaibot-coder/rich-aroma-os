@@ -169,6 +169,54 @@ module.exports = async function handler(req, res) {
             return res.json(updatedCustomer);
         }
 
+        // --- 4.1 Merchant Ledger & Payouts ---
+        if (action === 'admin_merchant_balances' && req.method === 'GET') {
+            const { data: restaurants } = await supabase.from('restaurants').select('id, name').neq('id', 'rich-aroma');
+            const { data: ledger } = await supabase.from('quimieats_ledger').select('*').eq('status', 'pending');
+
+            const balances = (restaurants || []).map(res => {
+                const resLedger = (ledger || []).filter(l => l.restaurant_id === res.id);
+                const netAmount = resLedger.reduce((sum, l) => sum + parseFloat(l.amount), 0);
+                
+                // Only allow withdrawal if balance is positive (meaning they are owed more than they owe us)
+                const withdrawalFee = netAmount > 0 ? (netAmount * 0.03) : 0;
+                const finalPayout = netAmount > 0 ? (netAmount - withdrawalFee) : 0;
+
+                return {
+                    id: res.id,
+                    name: res.name,
+                    balance: netAmount,
+                    pending_rows: resLedger.length,
+                    withdrawal_fee: withdrawalFee,
+                    eligible_payout: finalPayout
+                };
+            });
+
+            return res.json(balances);
+        }
+
+        if (action === 'admin_process_payout' && req.method === 'POST') {
+            const { restaurantId, amount } = req.body;
+            
+            // 1. Mark all pending as settled for this merchant
+            await supabase.from('quimieats_ledger')
+                .update({ status: 'settled' })
+                .eq('restaurant_id', restaurantId)
+                .eq('status', 'pending');
+            
+            // 2. Log the payout transaction
+            const { data: payout, error } = await supabase.from('quimieats_ledger').insert({
+                restaurant_id: restaurantId,
+                amount: -amount, // Negative because money is leaving our platform
+                type: 'payout',
+                status: 'settled',
+                customer_id: 'platform_admin'
+            }).select().single();
+
+            if (error) throw error;
+            return res.json({ success: true, payout });
+        }
+
         // --- 5. Admin Actions ---
         const isAdminAction = action.startsWith('admin_');
         if (isAdminAction) {
