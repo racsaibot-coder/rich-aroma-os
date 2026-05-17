@@ -120,7 +120,13 @@ module.exports = async (req, res) => {
                 .eq('status', 'active')
                 .order('name');
             if (error) throw error;
-            return res.json(data || []);
+            
+            // Map settings.category to category if column is missing
+            const mapped = (data || []).map(r => ({
+                ...r,
+                category: r.category || r.settings?.category || 'restaurante'
+            }));
+            return res.json(mapped);
         }
 
         // --- 1.3 QUIMIEATS SIGNUP (POST - INSTANT CREATION) ---
@@ -136,9 +142,8 @@ module.exports = async (req, res) => {
                 id: resId,
                 name: restaurant_name,
                 contact_phone: phone,
-                category: category || 'restaurante',
                 status: 'active',
-                settings: { owner: contact_name, pin: tempPin }
+                settings: { owner: contact_name, pin: tempPin, category: category || 'restaurante' }
             }).select().single();
 
             if (resErr) throw resErr;
