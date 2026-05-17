@@ -415,25 +415,18 @@ module.exports = async (req, res) => {
             
             if (error) throw error;
 
-            // --- COMMISSION LOGIC (Updated: Marketplace vs POS) ---
-            const isPosOrder = req.body.isPos === true;
+            // --- COMMISSION LOGIC (Test Mode: Always Log) ---
+            const commission = parseFloat(total) * 0.10;
             
-            if (!isPosOrder) {
-                const commission = parseFloat(total) * 0.10;
-                // Always log commission for anyone NOT rich-aroma
-                if (targetResId !== 'rich-aroma') {
-                    if (paymentMethod === 'rico_balance') {
-                        await supabase.from('quimieats_ledger').insert([
-                            { restaurant_id: targetResId, amount: total, type: 'rico_payment', order_id: orderId, status: 'pending', customer_id: customerId || 'guest' },
-                            { restaurant_id: targetResId, amount: -commission, type: 'commission', order_id: orderId, status: 'settled', customer_id: customerId || 'guest' }
-                        ]);
-                    } else {
-                        await supabase.from('quimieats_ledger').insert({
-                            restaurant_id: targetResId, amount: -commission, type: 'commission', order_id: orderId, status: 'pending', customer_id: customerId || 'guest'
-                        });
-                    }
-                }
-            }
+            await supabase.from('quimieats_ledger').insert({
+                restaurant_id: targetResId, 
+                amount: -commission, 
+                type: 'commission', 
+                order_id: orderId, 
+                status: 'pending',
+                customer_id: customerId || 'guest'
+            });
+            console.log(`[Commission] Logged L.${commission} for Order ${orderId}`);
 
             try {
                 let finalId = customerId;
