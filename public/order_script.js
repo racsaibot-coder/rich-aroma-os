@@ -531,9 +531,10 @@
                 if (!data.isOpen) { 
                     console.log("Store closed, showing overlay");
                     document.getElementById('closed-overlay')?.classList.remove('hidden'); 
-                    return; 
+                    // Don't return, allow menu to load in background
+                } else {
+                    document.getElementById('store-status-text').innerText = "Abierto Ahora";
                 }
-                document.getElementById('store-status-text').innerText = "Abierto Ahora";
             } catch (e) { console.error("Store status error:", e); }
             
             console.log("Calling loadMenu...");
