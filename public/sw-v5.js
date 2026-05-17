@@ -1,12 +1,10 @@
-const CACHE_NAME = 'rich-aroma-v1';
+const CACHE_NAME = 'rich-aroma-v3.0.0';
 const ASSETS = [
     '/order',
     '/order.html',
-    '/order_script.js',
+    '/order_script.js?v=3.2.0',
     '/rico-logo.png',
-    '/favicon.png',
-    'https://cdn.tailwindcss.com',
-    'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2'
+    '/favicon.png'
 ];
 
 self.addEventListener('install', event => {
