@@ -55,16 +55,24 @@
     <script>
         // AGGRESSIVE CACHE NUKE v3.3.5
         const CURRENT_VERSION = '3.3.5';
+        const lastReload = parseInt(localStorage.getItem('ra_last_reload') || '0');
+        const now = Date.now();
+        
         if (localStorage.getItem('ra_app_version') !== CURRENT_VERSION) {
-            console.log("New version detected: " + CURRENT_VERSION);
-            localStorage.setItem('ra_app_version', CURRENT_VERSION);
-            if ('serviceWorker' in navigator) {
-                navigator.serviceWorker.getRegistrations().then(registrations => {
-                    for(let registration of registrations) { registration.unregister(); }
-                });
+            if (now - lastReload > 10000) { // Only reload if more than 10s passed
+                console.log("New version detected: " + CURRENT_VERSION);
+                localStorage.setItem('ra_app_version', CURRENT_VERSION);
+                localStorage.setItem('ra_last_reload', now.toString());
+                if ('serviceWorker' in navigator) {
+                    navigator.serviceWorker.getRegistrations().then(registrations => {
+                        for(let registration of registrations) { registration.unregister(); }
+                    });
+                }
+                window.location.replace(window.location.pathname + '?v=' + CURRENT_VERSION);
+            } else {
+                console.warn("Update detected but skipping reload to prevent loop.");
+                localStorage.setItem('ra_app_version', CURRENT_VERSION);
             }
-            // Use location.replace to avoid back button loop
-            window.location.replace(window.location.pathname + '?v=' + CURRENT_VERSION);
         }
     </script>
     <script>
