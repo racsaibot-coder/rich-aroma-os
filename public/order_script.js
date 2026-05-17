@@ -38,7 +38,9 @@
         async function loadMenu() {
             try {
                 console.log("Loading menu...");
-                const res = await fetch('/api/menu', { cache: 'no-cache' });
+                const urlParams = new URLSearchParams(window.location.search);
+                const resId = urlParams.get('restaurantId') || 'rich-aroma';
+                const res = await fetch(`/api/menu?restaurantId=${resId}`, { cache: 'no-cache' });
                 const data = await res.json();
                 if (data && data.items) {
                     menuItems = data.items;
