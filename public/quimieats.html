@@ -253,7 +253,7 @@
             if (!restaurant_name || !contact_name || !phone) return alert("Por favor completa los campos obligatorios");
 
             const btn = document.getElementById('submit-btn');
-            btn.innerText = "ENVIANDO..."; btn.disabled = true;
+            btn.innerText = "CREANDO TIENDA..."; btn.disabled = true;
 
             try {
                 const res = await fetch('/api/store?action=quimieats_signup', {
@@ -262,12 +262,14 @@
                     body: JSON.stringify({ restaurant_name, contact_name, phone, category })
                 });
 
-                if (res.ok) {
-                    alert("¡Solicitud recibida! Te contactaremos por WhatsApp pronto.");
-                    window.location.reload();
+                const data = await res.json();
+                if (res.ok && data.setupUrl) {
+                    window.location.href = data.setupUrl;
+                } else {
+                    throw new Error(data.error || "Error al crear tienda");
                 }
             } catch (e) {
-                alert("Error al enviar solicitud");
+                alert(e.message);
                 btn.innerText = "Enviar Solicitud"; btn.disabled = false;
             }
         }
