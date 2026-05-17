@@ -26,6 +26,10 @@
       "dest": "/public/quimieats.html"
     },
     {
+      "src": "/socios",
+      "dest": "/public/socios.html"
+    },
+    {
       "src": "/partner",
       "dest": "/public/partner.html"
     },
