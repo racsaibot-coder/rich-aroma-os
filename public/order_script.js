@@ -83,8 +83,8 @@
             if (!url || typeof url !== 'string') return "";
             if (url.startsWith('data:')) return url;
             if (url.includes('supabase.co')) {
-                if (url.includes('?')) return url + '&width=400';
-                return url + '?width=400';
+                const separator = url.includes('?') ? '&' : '?';
+                return url + separator + 'width=400';
             }
             return url;
         }
@@ -103,7 +103,7 @@
                     if (catLower === 'hot_drinks' || catLower === 'coffee' || catLower.includes('caliente')) cat = 'Café';
                     else if (catLower === 'cold_drinks' || catLower === 'drinks' || catLower.includes('helada')) cat = 'Heladas';
                     else if (catLower === 'food' || catLower === 'comida') cat = 'Comida';
-                    else if (catLower === 'pastry' || catLower === 'postres' || catLower.includes('reposteria')) cat = 'Postres';
+                    else if (catLower === 'pastry' || catLower === 'postres' || catLower.includes('reposteria') || catLower === 'pastries') cat = 'Postres';
                     else if (catLower === 'secret' || catLower === 'secreto') cat = 'Menú Secreto';
                     else if (catLower === 'combos' || catLower === 'combo' || catLower.includes('paquete') || itemName.includes('combo') || itemName.includes('paquete')) cat = 'Combos';
                     
