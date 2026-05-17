@@ -360,24 +360,43 @@
             fulfillmentType = type;
             ['pickup', 'dinein', 'delivery'].forEach(f => {
                 const b = document.getElementById('fbtn-' + f);
-                if(f === type) { b.classList.remove('border-white/5', 'bg-white/5', 'text-white/40'); b.classList.add('border-gold', 'bg-gold/10', 'text-gold'); }
-                else { b.classList.add('border-white/5', 'bg-white/5', 'text-white/40'); b.classList.remove('border-gold', 'bg-gold/10', 'text-gold'); }
+                if(b) {
+                    if(f === type) { b.classList.remove('border-white/5', 'bg-white/5', 'text-white/40'); b.classList.add('border-gold', 'bg-gold/10', 'text-gold'); }
+                    else { b.classList.add('border-white/5', 'bg-white/5', 'text-white/40'); b.classList.remove('border-gold', 'bg-gold/10', 'text-gold'); }
+                }
             });
-            if(type === 'dinein') document.getElementById('check-table-ui').classList.remove('hidden');
-            else document.getElementById('check-table-ui').classList.add('hidden');
-            if(type === 'delivery') document.getElementById('check-address-ui').classList.remove('hidden');
-            else document.getElementById('check-address-ui').classList.add('hidden');
+            if(type === 'dinein') {
+                const el = document.getElementById('check-table-ui');
+                if(el) el.classList.remove('hidden');
+            } else {
+                const el = document.getElementById('check-table-ui');
+                if(el) el.classList.add('hidden');
+            }
+            if(type === 'delivery') {
+                const el = document.getElementById('check-address-ui');
+                if(el) el.classList.remove('hidden');
+            } else {
+                const el = document.getElementById('check-address-ui');
+                if(el) el.classList.add('hidden');
+            }
         };
 
         window.setPayment = (method) => {
             currentSelectedPayment = method;
             ['cash', 'transfer', 'rico_balance'].forEach(p => {
                 const b = document.getElementById('pbtn-' + p);
-                if(p === method) { b.classList.remove('border-white/5', 'bg-white/5', 'text-white/40'); b.classList.add('border-gold', 'bg-gold/10', 'text-gold'); }
-                else { b.classList.add('border-white/5', 'bg-white/5', 'text-white/40'); b.classList.remove('border-gold', 'bg-gold/10', 'text-gold'); }
+                if(b) {
+                    if(p === method) { b.classList.remove('border-white/5', 'bg-white/5', 'text-white/40'); b.classList.add('border-gold', 'bg-gold/10', 'text-gold'); }
+                    else { b.classList.add('border-white/5', 'bg-white/5', 'text-white/40'); b.classList.remove('border-gold', 'bg-gold/10', 'text-gold'); }
+                }
             });
-            if(method === 'transfer') document.getElementById('check-bank-ui').classList.remove('hidden');
-            else document.getElementById('check-bank-ui').classList.add('hidden');
+            if(method === 'transfer') {
+                const el = document.getElementById('check-bank-ui');
+                if(el) el.classList.remove('hidden');
+            } else {
+                const el = document.getElementById('check-bank-ui');
+                if(el) el.classList.add('hidden');
+            }
         };
 
         window.submitFinalOrder = async () => {
