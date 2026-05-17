@@ -425,7 +425,7 @@
             }
 
             updateTrackingUI(activeOrder);
-        ...
+
             // 1. Realtime Subscription
             if(statusSubscription) statusSubscription.unsubscribe();
             statusSubscription = supabaseClient.channel(`track_${activeOrder.id}`).on('postgres_changes', { 
