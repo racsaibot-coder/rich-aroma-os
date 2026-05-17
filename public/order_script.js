@@ -38,7 +38,7 @@
         async function loadMenu() {
             try {
                 console.log("Loading menu...");
-                const res = await fetch('/api/menu');
+                const res = await fetch('/api/menu', { cache: 'no-cache' });
                 const data = await res.json();
                 if (data && data.items) {
                     menuItems = data.items;
