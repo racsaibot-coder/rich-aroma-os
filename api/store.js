@@ -129,6 +129,30 @@ module.exports = async (req, res) => {
             return res.json(mapped);
         }
 
+        // --- 1.2.1 ADS & PROMOS (GET) ---
+        if (action === 'get_ads' && req.method === 'GET') {
+            // Hardcoded for now for speed, but ready to move to Supabase table 'ads'
+            const ads = [
+                {
+                    id: 'ad_coquin',
+                    title: 'Supermercado El Coquín',
+                    subtitle: '¡Gran Barata de Fin de Semana!',
+                    image: 'https://images.unsplash.com/photo-1542838132-92c53300491e?q=80&w=800&auto=format&fit=crop',
+                    link: 'https://wa.me/50499990000',
+                    badge: 'PROMO'
+                },
+                {
+                    id: 'ad_dentist',
+                    title: 'Clínica Dental Quimistán',
+                    subtitle: '2x1 en Limpiezas Dentales',
+                    image: 'https://images.unsplash.com/photo-1629909613654-28e377c37b09?q=80&w=800&auto=format&fit=crop',
+                    link: 'https://wa.me/50499990000',
+                    badge: 'SALUD'
+                }
+            ];
+            return res.json(ads);
+        }
+
         // --- 1.3 QUIMIEATS SIGNUP (POST - INSTANT CREATION) ---
         if (action === 'quimieats_signup' && req.method === 'POST') {
             const { restaurant_name, contact_name, phone, category } = req.body;
