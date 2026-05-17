@@ -280,8 +280,10 @@ module.exports = async (req, res) => {
             
             if (error) throw error;
 
-            // --- COMMISSION LOGIC (New) ---
-            if (targetResId !== 'rich-aroma') {
+            // --- COMMISSION LOGIC (Updated: Marketplace vs POS) ---
+            const isPosOrder = req.body.isPos === true;
+            
+            if (targetResId !== 'rich-aroma' && !isPosOrder) {
                 const commission = parseFloat(total) * 0.10;
                 
                 if (paymentMethod === 'rico_balance') {
@@ -301,7 +303,9 @@ module.exports = async (req, res) => {
                         customer_id: customerId || 'guest'
                     });
                 }
-                console.log(`[Commission] Logged L.${commission} for Order ${orderId} at ${targetResId}`);
+                console.log(`[Commission] Logged L.${commission} for ONLINE Order ${orderId}`);
+            } else if (isPosOrder) {
+                console.log(`[POS] POS order for ${targetResId} - 0% Commission (SaaS Plan active)`);
             }
 
             try {
