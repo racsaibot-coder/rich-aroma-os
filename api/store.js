@@ -112,6 +112,40 @@ module.exports = async (req, res) => {
             }
         }
 
+        // --- 1.2 RESTAURANTS (GET) ---
+        if (action === 'get_restaurants' && req.method === 'GET') {
+            const { data, error } = await supabase
+                .from('restaurants')
+                .select('*')
+                .eq('status', 'active')
+                .order('name');
+            if (error) throw error;
+            return res.json(data || []);
+        }
+
+        // --- 1.3 QUIMIEATS SIGNUP (POST) ---
+        if (action === 'quimieats_signup' && req.method === 'POST') {
+            const { restaurant_name, contact_name, phone, category, logoBase64 } = req.body;
+            
+            // 1. Log as Lead
+            const { data: lead, error: leadErr } = await supabase.from('quimieats_leads').insert({
+                restaurant_name,
+                contact_name,
+                phone,
+                category,
+                logo_url: logoBase64, // Temporary until approved
+                status: 'pending'
+            }).select().single();
+
+            if (leadErr) throw leadErr;
+
+            return res.json({ 
+                success: true, 
+                message: "Solicitud enviada exitosamente",
+                leadId: lead.id
+            });
+        }
+
         // --- 2. ORDERS (GET) ---
         if (action === 'orders' && req.method === 'GET') {
             const timeLimit = new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString();
