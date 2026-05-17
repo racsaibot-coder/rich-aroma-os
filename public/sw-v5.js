@@ -1,8 +1,8 @@
-const CACHE_NAME = 'rich-aroma-v3.3.1';
+const CACHE_NAME = 'rich-aroma-v3.3.5';
 const ASSETS = [
     '/order',
-    '/order.html?v=3.3.1',
-    '/order_script.js?v=3.3.1',
+    '/order.html?v=3.3.5',
+    '/order_script.js?v=3.3.5',
     '/rico-logo.png',
     '/favicon.png'
 ];
@@ -33,7 +33,7 @@ self.addEventListener('fetch', event => {
     // Special handling for API calls (Always Network First)
     if (event.request.url.includes('/api/')) {
         event.respondWith(
-            fetch(event.request).catch(() => caches.match(event.request))
+            fetch(event.request, { cache: 'no-store' }).catch(() => caches.match(event.request))
         );
         return;
     }
