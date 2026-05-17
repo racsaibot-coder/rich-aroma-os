@@ -306,7 +306,7 @@ module.exports = async (req, res) => {
             const { id } = req.query;
             const { status, driverId } = req.body;
 
-            const { data, error } = await supabase.from('orders')
+            const { data: order, error } = await supabase.from('orders')
                 .update({ 
                     delivery_status: status,
                     status: status === 'delivered' ? 'completed' : 'ready'
@@ -317,7 +317,34 @@ module.exports = async (req, res) => {
                 .single();
 
             if (error) throw error;
-            return res.json({ success: true, order: data });
+
+            // --- DELIVERY PAYOUT LOGIC (New) ---
+            if (status === 'delivered') {
+                const totalDeliveryFee = parseFloat(order.delivery_fee || 35);
+                const driverCut = 30; // Flat L.30 for driver
+                const platformCut = totalDeliveryFee - driverCut;
+
+                // 1. Record Driver Earning
+                await supabase.from('quimieats_ledger').insert({
+                    restaurant_id: order.restaurant_id, // Associated with the store for reporting
+                    amount: driverCut, 
+                    type: 'driver_payout_pending', 
+                    order_id: id,
+                    customer_id: driverId, // We use customer_id to store the driver's ID in the ledger
+                    status: 'pending'
+                });
+
+                // 2. Record Platform Delivery Fee (The extra L.5 or L.10)
+                await supabase.from('quimieats_ledger').insert({
+                    restaurant_id: 'platform_profit', 
+                    amount: platformCut, 
+                    type: 'delivery_service_fee', 
+                    order_id: id,
+                    status: 'settled'
+                });
+            }
+
+            return res.json({ success: true, order });
         }
 
         // --- 2. ORDERS (GET) ---
