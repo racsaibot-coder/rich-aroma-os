@@ -379,6 +379,18 @@ module.exports = async (req, res) => {
             
             const targetResId = restaurantId || 'rich-aroma';
             
+            // --- FOREIGN KEY SAFEGUARD ---
+            const { data: checkRes } = await supabase.from('restaurants').select('id').eq('id', targetResId).maybeSingle();
+            if (!checkRes) {
+                console.log(`[Order] Auto-creating missing restaurant: ${targetResId}`);
+                await supabase.from('restaurants').insert({
+                    id: targetResId,
+                    name: targetResId.replace(/-/g, ' ').toUpperCase(),
+                    status: 'active',
+                    settings: { auto_created: true }
+                });
+            }
+
             // Generate unique order ID
             const orderId = 'ord_' + Date.now() + Math.random().toString(36).substr(2, 5);
             
