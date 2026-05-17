@@ -304,8 +304,14 @@ module.exports = async (req, res) => {
             const { id } = req.query;
             const { status, driverId } = req.body;
 
-            const { data: order } = await supabase.from('orders').select('notes, total, delivery_fee, restaurant_id').eq('id', id).single();
-            const newNotes = order.notes.replace(/\[D-STATUS: .*?\]/, `[D-STATUS: ${status}]`);
+            const { data: order } = await supabase.from('orders').select('notes, total, restaurant_id').eq('id', id).single();
+            
+            let newNotes = order.notes || '';
+            if (newNotes.includes('[D-STATUS:')) {
+                newNotes = newNotes.replace(/\[D-STATUS: .*?\]/, `[D-STATUS: ${status}]`);
+            } else {
+                newNotes += ` [D-STATUS: ${status}]`;
+            }
 
             const { data, error } = await supabase.from('orders')
                 .update({ 
@@ -321,9 +327,8 @@ module.exports = async (req, res) => {
 
             // --- DELIVERY PAYOUT LOGIC ---
             if (status === 'delivered') {
-                const totalDeliveryFee = parseFloat(order.delivery_fee || 35);
                 const driverCut = 30;
-                const platformCut = totalDeliveryFee - driverCut;
+                const platformCut = 5; // Default L.5 for platform if no fee detected
 
                 await supabase.from('quimieats_ledger').insert([
                     { restaurant_id: order.restaurant_id, amount: driverCut, type: 'driver_payout_pending', order_id: id, customer_id: driverId, status: 'pending' },
