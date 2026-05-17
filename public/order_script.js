@@ -406,7 +406,6 @@
             } catch(e) { alert("Error al enviar. Intenta de nuevo."); btn.innerHTML = "Enviar Pedido Ahora 🚀"; btn.disabled = false; }
         };
 
-        let statusSubscription = null;
         let pollingInterval = null;
 
         async function showTracking() {
