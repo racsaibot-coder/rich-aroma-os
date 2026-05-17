@@ -539,7 +539,7 @@
             
             console.log("Calling loadMenu...");
             loadMenu();
-            setFulfillment('pickup');
+            setFulfill('pickup');
             setPayment('cash');
             const savedActive = localStorage.getItem('ra_active_order');
             if (savedActive) {
