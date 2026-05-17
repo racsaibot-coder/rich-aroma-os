@@ -437,6 +437,9 @@
             btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Procesando...';
             btn.disabled = true;
 
+            const urlParams = new URLSearchParams(window.location.search);
+            const resId = urlParams.get('restaurantId') || 'rich-aroma';
+
             const itemsMap = {};
             cart.forEach(item => {
                 const key = item.id + JSON.stringify(item.mods); 
@@ -447,6 +450,7 @@
             const payload = {
                 items: Object.values(itemsMap), subtotal, tax: 0, discount: 0, total: subtotal, paymentMethod: currentSelectedPayment,
                 fulfillment: fulfillmentType,
+                restaurantId: resId,
                 notes: `Mobile: ${name} (${fulfillmentType})` + (document.getElementById('check-table').value ? ` MESA: ${document.getElementById('check-table').value}` : "")
             };
             if(currentCustomer) payload.customerId = currentCustomer.id;

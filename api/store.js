@@ -224,9 +224,11 @@ module.exports = async (req, res) => {
 
         // --- 5. CREATE ORDER (POST) ---
         if (req.method === 'POST' && (!action || action === 'orders')) {
-            const { items, total, paymentMethod, customerId, notes, fulfillment, fulfillment_type, guestPhone } = req.body;
+            const { items, total, paymentMethod, customerId, notes, fulfillment, fulfillment_type, guestPhone, restaurantId } = req.body;
             
-            // Generate unique order ID (consistent with server.js)
+            const targetResId = restaurantId || 'rich-aroma';
+            
+            // Generate unique order ID
             const orderId = 'ord_' + Date.now() + Math.random().toString(36).substr(2, 5);
             
             // Get next order number
@@ -238,17 +240,41 @@ module.exports = async (req, res) => {
                 order_number: nextOrderNumber,
                 items, 
                 total, 
-                subtotal: total, // Defaulting subtotal to total for now
+                subtotal: total,
                 tax: 0,
                 discount: 0,
                 payment_method: paymentMethod, 
                 customer_id: customerId, 
                 notes: `[FULFILLMENT: ${fulfillment || fulfillment_type || 'pickup'}] ` + (notes || ''), 
                 status: 'pending', 
-                restaurant_id: 'rich-aroma'
+                restaurant_id: targetResId
             }).select().single();
             
             if (error) throw error;
+
+            // --- COMMISSION LOGIC (New) ---
+            if (targetResId !== 'rich-aroma') {
+                const commission = parseFloat(total) * 0.10;
+                
+                if (paymentMethod === 'rico_balance') {
+                    // Platform has the cash. We owe merchant (Total - 10%)
+                    await supabase.from('quimieats_ledger').insert([
+                        { restaurant_id: targetResId, amount: total, type: 'rico_payment', order_id: orderId, status: 'pending', customer_id: customerId || 'guest' },
+                        { restaurant_id: targetResId, amount: -commission, type: 'commission', order_id: orderId, status: 'settled', customer_id: customerId || 'guest' }
+                    ]);
+                } else {
+                    // Merchant has the cash (Cash/Transfer). Merchant owes platform 10%
+                    await supabase.from('quimieats_ledger').insert({
+                        restaurant_id: targetResId, 
+                        amount: -commission, 
+                        type: 'commission', 
+                        order_id: orderId, 
+                        status: 'pending',
+                        customer_id: customerId || 'guest'
+                    });
+                }
+                console.log(`[Commission] Logged L.${commission} for Order ${orderId} at ${targetResId}`);
+            }
 
             try {
                 let finalId = customerId;
