@@ -273,11 +273,22 @@ module.exports = async (req, res) => {
             const { id } = req.query;
             const { driverId } = req.body;
 
-            // 1. Check if already claimed (prevent race conditions)
+            // 1. Check Driver's Active Load (Safety Limit)
+            const { data: activeOnes, error: loadErr } = await supabase
+                .from('orders')
+                .select('id')
+                .eq('driver_id', driverId)
+                .not('delivery_status', 'eq', 'delivered');
+            
+            if (activeOnes && activeOnes.length >= 2) {
+                return res.status(403).json({ error: "Límite alcanzado. Termina tus entregas actuales primero." });
+            }
+
+            // 2. Check if already claimed (prevent race conditions)
             const { data: existing } = await supabase.from('orders').select('driver_id').eq('id', id).single();
             if (existing && existing.driver_id) return res.status(409).json({ error: "Ya reclamado" });
 
-            // 2. Assign driver
+            // 3. Assign driver
             const { data, error } = await supabase.from('orders')
                 .update({ 
                     driver_id: driverId, 
