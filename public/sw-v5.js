@@ -1,8 +1,8 @@
-const CACHE_NAME = 'rich-aroma-v3.2.0';
+const CACHE_NAME = 'rich-aroma-v3.2.1';
 const ASSETS = [
     '/order',
-    '/order.html?v=3.2.0',
-    '/order_script.js?v=3.2.0',
+    '/order.html?v=3.2.1',
+    '/order_script.js?v=3.2.1',
     '/rico-logo.png',
     '/favicon.png'
 ];
