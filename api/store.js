@@ -375,6 +375,26 @@ module.exports = async (req, res) => {
             return res.json(data);
         }
 
+        if (action === 'toggle_item_ready' && req.method === 'PATCH') {
+            const { orderId, itemIdx, status } = req.body;
+            const { data: order, error: fetchErr } = await supabase.from('orders').select('items, status').eq('id', orderId).single();
+            if (fetchErr) throw fetchErr;
+
+            const items = [...(order.items || [])];
+            if (items[itemIdx]) {
+                items[itemIdx].status = status;
+            }
+
+            let newStatus = order.status;
+            if (status === 'preparing' && ['pending', 'paid'].includes(order.status)) {
+                newStatus = 'preparing';
+            }
+
+            const { data, error } = await supabase.from('orders').update({ items, status: newStatus }).eq('id', orderId).select().single();
+            if (error) throw error;
+            return res.json(data);
+        }
+
         // --- 5. CREATE ORDER (POST) ---
         if (req.method === 'POST' && (!action || action === 'orders')) {
             const { items, total, paymentMethod, customerId, notes, fulfillment, fulfillment_type, guestPhone, restaurantId } = req.body;

@@ -473,6 +473,15 @@
             document.getElementById('track-modal').classList.remove('hidden');
             document.getElementById('receipt-num').innerText = `#${activeOrder.order_number || activeOrder.id.slice(-4)}`;
             
+            // Re-fetch to ensure we have latest if this is a manual refresh
+            try {
+                const res = await fetch(`/api/orders/${activeOrder.id}?v=${Date.now()}`);
+                if(res.ok) {
+                    const latest = await res.json();
+                    activeOrder = latest;
+                }
+            } catch(e) {}
+
             // Render Items in tracking view
             const list = document.getElementById('track-items-list');
             if (list && activeOrder.items) {
@@ -503,7 +512,7 @@
             if(pollingInterval) clearInterval(pollingInterval);
             pollingInterval = setInterval(async () => {
                 try {
-                    const res = await fetch(`/api/orders/${activeOrder.id}`);
+                    const res = await fetch(`/api/orders/${activeOrder.id}?v=${Date.now()}`);
                     if(res.ok) {
                         const latest = await res.json();
                         if (latest.status !== activeOrder.status) {
@@ -527,32 +536,51 @@
             const title = document.querySelector('#track-modal h2');
             const msg = document.getElementById('track-msg');
             const line = document.getElementById('track-progress-line');
+            const icon = document.getElementById('track-icon');
             
             if (badge) badge.innerText = status.toUpperCase();
+
+            // Reset step icons first
+            const steps = [
+                { id: 1, icon: 'fa-check' },
+                { id: 2, icon: 'fa-fire-alt' },
+                { id: 3, icon: 'fa-mug-hot' },
+                { id: 4, icon: 'fa-motorcycle' }
+            ];
+            steps.forEach(s => {
+                const el = document.getElementById(`step-${s.id}`);
+                if(el) el.innerHTML = `<i class="fas ${s.icon}"></i>`;
+            });
 
             if (['pending', 'paid'].includes(status)) {
                 title.innerText = "¡ORDEN RECIBIDA!";
                 msg.innerText = "Tu pedido ha sido enviado. Prepárate para el mejor sabor.";
                 line.style.width = "0%";
+                if(icon) icon.innerHTML = '<i class="fas fa-check"></i>';
+                updateStepUI(1);
             } else if (status.includes('preparing')) {
                 title.innerText = "PREPARANDO...";
                 msg.innerText = "Nuestros baristas están preparando tu orden con amor.";
                 line.style.width = "50%";
+                if(icon) icon.innerHTML = '<i class="fas fa-fire-alt text-gold"></i>';
                 updateStepUI(2);
             } else if (['ready', 'drinks_ready', 'food_ready'].includes(status)) {
                 title.innerText = "¡ORDEN LISTA!";
                 msg.innerText = fulfill === 'delivery' ? "Tu pedido está listo y esperando al repartidor." : "¡Ya puedes pasar por tu pedido a la barra!";
                 line.style.width = fulfill === 'delivery' ? "75%" : "100%";
+                if(icon) icon.innerHTML = '<i class="fas fa-mug-hot text-gold"></i>';
                 updateStepUI(3);
             } else if (status === 'shipped' || status === 'out_for_delivery') {
                 title.innerText = "EN CAMINO";
                 msg.innerText = "El repartidor va en camino a tu ubicación.";
                 line.style.width = "90%";
+                if(icon) icon.innerHTML = '<i class="fas fa-motorcycle text-cyan"></i>';
                 updateStepUI(4);
             } else if (status === 'completed' || status === 'delivered') {
                 title.innerText = "¡ENTREGADA!";
                 msg.innerText = "¡Gracias por elegir Rich Aroma! Esperamos que lo disfrutes.";
                 line.style.width = "100%";
+                if(icon) icon.innerHTML = '<i class="fas fa-heart text-gold"></i>';
                 updateStepUI(fulfill === 'delivery' ? 4 : 3);
             }
 
@@ -571,6 +599,10 @@
                     step.classList.remove('bg-white/5', 'text-white/20', 'border-white/10');
                     step.classList.add('bg-gold', 'text-dark', 'border-gold');
                     step.innerHTML = '<i class="fas fa-check"></i>';
+                } else {
+                    step.classList.add('bg-white/5', 'text-white/20', 'border-white/10');
+                    step.classList.remove('bg-gold', 'text-dark', 'border-gold');
+                    // Icon reset is handled in updateTrackingUI
                 }
             }
         }
