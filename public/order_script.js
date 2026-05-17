@@ -95,6 +95,35 @@
                 if (!container) return;
                 const categories = {};
                 
+                // --- MEMBER DASHBOARD BANNER (NEW) ---
+                let dashboardHtml = '';
+                if (currentCustomer) {
+                    const streak = (currentCustomer.drink_streak || 0) % 7;
+                    dashboardHtml = `
+                        <div class="mb-12 animate-in fade-in zoom-in duration-500">
+                            <div class="bg-gradient-to-br from-gold/20 to-transparent border border-gold/20 rounded-[2.5rem] p-6 space-y-4">
+                                <div class="flex justify-between items-center">
+                                    <h4 class="text-[10px] font-black text-gold uppercase tracking-[0.3em]">Retos & Puntos</h4>
+                                    <span class="text-[10px] font-black text-white/40 uppercase">${currentCustomer.points || 0} Rico Points</span>
+                                </div>
+                                <div class="flex items-center gap-4">
+                                    <div class="flex-1 space-y-2">
+                                        <div class="flex justify-between text-[11px] font-bold">
+                                            <span class="text-white/80">Drink Streak</span>
+                                            <span class="text-gold">${streak}/6</span>
+                                        </div>
+                                        <div class="w-full h-2 bg-white/5 rounded-full overflow-hidden border border-white/5">
+                                            <div class="h-full bg-gold shadow-[0_0_10px_rgba(201,166,107,0.5)]" style="width: ${(streak/6)*100}%"></div>
+                                        </div>
+                                    </div>
+                                    <button onclick="window.openProfile()" class="w-10 h-10 rounded-2xl bg-gold text-dark flex items-center justify-center shadow-lg"><i class="fas fa-gift text-sm"></i></button>
+                                </div>
+                                <p class="text-[9px] text-white/30 font-bold uppercase tracking-widest text-center">${streak === 6 ? '¡PRÓXIMA BEBIDA GRATIS!' : 'Faltan ' + (6-streak) + ' bebidas para tu premio'}</p>
+                            </div>
+                        </div>
+                    `;
+                }
+
                 menuItems.forEach(item => {
                     let cat = item.category || 'Otros';
                     const itemName = (item.name || '').toLowerCase();
@@ -120,7 +149,7 @@
                     return indexA - indexB;
                 });
 
-                let html = '';
+                let html = dashboardHtml;
                 sortedCategories.forEach(category => {
                     let items = categories[category];
                     items.sort((a, b) => a.name.localeCompare(b.name, undefined, {numeric: true, sensitivity: 'base'}));
