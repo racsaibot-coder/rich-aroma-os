@@ -27,8 +27,11 @@
     },
     {
       "src": "/partner",
-      "has": [{ "type": "host", "value": "(.*)quimieats.com" }],
       "dest": "/public/partner.html"
+    },
+    {
+      "src": "/onboarding",
+      "dest": "/public/onboarding.html"
     },
     {
       "src": "/test-pos",
@@ -305,10 +308,6 @@
     {
       "src": "/alerts",
       "dest": "/public/alerts.html"
-    },
-    {
-      "src": "/api/orders",
-      "dest": "/api/store.js?action=orders"
     },
     {
       "src": "/api/staff",
