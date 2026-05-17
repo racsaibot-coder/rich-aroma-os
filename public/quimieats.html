@@ -29,12 +29,10 @@
         body { background-color: #0D0D0D; color: white; font-family: 'Inter', sans-serif; -webkit-tap-highlight-color: transparent; }
         .glass { background: rgba(255, 255, 255, 0.03); backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.05); }
         .hide-scrollbar::-webkit-scrollbar { display: none; }
-        .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
         .cat-pill.active { background: #00F2FF; color: #0D0D0D; border-color: #00F2FF; font-weight: 900; }
         .partner-card { background: rgba(255, 255, 255, 0.02); border: 1px solid rgba(255, 255, 255, 0.05); transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
         .partner-card:active { transform: scale(0.98); opacity: 0.8; }
-        .search-container { position: sticky; top: 0; z-index: 50; transition: all 0.3s ease; }
-        .search-container.scrolled { background: rgba(13, 13, 13, 0.95); backdrop-blur: md; padding-bottom: 1rem; }
+        .text-glow { text-shadow: 0 0 10px rgba(0, 242, 255, 0.5); }
     </style>
 </head>
 <body class="min-h-screen pb-20 text-white">
@@ -42,7 +40,7 @@
     <!-- Header / Top Bar -->
     <header class="px-6 py-6 flex justify-between items-center bg-dark">
         <h1 class="text-3xl font-black italic tracking-tighter">
-            QUIMI<span class="text-cyan text-shadow-glow">EATS</span>
+            QUIMI<span class="text-cyan text-glow">EATS</span>
         </h1>
         <div class="flex items-center gap-4">
             <button onclick="window.location.href='/order'" class="w-10 h-10 rounded-full glass flex items-center justify-center text-gold"><i class="fas fa-user"></i></button>
@@ -62,14 +60,17 @@
         </div>
     </div>
 
-    <!-- Promo Banner (Uber Style) -->
-    <div class="px-6 mb-8">
-        <div class="relative h-44 rounded-[2.5rem] overflow-hidden group cursor-pointer" onclick="window.location.href='/order'">
-            <img src="https://images.unsplash.com/photo-1509042239860-f550ce710b93?q=80&w=800&auto=format&fit=crop" class="w-full h-full object-cover brightness-50 group-hover:scale-105 transition-transform duration-700">
-            <div class="absolute inset-0 p-8 flex flex-col justify-end space-y-1">
-                <p class="text-[10px] font-black text-cyan uppercase tracking-[0.3em]">Destacado</p>
-                <h2 class="text-2xl font-black uppercase tracking-tight">Rich Aroma Coffee</h2>
-                <p class="text-white/60 text-xs font-bold">10% de descuento pagando con Rico Cash</p>
+    <!-- Ads Carousel (Dynamic) -->
+    <div class="px-6 mb-8 overflow-hidden">
+        <div id="ads-container" class="flex gap-4 overflow-x-auto hide-scrollbar snap-x snap-mandatory">
+            <!-- Ad: Rich Aroma (Default) -->
+            <div class="relative min-w-full h-44 rounded-[2.5rem] overflow-hidden group cursor-pointer snap-center" onclick="window.location.href='/order'">
+                <img src="https://images.unsplash.com/photo-1509042239860-f550ce710b93?q=80&w=800&auto=format&fit=crop" class="w-full h-full object-cover brightness-50 group-hover:scale-105 transition-transform duration-700">
+                <div class="absolute inset-0 p-8 flex flex-col justify-end space-y-1">
+                    <p class="text-[10px] font-black text-cyan uppercase tracking-[0.3em]">Destacado</p>
+                    <h2 class="text-2xl font-black uppercase tracking-tight">Rich Aroma Coffee</h2>
+                    <p class="text-white/60 text-xs font-bold">10% de descuento pagando con Rico Cash</p>
+                </div>
             </div>
         </div>
     </div>
@@ -107,20 +108,19 @@
     <!-- Partners Feed -->
     <main class="px-6 space-y-8" id="partners-feed">
         <div class="flex justify-between items-end mb-2">
-            <h3 class="text-xl font-black uppercase tracking-tighter">Tiendas Cercanas</h3>
+            <h3 class="text-xl font-black uppercase tracking-tighter text-white/90">Tiendas Cercanas</h3>
             <p class="text-[10px] font-black text-cyan uppercase tracking-widest animate-pulse">Abierto Ahora</p>
         </div>
         
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" id="partners-container">
-            <!-- Loading States -->
             <div class="animate-pulse bg-white/5 h-72 rounded-[2.5rem]"></div>
             <div class="animate-pulse bg-white/5 h-72 rounded-[2.5rem]"></div>
         </div>
     </main>
 
-    <!-- B2B Join Section (Secondary) -->
+    <!-- B2B Join Section -->
     <section class="mt-20 px-6">
-        <div class="glass p-10 rounded-[3rem] text-center space-y-6">
+        <div class="glass p-10 rounded-[3rem] text-center space-y-6 border border-cyan/10">
             <h4 class="text-xl font-black uppercase tracking-tight">¿Tienes un negocio?</h4>
             <p class="text-white/40 text-sm max-w-xs mx-auto">Vende tus productos a todo Quimistán con nuestra plataforma tecnológica.</p>
             <div class="flex flex-col gap-3">
@@ -130,12 +130,12 @@
         </div>
     </section>
 
-    <!-- Lead Form Modal (Join Section) -->
+    <!-- Lead Form Modal -->
     <section id="join" class="max-w-4xl mx-auto px-6 py-20">
         <div class="glass p-10 rounded-[3.5rem] space-y-10 relative overflow-hidden border border-cyan/20">
             <div class="text-center space-y-4">
                 <h3 class="text-3xl font-black uppercase tracking-tight">Registro de Socios</h3>
-                <p class="text-white/40 text-xs uppercase font-bold tracking-widest leading-relaxed">Únete a la red comercial más avanzada de la zona</p>
+                <p class="text-white/40 text-xs uppercase font-bold tracking-widest leading-relaxed text-center">Únete a la red comercial más avanzada de la zona</p>
             </div>
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6 relative z-10">
@@ -179,6 +179,7 @@
 
         window.onload = () => {
             loadPartners();
+            loadAds();
         };
 
         async function loadPartners() {
@@ -189,6 +190,42 @@
             } catch (e) {
                 console.error("Load Partners failed", e);
             }
+        }
+
+        async function loadAds() {
+            try {
+                const res = await fetch('/api/store?action=get_ads');
+                const ads = await res.json();
+                const container = document.getElementById('ads-container');
+                
+                // Keep the default Rich Aroma ad first
+                const baseHtml = container.innerHTML;
+                
+                const adsHtml = ads.map(ad => `
+                    <div class="relative min-w-full h-44 rounded-[2.5rem] overflow-hidden group cursor-pointer snap-center" onclick="window.location.href='${ad.link}'">
+                        <img src="${ad.image}" class="w-full h-full object-cover brightness-50 group-hover:scale-105 transition-transform duration-700">
+                        <div class="absolute inset-0 p-8 flex flex-col justify-end space-y-1">
+                            <p class="text-[10px] font-black text-cyan uppercase tracking-[0.3em]">${ad.badge}</p>
+                            <h2 class="text-2xl font-black uppercase tracking-tight text-white">${ad.title}</h2>
+                            <p class="text-white/60 text-xs font-bold">${ad.subtitle}</p>
+                        </div>
+                    </div>
+                `).join('');
+                
+                container.innerHTML = baseHtml + adsHtml;
+                
+                // Auto-scroll logic for carousel
+                let current = 0;
+                setInterval(() => {
+                    const count = container.children.length;
+                    current = (current + 1) % count;
+                    container.scrollTo({
+                        left: container.offsetWidth * current,
+                        behavior: 'smooth'
+                    });
+                }, 5000);
+
+            } catch (e) { console.error("Ads failed", e); }
         }
 
         function handleSearch() {
@@ -225,12 +262,12 @@
             }
 
             container.innerHTML = partners.map(p => `
-                <div class="partner-card rounded-[3rem] overflow-hidden cursor-pointer flex flex-col" onclick="window.location.href='/order?restaurantId=${p.id}&ref=quimieats'">
+                <div class="partner-card rounded-[3rem] overflow-hidden cursor-pointer flex flex-col shadow-xl" onclick="window.location.href='/order?restaurantId=${p.id}&ref=quimieats'">
                     <div class="relative h-56 bg-white/5 overflow-hidden">
                         <img src="${p.logo_url || '/favicon.png'}" class="w-full h-full object-cover">
                         <div class="absolute inset-0 bg-gradient-to-t from-dark/90 to-transparent"></div>
                         <div class="absolute bottom-6 left-8">
-                            <h4 class="text-2xl font-black uppercase tracking-tighter text-white">${p.name}</h4>
+                            <h4 class="text-2xl font-black uppercase tracking-tighter text-white leading-none">${p.name}</h4>
                             <p class="text-[10px] text-cyan font-black uppercase tracking-widest mt-1">${p.category || 'Restaurante'}</p>
                         </div>
                         <div class="absolute top-6 right-6 bg-cyan text-dark text-[10px] font-black px-3 py-1 rounded-full shadow-xl">
