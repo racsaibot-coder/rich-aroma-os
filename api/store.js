@@ -331,7 +331,7 @@ module.exports = async (req, res) => {
                 const platformCut = 5; // Default L.5 for platform if no fee detected
 
                 await supabase.from('quimieats_ledger').insert([
-                    { restaurant_id: order.restaurant_id, amount: driverCut, type: 'driver_payout_pending', order_id: id, customer_id: driverId, status: 'pending' },
+                    { restaurant_id: 'platform_profit', amount: driverCut, type: 'driver_payout_pending', order_id: id, customer_id: driverId, status: 'pending' },
                     { restaurant_id: 'platform_profit', amount: platformCut, type: 'delivery_service_fee', order_id: id, status: 'settled' }
                 ]);
             }
@@ -418,28 +418,21 @@ module.exports = async (req, res) => {
             // --- COMMISSION LOGIC (Updated: Marketplace vs POS) ---
             const isPosOrder = req.body.isPos === true;
             
-            // Charge 10% commission on all ONLINE orders for partners
-            if (!isPosOrder && targetResId !== 'rich-aroma') {
+            if (!isPosOrder) {
                 const commission = parseFloat(total) * 0.10;
-                
-                if (paymentMethod === 'rico_balance') {
-                    // Platform has the cash. We owe merchant (Total - 10%)
-                    await supabase.from('quimieats_ledger').insert([
-                        { restaurant_id: targetResId, amount: total, type: 'rico_payment', order_id: orderId, status: 'pending', customer_id: customerId || 'guest' },
-                        { restaurant_id: targetResId, amount: -commission, type: 'commission', order_id: orderId, status: 'settled', customer_id: customerId || 'guest' }
-                    ]);
-                } else {
-                    // Merchant has the cash (Cash/Transfer). Merchant owes platform 10%
-                    await supabase.from('quimieats_ledger').insert({
-                        restaurant_id: targetResId, 
-                        amount: -commission, 
-                        type: 'commission', 
-                        order_id: orderId, 
-                        status: 'pending',
-                        customer_id: customerId || 'guest'
-                    });
+                // Always log commission for anyone NOT rich-aroma
+                if (targetResId !== 'rich-aroma') {
+                    if (paymentMethod === 'rico_balance') {
+                        await supabase.from('quimieats_ledger').insert([
+                            { restaurant_id: targetResId, amount: total, type: 'rico_payment', order_id: orderId, status: 'pending', customer_id: customerId || 'guest' },
+                            { restaurant_id: targetResId, amount: -commission, type: 'commission', order_id: orderId, status: 'settled', customer_id: customerId || 'guest' }
+                        ]);
+                    } else {
+                        await supabase.from('quimieats_ledger').insert({
+                            restaurant_id: targetResId, amount: -commission, type: 'commission', order_id: orderId, status: 'pending', customer_id: customerId || 'guest'
+                        });
+                    }
                 }
-                console.log(`[Commission] Logged L.${commission} for ONLINE Order ${orderId}`);
             }
 
             try {
