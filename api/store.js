@@ -123,27 +123,69 @@ module.exports = async (req, res) => {
             return res.json(data || []);
         }
 
-        // --- 1.3 QUIMIEATS SIGNUP (POST) ---
+        // --- 1.3 QUIMIEATS SIGNUP (POST - INSTANT CREATION) ---
         if (action === 'quimieats_signup' && req.method === 'POST') {
-            const { restaurant_name, contact_name, phone, category, logoBase64 } = req.body;
+            const { restaurant_name, contact_name, phone, category } = req.body;
             
-            // 1. Log as Lead
-            const { data: lead, error: leadErr } = await supabase.from('quimieats_leads').insert({
-                restaurant_name,
-                contact_name,
-                phone,
-                category,
-                logo_url: logoBase64, // Temporary until approved
-                status: 'pending'
+            // 1. Generate clean ID and temp PIN
+            const resId = restaurant_name.toLowerCase().trim().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '') + '-' + Math.floor(Math.random()*900+100);
+            const tempPin = Math.floor(Math.random() * 9000 + 1000).toString();
+
+            // 2. Create Restaurant Record Immediately
+            const { data: restaurant, error: resErr } = await supabase.from('restaurants').insert({
+                id: resId,
+                name: restaurant_name,
+                contact_phone: phone,
+                category: category || 'restaurante',
+                status: 'active',
+                settings: { owner: contact_name, pin: tempPin }
             }).select().single();
 
-            if (leadErr) throw leadErr;
+            if (resErr) throw resErr;
+
+            // 3. Log as Lead for history
+            await supabase.from('quimieats_leads').insert({
+                restaurant_name, contact_name, phone, category,
+                status: 'partner'
+            });
 
             return res.json({ 
                 success: true, 
-                message: "Solicitud enviada exitosamente",
-                leadId: lead.id
+                setupUrl: `/onboarding.html?resId=${resId}&pin=${tempPin}`
             });
+        }
+
+        // --- 1.4 PARTNER SAVE ITEM (POST) ---
+        if (action === 'partner_save_item' && req.method === 'POST') {
+            const { restaurant_id, name, price, category, imageBase64 } = req.body;
+            
+            let imageUrl = null;
+            if (imageBase64) {
+                const buffer = Buffer.from(imageBase64.split(',')[1], 'base64');
+                const path = `merchants/${restaurant_id}/${Date.now()}_item.png`;
+                const { error: uploadErr } = await supabase.storage
+                    .from('menu-images')
+                    .upload(path, buffer, { contentType: 'image/png', upsert: true });
+                
+                if (!uploadErr) {
+                    const { data: { publicUrl } } = supabase.storage.from('menu-images').getPublicUrl(path);
+                    imageUrl = publicUrl;
+                }
+            }
+
+            const id = (category || 'item').toLowerCase() + '_' + name.toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '');
+            const { data, error } = await supabase.from('menu_items').insert({
+                id,
+                name,
+                price: parseFloat(price),
+                category: category || 'Principal',
+                available: true,
+                image_url: imageUrl || imageBase64, // Fallback to base64 if upload fails
+                restaurant_id
+            }).select().single();
+
+            if (error) throw error;
+            return res.json(data);
         }
 
         // --- 2. ORDERS (GET) ---
