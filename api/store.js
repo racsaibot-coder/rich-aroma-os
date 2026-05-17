@@ -160,37 +160,36 @@ module.exports = async (req, res) => {
             });
         }
 
-        // --- 1.4 PARTNER SAVE ITEM (POST) ---
-        if (action === 'partner_save_item' && req.method === 'POST') {
-            const { restaurant_id, name, price, category, imageBase64 } = req.body;
+        // --- 1.5 PARTNER TOP-UP (POST) ---
+        if (action === 'partner_topup' && req.method === 'POST') {
+            const { restaurant_id, phone, amount } = req.body;
+            const topupAmount = parseFloat(amount);
             
-            let imageUrl = null;
-            if (imageBase64) {
-                const buffer = Buffer.from(imageBase64.split(',')[1], 'base64');
-                const path = `merchants/${restaurant_id}/${Date.now()}_item.png`;
-                const { error: uploadErr } = await supabase.storage
-                    .from('menu-images')
-                    .upload(path, buffer, { contentType: 'image/png', upsert: true });
-                
-                if (!uploadErr) {
-                    const { data: { publicUrl } } = supabase.storage.from('menu-images').getPublicUrl(path);
-                    imageUrl = publicUrl;
-                }
+            if (!restaurant_id || !phone || topupAmount <= 0) {
+                return res.status(400).json({ error: "Datos invalidos" });
             }
 
-            const id = (category || 'item').toLowerCase() + '_' + name.toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '');
-            const { data, error } = await supabase.from('menu_items').insert({
-                id,
-                name,
-                price: parseFloat(price),
-                category: category || 'Principal',
-                available: true,
-                image_url: imageUrl || imageBase64, // Fallback to base64 if upload fails
-                restaurant_id
-            }).select().single();
+            // 1. Find Customer
+            const cleanPhone = phone.replace(/\D/g, '');
+            const { data: customer, error: custErr } = await supabase.from('customers').select('*').eq('phone', cleanPhone).single();
+            if (custErr || !customer) return res.status(404).json({ error: "Cliente no encontrado. Debe registrarse primero." });
 
-            if (error) throw error;
-            return res.json(data);
+            // 2. Update Customer Balance
+            const newBalance = (parseFloat(customer.cash_balance) || 0) + topupAmount;
+            const { error: upErr } = await supabase.from('customers').update({ cash_balance: newBalance }).eq('id', customer.id);
+            if (upErr) throw upErr;
+
+            // 3. Record in Ledger (Merchant now owes platform this cash)
+            await supabase.from('quimieats_ledger').insert({
+                restaurant_id,
+                amount: -topupAmount, // Negative because merchant OWES the platform
+                type: 'rico_load',
+                customer_id: customer.id,
+                status: 'pending',
+                notes: `Top-up vendido por socio a ${cleanPhone}`
+            });
+
+            return res.json({ success: true, newBalance, customerName: customer.name });
         }
 
         // --- 2. ORDERS (GET) ---
