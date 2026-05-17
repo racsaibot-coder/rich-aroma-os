@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <link rel="icon" type="image/png" href="/favicon.png">    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Registro de Mandaditos | QuimiEats</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: { cyan: '#00F2FF', dark: '#0D0D0D', charcoal: '#1A1A1A', gold: '#C9A66B' }
+                }
+            }
+        }
+    </script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap');
+        body { background-color: #0D0D0D; color: white; font-family: 'Inter', sans-serif; }
+        .glass { background: rgba(255, 255, 255, 0.03); backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.05); }
+    </style>
+</head>
+<body class="min-h-screen flex items-center justify-center p-6">
+
+    <div class="w-full max-w-md space-y-8">
+        <div class="text-center space-y-2">
+            <h1 class="text-4xl font-black italic tracking-tighter text-cyan">QUIMI<span class="text-white">EATS</span></h1>
+            <h2 class="text-2xl font-black uppercase tracking-tight">Registro de Mandaditos</h2>
+            <p class="text-white/40 text-xs font-bold uppercase tracking-widest">Gana dinero entregando en Quimistán</p>
+        </div>
+
+        <div id="signup-form" class="glass p-8 rounded-[2.5rem] space-y-6">
+            <div class="space-y-4">
+                <div class="space-y-1">
+                    <label class="text-[9px] font-black text-cyan uppercase tracking-[0.3em] ml-4">Nombre Completo</label>
+                    <input type="text" id="driver-name" placeholder="Tu Nombre" class="w-full bg-white/5 border border-white/10 p-5 rounded-[2rem] text-white outline-none focus:border-cyan transition-all text-sm font-bold">
+                </div>
+                <div class="space-y-1">
+                    <label class="text-[9px] font-black text-cyan uppercase tracking-[0.3em] ml-4">WhatsApp</label>
+                    <input type="tel" id="driver-phone" placeholder="9999-9999" class="w-full bg-white/5 border border-white/10 p-5 rounded-[2rem] text-white outline-none focus:border-cyan transition-all text-sm font-bold">
+                </div>
+                <div class="space-y-1">
+                    <label class="text-[9px] font-black text-cyan uppercase tracking-[0.3em] ml-4">Tipo de Vehículo</label>
+                    <select id="driver-vehicle" class="w-full bg-white/5 border border-white/10 p-5 rounded-[2rem] text-white/40 outline-none focus:border-cyan transition-all appearance-none text-sm">
+                        <option value="moto">Motocicleta</option>
+                        <option value="bici">Bicicleta</option>
+                        <option value="carro">Carro</option>
+                    </select>
+                </div>
+            </div>
+
+            <button onclick="submitDriverSignup()" id="submit-btn" class="w-full bg-cyan text-dark py-6 rounded-[2.5rem] font-black uppercase tracking-[0.3em] shadow-[0_0_30px_rgba(0,242,255,0.2)] active:scale-95 transition-all text-xs">Unirse al Equipo</button>
+        </div>
+
+        <div id="success-view" class="hidden glass p-8 rounded-[2.5rem] space-y-8 text-center">
+            <div class="w-20 h-20 bg-green-500/20 text-green-500 rounded-full flex items-center justify-center text-3xl mx-auto border border-green-500/30">
+                <i class="fas fa-check"></i>
+            </div>
+            <div class="space-y-2">
+                <h2 class="text-2xl font-black uppercase tracking-tight">¡Bienvenido al Equipo!</h2>
+                <p class="text-sm text-white/40 leading-relaxed">Tu cuenta ha sido creada exitosamente. Anota tu PIN de acceso:</p>
+            </div>
+            
+            <div class="p-6 bg-white/5 rounded-2xl border border-white/10">
+                <div id="display-pin" class="text-5xl font-black text-cyan tracking-[0.5em]">----</div>
+                <p class="text-[8px] text-white/20 mt-4 uppercase font-bold">Usa este PIN para entrar a tu Dashboard</p>
+            </div>
+
+            <button onclick="window.location.href='/driver'" class="w-full bg-white text-dark py-5 rounded-2xl font-black uppercase tracking-widest active:scale-95 transition-all">Ir a mi Panel de Control</button>
+        </div>
+    </div>
+
+    <script>
+        async function submitDriverSignup() {
+            const name = document.getElementById('driver-name').value.trim();
+            const phone = document.getElementById('driver-phone').value.trim();
+            const vehicle = document.getElementById('driver-vehicle').value;
+
+            if (!name || !phone) return alert("Por favor completa los campos obligatorios");
+
+            const btn = document.getElementById('submit-btn');
+            btn.innerText = "REGISTRANDO..."; btn.disabled = true;
+
+            try {
+                const res = await fetch('/api/store?action=driver_signup', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name, phone, vehicle })
+                });
+
+                const data = await res.json();
+                if (res.ok) {
+                    document.getElementById('display-pin').innerText = data.pin;
+                    document.getElementById('signup-form').classList.add('hidden');
+                    document.getElementById('success-view').classList.remove('hidden');
+                } else {
+                    throw new Error(data.error || "Error al registrar");
+                }
+            } catch (e) {
+                alert(e.message);
+                btn.innerText = "Unirse al Equipo"; btn.disabled = false;
+            }
+        }
+    </script>
+</body>
+</html>

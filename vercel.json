@@ -38,6 +38,10 @@
       "dest": "/public/onboarding.html"
     },
     {
+      "src": "/driver-signup",
+      "dest": "/public/driver-signup.html"
+    },
+    {
       "src": "/test-pos",
       "dest": "/public/test-pos-layout.html"
     },

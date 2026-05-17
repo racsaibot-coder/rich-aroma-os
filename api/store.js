@@ -216,6 +216,99 @@ module.exports = async (req, res) => {
             return res.json({ success: true, newBalance, customerName: customer.name });
         }
 
+        // --- 1.6 DRIVER FLOW ---
+        if (action === 'driver_login' && req.method === 'POST') {
+            const { pin } = req.body;
+            const { data: driver, error } = await supabase
+                .from('employees')
+                .select('*')
+                .eq('pin', pin)
+                .eq('role', 'driver')
+                .eq('active', true)
+                .maybeSingle();
+
+            if (error || !driver) return res.status(401).json({ success: false, error: "PIN invalido" });
+            return res.json({ success: true, driver });
+        }
+
+        if (action === 'driver_signup' && req.method === 'POST') {
+            const { name, phone, vehicle } = req.body;
+            
+            const cleanPhone = phone.replace(/\D/g, '');
+            const driverId = 'drv_' + Date.now() + Math.floor(Math.random()*1000);
+            const tempPin = Math.floor(Math.random() * 9000 + 1000).toString();
+
+            const { data, error } = await supabase.from('employees').insert({
+                id: driverId,
+                name: name,
+                role: 'driver',
+                pin: tempPin,
+                active: true,
+                color: 'cyan',
+                hourly_rate: 0 // Drivers usually work on commission/fees
+            }).select().single();
+
+            if (error) throw error;
+            return res.json({ success: true, pin: tempPin, driverId: data.id });
+        }
+
+        if (action === 'driver_orders' && req.method === 'GET') {
+            const { driverId, mode } = req.query;
+            let query = supabase.from('orders')
+                .select('*, customers(name, phone, address)')
+                .eq('status', 'ready'); // Only orders that are ready to pick up
+
+            if (mode === 'available') {
+                query = query.is('driver_id', null);
+            } else {
+                query = query.eq('driver_id', driverId).not('delivery_status', 'eq', 'delivered');
+            }
+
+            const { data, error } = await query.order('created_at', { ascending: false });
+            if (error) throw error;
+            return res.json({ orders: data || [] });
+        }
+
+        if (action === 'driver_claim' && req.method === 'POST') {
+            const { id } = req.query;
+            const { driverId } = req.body;
+
+            // 1. Check if already claimed (prevent race conditions)
+            const { data: existing } = await supabase.from('orders').select('driver_id').eq('id', id).single();
+            if (existing && existing.driver_id) return res.status(409).json({ error: "Ya reclamado" });
+
+            // 2. Assign driver
+            const { data, error } = await supabase.from('orders')
+                .update({ 
+                    driver_id: driverId, 
+                    delivery_status: 'assigned' 
+                })
+                .eq('id', id)
+                .select()
+                .single();
+
+            if (error) throw error;
+            return res.json({ success: true, order: data });
+        }
+
+        if (action === 'order_delivery_status' && req.method === 'PATCH') {
+            const { id } = req.query;
+            const { status, driverId } = req.body;
+
+            const { data, error } = await supabase.from('orders')
+                .update({ 
+                    delivery_status: status,
+                    status: status === 'delivered' ? 'completed' : 'ready'
+                })
+                .eq('id', id)
+                .eq('driver_id', driverId)
+                .select()
+                .single();
+
+            if (error) throw error;
+            return res.json({ success: true, order: data });
+        }
+
         // --- 2. ORDERS (GET) ---
         if (action === 'orders' && req.method === 'GET') {
             const timeLimit = new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString();
