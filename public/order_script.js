@@ -31,11 +31,13 @@
         let fulfillmentType = 'pickup'; // default
         let activeOrder = null;
         let statusSubscription = null;
+        let pollingInterval = null;
         let isAddonMode = false;
         let currentSelectedPayment = 'cash';
 
         async function loadMenu() {
             try {
+                console.log("Loading menu...");
                 const res = await fetch('/api/menu');
                 const data = await res.json();
                 if (data && data.items) {
@@ -78,7 +80,7 @@
         }
 
         function optimizeImg(url) {
-            if (!url) return "";
+            if (!url || typeof url !== 'string') return "";
             if (url.startsWith('data:')) return url;
             if (url.includes('supabase.co')) {
                 if (url.includes('?')) return url + '&width=400';
@@ -88,79 +90,85 @@
         }
 
         function renderMenu() {
-            const container = document.getElementById('menu-container');
-            const categories = {};
-            
-            menuItems.forEach(item => {
-                let cat = item.category || 'Otros';
-                const itemName = (item.name || '').toLowerCase();
-                const catLower = cat.toLowerCase();
+            try {
+                const container = document.getElementById('menu-container');
+                if (!container) return;
+                const categories = {};
                 
-                if (catLower === 'hot_drinks' || catLower === 'coffee' || catLower.includes('caliente')) cat = 'Café';
-                else if (catLower === 'cold_drinks' || catLower === 'drinks' || catLower.includes('helada')) cat = 'Heladas';
-                else if (catLower === 'food' || catLower === 'comida') cat = 'Comida';
-                else if (catLower === 'pastry' || catLower.includes('postre') || catLower.includes('reposteria')) cat = 'Postres';
-                else if (catLower === 'secret' || catLower === 'secreto') cat = 'Menú Secreto';
-                else if (catLower === 'combos' || catLower === 'combo' || catLower.includes('paquete') || itemName.includes('combo') || itemName.includes('paquete')) cat = 'Combos';
-                
-                if(!categories[cat]) categories[cat] = [];
-                categories[cat].push(item);
-            });
-
-            const categoryOrder = ['Combos', 'Comida', 'Café', 'Heladas', 'Postres', 'Menú Secreto', 'Otros'];
-            const sortedCategories = Object.keys(categories).sort((a, b) => {
-                let indexA = categoryOrder.indexOf(a);
-                let indexB = categoryOrder.indexOf(b);
-                if (indexA === -1) indexA = 99;
-                if (indexB === -1) indexB = 99;
-                return indexA - indexB;
-            });
-
-            let html = '';
-            sortedCategories.forEach(category => {
-                let items = categories[category];
-                items.sort((a, b) => a.name.localeCompare(b.name, undefined, {numeric: true, sensitivity: 'base'}));
-
-                const sectionId = 'section-' + category.replace(/\s+/g, '');
-                html += `<div id="${sectionId}" class="menu-section mb-12 scroll-mt-32">
-                    <h2 class="text-gold text-sm font-black uppercase tracking-[0.3em] mb-6 flex items-center gap-3">
-                        <span class="h-px w-8 bg-gold/20"></span>
-                        ${category}
-                        <span class="flex-1 h-px bg-gold/20"></span>
-                    </h2>
-                    <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">`;
-                
-                items.forEach(item => {
-                    const isCombo = category === 'Combos';
-                    const cardClass = isCombo ? "item-card rounded-[2rem] bg-white/5 border border-gold/30 overflow-hidden flex flex-col group active:scale-95 transition-all shadow-xl" : "item-card rounded-[2rem] bg-white/5 border border-white/5 overflow-hidden flex flex-col group active:scale-95 transition-all";
-                    const imgUrl = optimizeImg(item.image_url);
-                    const imgHtml = imgUrl ? `
-                            <div class="w-full h-40 bg-charcoal overflow-hidden relative">
-                                <img src="${imgUrl}" class="w-full h-full object-cover" loading="lazy">
-                                <div class="absolute inset-0 bg-gradient-to-t from-dark/80 to-transparent"></div>
-                                <div class="absolute bottom-3 right-3 w-10 h-10 rounded-2xl bg-gold text-dark flex items-center justify-center shadow-lg transform rotate-3 group-hover:rotate-0 transition-transform"><i class="fas fa-plus text-sm"></i></div>
-                            </div>` : `
-                            <div class="w-full h-16 bg-charcoal relative flex items-center justify-end px-4">
-                                <div class="w-10 h-10 rounded-2xl bg-gold text-dark flex items-center justify-center shadow-lg"><i class="fas fa-plus text-sm"></i></div>
-                            </div>`;
+                menuItems.forEach(item => {
+                    let cat = item.category || 'Otros';
+                    const itemName = (item.name || '').toLowerCase();
+                    const catLower = cat.toLowerCase();
                     
-                    html += `
-                        <div class="${cardClass}" onclick="openModifier('${item.id}')">
-                            ${imgHtml}
-                            <div class="p-5 flex-1 flex flex-col justify-between">
-                                <h3 class="font-black text-sm leading-tight mb-2 text-white/90">${item.name}</h3>
-                                <span class="text-gold font-mono font-black text-base">L ${(Number(item.price) || 0).toFixed(2)}</span>
-                            </div>
-                        </div>`;
+                    if (catLower === 'hot_drinks' || catLower === 'coffee' || catLower.includes('caliente')) cat = 'Café';
+                    else if (catLower === 'cold_drinks' || catLower === 'drinks' || catLower.includes('helada')) cat = 'Heladas';
+                    else if (catLower === 'food' || catLower === 'comida') cat = 'Comida';
+                    else if (catLower === 'pastry' || catLower === 'postres' || catLower.includes('reposteria')) cat = 'Postres';
+                    else if (catLower === 'secret' || catLower === 'secreto') cat = 'Menú Secreto';
+                    else if (catLower === 'combos' || catLower === 'combo' || catLower.includes('paquete') || itemName.includes('combo') || itemName.includes('paquete')) cat = 'Combos';
+                    
+                    if(!categories[cat]) categories[cat] = [];
+                    categories[cat].push(item);
                 });
-                html += `</div></div>`;
-            });
 
-            container.innerHTML = html;
-            const loadingMsg = document.getElementById('loading-msg');
-            if (loadingMsg) loadingMsg.style.display = 'none';
+                const categoryOrder = ['Combos', 'Comida', 'Café', 'Heladas', 'Postres', 'Menú Secreto', 'Otros'];
+                const sortedCategories = Object.keys(categories).sort((a, b) => {
+                    let indexA = categoryOrder.indexOf(a);
+                    let indexB = categoryOrder.indexOf(b);
+                    if (indexA === -1) indexA = 99;
+                    if (indexB === -1) indexB = 99;
+                    return indexA - indexB;
+                });
 
-            setupScrollSpy();
+                let html = '';
+                sortedCategories.forEach(category => {
+                    let items = categories[category];
+                    items.sort((a, b) => a.name.localeCompare(b.name, undefined, {numeric: true, sensitivity: 'base'}));
+
+                    const sectionId = 'section-' + category.replace(/\s+/g, '');
+                    html += `<div id="${sectionId}" class="menu-section mb-12 scroll-mt-32">
+                        <h2 class="text-gold text-sm font-black uppercase tracking-[0.3em] mb-6 flex items-center gap-3">
+                            <span class="h-px w-8 bg-gold/20"></span>
+                            ${category}
+                            <span class="flex-1 h-px bg-gold/20"></span>
+                        </h2>
+                        <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">`;
+                    
+                    items.forEach(item => {
+                        const isCombo = category === 'Combos';
+                        const cardClass = isCombo ? "item-card rounded-[2rem] bg-white/5 border border-gold/30 overflow-hidden flex flex-col group active:scale-95 transition-all shadow-xl" : "item-card rounded-[2rem] bg-white/5 border border-white/5 overflow-hidden flex flex-col group active:scale-95 transition-all";
+                        const imgUrl = optimizeImg(item.image_url);
+                        const imgHtml = imgUrl ? `
+                                <div class="w-full h-40 bg-charcoal overflow-hidden relative">
+                                    <img src="${imgUrl}" class="w-full h-full object-cover" loading="lazy">
+                                    <div class="absolute inset-0 bg-gradient-to-t from-dark/80 to-transparent"></div>
+                                    <div class="absolute bottom-3 right-3 w-10 h-10 rounded-2xl bg-gold text-dark flex items-center justify-center shadow-lg transform rotate-3 group-hover:rotate-0 transition-transform"><i class="fas fa-plus text-sm"></i></div>
+                                </div>` : `
+                                <div class="w-full h-16 bg-charcoal relative flex items-center justify-end px-4">
+                                    <div class="w-10 h-10 rounded-2xl bg-gold text-dark flex items-center justify-center shadow-lg"><i class="fas fa-plus text-sm"></i></div>
+                                </div>`;
+                        
+                        html += `
+                            <div class="${cardClass}" onclick="openModifier('${item.id}')">
+                                ${imgHtml}
+                                <div class="p-5 flex-1 flex flex-col justify-between">
+                                    <h3 class="font-black text-sm leading-tight mb-2 text-white/90">${item.name}</h3>
+                                    <span class="text-gold font-mono font-black text-base">L ${(Number(item.price) || 0).toFixed(2)}</span>
+                                </div>
+                            </div>`;
+                    });
+                    html += `</div></div>`;
+                });
+
+                container.innerHTML = html;
+                const loadingMsg = document.getElementById('loading-msg');
+                if (loadingMsg) loadingMsg.style.display = 'none';
+
+                setupScrollSpy();
+                console.log("MENU RENDERED");
+            } catch(err) {
+                console.error("Render Error:", err);
+            }
         }
 
         function setupScrollSpy() {
@@ -406,13 +414,11 @@
             } catch(e) { alert("Error al enviar. Intenta de nuevo."); btn.innerHTML = "Enviar Pedido Ahora 🚀"; btn.disabled = false; }
         };
 
-        let pollingInterval = null;
-
         async function showTracking() {
             if(!activeOrder) return;
             document.getElementById('track-modal').classList.remove('hidden');
             document.getElementById('receipt-num').innerText = `#${activeOrder.order_number || activeOrder.id.slice(-4)}`;
-
+            
             // Render Items in tracking view
             const list = document.getElementById('track-items-list');
             if (list && activeOrder.items) {
@@ -451,7 +457,6 @@
                             activeOrder = latest;
                             updateTrackingUI(latest);
                         }
-                        // Stop polling if finished
                         const s = (latest.status || '').toLowerCase();
                         if(['completed', 'cancelled', 'delivered'].includes(s)) {
                             clearInterval(pollingInterval);
@@ -471,7 +476,6 @@
             
             if (badge) badge.innerText = status.toUpperCase();
 
-            // 1. Update Title and Message
             if (['pending', 'paid'].includes(status)) {
                 title.innerText = "¡ORDEN RECIBIDA!";
                 msg.innerText = "Tu pedido ha sido enviado. Prepárate para el mejor sabor.";
@@ -496,11 +500,8 @@
                 msg.innerText = "¡Gracias por elegir Rich Aroma! Esperamos que lo disfrutes.";
                 line.style.width = "100%";
                 updateStepUI(fulfill === 'delivery' ? 4 : 3);
-                if (statusSubscription) statusSubscription.unsubscribe();
-                if (pollingInterval) clearInterval(pollingInterval);
             }
 
-            // 2. Handle Delivery Step Visibility
             const deliveryStep = document.getElementById('step-delivery-ui');
             if (deliveryStep) {
                 if (fulfill === 'delivery') deliveryStep.classList.remove('hidden');
@@ -538,7 +539,7 @@
                     if(vres.ok) {
                         const latest = await vres.json();
                         const s = (latest.status || '').toLowerCase();
-                        if(['pending','paid','preparing','ready','drinks_ready','food_ready'].includes(s)) { activeOrder = latest; showTracking(); }
+                        if(['pending','paid','preparing','ready','drinks_ready','food_ready','shipped','out_for_delivery'].includes(s)) { activeOrder = latest; showTracking(); }
                         else localStorage.removeItem('ra_active_order');
                     } else localStorage.removeItem('ra_active_order');
                 } catch(e) { localStorage.removeItem('ra_active_order'); }
