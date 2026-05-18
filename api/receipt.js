@@ -13,23 +13,24 @@ module.exports = async function handler(req, res) {
 
     try {
         const { id } = req.query; 
-        const { imageBase64, orderId, fileName } = req.body;
+        const { imageBase64, image, orderId, fileName } = req.body;
         
+        const finalImage = imageBase64 || image;
         const targetId = id || orderId;
 
-        if (!targetId || !imageBase64) {
-            console.error("[Receipt] Missing data:", { targetId, hasImage: !!imageBase64 });
+        if (!targetId || !finalImage) {
+            console.error("[Receipt] Missing data:", { targetId, hasImage: !!finalImage });
             return res.status(400).json({ error: 'Falta ID de orden o imagen' });
         }
 
         // Validate base64 format
-        if (!imageBase64.startsWith('data:image/')) {
+        if (!finalImage.startsWith('data:image/')) {
             return res.status(400).json({ error: 'Formato de imagen inválido' });
         }
 
         // Convert base64 to buffer
         // More robust regex to handle different image types
-        const matches = imageBase64.match(/^data:([a-zA-Z0-9]+\/[a-zA-Z0-9-.+]+);base64,(.*)$/);
+        const matches = finalImage.match(/^data:([a-zA-Z0-9]+\/[a-zA-Z0-9-.+]+);base64,(.*)$/);
         if (!matches || matches.length < 3) {
             return res.status(400).json({ error: 'Mecanismo de imagen no reconocido' });
         }

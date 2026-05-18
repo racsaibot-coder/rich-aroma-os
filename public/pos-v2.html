@@ -1109,6 +1109,15 @@
             if (m) name = m[1].trim();
         }
         document.getElementById('view-order-customer').innerText = name;
+
+        let telMatch = order.notes ? order.notes.match(/\[TEL:\s*([^\]]+)\]/) : null;
+        let phone = telMatch ? telMatch[1].trim() : (order.customers?.phone || '');
+        if (phone && phone.length > 4) {
+            const cleanPhone = phone.replace(/\D/g, '');
+            const waLink = `https://wa.me/${cleanPhone.startsWith('504') ? '' : '504'}${cleanPhone}`;
+            document.getElementById('view-order-customer').innerHTML = `${name} <a href="${waLink}" target="_blank" class="ml-2 inline-flex items-center justify-center w-8 h-8 rounded-full bg-green-500/20 text-green-500 text-[10px] hover:bg-green-500 hover:text-white transition-all"><i class="fab fa-whatsapp"></i></a>`;
+        }
+
         document.getElementById('view-order-total').innerText = `L. ${(parseFloat(order.total) || 0).toFixed(2)}`;
 
         const content = document.getElementById('view-order-content');
@@ -1129,6 +1138,13 @@
                 <div class="pt-4 border-t border-white/5">
                     <p class="text-[9px] font-black text-white/20 uppercase tracking-[0.2em] mb-2">Notas / Metadatos</p>
                     <p class="text-[11px] text-white/40 leading-relaxed">${order.notes}</p>
+                    ${order.notes.includes('[RECEIPT_URL:') ? `
+                        <div class="mt-4">
+                            <a href="${order.notes.match(/\[RECEIPT_URL:\s*([^\]]+)\]/)[1]}" target="_blank" class="inline-flex items-center gap-2 bg-blue-500/20 text-blue-400 px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest border border-blue-500/20 active:scale-95 transition-all">
+                                <i class="fas fa-image"></i> Ver Comprobante
+                            </a>
+                        </div>
+                    ` : ''}
                 </div>
             ` : ''}
         `;

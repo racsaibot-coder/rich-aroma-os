@@ -420,6 +420,8 @@ module.exports = async (req, res) => {
             const { data: lastOrders } = await supabase.from('orders').select('order_number').order('order_number', { ascending: false }).limit(1);
             const nextOrderNumber = (lastOrders && lastOrders[0] ? lastOrders[0].order_number : 1000) + 1;
 
+            const finalNotes = (guestPhone ? `[TEL: ${guestPhone}] ` : '') + (notes || '');
+
             const { data, error } = await supabase.from('orders').insert({
                 id: orderId,
                 order_number: nextOrderNumber,
@@ -430,7 +432,7 @@ module.exports = async (req, res) => {
                 discount: 0,
                 payment_method: paymentMethod, 
                 customer_id: customerId, 
-                notes: `[FULFILLMENT: ${fulfillment || fulfillment_type || 'pickup'}] ` + (notes || ''), 
+                notes: `[FULFILLMENT: ${fulfillment || fulfillment_type || 'pickup'}] ` + finalNotes, 
                 status: 'pending', 
                 restaurant_id: targetResId
             }).select().single();

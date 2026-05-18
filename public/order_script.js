@@ -434,7 +434,10 @@
             if(cart.length === 0) return;
             const btn = document.getElementById('final-btn');
             const name = document.getElementById('check-name').value.trim();
+            const phone = document.getElementById('check-phone').value.trim();
+            
             if(!name) return alert("Por favor ingresa tu nombre");
+            if(!currentCustomer && !phone) return alert("Por favor ingresa tu número de WhatsApp para contactarte sobre tu pedido");
             
             btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Procesando...';
             btn.disabled = true;
@@ -453,6 +456,7 @@
                 items: Object.values(itemsMap), subtotal, tax: 0, discount: 0, total: subtotal, paymentMethod: currentSelectedPayment,
                 fulfillment: fulfillmentType,
                 restaurantId: resId,
+                guestPhone: phone,
                 notes: `Mobile: ${name} (${fulfillmentType})` + (document.getElementById('check-table').value ? ` MESA: ${document.getElementById('check-table').value}` : "")
             };
             if(currentCustomer) payload.customerId = currentCustomer.id;
@@ -466,6 +470,40 @@
                 localStorage.setItem('ra_active_order', JSON.stringify(saved));
                 showTracking();
             } catch(e) { alert("Error al enviar. Intenta de nuevo."); btn.innerHTML = "Enviar Pedido Ahora 🚀"; btn.disabled = false; }
+        };
+
+        window.uploadReceipt = async (input) => {
+            if (!input.files || !input.files[0] || !activeOrder) return;
+            const file = input.files[0];
+            const btn = document.getElementById('upload-btn');
+            const status = document.getElementById('upload-status');
+            
+            btn.disabled = true;
+            status.classList.remove('hidden');
+            
+            const reader = new FileReader();
+            reader.onload = async (e) => {
+                const base64 = e.target.result;
+                try {
+                    const res = await fetch('/api/upload-receipt', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ orderId: activeOrder.id, image: base64 })
+                    });
+                    if (res.ok) {
+                        alert("✅ Comprobante subido exitosamente. Procesaremos tu orden pronto.");
+                        document.getElementById('transfer-upload-section').classList.add('hidden');
+                    } else {
+                        throw new Error("Upload fail");
+                    }
+                } catch (err) {
+                    alert("Error al subir imagen. Intenta de nuevo.");
+                } finally {
+                    btn.disabled = false;
+                    status.classList.add('hidden');
+                }
+            };
+            reader.readAsDataURL(file);
         };
 
         async function showTracking() {
@@ -494,6 +532,16 @@
             }
 
             updateTrackingUI(activeOrder);
+
+            // Show Transfer Upload if needed
+            const uploadSection = document.getElementById('transfer-upload-section');
+            if (uploadSection) {
+                if (activeOrder.payment_method === 'transfer' && !activeOrder.receipt_url) {
+                    uploadSection.classList.remove('hidden');
+                } else {
+                    uploadSection.classList.add('hidden');
+                }
+            }
 
             // 1. Realtime Subscription
             if(statusSubscription) statusSubscription.unsubscribe();
