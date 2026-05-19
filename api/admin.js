@@ -487,8 +487,11 @@ module.exports = async function handler(req, res) {
         });
 
         if (toDelete.length > 0) {
-            // Delete menu items first to avoid foreign key issues
+            // Delete related data first to avoid foreign key issues
+            await supabase.from('quimieats_ledger').delete().in('restaurant_id', toDelete);
+            await supabase.from('orders').delete().in('restaurant_id', toDelete);
             await supabase.from('menu_items').delete().in('restaurant_id', toDelete);
+            
             const { error } = await supabase.from('restaurants').delete().in('id', toDelete);
             if (error) return res.status(500).json({ error: error.message });
         }
