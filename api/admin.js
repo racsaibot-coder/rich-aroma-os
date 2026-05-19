@@ -470,6 +470,32 @@ module.exports = async function handler(req, res) {
         return res.json({ success: true });
     }
 
+    if (action === 'cleanup_duplicates' && req.method === 'POST') {
+        if (!isAdmin) return res.status(403).json({ error: "Admin access required" });
+        
+        const { data: all } = await supabase.from('restaurants').select('id, name, created_at').order('created_at', { ascending: false });
+        const kept = new Set();
+        const toDelete = [];
+        const testIds = [];
+
+        (all || []).forEach(r => {
+            if (kept.has(r.name) || r.name.startsWith('ECON') || r.name.includes('Test')) {
+                toDelete.push(r.id);
+            } else {
+                kept.add(r.name);
+            }
+        });
+
+        if (toDelete.length > 0) {
+            // Delete menu items first to avoid foreign key issues
+            await supabase.from('menu_items').delete().in('restaurant_id', toDelete);
+            const { error } = await supabase.from('restaurants').delete().in('id', toDelete);
+            if (error) return res.status(500).json({ error: error.message });
+        }
+
+        return res.json({ success: true, deleted: toDelete.length, kept: kept.size });
+    }
+
     // LEADS
     if (action === 'leads' && req.method === 'GET') {
         if (!isAdmin) return res.status(403).json({ error: "Admin access required" });
