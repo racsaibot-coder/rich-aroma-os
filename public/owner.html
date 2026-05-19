@@ -378,10 +378,10 @@
     </div>
 
     <script>
-        const OWNER_PIN = '4574'; 
+        const OWNER_PINS = ['4574', '3620']; 
         window.onload = () => {
             const savedPin = localStorage.getItem('ra_staff_pin');
-            if (savedPin === OWNER_PIN) {
+            if (OWNER_PINS.includes(savedPin)) {
                 document.getElementById('login-overlay').classList.add('hidden');
                 loadReports();
                 loadExpenses();
@@ -390,10 +390,11 @@
 
         async function verifyAccess() {
             const pin = document.getElementById('owner-pin').value;
-            if (pin === '4574' || pin === '3620') {
+            if (OWNER_PINS.includes(pin)) {
                 document.getElementById('login-overlay').classList.add('hidden');
                 localStorage.setItem('ra_staff_pin', pin);
-                init();
+                loadReports();
+                loadExpenses();
             } else {
                 alert("PIN Incorrecto");
                 document.getElementById('owner-pin').value = '';
