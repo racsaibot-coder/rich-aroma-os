@@ -180,7 +180,8 @@ module.exports = async (req, res) => {
 
             return res.json({ 
                 success: true, 
-                setupUrl: `/onboarding.html?resId=${resId}&pin=${tempPin}`
+                setupUrl: `/onboarding.html?resId=${resId}&pin=${tempPin}`,
+                restaurant: restaurant
             });
         }
 
