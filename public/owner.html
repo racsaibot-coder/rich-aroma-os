@@ -65,8 +65,23 @@
         <!-- Navigation Tabs -->
         <div class="flex gap-4 overflow-x-auto pb-2 hide-scrollbar">
             <button onclick="switchTab('overview')" id="tab-overview" class="tab-btn px-6 py-2 rounded-full border-2 border-gold bg-gold text-dark text-xs font-black uppercase tracking-widest">Resumen</button>
+            <button onclick="switchTab('stores')" id="tab-stores" class="tab-btn px-6 py-2 rounded-full border-2 border-white/5 bg-white/5 text-white/40 text-xs font-black uppercase tracking-widest">Tiendas</button>
             <button onclick="switchTab('payouts')" id="tab-payouts" class="tab-btn px-6 py-2 rounded-full border-2 border-white/5 bg-white/5 text-white/40 text-xs font-black uppercase tracking-widest">Pagos Socios</button>
             <button onclick="switchTab('history')" id="tab-history" class="tab-btn px-6 py-2 rounded-full border-2 border-white/5 bg-white/5 text-white/40 text-xs font-black uppercase tracking-widest">Cierres</button>
+        </div>
+
+        <!-- SECTION: STORES MANAGER -->
+        <div id="section-stores" class="hidden space-y-6">
+            <div class="bg-white p-8 rounded-[2.5rem] shadow-sm border border-gray-100">
+                <div class="flex justify-between items-center mb-6">
+                    <h3 class="text-sm font-black uppercase tracking-widest text-dark">
+                        <i class="fas fa-store text-gold mr-2"></i> Gestión de Socios QuimiEats
+                    </h3>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4" id="stores-list-container">
+                    <!-- Injected via JS -->
+                </div>
+            </div>
         </div>
 
         <!-- Sales Grid -->
@@ -400,6 +415,63 @@
 
             if (tabId === 'payouts') loadMerchantBalances();
             if (tabId === 'history') loadShiftHistory();
+            if (tabId === 'stores') loadStores();
+        }
+
+        async function loadStores() {
+            const container = document.getElementById('stores-list-container');
+            container.innerHTML = `<p class="col-span-full py-8 text-center animate-pulse text-gray-400">Cargando tiendas...</p>`;
+            
+            try {
+                const res = await fetch('/api/store?action=get_restaurants');
+                const stores = await res.json();
+                
+                container.innerHTML = stores.map(s => `
+                    <div class="p-5 rounded-3xl border border-gray-100 bg-gray-50/50 space-y-4">
+                        <div class="flex gap-4 items-center">
+                            <div class="w-12 h-12 rounded-xl bg-white border border-gray-100 overflow-hidden shrink-0">
+                                <img src="${s.logo_url || '/favicon.png'}" class="w-full h-full object-cover">
+                            </div>
+                            <div class="flex-1 min-w-0">
+                                <h4 class="text-sm font-black text-dark truncate uppercase">${s.name}</h4>
+                                <p class="text-[9px] text-gray-400 font-bold uppercase tracking-widest">${s.category || 'Restaurante'}</p>
+                            </div>
+                        </div>
+                        <div class="pt-2 flex gap-2">
+                            <button onclick="editStore('${s.id}')" class="flex-1 py-2 bg-dark text-white rounded-xl text-[9px] font-black uppercase tracking-widest active:scale-95 transition-all">Editar Perfil</button>
+                            <a href="/partner?resId=${s.id}" target="_blank" class="w-10 h-10 rounded-xl bg-gold/10 text-gold flex items-center justify-center"><i class="fas fa-external-link-alt text-xs"></i></a>
+                        </div>
+                    </div>
+                `).join('');
+            } catch (e) { container.innerHTML = `<p class="col-span-full py-8 text-center text-error">Error al cargar tiendas</p>`; }
+        }
+
+        async function editStore(id) {
+            const res = await fetch('/api/store?action=get_restaurants');
+            const stores = await res.json();
+            const s = stores.find(x => x.id === id);
+            if (!s) return;
+
+            const newLogo = prompt("Pega la URL de una imagen para el LOGO (o déjalo vacío para no cambiar):", s.logo_url || '');
+            const newName = prompt("Nuevo nombre del negocio:", s.name);
+            
+            if (newName || newLogo !== null) {
+                try {
+                    const pin = localStorage.getItem('ra_staff_pin') || '4574';
+                    const upRes = await fetch(`/api/admin?action=restaurant_update&id=${id}`, {
+                        method: 'PATCH',
+                        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + pin },
+                        body: JSON.stringify({ 
+                            name: newName || s.name,
+                            logo_url: newLogo || s.logo_url
+                        })
+                    });
+                    if (upRes.ok) {
+                        alert("✅ Tienda actualizada");
+                        loadStores();
+                    }
+                } catch (e) { alert("Error al actualizar"); }
+            }
         }
 
         async function loadMerchantBalances() {
