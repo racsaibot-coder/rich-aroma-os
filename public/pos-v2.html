@@ -2789,16 +2789,8 @@
             const key = inputs[closureCurrentStep-1];
             const inputEl = document.getElementById(`closure-input-${key}`);
             const rawVal = inputEl ? inputEl.value : '';
-            
-            if (rawVal === null || rawVal.trim() === '') {
-                // Flash input error
-                if (inputEl) {
-                    inputEl.classList.add('border-red-500');
-                    setTimeout(() => inputEl.classList.remove('border-red-500'), 500);
-                }
-                return;
-            }
 
+            // Clean value: remove everything except numbers and dots
             const cleanVal = rawVal.replace(/[^0-9.]/g, '');
             closureData[key] = parseFloat(cleanVal) || 0;
 
@@ -2814,26 +2806,25 @@
 
             closureCurrentStep++;
             updateClosureWizardUI();
-        } else {
-            // FINAL SUBMISSION
+        } else {            // FINAL SUBMISSION
             const nextBtn = document.getElementById('closure-next-btn');
             const ogText = nextBtn.innerText;
             nextBtn.disabled = true;
             nextBtn.innerText = 'PROCESANDO...';
 
             try {
+                const pin = localStorage.getItem('ra_staff_pin') || 'EMP-admin';
                 const res = await fetch('/api/cash/close-shift', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer EMP-admin' },
-                    body: JSON.stringify({ 
-                        shiftId: currentShiftId, 
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${pin}` },
+                    body: JSON.stringify({
+                        shiftId: currentShiftId,
                         closingAmount: closureData.cash,
                         declaredCard: closureData.card,
                         declaredTransfer: closureData.transfer,
                         notes: document.getElementById('closure-notes').value
                     })
                 });
-
                 const data = await res.json();
                 if (!res.ok) throw new Error(data.error || 'Error en el servidor');
 
@@ -3391,11 +3382,11 @@
 
     <!-- SHIFT CLOSURE WIZARD MODAL -->
     <div id="shift-close-modal" class="hidden fixed inset-0 bg-black/80 backdrop-blur-md z-[1000] flex items-center justify-center p-4">
-        <div class="bg-white w-full max-w-lg rounded-[2.5rem] overflow-hidden shadow-2xl flex flex-col">
+        <div class="bg-white w-full max-w-lg rounded-[2.5rem] overflow-hidden shadow-2xl flex flex-col max-h-[90vh]">
             <!-- Header with Progress -->
-            <div class="bg-dark p-8 text-white">
+            <div class="bg-dark p-6 text-white shrink-0">
                 <div class="flex justify-between items-center mb-4">
-                    <h3 class="text-2xl font-black uppercase tracking-tight">Cierre de Caja</h3>
+                    <h3 class="text-xl font-black uppercase tracking-tight">Cierre de Caja</h3>
                     <span id="closure-step-indicator" class="bg-gold text-dark text-[10px] font-black px-3 py-1 rounded-full uppercase tracking-widest">Paso 1 de 4</span>
                 </div>
                 <!-- Progress Bar -->
@@ -3404,8 +3395,8 @@
                 </div>
             </div>
 
-            <!-- Content Area -->
-            <div class="p-8 space-y-8 flex-1">
+            <!-- Content Area (Scrollable) -->
+            <div class="p-8 space-y-8 overflow-y-auto flex-1">
                 <!-- Step 1: Cash -->
                 <div id="closure-step-1" class="space-y-6">
                     <div class="text-center space-y-2">
@@ -3470,9 +3461,9 @@
             </div>
 
             <!-- Footer Buttons -->
-            <div class="p-8 pt-0 grid grid-cols-2 gap-4">
-                <button id="closure-back-btn" class="py-5 bg-gray-100 text-gray-400 font-black rounded-3xl uppercase tracking-widest text-xs active:scale-95 transition-all">Atrás</button>
-                <button id="closure-next-btn" class="py-5 bg-dark text-white font-black rounded-3xl uppercase tracking-widest text-xs shadow-xl active:scale-95 transition-all">Siguiente</button>
+            <div class="p-6 bg-gray-50 shrink-0 grid grid-cols-2 gap-4 border-t border-gray-100">
+                <button id="closure-back-btn" class="py-4 bg-white border border-gray-200 text-gray-400 font-black rounded-3xl uppercase tracking-widest text-[10px] active:scale-95 transition-all">Atrás</button>
+                <button id="closure-next-btn" class="py-4 bg-dark text-white font-black rounded-3xl uppercase tracking-widest text-[10px] shadow-xl active:scale-95 transition-all">Siguiente</button>
             </div>
         </div>
     </div>
