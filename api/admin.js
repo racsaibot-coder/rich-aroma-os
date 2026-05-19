@@ -79,8 +79,8 @@ module.exports = async function handler(req, res) {
 
     if (action === 'menu' && req.method === 'POST') {
         if (!isAdmin) return res.status(403).json({ error: "Admin access required" });
-        const { name, category, price, available, image_url, modifier_groups, description } = req.body;
-        const id = category.toLowerCase() + '_' + name.toLowerCase().replace(/[^a-z0-9]/g, '_');
+        const { name, category, price, available, image_url, modifier_groups, description, restaurant_id } = req.body;
+        const id = (category || 'item').toLowerCase() + '_' + name.toLowerCase().replace(/[^a-z0-9]/g, '_');
         const { data, error } = await supabase.from('menu_items')
             .insert({ 
                 id, 
@@ -90,11 +90,20 @@ module.exports = async function handler(req, res) {
                 available, 
                 image_url, 
                 name_es: description,
-                modifier_groups: modifier_groups || [] 
+                modifier_groups: modifier_groups || [],
+                restaurant_id: restaurant_id || 'rich-aroma'
             })
             .select().single();
         if (error) return res.status(500).json({ error: error.message });
         return res.json(data);
+    }
+
+    if (action === 'menu_import' && req.method === 'POST') {
+        if (!isAdmin) return res.status(403).json({ error: "Admin access required" });
+        const { items } = req.body; // Array of items
+        const { data, error } = await supabase.from('menu_items').upsert(items).select();
+        if (error) return res.status(500).json({ error: error.message });
+        return res.json({ success: true, count: data.length });
     }
 
     if (action === 'menu_update' && (req.method === 'PATCH' || req.method === 'PUT')) {
