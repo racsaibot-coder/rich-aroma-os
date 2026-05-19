@@ -131,12 +131,13 @@
                     const itemName = (item.name || '').toLowerCase();
                     const catLower = cat.toLowerCase();
                     
-                    if (catLower === 'hot_drinks' || catLower === 'coffee' || catLower.includes('caliente')) cat = 'Café';
+                    // --- REINFORCED CATEGORIZATION (Combos first) ---
+                    if (catLower === 'combos' || catLower === 'combo' || catLower.includes('paquete') || itemName.includes('combo') || itemName.includes('paquete')) cat = 'Combos';
+                    else if (catLower === 'hot_drinks' || catLower === 'coffee' || catLower.includes('caliente')) cat = 'Café';
                     else if (catLower === 'cold_drinks' || catLower === 'drinks' || catLower.includes('helada')) cat = 'Heladas';
                     else if (catLower === 'food' || catLower === 'comida') cat = 'Comida';
                     else if (catLower === 'pastry' || catLower === 'postres' || catLower.includes('reposteria') || catLower === 'pastries') cat = 'Postres';
                     else if (catLower === 'secret' || catLower === 'secreto') cat = 'Menú Secreto';
-                    else if (catLower === 'combos' || catLower === 'combo' || catLower.includes('paquete') || itemName.includes('combo') || itemName.includes('paquete')) cat = 'Combos';
                     
                     if(!categories[cat]) categories[cat] = [];
                     categories[cat].push(item);

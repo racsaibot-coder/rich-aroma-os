@@ -282,7 +282,15 @@
                 return;
             }
 
-            const cats = [...new Set(items.map(i => i.category))];
+            const categoryOrder = ['Combos', 'Comida', 'Café', 'Heladas', 'Postres', 'Menú Secreto', 'Otros'];
+            const cats = [...new Set(items.map(i => i.category))].sort((a, b) => {
+                let indexA = categoryOrder.indexOf(a);
+                let indexB = categoryOrder.indexOf(b);
+                if (indexA === -1) indexA = 99;
+                if (indexB === -1) indexB = 99;
+                return indexA - indexB;
+            });
+
             container.innerHTML = cats.map(cat => `
                 <div class="space-y-6">
                     <h3 class="text-xs font-black uppercase tracking-[0.4em] text-cyan">${cat}</h3>
