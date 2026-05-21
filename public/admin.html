@@ -8,9 +8,11 @@
         // FAIL-SAFE: If the page takes more than 5s to boot, force show the login modal
         setTimeout(() => {
             const modal = document.getElementById('login-modal');
-            if (modal && modal.style.display === 'none') {
+            const content = document.getElementById('admin-content');
+            if (modal && modal.style.display === 'none' && (!content || content.classList.contains('hidden'))) {
                 console.warn("Fail-safe: Force showing login modal");
                 modal.style.display = 'flex';
+                modal.classList.remove('hidden');
             }
         }, 5000);
     </script>
@@ -826,31 +828,37 @@
                     body: JSON.stringify({ pin: currentPin })
                 });
 
-                logDebug(`Server status: ${res.status}`);
+                logDebug(`API Status: ${res.status} ${res.statusText}`);
 
                 if (res.status === 401) {
-                    logDebug("Auth result: Invalid PIN");
-                    alert("Invalid PIN. Please try again.");
+                    logDebug("Login: REJECTED (Wrong PIN)");
+                    alert("PIN incorrecto.");
                     resetPin();
                     return;
                 }
 
+                if (!res.ok) {
+                    const text = await res.text();
+                    logDebug(`API Error: ${text.slice(0,50)}...`);
+                    throw new Error("Server error: " + res.status);
+                }
+
                 const data = await res.json();
-                if (res.ok) {
-                    logDebug(`Success! User: ${data.employee?.name}`);
+                if (data.success) {
+                    logDebug(`Login: OK (${data.employee?.name})`);
                     staffUser = data.employee;
                     localStorage.setItem('ra_admin_pin', currentPin);
                     localStorage.setItem('ra_staff_user', JSON.stringify(staffUser));
                     showDashboard();
                 } else {
-                    logDebug(`Fail: ${data.error}`);
-                    alert(data.error || "Login Failed");
+                    logDebug(`Login: FAIL (${data.error})`);
+                    alert(data.error || "Fallo en login");
                     resetPin();
                 }
             } catch (e) {
-                logDebug(`Net Error: ${e.message}`);
+                logDebug(`Network/JS Error: ${e.message}`);
                 console.error("Login Error:", e);
-                alert("Network error. Check connection.");
+                alert("Error de conexión. Reintente.");
                 resetPin();
             } finally {
                 isLoggingIn = false;
@@ -870,22 +878,29 @@
                 const modal = document.getElementById('login-modal');
                 const content = document.getElementById('admin-content');
                 
-                if (modal) modal.classList.add('hidden');
-                if (content) content.classList.remove('hidden');
+                if (modal) {
+                    modal.classList.add('hidden');
+                    modal.style.display = 'none';
+                }
+                if (content) {
+                    content.classList.remove('hidden');
+                    content.style.display = 'block';
+                }
                 
                 applyRbac();
 
-                if (staffUser && staffUser.role === 'admin') {
+                if (staffUser && (staffUser.role === 'admin' || staffUser.is_admin)) {
                     logDebug("Admin detected, switching to overview");
                     switchTab('overview');
-                    loadData(); 
+                    // Ensure we load the leads/stats
+                    if (typeof loadQuimiLeads === 'function') loadQuimiLeads();
                 } else {
                     logDebug("Staff detected, switching to menu");
                     switchTab('menu');
                 }
                 fetchStoreStatus();
             } catch (err) {
-                logDebug("Dashboard Init Error: " + err.message);
+                logDebug("Dashboard UI Crash: " + err.message);
                 console.error(err);
             }
         }
