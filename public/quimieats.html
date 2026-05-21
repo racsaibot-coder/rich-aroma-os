@@ -201,8 +201,17 @@
 
         async function loadPartners() {
             try {
-                const res = await fetch('/api/store?action=get_restaurants');
+                // Fetch the dynamic active businesses (Merged from restaurants + leads)
+                const res = await fetch('/api/admin?action=quimieats_active');
                 allPartners = await res.json();
+                
+                // Ensure Rich Aroma stays featured if it's in the list
+                const raIndex = allPartners.findIndex(p => p.id === 'rich-aroma');
+                if (raIndex > -1) {
+                    const ra = allPartners.splice(raIndex, 1)[0];
+                    allPartners.unshift(ra);
+                }
+                
                 renderPartners(allPartners);
             } catch (e) { console.error("Load Partners failed", e); }
         }
@@ -233,8 +242,8 @@
                 container.innerHTML = `<p class="col-span-full text-center text-white/20 py-20 uppercase font-black tracking-widest text-[10px]">Sin resultados</p>`;
                 return;
             }
-            container.innerHTML = partners.map(p => `
-                <div class="partner-card rounded-[3rem] overflow-hidden cursor-pointer flex flex-col shadow-xl" onclick="openStoreMenu('${p.id}')">
+            container.innerHTML = partners.map((p, index) => `
+                <div class="partner-card rounded-[3rem] overflow-hidden cursor-pointer flex flex-col shadow-xl" onclick="window.location.href='/order?restaurantId=${p.id}'">
                     <div class="relative h-56 bg-white/5 overflow-hidden">
                         <img src="${p.logo_url || '/favicon.png'}" class="w-full h-full object-cover">
                         <div class="absolute inset-0 bg-gradient-to-t from-dark/90 to-transparent"></div>
@@ -243,7 +252,7 @@
                             <p class="text-[10px] text-cyan font-black uppercase tracking-widest mt-1">${p.category || 'Restaurante'}</p>
                         </div>
                         <div class="absolute top-6 right-6 bg-cyan text-dark text-[10px] font-black px-3 py-1 rounded-full shadow-xl">
-                            ${p.id === 'rich-aroma' ? 'DESTACADO' : 'NUEVO'}
+                            ${index === 0 ? 'DESTACADO' : 'SOCIO'}
                         </div>
                     </div>
                     <div class="p-8 space-y-4 flex-1 flex flex-col justify-between">
