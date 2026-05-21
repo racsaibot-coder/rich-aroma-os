@@ -229,8 +229,17 @@
 
         <!-- TAB: MENU -->
         <div id="section-menu" class="hidden">
-            <div class="flex justify-between items-center mb-4">
-                <h2 class="text-xl font-bold">Menu & Modifiers</h2>
+            <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
+                <div>
+                    <h2 class="text-xl font-bold">Menu & Modifiers</h2>
+                    <div class="mt-2 flex items-center gap-2 bg-gray-100 p-2 rounded-xl border border-gray-200">
+                        <span class="text-[10px] font-black uppercase text-gray-400 ml-2">Editando Menú De:</span>
+                        <select id="menu-restaurant-selector" onchange="loadMenu()" class="bg-white border-none text-xs font-bold uppercase outline-none focus:ring-0 rounded-lg p-1 px-3">
+                            <option value="rich-aroma">Rich Aroma</option>
+                            <!-- Other restaurants injected via JS -->
+                        </select>
+                    </div>
+                </div>
                 <div class="flex gap-2">
                     <button onclick="document.getElementById('create-menu-item-modal').classList.remove('hidden')" class="bg-green-600 text-white px-4 py-2 rounded-lg font-bold shadow hover:bg-green-700">+ New Menu Item</button>
                     <button onclick="document.getElementById('create-mod-group-modal').classList.remove('hidden')" class="bg-purple-600 text-white px-4 py-2 rounded-lg font-bold shadow hover:bg-purple-700">+ New Modifier Group</button>
@@ -1676,13 +1685,14 @@
 
         async function loadModifiersDatabase() {
             try {
-                const res = await fetch('/api/admin/modifiers', { headers: getHeaders() });
+                const restaurantId = document.getElementById('menu-restaurant-selector').value;
+                const res = await fetch(`/api/admin/modifiers?restaurantId=${restaurantId}`, { headers: getHeaders() });
                 const data = await res.json();
                 const container = document.getElementById('modifiers-database-container');
                 container.innerHTML = '';
                 
                 if (!data.modGroups || data.modGroups.length === 0) {
-                    container.innerHTML = '<p class="text-gray-500">No modifiers created yet.</p>';
+                    container.innerHTML = '<p class="text-gray-500">No modifiers created yet for this business.</p>';
                     return;
                 }
                 
@@ -1753,15 +1763,32 @@
     
         async function loadMenu() {
             try {
-                // Load all items
-                const res = await fetch('/api/admin/menu', { headers: getHeaders() });
+                // Populate Restaurant Selector if empty
+                const selector = document.getElementById('menu-restaurant-selector');
+                if (selector.options.length <= 1) {
+                    const resActive = await fetch('/api/admin?action=quimieats_active', { headers: getHeaders() });
+                    const active = await resActive.json();
+                    active.forEach(r => {
+                        if (r.id !== 'rich-aroma') {
+                            const opt = document.createElement('option');
+                            opt.value = r.id;
+                            opt.textContent = r.name;
+                            selector.appendChild(opt);
+                        }
+                    });
+                }
+
+                const restaurantId = selector.value;
+                logDebug(`Loading menu for: ${restaurantId}`);
+
+                // Load all items for this specific restaurant
+                const res = await fetch(`/api/admin/menu?restaurantId=${restaurantId}`, { headers: getHeaders() });
                 const data = await res.json();
-                
-                // Load all modifiers globally to use in the modal
+
+                // Load all modifiers globally
                 const modRes = await fetch('/api/admin/modifiers', { headers: getHeaders() });
                 const modData = await modRes.json();
                 globalModGroups = modData.modGroups || [];
-
                 const tbody = document.getElementById('menuTable');
                 tbody.innerHTML = '';
                 
@@ -2251,6 +2278,7 @@
             const name = document.getElementById('new-group-name').value;
             const maxSelections = parseInt(document.getElementById('new-group-max').value);
             const required = document.getElementById('new-group-required').checked;
+            const restaurantId = document.getElementById('menu-restaurant-selector').value;
             
             if (!name) return alert("Name is required");
 
@@ -2258,10 +2286,10 @@
             btn.disabled = true; btn.innerText = 'Creating...';
 
             try {
-                const res = await fetch('/api/admin/modifiers/groups', {
+                const res = await fetch('/api/admin?action=modifiers_group_create', {
                     method: 'POST',
                     headers: getHeaders(),
-                    body: JSON.stringify({ name, max_selections: maxSelections, required })
+                    body: JSON.stringify({ name, max_selections: maxSelections, required, restaurant_id: restaurantId })
                 });
                 if (res.ok) {
                     document.getElementById('create-mod-group-modal').classList.add('hidden');
@@ -2317,11 +2345,20 @@
             const btn = document.getElementById('save-menu-item-btn');
             btn.disabled = true; btn.innerText = 'Creating...';
 
+            const restaurantId = document.getElementById('menu-restaurant-selector').value;
+
             try {
                 const res = await fetch('/api/admin/menu', {
                     method: 'POST',
                     headers: getHeaders(),
-                    body: JSON.stringify({ name, category, price, description: desc, available: true })
+                    body: JSON.stringify({ 
+                        name, 
+                        category, 
+                        price, 
+                        description: desc, 
+                        available: true,
+                        restaurant_id: restaurantId 
+                    })
                 });
                 if (res.ok) {
                     document.getElementById('create-menu-item-modal').classList.add('hidden');

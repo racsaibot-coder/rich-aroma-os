@@ -62,21 +62,21 @@ module.exports = async function handler(req, res) {
 
     // MENU MANAGER (GET ALL, PATCH, POST)
     if (action === 'menu' && req.method === 'GET') {
+        const resId = req.query.restaurantId || 'rich-aroma';
         const [rItems, rModGroups, rModOptions, rItemModGroups] = await Promise.all([
-            supabase.from('menu_items').select('*').order('category', { ascending: true }),
-            supabase.from('modifier_groups').select('*'),
+            supabase.from('menu_items').select('*').eq('restaurant_id', resId).order('category', { ascending: true }),
+            supabase.from('modifier_groups').select('*').eq('restaurant_id', resId),
             supabase.from('modifier_options').select('*').order('name', { ascending: true }),
             supabase.from('item_modifier_groups').select('*')
         ]);
-        
-        return res.json({ 
+
+        return res.json({
             items: rItems.data || [],
             modGroups: rModGroups.data || [],
             modOptions: rModOptions.data || [],
             itemModGroups: rItemModGroups.data || []
         });
     }
-
     if (action === 'menu' && req.method === 'POST') {
         if (!isAdmin) return res.status(403).json({ error: "Admin access required" });
         const { name, category, price, available, image_url, modifier_groups, description, restaurant_id } = req.body;
@@ -228,8 +228,9 @@ module.exports = async function handler(req, res) {
     }
 
     if (action === 'modifiers' && req.method === 'GET') {
-        const { data: modGroups } = await supabase.from('modifier_groups').select('*');
-        const { data: modOptions } = await supabase.from('modifier_options').select('*');
+        const resId = req.query.restaurantId || 'rich-aroma';
+        const { data: modGroups } = await supabase.from('modifier_groups').select('*').eq('restaurant_id', resId);
+        const { data: modOptions } = await supabase.from('modifier_options').select('*'); // Options are group-linked, so we can fetch all or filter by group
         return res.json({ modGroups, modOptions });
     }
 
@@ -257,20 +258,29 @@ module.exports = async function handler(req, res) {
     
     if (action === 'modifiers_group_create' && req.method === 'POST') {
         if (!isAdmin) return res.status(403).json({ error: "Admin access required" });
-        const { name, max_selections, required } = req.body;
-        const { data, error } = await supabase.from('modifier_groups').insert({ name, max_selections, required }).select().single();
-        if (error) return res.status(500).json({ error: error.message });
-        return res.json(data);
-    }
-    
-    if (action === 'modifiers_option_create' && req.method === 'POST') {
-        if (!isAdmin) return res.status(403).json({ error: "Admin access required" });
-        const { group_id, name, price_adjustment, is_default } = req.body;
-        const { data, error } = await supabase.from('modifier_options').insert({ group_id, name, price_adjustment, is_default }).select().single();
+        const { name, max_selections, required, restaurant_id } = req.body;
+        const { data, error } = await supabase.from('modifier_groups').insert({ 
+            name, 
+            max_selections, 
+            required, 
+            restaurant_id: restaurant_id || 'rich-aroma' 
+        }).select().single();
         if (error) return res.status(500).json({ error: error.message });
         return res.json(data);
     }
 
+    if (action === 'modifiers_option_create' && req.method === 'POST') {
+        if (!isAdmin) return res.status(403).json({ error: "Admin access required" });
+        const { group_id, name, price_adjustment, is_default } = req.body;
+        const { data, error } = await supabase.from('modifier_options').insert({ 
+            group_id, 
+            name, 
+            price_adjustment, 
+            is_default
+        }).select().single();
+        if (error) return res.status(500).json({ error: error.message });
+        return res.json(data);
+    }
     
     if (action === 'modifier_group_delete' && req.method === 'DELETE') {
         if (!isAdmin) return res.status(403).json({ error: "Admin access required" });
