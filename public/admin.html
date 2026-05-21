@@ -60,6 +60,8 @@
                 <button onclick="backspace()" class="w-20 h-20 rounded-2xl bg-white/5 text-white text-xl font-black hover:bg-white/10 transition-all border border-white/10"><i class="fas fa-backspace"></i></button>
             </div>
 
+            <button onclick="login()" class="w-full bg-blue-600 text-white py-4 rounded-2xl font-black uppercase tracking-widest hover:bg-blue-500 shadow-lg shadow-blue-600/20 transition-all mt-4">Verificar PIN</button>
+
             <button onclick="localStorage.clear(); window.location.reload();" class="text-white/30 text-[10px] font-bold uppercase tracking-widest hover:text-white transition-all pt-4 underline">Hard Reset Sessions</button>
 
             <div class="mt-8 text-left bg-black/40 rounded-xl p-3 border border-white/10">
@@ -915,6 +917,16 @@
                 if (window.isBooted) return;
                 window.isBooted = true;
                 logDebug("System boot: START");
+
+                // Keyboard Support
+                window.addEventListener('keydown', (e) => {
+                    if (e.key >= '0' && e.key <= '9') pressKey(e.key);
+                    if (e.key === 'Backspace') backspace();
+                    if (e.key === 'Enter') {
+                        if (currentPin.length >= 4) login();
+                        else logDebug("PIN too short for keyboard Enter");
+                    }
+                });
 
                 // If user uses ?force=true, clear their pin and force a fresh login
                 if (window.location.search.includes('force=true')) {
