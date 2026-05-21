@@ -423,9 +423,14 @@
                             <h3 class="text-xl font-black uppercase tracking-tight text-cyan-400">Socios Activos</h3>
                             <p class="text-[10px] text-white/40 font-bold uppercase tracking-widest mt-1">Negocios Live en QuimiEats.com</p>
                         </div>
-                        <button onclick="openQuickAddBusiness()" class="bg-cyan-500 text-dark px-6 py-3 rounded-2xl font-black uppercase tracking-widest text-[10px] shadow-lg shadow-cyan-500/20 hover:scale-105 transition-all">
-                            <i class="fas fa-plus mr-2"></i> Agregar Negocio
-                        </button>
+                        <div class="flex gap-2">
+                            <button onclick="loadQuimiLeads()" class="w-12 h-12 rounded-full bg-white/5 flex items-center justify-center hover:bg-white/10 transition-all border border-white/10">
+                                <i class="fas fa-sync-alt"></i>
+                            </button>
+                            <button onclick="openQuickAddBusiness()" class="bg-cyan-500 text-dark px-6 py-3 rounded-2xl font-black uppercase tracking-widest text-[10px] shadow-lg shadow-cyan-500/20 hover:scale-105 transition-all">
+                                <i class="fas fa-plus mr-2"></i> Agregar Negocio
+                            </button>
+                        </div>
                     </div>
                     
                     <div class="overflow-x-auto">
@@ -1083,19 +1088,26 @@
             }
         }
 
-        // QUIMIEATS LOGIC
         async function loadQuimiLeads() {
+            logDebug("Loading QuimiEats data...");
             try {
                 // Load Leads
                 const resLeads = await fetch('/api/admin?action=quimieats_leads', { headers: getHeaders() });
                 const leads = await resLeads.json();
+                if (leads.error) throw new Error(leads.error);
                 renderQuimiLeads(leads);
 
                 // Load Active
                 const resActive = await fetch('/api/admin?action=quimieats_active', { headers: getHeaders() });
                 const active = await resActive.json();
+                if (active.error) throw new Error(active.error);
                 renderActiveQuimiBusinesses(active);
-            } catch (e) { console.error("QuimiEats load fail", e); }
+                logDebug("QuimiEats data loaded successfully.");
+            } catch (e) { 
+                logDebug("QuimiEats load fail: " + e.message);
+                console.error("QuimiEats load fail", e); 
+                alert("Error cargando datos de QuimiEats: " + e.message);
+            }
         }
 
         function renderActiveQuimiBusinesses(data) {

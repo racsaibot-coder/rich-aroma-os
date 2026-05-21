@@ -185,6 +185,54 @@ module.exports = async (req, res) => {
             });
         }
 
+        // --- 1.4 PARTNER SAVE ITEM (POST - ONBOARDING) ---
+        if (action === 'partner_save_item' && req.method === 'POST') {
+            const { restaurant_id, name, price, category, imageBase64 } = req.body;
+            
+            if (!restaurant_id || !name || !price || !imageBase64) {
+                return res.status(400).json({ error: "Faltan datos (nombre, precio o imagen)" });
+            }
+
+            // 1. Upload Image to Supabase
+            let imageUrl = null;
+            try {
+                const buffer = Buffer.from(imageBase64.split(',')[1], 'base64');
+                const fileName = `partners/${restaurant_id}_${Date.now()}.png`;
+                const contentType = imageBase64.split(';')[0].split(':')[1] || 'image/png';
+
+                const { data: uploadData, error: uploadErr } = await supabase.storage
+                    .from('menu-images')
+                    .upload(fileName, buffer, { contentType, upsert: true });
+
+                if (uploadErr) throw uploadErr;
+
+                const { data: { publicUrl } } = supabase.storage
+                    .from('menu-images')
+                    .getPublicUrl(fileName);
+                
+                imageUrl = publicUrl;
+            } catch (e) {
+                return res.status(500).json({ error: "Error subiendo imagen: " + e.message });
+            }
+
+            // 2. Create Menu Item
+            const itemId = (category || 'item').toLowerCase() + '_' + name.toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '');
+            
+            const { data, error } = await supabase.from('menu_items').insert({
+                id: itemId,
+                restaurant_id,
+                name,
+                price: parseFloat(price),
+                category: category || 'Principal',
+                image_url: imageUrl,
+                available: true
+            }).select().single();
+
+            if (error) return res.status(500).json({ error: error.message });
+
+            return res.json({ success: true, item: data });
+        }
+
         // --- 1.5 PARTNER TOP-UP (POST) ---
         if (action === 'partner_topup' && req.method === 'POST') {
             const { restaurant_id, phone, amount } = req.body;
