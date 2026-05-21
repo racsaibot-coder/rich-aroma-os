@@ -636,6 +636,39 @@ module.exports = async function handler(req, res) {
         return res.json({ success: true, restaurant: resData });
     }
 
+    if (action === 'quick_add_restaurant' && req.method === 'POST') {
+        if (!isAdmin) return res.status(403).json({ error: "Admin access required" });
+        const { name, logo_url, phone, category } = req.body;
+
+        if (!name || !phone) return res.status(400).json({ error: "Missing name or phone" });
+
+        const resId = name.toLowerCase().trim().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+
+        // 1. Create the restaurant directly
+        const { data, error } = await supabase.from('restaurants').upsert({
+            id: resId,
+            name: name,
+            logo_url: logo_url,
+            contact_phone: phone,
+            category: category || 'restaurante',
+            status: 'active'
+        }).select().single();
+
+        if (error) return res.status(500).json({ error: error.message });
+
+        // 2. Also create a dummy lead record for tracking
+        await supabase.from('quimieats_leads').insert({
+            restaurant_name: name,
+            contact_name: "Admin Quick Add",
+            phone: phone,
+            category: category || 'restaurante',
+            status: 'partner',
+            logo_url: logo_url
+        });
+
+        return res.json({ success: true, restaurant: data });
+    }
+
     // UGC / CREATOR SUBMISSIONS
     if (action === 'ugc_submissions' && req.method === 'GET') {
         if (!isAdmin) return res.status(403).json({ error: "Admin access required" });

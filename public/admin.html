@@ -414,6 +414,9 @@
                             <h3 class="text-xl font-black uppercase tracking-tight text-cyan-400">Socios Activos</h3>
                             <p class="text-[10px] text-white/40 font-bold uppercase tracking-widest mt-1">Negocios Live en QuimiEats.com</p>
                         </div>
+                        <button onclick="openQuickAddBusiness()" class="bg-cyan-500 text-dark px-6 py-3 rounded-2xl font-black uppercase tracking-widest text-[10px] shadow-lg shadow-cyan-500/20 hover:scale-105 transition-all">
+                            <i class="fas fa-plus mr-2"></i> Agregar Negocio
+                        </button>
                     </div>
                     
                     <div class="overflow-x-auto">
@@ -1138,6 +1141,45 @@
                 } else {
                     const err = await res.json();
                     alert("❌ Error: " + err.error);
+                }
+            } catch (e) { alert("Error de conexión"); }
+        }
+
+        function openQuickAddBusiness() {
+            document.getElementById('quick-add-modal').classList.remove('hidden');
+        }
+
+        function closeQuickAddBusiness() {
+            document.getElementById('quick-add-modal').classList.add('hidden');
+        }
+
+        async function submitQuickAddBusiness() {
+            const name = document.getElementById('qa-res-name').value;
+            const logo_url = document.getElementById('qa-res-logo').value;
+            const phone = document.getElementById('qa-res-phone').value;
+            const category = document.getElementById('qa-res-cat').value;
+
+            if (!name || !phone) return alert("El nombre y WhatsApp son obligatorios.");
+
+            try {
+                const res = await fetch('/api/admin?action=quick_add_restaurant', {
+                    method: 'POST',
+                    headers: getHeaders(),
+                    body: JSON.stringify({ name, logo_url, phone, category })
+                });
+
+                if (res.ok) {
+                    alert("✅ Negocio Activado Correctamente");
+                    closeQuickAddBusiness();
+                    loadQuimiLeads(); // Refresh list
+                    
+                    // Clear inputs
+                    document.getElementById('qa-res-name').value = '';
+                    document.getElementById('qa-res-logo').value = '';
+                    document.getElementById('qa-res-phone').value = '';
+                } else {
+                    const data = await res.json();
+                    alert("❌ Error: " + data.error);
                 }
             } catch (e) { alert("Error de conexión"); }
         }
@@ -2888,8 +2930,44 @@
         renderTasks();
     }
 </script>
+<!-- QUICK ADD BUSINESS MODAL -->
+<div id="quick-add-modal" class="hidden fixed inset-0 bg-dark/90 backdrop-blur-md flex items-center justify-center z-[250]">
+    <div class="bg-white rounded-[2.5rem] p-10 max-w-md w-full shadow-2xl space-y-6">
+        <h3 class="text-xl font-black uppercase tracking-tight text-dark">Nuevo Negocio Socio</h3>
+        <div class="space-y-4">
+            <div>
+                <label class="text-[10px] font-black uppercase tracking-widest text-gray-400">Nombre del Negocio</label>
+                <input type="text" id="qa-res-name" class="w-full bg-gray-50 border border-gray-100 p-4 rounded-2xl outline-none focus:border-cyan-500 font-bold uppercase text-sm">
+            </div>
+            <div>
+                <label class="text-[10px] font-black uppercase tracking-widest text-gray-400">URL del Logo (JPG/PNG)</label>
+                <input type="text" id="qa-res-logo" class="w-full bg-gray-50 border border-gray-100 p-4 rounded-2xl outline-none focus:border-cyan-500 text-xs">
+            </div>
+            <div>
+                <label class="text-[10px] font-black uppercase tracking-widest text-gray-400">WhatsApp (Sin espacios)</label>
+                <input type="tel" id="qa-res-phone" placeholder="50499887766" class="w-full bg-gray-50 border border-gray-100 p-4 rounded-2xl outline-none focus:border-cyan-500 font-bold text-sm">
+            </div>
+            <div>
+                <label class="text-[10px] font-black uppercase tracking-widest text-gray-400">Categoría</label>
+                <select id="qa-res-cat" class="w-full bg-gray-50 border border-gray-100 p-4 rounded-2xl outline-none focus:border-cyan-500 font-bold text-sm">
+                    <option value="restaurante">Restaurante / Comida</option>
+                    <option value="reposteria">Repostería / Café</option>
+                    <option value="farmacia">Farmacia</option>
+                    <option value="supermercado">Supermercado</option>
+                    <option value="ferreteria">Ferretería</option>
+                    <option value="servicios">Servicios</option>
+                    <option value="belleza">Belleza</option>
+                </select>
+            </div>
+        </div>
+        <div class="flex gap-4 pt-4">
+            <button onclick="closeQuickAddBusiness()" class="w-1/2 bg-gray-100 text-gray-400 py-4 rounded-2xl font-black uppercase tracking-widest text-[10px]">Cancelar</button>
+            <button onclick="submitQuickAddBusiness()" class="w-1/2 bg-cyan-500 text-dark py-4 rounded-2xl font-black uppercase tracking-widest text-[10px] shadow-lg shadow-cyan-500/20">Activar Negocio</button>
+        </div>
+    </div>
+</div>
+
 <script src="https://cdn.tailwindcss.com"></script>
 <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
 </body>
 </html>
-
