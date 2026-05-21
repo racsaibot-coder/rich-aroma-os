@@ -206,8 +206,8 @@
 
         async function loadPartners() {
             try {
-                // Fetch the dynamic active businesses (Merged from restaurants + leads)
-                const res = await fetch('/api/admin?action=quimieats_active');
+                // Fetch with cache-busting timestamp to see new businesses instantly
+                const res = await fetch(`/api/admin?action=quimieats_active&t=${Date.now()}`);
                 allPartners = await res.json();
                 
                 // Ensure Rich Aroma stays featured if it's in the list

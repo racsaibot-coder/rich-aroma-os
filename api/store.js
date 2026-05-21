@@ -230,6 +230,9 @@ module.exports = async (req, res) => {
 
             if (error) return res.status(500).json({ error: error.message });
 
+            // 3. Auto-activate restaurant if it wasn't already
+            await supabase.from('restaurants').update({ status: 'active' }).eq('id', restaurant_id);
+
             return res.json({ success: true, item: data });
         }
 
