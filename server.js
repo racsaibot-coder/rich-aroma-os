@@ -1225,6 +1225,22 @@ app.post('/api/orders', async (req, res) => {
             }
         }
 
+        // Auto-assign shift_id if missing and there's an open shift
+        let assignedShiftId = req.body.shiftId || req.body.shift_id;
+        if (!assignedShiftId) {
+            const { data: activeShift } = await supabase
+                .from('cash_shifts')
+                .select('id')
+                .eq('status', 'open')
+                .order('opened_at', { ascending: false })
+                .limit(1)
+                .single();
+            if (activeShift) {
+                assignedShiftId = activeShift.id;
+                console.log(`[Order] Auto-assigned shift ${assignedShiftId} to order ${orderNum}`);
+            }
+        }
+
         const orderData = {
             id: 'ORD-' + Date.now() + '-' + Math.floor(Math.random() * 10000),
             order_number: orderNum,
@@ -1238,6 +1254,8 @@ app.post('/api/orders', async (req, res) => {
             fulfillment: req.body.fulfillment, // Save fulfillment type to DB
             customer_id: finalCustomerId,
             discount_code: req.body.discountCode,
+            shift_id: assignedShiftId,
+            scheduled_for: req.body.scheduledFor || req.body.scheduled_for || null,
             notes: (!finalCustomerId ? `[GUEST: ${customerName || 'N/A'}] [PHONE: ${customerPhone || 'N/A'}] ` : '') + (req.body.notes || '')
         };
 
@@ -1559,6 +1577,8 @@ app.patch('/api/orders/:id', ensureAuthenticated, async (req, res) => {
     if (fetchError || !currentOrder) return res.status(404).json({ error: 'Order not found' });
 
     const updates = { ...req.body };
+    if (req.body.shiftId && !req.body.shift_id) updates.shift_id = req.body.shiftId;
+    
     if (req.body.status === 'completed' && currentOrder.status !== 'completed') {
         updates.completed_at = new Date().toISOString();
     }

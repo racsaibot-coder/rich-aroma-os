@@ -896,7 +896,8 @@
 
         // Health Dashboard Update
         const todayOrders = liveOrders;
-        const totalSales = todayOrders.reduce((s,o) => s + (parseFloat(o.total) || 0), 0);
+        const activeOrdersForSales = todayOrders.filter(o => !['completed', 'cancelled'].includes(o.status));
+        const totalSales = activeOrdersForSales.reduce((s,o) => s + (parseFloat(o.total) || 0), 0);
         const salesEl = document.getElementById('health-sales');
         const countEl = document.getElementById('health-count');
         const waitEl = document.getElementById('health-wait');
@@ -1112,15 +1113,22 @@
 
         let telMatch = order.notes ? order.notes.match(/\[TEL:\s*([^\]]+)\]/) : null;
         let phone = telMatch ? telMatch[1].trim() : (order.customers?.phone || '');
+        
+        function getWhatsAppLink(rawPhone) {
+            const clean = rawPhone.replace(/\D/g, '');
+            // If it's exactly 8 digits, assume Honduras (+504)
+            if (clean.length === 8) return "504" + clean;
+            return clean;
+        }
+
         if (phone && phone.length > 4) {
-            const cleanPhone = phone.replace(/\D/g, '');
-            const waLink = `https://wa.me/${cleanPhone.startsWith('504') ? '' : '504'}${cleanPhone}`;
+            const waLink = `https://wa.me/${getWhatsAppLink(phone)}`;
             document.getElementById('view-order-customer').innerHTML = `${name} <a href="${waLink}" target="_blank" class="ml-2 inline-flex items-center justify-center w-8 h-8 rounded-full bg-green-500/20 text-green-500 text-[10px] hover:bg-green-500 hover:text-white transition-all"><i class="fab fa-whatsapp"></i></a>`;
         }
 
         document.getElementById('view-order-total').innerText = `L. ${(parseFloat(order.total) || 0).toFixed(2)}`;
 
-        const waBase = `https://wa.me/${phone.replace(/\D/g, '').startsWith('504') ? '' : '504'}${phone.replace(/\D/g, '')}`;
+        const waBase = `https://wa.me/${getWhatsAppLink(phone)}`;
         const orderNum = order.order_number || order.id.slice(-4);
 
         let whatsappButtons = '';
@@ -1147,8 +1155,20 @@
         }
 
         const content = document.getElementById('view-order-content');
+        let scheduledHtml = '';
+        if (order.scheduled_for) {
+            const date = new Date(order.scheduled_for);
+            scheduledHtml = `
+                <div class="bg-blue-500/10 border border-blue-500/20 p-4 rounded-2xl mb-4">
+                    <p class="text-[9px] font-black text-blue-400 uppercase tracking-widest mb-1"><i class="fas fa-clock mr-1"></i> PROGRAMADO PARA:</p>
+                    <p class="text-white font-black text-lg">${date.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})} - ${date.toLocaleDateString()}</p>
+                </div>
+            `;
+        }
+
         content.innerHTML = `
             <div class="space-y-4">
+                ${scheduledHtml}
                 ${(order.items || []).map(i => `
                     <div class="bg-white/5 p-5 rounded-[2rem] border border-white/5">
                         <div class="flex justify-between items-start">

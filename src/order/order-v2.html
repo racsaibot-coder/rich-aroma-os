@@ -454,6 +454,36 @@
             padding: 4px;
             border-radius: 4px;
         }
+
+        /* Quantity Selector */
+        .qty-selector {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            background: rgba(255,255,255,0.05);
+            padding: 0.5rem;
+            border-radius: 12px;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+        .qty-btn {
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+            border: none;
+            background: var(--caramel);
+            color: #000;
+            font-weight: 800;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+        }
+        .qty-val {
+            font-weight: 700;
+            font-size: 1.1rem;
+            min-width: 20px;
+            text-align: center;
+        }
     </style>
 </head>
 <body>
@@ -512,7 +542,14 @@
             <!-- Dynamic Content -->
         </div>
         <div class="wizard-footer">
-            <div class="wizard-total">L<span id="wizardPriceDisplay">0</span></div>
+            <div style="display:flex; flex-direction:column; gap:0.25rem">
+                <div class="wizard-total">L<span id="wizardPriceDisplay">0</span></div>
+                <div class="qty-selector">
+                    <button class="qty-btn" onclick="decreaseQty()">-</button>
+                    <span class="qty-val" id="wizardQty">1</span>
+                    <button class="qty-btn" onclick="increaseQty()">+</button>
+                </div>
+            </div>
             <button class="wizard-action-btn" id="wizardNextBtn" onclick="wizardNext()">Siguiente</button>
         </div>
     </div>
@@ -583,7 +620,16 @@
             <div id="loginFormPhone">
                 <div style="margin-bottom: 1rem;">
                     <label style="display:block; margin-bottom:0.5rem; font-size:0.9rem; color:var(--text-muted)">Phone Number</label>
-                    <input type="tel" id="loginPhone" class="phone-input" placeholder="e.g. 99999999">
+                    <div style="display:flex; gap:0.5rem;">
+                        <select id="loginCountryCode" style="width: 80px; padding: 0.8rem; background: var(--card-bg); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; color: white;">
+                            <option value="+504">+504 (HN)</option>
+                            <option value="+1">+1 (US)</option>
+                            <option value="+502">+502 (GT)</option>
+                            <option value="+503">+503 (SV)</option>
+                            <option value="+506">+506 (CR)</option>
+                        </select>
+                        <input type="tel" id="loginPhone" class="phone-input" placeholder="e.g. 99999999" style="flex:1">
+                    </div>
                 </div>
                 <div style="margin-bottom: 1rem;">
                     <label style="display:block; margin-bottom:0.5rem; font-size:0.9rem; color:var(--text-muted)">PIN (4 digits)</label>
@@ -626,7 +672,16 @@
 
             <div style="margin-bottom: 1rem;">
                 <label style="display:block; margin-bottom:0.5rem; font-size:0.9rem; color:var(--text-muted)">Phone Number</label>
-                <input type="tel" id="regPhone" class="phone-input" placeholder="e.g. 99999999">
+                <div style="display:flex; gap:0.5rem;">
+                    <select id="regCountryCode" style="width: 80px; padding: 0.8rem; background: var(--card-bg); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; color: white;">
+                        <option value="+504">+504 (HN)</option>
+                        <option value="+1">+1 (US)</option>
+                        <option value="+502">+502 (GT)</option>
+                        <option value="+503">+503 (SV)</option>
+                        <option value="+506">+506 (CR)</option>
+                    </select>
+                    <input type="tel" id="regPhone" class="phone-input" placeholder="e.g. 99999999" style="flex:1">
+                </div>
             </div>
 
             <div style="margin-bottom: 1rem;">
@@ -663,6 +718,19 @@
                 <div style="display:grid; grid-template-columns:1fr 1fr; gap:0.5rem; background:var(--card-bg); padding:0.25rem; border-radius:12px;">
                     <button class="cat-btn active" id="btnPickup" onclick="setOrderType('pickup')" style="justify-content:center; width:100%">Pickup</button>
                     <button class="cat-btn" id="btnDelivery" onclick="setOrderType('delivery')" style="justify-content:center; width:100%">Delivery</button>
+                </div>
+            </div>
+
+            <div class="form-group" style="margin-bottom:1.5rem; background: rgba(255,255,255,0.03); padding: 1rem; border-radius: 12px; border: 1px solid rgba(255,255,255,0.05);">
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                    <label style="font-weight:600; font-size:0.9rem;">Schedule for later?</label>
+                    <input type="checkbox" id="scheduleToggle" onchange="toggleScheduling()" style="width: 20px; h-6 accent-caramel">
+                </div>
+                <div id="schedulingFields" style="display:none; margin-top:1rem; border-top: 1px solid rgba(255,255,255,0.05); pt-4;">
+                    <p style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.5rem;">Orders can be scheduled between 7:00 AM and 6:00 PM.</p>
+                    <div style="display:flex; gap:0.5rem; align-items:center;">
+                        <input type="time" id="scheduledTime" class="phone-input" style="flex:1" min="07:00" max="18:00">
+                    </div>
                 </div>
             </div>
 
@@ -842,6 +910,9 @@
                     renderCategories();
                     selectCategory('coffee');
                 });
+            
+            // Fetch shift status if logged in
+            refreshShiftStatus();
         }
 
         function renderCategories() {
@@ -886,6 +957,7 @@
             wizardState = {
                 step: 0,
                 selections: {},
+                qty: 1,
                 basePrice: currentItem.price,
                 totalPrice: currentItem.price,
                 steps: [...(currentItem.modifiers || DEFAULT_MODIFIERS), UPSELL_ITEM]
@@ -965,6 +1037,7 @@
 
             // 3. Footer
             updateWizardPrice();
+            document.getElementById('wizardQty').textContent = wizardState.qty;
             
             // Back button visibility
             document.querySelector('.wizard-back').style.visibility = wizardState.step > 0 ? 'visible' : 'hidden';
@@ -1089,8 +1162,20 @@
             }
         }
 
+        function increaseQty() {
+            wizardState.qty++;
+            updateWizardUI();
+        }
+
+        function decreaseQty() {
+            if (wizardState.qty > 1) {
+                wizardState.qty--;
+                updateWizardUI();
+            }
+        }
+
         function updateWizardPrice() {
-            let total = wizardState.basePrice;
+            let subtotal = wizardState.basePrice;
             
             // Modifiers
             wizardState.steps.forEach(step => {
@@ -1098,13 +1183,13 @@
                     const selId = wizardState.selections[step.id];
                     if (selId) {
                         const opt = step.options.find(o => o.id === selId);
-                        if (opt) total += opt.price || 0;
+                        if (opt) subtotal += opt.price || 0;
                     }
                 }
             });
 
-            wizardState.totalPrice = total;
-            document.getElementById('wizardPriceDisplay').textContent = total;
+            wizardState.totalPrice = subtotal * wizardState.qty;
+            document.getElementById('wizardPriceDisplay').textContent = wizardState.totalPrice;
         }
 
         function validateStep() {
@@ -1155,6 +1240,7 @@
             // Add main item
             cart.push({
                 ...currentItem,
+                qty: wizardState.qty,
                 selections: {...wizardState.selections},
                 finalPrice: wizardState.totalPrice,
                 instanceId: Date.now()
@@ -1166,7 +1252,7 @@
 
         // --- CART & CHECKOUT ---
         function updateCartUI() {
-            const count = cart.length;
+            const count = cart.reduce((sum, item) => sum + (item.qty || 1), 0);
             const total = cart.reduce((sum, item) => sum + (item.finalPrice || item.price), 0);
             
             document.getElementById('cartCount').textContent = count;
@@ -1208,10 +1294,10 @@
                 return `
                 <div class="cart-review-item">
                     <div class="cart-item-details">
-                        <div class="cart-item-name">${item.name} <span style="color:var(--text-muted); font-size:0.8em">x1</span></div>
+                        <div class="cart-item-name">${item.name} <span style="color:var(--caramel); font-weight:700;">x${item.qty || 1}</span></div>
                         ${modString ? `<div class="cart-item-mods">${modString}</div>` : ''}
                     </div>
-                    <div class="cart-item-price">L${item.finalPrice || item.price}</div>
+                    <div class="cart-item-price">L${(item.finalPrice || item.price)}</div>
                     <button class="cart-remove-btn" onclick="removeItem(${index})">×</button>
                 </div>
                 `;
@@ -1334,6 +1420,11 @@
             }
         }
 
+        function toggleScheduling() {
+            const isEnabled = document.getElementById('scheduleToggle').checked;
+            document.getElementById('schedulingFields').style.display = isEnabled ? 'block' : 'none';
+        }
+
         async function submitOrder() {
             // Check for guest
             if (!checkoutState.customer) {
@@ -1347,6 +1438,29 @@
                 const phone = prompt("Por favor ingresa tu número de teléfono para contactarte sobre tu orden:");
                 if (!phone) return alert("El número de teléfono es obligatorio para procesar la orden.");
                 checkoutState.customer = { phone: phone, name: 'Invitado' };
+            }
+
+            // Scheduling Logic
+            let scheduledFor = null;
+            if (document.getElementById('scheduleToggle').checked) {
+                const timeVal = document.getElementById('scheduledTime').value;
+                if (!timeVal) return alert('Por favor selecciona una hora para tu orden programada.');
+                
+                const [hours, minutes] = timeVal.split(':').map(Number);
+                if (hours < 7 || hours >= 18) {
+                    return alert('Lo sentimos, solo aceptamos órdenes programadas entre las 7:00 AM y 6:00 PM.');
+                }
+
+                // Create date object in local time for today
+                const now = new Date();
+                const scheduledDate = new Date();
+                scheduledDate.setHours(hours, minutes, 0, 0);
+
+                // If time has already passed today, assume tomorrow
+                if (scheduledDate < now) {
+                    scheduledDate.setDate(scheduledDate.getDate() + 1);
+                }
+                scheduledFor = scheduledDate.toISOString();
             }
 
             const subtotal = cart.reduce((s, i) => s + (i.finalPrice || i.price), 0);
@@ -1392,6 +1506,8 @@
                 deliveryZoneId,
                 deliveryFee,
                 deliveryAddress,
+                scheduled_for: scheduledFor,
+                shift_id: currentShift ? currentShift.id : null,
                 status: checkoutState.payment === 'cash' ? 'pending' : 'paid'
             };
 
@@ -1613,7 +1729,9 @@
             const payload = { type: loginMethod };
             
             if (loginMethod === 'phone') {
-                payload.identifier = document.getElementById('loginPhone').value;
+                const code = document.getElementById('loginCountryCode').value;
+                const phone = document.getElementById('loginPhone').value;
+                payload.identifier = code + phone.replace(/\D/g, '');
                 payload.secret = document.getElementById('loginPin').value;
             } else {
                 payload.identifier = document.getElementById('loginEmail').value;
@@ -1652,12 +1770,15 @@
 
         async function submitRegister() {
             const name = document.getElementById('regName').value;
-            const phone = document.getElementById('regPhone').value;
+            const code = document.getElementById('regCountryCode').value;
+            const rawPhone = document.getElementById('regPhone').value;
             const email = document.getElementById('regEmail').value;
             const pin = document.getElementById('regPin').value;
 
-            if (!name || !phone || !pin) return alert('Please fill in required fields');
+            if (!name || !rawPhone || !pin) return alert('Please fill in required fields');
             if (pin.length < 4) return alert('PIN must be 4 digits');
+
+            const phone = code + rawPhone.replace(/\D/g, '');
 
             const btn = document.querySelector('#registerModal .confirm-btn');
             btn.textContent = 'Creating...';
@@ -1876,8 +1997,8 @@
 
 
         // --- MANAGER / CASH MANAGEMENT ---
-        let managerToken = null;
-        let currentManager = null;
+        let managerToken = localStorage.getItem('managerToken');
+        let currentManager = JSON.parse(localStorage.getItem('currentManager') || 'null');
         let currentShift = null;
 
         function openManager() {
@@ -1897,6 +2018,8 @@
                     if (data.success) {
                         managerToken = data.token;
                         currentManager = data.employee;
+                        localStorage.setItem('managerToken', managerToken);
+                        localStorage.setItem('currentManager', JSON.stringify(currentManager));
                         document.getElementById('managerModal').classList.add('show');
                         loadManagerDashboard();
                     } else {
@@ -1934,6 +2057,18 @@
             } catch (e) {
                 container.innerHTML = 'Error loading dashboard';
             }
+        }
+
+        // Helper to fetch shift in background for POS orders
+        async function refreshShiftStatus() {
+            if (!managerToken) return;
+            try {
+                const res = await fetch('/api/cash/current-shift', {
+                    headers: { 'Authorization': 'Bearer ' + managerToken }
+                });
+                const data = await res.json();
+                if (data.shift) currentShift = data.shift;
+            } catch (e) { console.error("Shift refresh error", e); }
         }
 
         function renderOpenShiftForm() {

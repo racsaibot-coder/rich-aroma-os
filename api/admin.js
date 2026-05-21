@@ -549,6 +549,34 @@ module.exports = async function handler(req, res) {
         return res.json(data || []);
     }
 
+    if (action === 'quimieats_active' && req.method === 'GET') {
+        const [rRes, rLeads] = await Promise.all([
+            supabase.from('restaurants').select('*').order('name', { ascending: true }),
+            supabase.from('quimieats_leads').select('*').eq('status', 'partner').order('restaurant_name', { ascending: true })
+        ]);
+        
+        // Merge them
+        const restaurants = rRes.data || [];
+        const partnersFromLeads = (rLeads.data || []).map(l => ({
+            id: l.restaurant_name.toLowerCase().trim().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, ''),
+            name: l.restaurant_name,
+            logo_url: l.logo_url,
+            contact_phone: l.phone,
+            category: l.category || 'restaurante',
+            status: 'active'
+        }));
+
+        // Combine and remove duplicates by name
+        const combined = [...restaurants];
+        partnersFromLeads.forEach(p => {
+            if (!combined.some(c => c.name.toLowerCase() === p.name.toLowerCase())) {
+                combined.push(p);
+            }
+        });
+
+        return res.json(combined);
+    }
+
     if (action === 'approve_quimieats_lead' && req.method === 'POST') {
         if (!isAdmin) return res.status(403).json({ error: "Admin access required" });
         const { leadId } = req.body;
@@ -576,6 +604,36 @@ module.exports = async function handler(req, res) {
         await supabase.from('quimieats_leads').update({ status: 'partner' }).eq('id', leadId);
 
         return res.json({ success: true, restaurant });
+    }
+
+    if (action === 'update_restaurant_logo' && req.method === 'POST') {
+        if (!isAdmin) return res.status(403).json({ error: "Admin access required" });
+        const { restaurantId, logoUrl, restaurantName } = req.body;
+        
+        // 1. Try to update in restaurants table
+        const { data: resData, error: resErr } = await supabase
+            .from('restaurants')
+            .update({ logo_url: logoUrl })
+            .eq('id', restaurantId)
+            .select()
+            .single();
+
+        // 2. If it fails or doesn't exist, update the lead
+        if (resErr || !resData) {
+            console.log(`[Admin] Restaurant ${restaurantId} not in main table, updating leads instead.`);
+            const { error: leadErr } = await supabase
+                .from('quimieats_leads')
+                .update({ logo_url: logoUrl })
+                .eq('restaurant_name', restaurantName || restaurantId);
+            
+            if (leadErr) return res.status(500).json({ error: leadErr.message });
+            return res.json({ success: true, updated: 'lead' });
+        }
+
+        // 3. Sync lead if restaurant was found
+        await supabase.from('quimieats_leads').update({ logo_url: logoUrl }).eq('restaurant_name', resData.name);
+
+        return res.json({ success: true, restaurant: resData });
     }
 
     // UGC / CREATOR SUBMISSIONS

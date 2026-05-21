@@ -4,20 +4,25 @@
     <link rel="icon" type="image/png" href="/favicon.png">    <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Admin Dashboard | Rich Aroma</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <script>
-        // AGGRESSIVE CACHE NUKE v3.2.0
-        const ADMIN_VERSION = '3.2.0';
-        if (localStorage.getItem('ra_admin_version') !== ADMIN_VERSION) {
-            localStorage.setItem('ra_admin_version', ADMIN_VERSION);
-            console.log("New Admin version detected, clearing local storage and reloading...");
-            localStorage.clear(); // Complete clear for safety
-            window.location.reload(true);
-        }
+        // FAIL-SAFE: If the page takes more than 5s to boot, force show the login modal
+        setTimeout(() => {
+            const modal = document.getElementById('login-modal');
+            if (modal && modal.style.display === 'none') {
+                console.warn("Fail-safe: Force showing login modal");
+                modal.style.display = 'flex';
+            }
+        }, 5000);
     </script>
 </head>
 <body class="bg-gray-100 text-gray-800 p-6">
+    <script>
+        // INSTANT RENDER BYPASS
+        if (window.location.search.includes('instant=true') || window.location.search.includes('force=true')) {
+            document.body.style.display = 'block';
+            console.log("Instant render triggered");
+        }
+    </script>
 
     <!-- LOGIN MODAL -->
     <div id="login-modal" class="fixed inset-0 bg-blue-900 z-[200] flex flex-col items-center justify-center p-6 text-center">
@@ -397,12 +402,40 @@
                     </div>
                 </div>
             <!-- TAB: QUIMIEATS LEADS -->
-            <div id="section-quimieats" class="hidden">
+            <div id="section-quimieats" class="hidden space-y-12">
+                <!-- ACTIVE BUSINESSES -->
                 <div class="bg-white rounded-[2rem] shadow-xl overflow-hidden border border-gray-100">
                     <div class="p-8 bg-[#0D0D0D] text-white flex justify-between items-center">
                         <div>
-                            <h3 class="text-xl font-black uppercase tracking-tight text-cyan-400">QuimiEats Network</h3>
-                            <p class="text-[10px] text-white/40 font-bold uppercase tracking-widest mt-1">Interesados en unirse a la plataforma</p>
+                            <h3 class="text-xl font-black uppercase tracking-tight text-cyan-400">Socios Activos</h3>
+                            <p class="text-[10px] text-white/40 font-bold uppercase tracking-widest mt-1">Negocios Live en QuimiEats.com</p>
+                        </div>
+                    </div>
+                    
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse">
+                            <thead class="bg-gray-50 text-gray-400 text-[10px] uppercase font-bold tracking-widest">
+                                <tr>
+                                    <th class="p-6">ID</th>
+                                    <th class="p-6">Negocio</th>
+                                    <th class="p-6">Categoría</th>
+                                    <th class="p-6">WhatsApp</th>
+                                    <th class="p-6 text-right">Acción</th>
+                                </tr>
+                            </thead>
+                            <tbody id="activeQuimiTable" class="divide-y divide-gray-100 text-sm">
+                                <!-- Data injected via JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- NEW LEADS -->
+                <div class="bg-white rounded-[2rem] shadow-xl overflow-hidden border border-gray-100">
+                    <div class="p-8 bg-[#0D0D0D] text-white flex justify-between items-center">
+                        <div>
+                            <h3 class="text-xl font-black uppercase tracking-tight text-cyan-400">Nuevos Interesados</h3>
+                            <p class="text-[10px] text-white/40 font-bold uppercase tracking-widest mt-1">Personas que quieren unirse</p>
                         </div>
                         <button onclick="loadQuimiLeads()" class="w-12 h-12 rounded-full bg-white/5 flex items-center justify-center hover:bg-white/10 transition-all border border-white/10">
                             <i class="fas fa-sync-alt"></i>
@@ -417,7 +450,7 @@
                                     <th class="p-6">Negocio</th>
                                     <th class="p-6">Contacto</th>
                                     <th class="p-6">WhatsApp</th>
-                                    <th class="p-6 text-right">Categoría</th>
+                                    <th class="p-6 text-right">Estado</th>
                                 </tr>
                             </thead>
                             <tbody id="quimiTable" class="divide-y divide-gray-100 text-sm">
@@ -877,16 +910,41 @@
         }
 
         // Initialize on load
-        window.addEventListener('load', async () => {
-            logDebug("System boot: OK");
-            logDebug("Admin Dashboard v3.0.0 loaded");
-            const savedPin = localStorage.getItem('ra_admin_pin');
-            if (savedPin) {
-                logDebug("Restoring saved session...");
-                currentPin = savedPin;
-                await login();
+        async function bootSystem() {
+            try {
+                if (window.isBooted) return;
+                window.isBooted = true;
+                logDebug("System boot: START");
+
+                // If user uses ?force=true, clear their pin and force a fresh login
+                if (window.location.search.includes('force=true')) {
+                    logDebug("Forcing fresh session...");
+                    localStorage.removeItem('ra_admin_pin');
+                }
+
+                const savedPin = localStorage.getItem('ra_admin_pin');
+                if (savedPin) {
+                    logDebug("Attempting auto-login...");
+                    currentPin = savedPin;
+                    await login();
+                } else {
+                    logDebug("Ready for PIN.");
+                    document.getElementById('login-modal').classList.remove('hidden');
+                    document.getElementById('login-modal').style.display = 'flex';
+                }
+                fetchStoreStatus();
+            } catch (e) {
+                logDebug("Boot Error: " + e.message);
+                document.getElementById('login-modal').classList.remove('hidden');
+                document.getElementById('login-modal').style.display = 'flex';
             }
-        });
+        }
+
+        if (document.readyState === 'loading') {
+            window.addEventListener('DOMContentLoaded', bootSystem);
+        } else {
+            bootSystem();
+        }
 
         function getHeaders() {
             const token = localStorage.getItem('ra_admin_pin') || '';
@@ -989,10 +1047,72 @@
         // QUIMIEATS LOGIC
         async function loadQuimiLeads() {
             try {
-                const res = await fetch('/api/admin?action=quimieats_leads', { headers: getHeaders() });
-                const data = await res.json();
-                renderQuimiLeads(data);
-            } catch (e) { console.error("Leads fail", e); }
+                // Load Leads
+                const resLeads = await fetch('/api/admin?action=quimieats_leads', { headers: getHeaders() });
+                const leads = await resLeads.json();
+                renderQuimiLeads(leads);
+
+                // Load Active
+                const resActive = await fetch('/api/admin?action=quimieats_active', { headers: getHeaders() });
+                const active = await resActive.json();
+                renderActiveQuimiBusinesses(active);
+            } catch (e) { console.error("QuimiEats load fail", e); }
+        }
+
+        function renderActiveQuimiBusinesses(data) {
+            const tbody = document.getElementById('activeQuimiTable');
+            if (!tbody) return;
+            if (!data || data.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" class="p-12 text-center text-gray-400 italic">No hay socios activos aún.</td></tr>';
+                return;
+            }
+            tbody.innerHTML = data.map(r => `
+                <tr>
+                    <td class="p-6 text-[10px] font-mono text-gray-400 uppercase">${r.id}</td>
+                    <td class="p-6">
+                        <div class="flex items-center gap-4">
+                            <div class="w-12 h-12 rounded-xl bg-gray-100 border border-gray-200 flex items-center justify-center overflow-hidden">
+                                ${r.logo_url ? `<img src="${r.logo_url}" class="w-full h-full object-cover">` : '<i class="fas fa-store text-gray-300"></i>'}
+                            </div>
+                            <div>
+                                <div class="font-bold text-gray-800 uppercase">${r.name}</div>
+                                <div class="text-[8px] font-black uppercase text-success">Status: ${r.status}</div>
+                            </div>
+                        </div>
+                    </td>
+                    <td class="p-6 text-xs font-bold text-gray-500 uppercase">${r.category || 'N/A'}</td>
+                    <td class="p-6">
+                        <a href="https://wa.me/${r.contact_phone}" target="_blank" class="text-blue-600 font-bold underline flex items-center gap-1">
+                            ${r.contact_phone} <i class="fab fa-whatsapp text-green-500"></i>
+                        </a>
+                    </td>
+                    <td class="p-6 text-right">
+                        <button onclick="updateQuimiLogo('${r.id}', '${r.name}')" class="bg-gray-100 text-gray-600 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-gray-200 transition-all">
+                            Cambiar Logo
+                        </button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        async function updateQuimiLogo(id, name) {
+            const url = prompt(`Ingrese la URL del nuevo LOGO para ${name}:`);
+            if (!url) return;
+
+            try {
+                const res = await fetch('/api/admin?action=update_restaurant_logo', {
+                    method: 'POST',
+                    headers: getHeaders(),
+                    body: JSON.stringify({ restaurantId: id, logoUrl: url, restaurantName: name })
+                });
+                if (res.ok) {
+                    alert("✅ Logo actualizado correctamente.");
+                    loadQuimiLeads();
+                } else {
+                    const err = await res.json();
+                    alert("❌ Error: " + err.error);
+                }
+            } catch (e) { alert("Error de conexión"); }
         }
 
         function renderQuimiLeads(data) {
@@ -1027,7 +1147,7 @@
                             <button onclick="approveQuimiLead(${l.id})" class="bg-cyan-500 text-dark px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-cyan-400 transition-all shadow-lg">
                                 Aprobar Socio
                             </button>
-                        ` : `<span class="text-success font-bold text-[10px] uppercase tracking-widest"><i class="fas fa-check-circle"></i> Activo</span>`}
+                        ` : `<span class="text-success font-bold text-[10px] uppercase tracking-widest"><i class="fas fa-check-circle"></i> Convertido</span>`}
                     </td>
                 </tr>
             `).join('');
@@ -2740,14 +2860,9 @@
         localStorage.setItem('ra_admin_tasks', JSON.stringify(tasks));
         renderTasks();
     }
-
-    // Init
-    window.addEventListener('DOMContentLoaded', () => {
-        logDebug("System boot: OK");
-        logDebug("Admin Dashboard v3.0.0 loaded");
-        fetchStoreStatus();
-    });
 </script>
+<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
 </body>
 </html>
 
