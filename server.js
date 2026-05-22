@@ -1220,13 +1220,33 @@ app.post('/api/memberships/purchase', async (req, res) => {
     }
 });
 
-// --- SURGE DEALS API ---
+// --- SURGE DEALS API (Hybrid Sync) ---
 app.get('/api/surge/active', async (req, res) => {
-    const { data, error } = await supabase.from('surge_deals')
-        .select('*')
-        .eq('active', true)
-        .gt('expires_at', new Date().toISOString());
-    res.json({ success: true, deals: data || [] });
+    try {
+        let activeDeals = [];
+        
+        // 1. Try Supabase
+        const { data, error } = await supabase.from('surge_deals')
+            .select('*')
+            .eq('active', true)
+            .gt('expires_at', new Date().toISOString());
+        
+        if (!error && data) {
+            activeDeals = data;
+        } else {
+            // 2. Fallback to Local JSON
+            console.log("[Surge] DB Table missing or error, using local fallback.");
+            const surgePath = path.join(__dirname, 'data', 'surge_deals.json');
+            if (fs.existsSync(surgePath)) {
+                const local = JSON.parse(fs.readFileSync(surgePath, 'utf8'));
+                const now = new Date();
+                activeDeals = (local.deals || []).filter(d => d.active && new Date(d.expires_at) > now);
+            }
+        }
+        res.json({ success: true, deals: activeDeals });
+    } catch (e) {
+        res.json({ success: true, deals: [] });
+    }
 });
 
 app.post('/api/surge/activate', ensureAuthenticated, async (req, res) => {
@@ -1234,18 +1254,31 @@ app.post('/api/surge/activate', ensureAuthenticated, async (req, res) => {
     const expiresAt = new Date();
     expiresAt.setMinutes(expiresAt.getMinutes() + (parseInt(durationMinutes) || 60));
 
+    const dealData = {
+        id: 'surge_' + Date.now(),
+        type,
+        expires_at: expiresAt.toISOString(),
+        description,
+        active: true
+    };
+
+    // 1. Try to save to Supabase
     const { data, error } = await supabase.from('surge_deals')
-        .insert({
-            type,
-            expires_at: expiresAt.toISOString(),
-            description,
-            active: true
-        })
+        .insert(dealData)
         .select()
         .single();
 
-    if (error) return res.status(500).json({ error: error.message });
-    res.json({ success: true, deal: data });
+    // 2. Always save to Local JSON (Backup/Primary if DB fails)
+    try {
+        const surgePath = path.join(__dirname, 'data', 'surge_deals.json');
+        let local = { deals: [] };
+        if (fs.existsSync(surgePath)) local = JSON.parse(fs.readFileSync(surgePath, 'utf8'));
+        local.deals.unshift(dealData);
+        fs.writeFileSync(surgePath, JSON.stringify(local, null, 2));
+        console.log("[Surge] Deal saved to local sync.");
+    } catch (fsErr) { console.error("Local surge save failed", fsErr); }
+
+    res.json({ success: true, deal: data || dealData });
 });
 
 app.post('/api/orders', async (req, res) => {
@@ -1300,10 +1333,25 @@ app.post('/api/orders', async (req, res) => {
 
         // --- SURGE DEAL ENGINE ---
         let surgeDiscount = 0;
-        const { data: activeSurges } = await supabase.from('surge_deals')
-            .select('*')
-            .eq('active', true)
-            .gt('expires_at', new Date().toISOString());
+        let activeSurges = [];
+        try {
+            const { data: dbSurges, error: dbSurgeErr } = await supabase.from('surge_deals')
+                .select('*')
+                .eq('active', true)
+                .gt('expires_at', new Date().toISOString());
+            
+            if (!dbSurgeErr && dbSurges) {
+                activeSurges = dbSurges;
+            } else {
+                // Local Fallback
+                const surgePath = path.join(__dirname, 'data', 'surge_deals.json');
+                if (fs.existsSync(surgePath)) {
+                    const local = JSON.parse(fs.readFileSync(surgePath, 'utf8'));
+                    const now = new Date();
+                    activeSurges = (local.deals || []).filter(d => d.active && new Date(d.expires_at) > now);
+                }
+            }
+        } catch (e) { console.error("Surge calculation error", e); }
 
         if (activeSurges && activeSurges.length > 0) {
             console.log(`[Surge] ${activeSurges.length} deals active. Calculating...`);
