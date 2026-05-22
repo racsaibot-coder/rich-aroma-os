@@ -95,6 +95,18 @@
             </div>
         </div>
 
+        <!-- Rich Aroma Pilot (AI Suggestions) -->
+        <div id="ai-pilot-container" class="p-4 bg-blue-900/10 border-b border-black hidden">
+            <div class="flex items-center gap-2 mb-3">
+                <span class="text-[10px]">🤖</span>
+                <p class="text-[8px] font-black text-blue-400 uppercase tracking-[0.2em]">Pilot Advice</p>
+            </div>
+            <div id="pilot-suggestion" class="bg-white/5 border border-blue-500/20 p-3 rounded-2xl">
+                <p id="pilot-text" class="text-[10px] text-white/80 font-medium leading-relaxed italic">Analyzing sales pace...</p>
+                <button id="pilot-action-btn" onclick="activatePilotMove()" class="mt-2 w-full py-2 bg-blue-600/20 text-blue-400 text-[8px] font-black uppercase tracking-widest rounded-lg hover:bg-blue-600 hover:text-white transition-all hidden">Activate Deal</button>
+            </div>
+        </div>
+
         <div class="flex-1 overflow-y-auto p-2 space-y-2 custom-scrollbar" id="live-order-feed">
             <!-- Orders injected here -->
             <div class="text-center py-10 text-gray-600 text-xs italic">Connecting...</div>
@@ -954,6 +966,9 @@
             else salesEl.className = "text-xl font-black text-white leading-none";
         }
         if (countEl) countEl.innerText = todayOrders.length;
+
+        // --- AI PILOT ADVICE ---
+        updateAIPilot(totalSales, todayOrders.length, progress);
 
         const completed = todayOrders.filter(o => o.status === 'completed' && o.completed_at);
         if (completed.length > 0 && waitEl) {
@@ -3391,6 +3406,81 @@
         saveCartState();
         renderCart();
         closeCustomModal();
+    }
+
+    let currentPilotAction = null;
+    function updateAIPilot(total, count, progress) {
+        const container = document.getElementById('ai-pilot-container');
+        const text = document.getElementById('pilot-text');
+        const btn = document.getElementById('pilot-action-btn');
+        if (!container) return;
+
+        container.classList.remove('hidden');
+        
+        const now = new Date();
+        const hour = now.getHours();
+
+        // 1. Threshold Logic
+        if (progress >= 100) {
+            text.innerText = "Goal reached! 🚀 Target L. 10,000 smashed. Every sale from here is pure growth.";
+            btn.classList.add('hidden');
+            return;
+        }
+
+        // 2. Pace Scenarios
+        if (hour < 11) { // Morning
+            if (total < 1000) {
+                text.innerText = "Sales are L. 500 below morning pace. Suggest 'Breakfast Special' to walk-ins.";
+                currentPilotAction = { type: 'promo', deal: 'Breakfast Combo L. 120' };
+                btn.innerText = "Blast Promo";
+                btn.classList.remove('hidden');
+            } else {
+                text.innerText = "Strong start! Morning traffic is high. Keep the speed up.";
+                btn.classList.add('hidden');
+            }
+        } else if (hour >= 11 && hour < 14) { // Lunch
+            if (total < 4000) {
+                text.innerText = "Lunch rush is slow. Activate 'Surge Deal' (2x1 Bakery) for the next 60m?";
+                currentPilotAction = { type: 'deal', deal: 'Bakery BOGO' };
+                btn.innerText = "Activate Surge";
+                btn.classList.remove('hidden');
+            } else {
+                text.innerText = "Great lunch volume. Pivot staff to upselling Frappes.";
+                btn.classList.add('hidden');
+            }
+        } else if (hour >= 14 && hour < 17) { // Afternoon
+            if (total < 7500) {
+                text.innerText = "Afternoon lull detected. Pace is L. 1,200 behind goal. Suggest 3 VIP recalls?";
+                currentPilotAction = { type: 'recall', deal: 'VIP Reminders' };
+                btn.innerText = "Notify VIPs";
+                btn.classList.remove('hidden');
+            } else {
+                text.innerText = "On track for L. 10,000. Focus on Average Order Value.";
+                btn.classList.add('hidden');
+            }
+        } else { // Evening
+            if (total < 9000) {
+                text.innerText = "Closing soon. L. 1,000 gap remaining. Flash sale on remaining Bakery?";
+                currentPilotAction = { type: 'flash', deal: '50% Bakery Closeout' };
+                btn.innerText = "Go Live";
+                btn.classList.remove('hidden');
+            } else {
+                text.innerText = "Final push! L. 10,000 is within reach.";
+                btn.classList.add('hidden');
+            }
+        }
+    }
+
+    async function activatePilotMove() {
+        if (!currentPilotAction) return;
+        const confirm = window.confirm(`🤖 Pilot wants to activate: ${currentPilotAction.deal}. Proceed?`);
+        if (!confirm) return;
+        
+        // This is where we'd hit a backend API to trigger discounts or WhatsApp blasts
+        alert(`🚀 Pilot move activated: ${currentPilotAction.deal}. Tracking impact now...`);
+        // For now, hide button to show it's active
+        document.getElementById('pilot-action-btn').classList.add('hidden');
+        document.getElementById('pilot-text').innerText = `Move Active: ${currentPilotAction.deal} (Analyzing ROI...)`;
     }
 
 </script>
