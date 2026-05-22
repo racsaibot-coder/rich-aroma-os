@@ -149,9 +149,16 @@ module.exports = async function handler(req, res) {
 
     if (action === 'menu_modifiers_update' && req.method === 'POST') {
         if (!isAdmin) return res.status(403).json({ error: "Admin access required" });
-        const { group_ids } = req.body;
+        const { group_ids, restaurant_id } = req.body;
         const itemId = req.query.id;
         if (!itemId) return res.status(400).json({ error: "Item ID required" });
+
+        // Verify item belongs to restaurant if provided
+        if (restaurant_id) {
+            const { data: item } = await supabase.from('menu_items').select('restaurant_id').eq('id', itemId).single();
+            if (item && item.restaurant_id !== restaurant_id) return res.status(403).json({ error: "Item does not belong to this restaurant" });
+        }
+
         await supabase.from('item_modifier_groups').delete().eq('item_id', itemId);
         if (group_ids && group_ids.length > 0) {
             const inserts = group_ids.map(gid => ({ item_id: itemId, group_id: gid }));
@@ -164,9 +171,12 @@ module.exports = async function handler(req, res) {
     if (action === 'menu_update' && req.method === 'DELETE') {
         if (!isAdmin) return res.status(403).json({ error: "Admin access required" });
         const itemId = req.query.id;
-        const { error } = await supabase.from('menu_items')
-            .delete()
-            .eq('id', itemId);
+        const resId = req.query.restaurantId;
+        
+        let query = supabase.from('menu_items').delete().eq('id', itemId);
+        if (resId) query = query.eq('restaurant_id', resId);
+
+        const { error } = await query;
         if (error) return res.status(500).json({ error: error.message });
         return res.json({ success: true });
     }
