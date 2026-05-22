@@ -1548,11 +1548,9 @@
         }
 
         function showOrderSuccess(order) {
-            if (!order || (!order.id && !order.order_number)) {
-                console.error("Invalid order object passed to showOrderSuccess:", order);
-                alert("Error al mostrar el estado de la orden. Por favor revisa tu historial.");
-                return;
-            }
+            if (!order) return;
+            const orderId = order.id || 'N/A';
+            const orderNum = order.order_number || '---';
 
             document.body.classList.add('modal-open');
             const overlay = document.createElement('div');
@@ -1566,25 +1564,25 @@
                     </div>
                     <button class="wizard-close" onclick="closeOrderSuccess()">×</button>
                 </div>
-                <div class="wizard-body" id="statusBody" style="display: block; text-align:center; padding:2rem; padding-bottom: 10rem; overflow-y: scroll; -webkit-overflow-scrolling: touch;">
-                    <div class="order-anim" style="font-size:5rem; margin-bottom:1.5rem">☕</div>
-                    <h2 id="statusTitle" style="font-size:2rem; margin-bottom:0.5rem">¡Recibida!</h2>
-                    <p style="color:var(--text-muted); margin-bottom:2rem">Orden #${order.order_number || '---'}</p>
+                <div class="wizard-body" id="statusBody" style="display: block; text-align:center; padding:1.5rem; padding-bottom: 12rem; overflow-y: auto; -webkit-overflow-scrolling: touch;">
+                    <div class="order-anim" style="font-size:5rem; margin-bottom:1rem">☕</div>
+                    <h2 id="statusTitle" style="font-size:2rem; margin-bottom:0.2rem">¡Recibida!</h2>
+                    <p style="color:var(--text-muted); margin-bottom:1.5rem">Orden #${orderNum}</p>
                     
-                    <div id="statusTracker" style="width:100%; max-width:300px; margin:0 auto 2rem auto;">
+                    <div id="statusTracker" style="width:100%; max-width:320px; margin:0 auto 2rem auto; text-align: left;">
                         ${renderStatusStep('Recibida', true)}
                         ${renderStatusStep('Preparando', false)}
                         ${renderStatusStep('Listo para Entrega', false)}
                     </div>
 
-                    <div id="cancelReasonContainer" style="display:none; margin: 1.5rem auto; padding: 1rem; background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.2); border-radius: 12px; color: #ef4444; max-width: 300px;">
-                        <p style="font-weight: 800; font-size: 0.75rem; text-transform: uppercase; margin-bottom: 0.25rem;">Motivo de Cancelación:</p>
-                        <p id="cancelReasonText" style="font-weight: 500;"></p>
+                    <div id="cancelReasonContainer" style="display:none; margin: 1.5rem auto; padding: 1rem; background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.2); border-radius: 16px; color: #ef4444; max-width: 320px; text-align: center;">
+                        <p style="font-weight: 800; font-size: 0.75rem; text-transform: uppercase; margin-bottom: 0.25rem;">⚠️ Orden Cancelada</p>
+                        <p id="cancelReasonText" style="font-weight: 600; font-size: 0.9rem;"></p>
                     </div>
 
-                    <div id="qrContainer" style="margin:2rem auto; background:white; padding:1.5rem; border-radius:24px; display:block; width: fit-content; box-shadow: 0 10px 25px rgba(0,0,0,0.2);">
-                        <img src="https://quickchart.io/qr?text=${encodeURIComponent(order.id || '')}&size=200" style="width:180px; height:180px; display: block; margin: 0 auto; background: #eee;" alt="QR Code" onerror="this.src='https://api.qrserver.com/v1/create-qr-code/?size=200x200&data='+encodeURIComponent('${order.id}')">
-                        <p style="color:black; font-weight:800; font-size:0.8rem; margin-top:1rem; text-transform: uppercase; letter-spacing: 1px;">Muestra este QR al recoger</p>
+                    <div id="qrContainer" style="margin:2rem auto; background:white; padding:1.5rem; border-radius:24px; display:block; width: 220px; box-shadow: 0 10px 30px rgba(0,0,0,0.3); border: 1px solid #eee;">
+                        <img src="https://chart.googleapis.com/chart?cht=qr&chs=200x200&chl=${encodeURIComponent(orderId)}" style="width:100%; height:auto; display: block; image-rendering: pixelated;" alt="Order QR" id="qrImage">
+                        <p style="color:black; font-weight:900; font-size:0.75rem; margin-top:1rem; text-transform: uppercase; letter-spacing: 0.5px; line-height: 1.2;">Muestra este código al recoger</p>
                     </div>
 
                     <div style="height: 50px;"></div>
@@ -1598,12 +1596,13 @@
 
         function renderStatusStep(label, isActive, isCancelled = false) {
             const color = isCancelled ? '#ef4444' : (isActive ? 'var(--success)' : 'rgba(255,255,255,0.1)');
+            const textColor = isCancelled ? '#ef4444' : (isActive ? 'white' : 'var(--text-muted)');
             return `
-                <div style="display:flex; align-items:center; gap:1rem; margin-bottom:1rem; opacity: ${isActive || isCancelled ? '1' : '0.3'}">
-                    <div style="width:24px; height:24px; border-radius:50%; background:${color}; display:flex; align-items:center; justify-content:center; color: white; font-weight: bold;">
+                <div style="display:flex; align-items:center; gap:1.2rem; margin-bottom:1.2rem; opacity: ${isActive || isCancelled ? '1' : '0.4'}">
+                    <div style="width:28px; height:28px; border-radius:50%; background:${color}; display:flex; align-items:center; justify-content:center; color: white; font-weight: bold; font-size: 0.9rem; flex-shrink: 0;">
                         ${isCancelled ? '✕' : (isActive ? '✓' : '')}
                     </div>
-                    <span style="font-weight:700; font-size:1.1rem; color: ${isCancelled ? '#ef4444' : 'white'}">${label}</span>
+                    <span style="font-weight:700; font-size:1.1rem; color: ${textColor}">${label}</span>
                 </div>
             `;
         }
