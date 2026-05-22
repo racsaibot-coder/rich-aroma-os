@@ -913,6 +913,25 @@
             
             // Fetch shift status if logged in
             refreshShiftStatus();
+
+            // --- Check for Active Surge Deals ---
+            fetch('/api/surge/active')
+                .then(r => r.json())
+                .then(data => {
+                    if (data.success && data.deals.length > 0) {
+                        data.deals.forEach(surge => {
+                            showSurgeNotification(surge);
+                        });
+                    }
+                })
+                .catch(e => console.error("Surge check failed", e));
+        }
+
+        function showSurgeNotification(surge) {
+            const banner = document.createElement('div');
+            banner.style.cssText = 'background: linear-gradient(to right, #C9A66B, #F59E0B); color: black; padding: 0.8rem; text-align: center; font-weight: 900; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 1px; animation: slideDown 0.5s ease; position: sticky; top: 0; z-index: 100;';
+            banner.innerHTML = `<i class="fas fa-bolt mr-2"></i> ${surge.description || 'SURGE DEAL ACTIVE!'} <i class="fas fa-bolt ml-2"></i>`;
+            document.body.prepend(banner);
         }
 
         function renderCategories() {

@@ -250,16 +250,19 @@ function applyVipBenefits(orderItems, customer, paymentMethod) {
     const today = getHondurasDate();
     let freeDrinkClaimedThisOrder = false;
     
-    const isVip = customer.is_vip === true || (Array.isArray(customer.tags) && customer.tags.includes('VIP'));
+    // A customer is VIP if is_vip is true AND their expiry date is in the future
+    const now = new Date();
+    const expiry = customer.vip_expiry ? new Date(customer.vip_expiry) : null;
+    const isVip = customer.is_vip === true && (!expiry || expiry > now);
 
-    // Check daily eligibility
+    // Check daily eligibility for free drink
     const canClaimFreeDrink = isVip && (customer.last_free_drink_date !== today);
 
     const processedItems = orderItems.map(item => {
         let finalPrice = parseFloat(item.price) || 0;
         let appliedDiscount = 0;
 
-        // RULE 1: Daily Drink Validation (Highest Priority)
+        // RULE 1: Daily Drink Validation (Free)
         if (canClaimFreeDrink && !freeDrinkClaimedThisOrder && item.is_vip_free_eligible) {
             appliedDiscount = finalPrice;
             finalPrice = 0;
@@ -267,10 +270,10 @@ function applyVipBenefits(orderItems, customer, paymentMethod) {
             item.is_free_benefit = true;
         }
 
-        // RULE 3: Conditional 10% Discount
-        // Apply only if: VIP, paying with Rico Cash, and item is house-made
-        if (isVip && paymentMethod === 'rico_balance' && item.is_house_made && finalPrice > 0) {
-            const discount = finalPrice * 0.10;
+        // RULE 2: 50% Discount on Bakery/Premium (House-made)
+        // This applies to other items if they didn't get Rule 1
+        if (isVip && item.is_house_made && finalPrice > 0) {
+            const discount = finalPrice * 0.50;
             finalPrice -= discount;
             appliedDiscount += discount;
         }
@@ -278,7 +281,8 @@ function applyVipBenefits(orderItems, customer, paymentMethod) {
         return {
             ...item,
             finalPrice: parseFloat(finalPrice.toFixed(2)),
-            appliedDiscount: parseFloat(appliedDiscount.toFixed(2))
+            appliedDiscount: parseFloat(appliedDiscount.toFixed(2)),
+            qty: item.qty || 1
         };
     });
 
@@ -1153,6 +1157,97 @@ app.get('/api/orders', ensureAuthenticated, async (req, res) => {
     res.json({ orders: data || [] });
 });
 
+// VIP Membership Purchase
+app.post('/api/memberships/purchase', async (req, res) => {
+    const { customerId, phone, amount } = req.body;
+    const client = req.supabase || supabase;
+
+    if (!customerId && !phone) return res.status(400).json({ error: "Customer ID or Phone required" });
+    if (parseFloat(amount || 0) < 1500) return res.status(400).json({ error: "Invalid membership amount. Requires L. 1,500" });
+
+    try {
+        // 1. Find Customer
+        let query = client.from('customers').select('*');
+        if (customerId) query = query.eq('id', customerId);
+        else query = query.eq('phone', phone.replace(/\D/g, ''));
+
+        const { data: customer, error: custErr } = await query.single();
+        if (custErr || !customer) return res.status(404).json({ error: "Customer not found" });
+
+        // 2. Update VIP Status (30 days from now)
+        const expiryDate = new Date();
+        expiryDate.setDate(expiryDate.getDate() + 30);
+
+        // 3. Add L. 500 Rico Cash
+        const newBalance = (parseFloat(customer.rico_balance) || 0) + 500;
+
+        const { data: updated, error: upErr } = await client.from('customers')
+            .update({
+                is_vip: true,
+                vip_expiry: expiryDate.toISOString(),
+                rico_balance: newBalance,
+                tier: 'VIP',
+                notes: (customer.notes || '') + ` [VIP PURCHASED ${new Date().toLocaleDateString()}]`
+            })
+            .eq('id', customer.id)
+            .select()
+            .single();
+
+        if (upErr) throw upErr;
+
+        // 4. Log Balance History
+        await client.from('balance_history').insert({
+            customer_id: customer.id,
+            type: 'reload',
+            amount: 500,
+            notes: 'Membership Reward (L. 500 Rico Cash)'
+        });
+
+        // 5. Log Transaction
+        await client.from('quimieats_ledger').insert({
+            restaurant_id: 'rich-aroma',
+            amount: 1500,
+            type: 'membership_sale',
+            customer_id: customer.id,
+            status: 'settled',
+            notes: 'VIP Membership (1 Month)'
+        });
+
+        res.json({ success: true, customer: updated });
+    } catch (e) {
+        console.error("VIP Purchase Error:", e);
+        res.status(500).json({ error: e.message });
+    }
+});
+
+// --- SURGE DEALS API ---
+app.get('/api/surge/active', async (req, res) => {
+    const { data, error } = await supabase.from('surge_deals')
+        .select('*')
+        .eq('active', true)
+        .gt('expires_at', new Date().toISOString());
+    res.json({ success: true, deals: data || [] });
+});
+
+app.post('/api/surge/activate', ensureAuthenticated, async (req, res) => {
+    const { type, durationMinutes, description } = req.body;
+    const expiresAt = new Date();
+    expiresAt.setMinutes(expiresAt.getMinutes() + (parseInt(durationMinutes) || 60));
+
+    const { data, error } = await supabase.from('surge_deals')
+        .insert({
+            type,
+            expires_at: expiresAt.toISOString(),
+            description,
+            active: true
+        })
+        .select()
+        .single();
+
+    if (error) return res.status(500).json({ error: error.message });
+    res.json({ success: true, deal: data });
+});
+
 app.post('/api/orders', async (req, res) => {
     // Public/POS can create orders (Anon allowed)
     try {
@@ -1189,25 +1284,57 @@ app.post('/api/orders', async (req, res) => {
             }
         }
 
-        // 2. Fetch Item Metadata for VIP calculation
+        // 2. Fetch Item Metadata for VIP and Surge calculation
         const itemIds = (req.body.items || []).map(i => i.id);
-        const { data: menuItems } = await supabase.from('menu_items').select('id, is_house_made, is_vip_free_eligible').in('id', itemIds);
+        const { data: menuItems } = await supabase.from('menu_items').select('id, category, is_house_made, is_vip_free_eligible').in('id', itemIds);
         
         const itemsWithMeta = (req.body.items || []).map(item => {
             const meta = (menuItems || []).find(m => m.id === item.id);
             return {
                 ...item,
+                category: meta?.category || 'General',
                 is_house_made: meta?.is_house_made || false,
                 is_vip_free_eligible: meta?.is_vip_free_eligible || false
             };
         });
 
+        // --- SURGE DEAL ENGINE ---
+        let surgeDiscount = 0;
+        const { data: activeSurges } = await supabase.from('surge_deals')
+            .select('*')
+            .eq('active', true)
+            .gt('expires_at', new Date().toISOString());
+
+        if (activeSurges && activeSurges.length > 0) {
+            console.log(`[Surge] ${activeSurges.length} deals active. Calculating...`);
+            activeSurges.forEach(surge => {
+                if (surge.type === '2x1_bakery') {
+                    // Logic: Every 2nd item in target category is free
+                    const eligibleItems = itemsWithMeta.filter(i => (i.category || '').toLowerCase().includes('reposteria') || (i.category || '').toLowerCase().includes('bakery'));
+                    let totalQty = eligibleItems.reduce((s, i) => s + (i.qty || 1), 0);
+                    let freeUnits = Math.floor(totalQty / 2);
+                    
+                    if (freeUnits > 0) {
+                        // Find the cheapest eligible item to discount (standard 2x1 logic)
+                        const sorted = [...eligibleItems].sort((a, b) => a.price - b.price);
+                        let remainingFree = freeUnits;
+                        for (const item of sorted) {
+                            if (remainingFree <= 0) break;
+                            const canTake = Math.min(item.qty || 1, remainingFree);
+                            surgeDiscount += (parseFloat(item.price) * canTake);
+                            remainingFree -= canTake;
+                        }
+                    }
+                }
+            });
+        }
+
         // 3. Apply VIP Benefits
         let finalOrderData = {
             items: itemsWithMeta,
             subtotal: parseFloat(req.body.subtotal) || 0,
-            total: parseFloat(req.body.total) || 0,
-            discount: parseFloat(req.body.discount) || 0
+            total: (parseFloat(req.body.total) || 0) - surgeDiscount,
+            discount: (parseFloat(req.body.discount) || 0) + surgeDiscount
         };
 
         const isVip = customer && (customer.is_vip === true || (Array.isArray(customer.tags) && customer.tags.includes('VIP')));

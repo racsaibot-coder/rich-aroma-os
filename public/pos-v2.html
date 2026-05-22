@@ -3476,11 +3476,35 @@
         const confirm = window.confirm(`🤖 Pilot wants to activate: ${currentPilotAction.deal}. Proceed?`);
         if (!confirm) return;
         
-        // This is where we'd hit a backend API to trigger discounts or WhatsApp blasts
-        alert(`🚀 Pilot move activated: ${currentPilotAction.deal}. Tracking impact now...`);
-        // For now, hide button to show it's active
-        document.getElementById('pilot-action-btn').classList.add('hidden');
-        document.getElementById('pilot-text').innerText = `Move Active: ${currentPilotAction.deal} (Analyzing ROI...)`;
+        let surgeType = 'generic';
+        if (currentPilotAction.type === 'deal') surgeType = '2x1_bakery';
+        if (currentPilotAction.type === 'flash') surgeType = 'bakery_closeout';
+
+        try {
+            const res = await fetch('/api/surge/activate', {
+                method: 'POST',
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'Authorization': 'Bearer EMP-admin'
+                },
+                body: JSON.stringify({ 
+                    type: surgeType, 
+                    durationMinutes: 60,
+                    description: currentPilotAction.deal
+                })
+            });
+
+            if (res.ok) {
+                alert(`🚀 Pilot move activated: ${currentPilotAction.deal}. Tracking impact now...`);
+                document.getElementById('pilot-action-btn').classList.add('hidden');
+                document.getElementById('pilot-text').innerText = `Move Active: ${currentPilotAction.deal}`;
+            } else {
+                alert("❌ Error activating pilot move");
+            }
+        } catch (e) {
+            console.error(e);
+            alert("❌ Connection error");
+        }
     }
 
 </script>
