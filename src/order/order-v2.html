@@ -1548,6 +1548,12 @@
         }
 
         function showOrderSuccess(order) {
+            if (!order || (!order.id && !order.order_number)) {
+                console.error("Invalid order object passed to showOrderSuccess:", order);
+                alert("Error al mostrar el estado de la orden. Por favor revisa tu historial.");
+                return;
+            }
+
             document.body.classList.add('modal-open');
             const overlay = document.createElement('div');
             overlay.className = 'wizard-overlay show';
@@ -1560,10 +1566,10 @@
                     </div>
                     <button class="wizard-close" onclick="closeOrderSuccess()">×</button>
                 </div>
-                <div class="wizard-body" id="statusBody" style="justify-content:center; text-align:center; padding:2rem;">
+                <div class="wizard-body" id="statusBody" style="justify-content:flex-start; text-align:center; padding:2rem; padding-bottom: 5rem;">
                     <div class="order-anim" style="font-size:5rem; margin-bottom:1.5rem">☕</div>
-                    <h2 style="font-size:2rem; margin-bottom:0.5rem">¡Recibida!</h2>
-                    <p style="color:var(--text-muted); margin-bottom:2rem">Orden #${order.order_number}</p>
+                    <h2 id="statusTitle" style="font-size:2rem; margin-bottom:0.5rem">¡Recibida!</h2>
+                    <p style="color:var(--text-muted); margin-bottom:2rem">Orden #${order.order_number || '---'}</p>
                     
                     <div id="statusTracker" style="width:100%; max-width:300px; margin:0 auto;">
                         ${renderStatusStep('Recibida', true)}
@@ -1571,25 +1577,31 @@
                         ${renderStatusStep('Listo para Entrega', false)}
                     </div>
 
-                    <div style="margin-top:3rem; background:white; padding:1rem; border-radius:16px; display:inline-block;">
-                        <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${order.id}" style="width:150px; height:150px;">
-                        <p style="color:black; font-weight:bold; font-size:0.8rem; margin-top:0.5rem">Muestra este QR al recoger</p>
+                    <div id="cancelReasonContainer" style="display:none; margin: 1.5rem auto; padding: 1rem; background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.2); border-radius: 12px; color: #ef4444; max-width: 300px;">
+                        <p style="font-weight: 800; font-size: 0.75rem; text-transform: uppercase; margin-bottom: 0.25rem;">Motivo de Cancelación:</p>
+                        <p id="cancelReasonText" style="font-weight: 500;"></p>
+                    </div>
+
+                    <div id="qrContainer" style="margin-top:3rem; background:white; padding:1.5rem; border-radius:24px; display:inline-block; box-shadow: 0 10px 25px rgba(0,0,0,0.2);">
+                        <img src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${order.id || order.order_number}" style="width:180px; height:180px; display: block; margin: 0 auto;" alt="QR Code">
+                        <p style="color:black; font-weight:800; font-size:0.8rem; margin-top:1rem; text-transform: uppercase; letter-spacing: 1px;">Muestra este QR al recoger</p>
                     </div>
                 </div>
             `;
             document.body.appendChild(overlay);
             
             // Start polling
-            pollOrderStatus(order.id);
+            if (order.id) pollOrderStatus(order.id);
         }
 
-        function renderStatusStep(label, isActive) {
+        function renderStatusStep(label, isActive, isCancelled = false) {
+            const color = isCancelled ? '#ef4444' : (isActive ? 'var(--success)' : 'rgba(255,255,255,0.1)');
             return `
-                <div style="display:flex; align-items:center; gap:1rem; margin-bottom:1rem; opacity: ${isActive ? '1' : '0.3'}">
-                    <div style="width:24px; height:24px; border-radius:50%; background:${isActive ? 'var(--success)' : 'rgba(255,255,255,0.1)'}; display:flex; align-items:center; justify-content:center;">
-                        ${isActive ? '✓' : ''}
+                <div style="display:flex; align-items:center; gap:1rem; margin-bottom:1rem; opacity: ${isActive || isCancelled ? '1' : '0.3'}">
+                    <div style="width:24px; height:24px; border-radius:50%; background:${color}; display:flex; align-items:center; justify-content:center; color: white; font-weight: bold;">
+                        ${isCancelled ? '✕' : (isActive ? '✓' : '')}
                     </div>
-                    <span style="font-weight:600; font-size:1.1rem">${label}</span>
+                    <span style="font-weight:700; font-size:1.1rem; color: ${isCancelled ? '#ef4444' : 'white'}">${label}</span>
                 </div>
             `;
         }
@@ -1603,8 +1615,8 @@
                     const res = await fetch(`/api/orders/${orderId}`);
                     if (res.ok) {
                         const order = await res.json();
-                        updateStatusUI(order.status);
-                        if (['completed', 'cancelled', 'ready'].includes(order.status) && order.status !== 'ready') {
+                        updateStatusUI(order.status, order.notes);
+                        if (['completed', 'cancelled'].includes(order.status)) {
                             clearInterval(statusPollInterval);
                         }
                     }
@@ -1612,9 +1624,32 @@
             }, 5000);
         }
 
-        function updateStatusUI(status) {
+        function updateStatusUI(status, notes = "") {
             const container = document.getElementById('statusTracker');
+            const titleEl = document.getElementById('statusTitle');
+            const animEl = document.querySelector('.order-anim');
+            const qrContainer = document.getElementById('qrContainer');
+            const reasonContainer = document.getElementById('cancelReasonContainer');
+            const reasonText = document.getElementById('cancelReasonText');
+            
             if (!container) return;
+
+            if (status === 'cancelled') {
+                container.innerHTML = renderStatusStep('Orden Cancelada', true, true);
+                if (titleEl) titleEl.innerText = 'Cancelada';
+                if (titleEl) titleEl.style.color = '#ef4444';
+                if (animEl) animEl.innerHTML = '🚫';
+                if (qrContainer) qrContainer.style.opacity = '0.3';
+                
+                if (notes && notes.includes('[REJECTED]')) {
+                    const reason = notes.split('[REJECTED]')[1].trim();
+                    if (reasonContainer && reasonText) {
+                        reasonText.innerText = reason;
+                        reasonContainer.style.display = 'block';
+                    }
+                }
+                return;
+            }
 
             const isPending = status === 'pending' || status === 'paid';
             const isPreparing = status === 'preparing';
@@ -1627,11 +1662,11 @@
             `;
 
             if (isReady) {
-                document.querySelector('.order-anim').innerHTML = '🎉';
-                document.querySelector('#statusBody h2').innerText = '¡Listo!';
+                if (animEl) animEl.innerHTML = '🎉';
+                if (titleEl) titleEl.innerText = '¡Listo!';
             } else if (isPreparing) {
-                document.querySelector('.order-anim').innerHTML = '👨‍🍳';
-                document.querySelector('#statusBody h2').innerText = 'Preparando...';
+                if (animEl) animEl.innerHTML = '👨‍🍳';
+                if (titleEl) titleEl.innerText = 'Preparando...';
             }
         }
 
