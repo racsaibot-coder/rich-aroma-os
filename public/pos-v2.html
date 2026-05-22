@@ -1161,7 +1161,7 @@
         }
         document.getElementById('view-order-customer').innerText = name;
 
-        let telMatch = order.notes ? order.notes.match(/\[TEL:\s*([^\]]+)\]/) : null;
+        let telMatch = order.notes ? (order.notes.match(/\[PHONE:\s*([^\]]+)\]/) || order.notes.match(/\[TEL:\s*([^\]]+)\]/)) : null;
         let phone = telMatch ? telMatch[1].trim() : (order.customers?.phone || '');
         
         function getWhatsAppLink(rawPhone) {
