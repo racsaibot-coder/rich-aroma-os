@@ -1528,9 +1528,10 @@
                 }
                 
                 const result = await res.json();
+                const orderObj = result.order || result;
 
                 // Show Success Screen
-                showOrderSuccess(result);
+                showOrderSuccess(orderObj);
 
                 // Reset
                 closeCheckout();

@@ -1230,13 +1230,15 @@
                     </div>
                 `).join('')}
             </div>
-            ${order.notes ? `
-                <div class="pt-4 border-t border-white/5">
-                    <p class="text-[9px] font-black text-white/20 uppercase tracking-[0.2em] mb-2">Notas / Metadatos</p>
-                    <p class="text-[11px] text-white/40 leading-relaxed">${order.notes}</p>
-                    ${whatsappButtons}
-                </div>
-            ` : ''}
+            <div class="pt-4 border-t border-white/5 space-y-4">
+                ${order.notes ? `
+                    <div>
+                        <p class="text-[9px] font-black text-white/20 uppercase tracking-[0.2em] mb-2">Notas / Metadatos</p>
+                        <p class="text-[11px] text-white/40 leading-relaxed">${order.notes}</p>
+                    </div>
+                ` : ''}
+                ${whatsappButtons}
+            </div>
         `;
 
         const actions = document.getElementById('view-order-actions');
@@ -2344,10 +2346,15 @@
         let newStatus = 'paid';
 
         if (currentOrderId && !isModified) {
-            // No new items added: settlement only - maintain or upgrade status
-            if (['ready', 'completed', 'paid'].includes(currentOrderStatus)) newStatus = 'completed';
-            else if (currentOrderStatus === 'pending') newStatus = 'paid';
-            else if (currentOrderStatus) newStatus = currentOrderStatus;
+            // No new items added: settlement only
+            // If already in prep/ready states, keep them so they stay in KDS
+            if (['preparing', 'drinks_ready', 'food_ready', 'ready'].includes(currentOrderStatus)) {
+                newStatus = currentOrderStatus;
+            } else if (currentOrderStatus === 'pending') {
+                newStatus = 'paid';
+            } else if (['completed', 'paid'].includes(currentOrderStatus)) {
+                newStatus = 'completed';
+            }
         } else {
             // New order or items changed: trigger kitchen flow
             if (currentOrderStatus === 'ready') newStatus = 'completed';
