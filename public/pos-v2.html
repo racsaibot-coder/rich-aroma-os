@@ -925,7 +925,8 @@
 
         // Health Dashboard Update
         const DAILY_GOAL = 10000;
-        const todayOrders = liveOrders;
+        // Only count orders that belong to the current active shift
+        const todayOrders = liveOrders.filter(o => o.shift_id === currentShiftId);
         const activeOrdersForSales = todayOrders.filter(o => !['completed', 'cancelled'].includes(o.status));
         const totalSales = activeOrdersForSales.reduce((s,o) => s + (parseFloat(o.total) || 0), 0);
         
