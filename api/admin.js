@@ -570,6 +570,10 @@ module.exports = async function handler(req, res) {
     }
 
     if (action === 'quimieats_active' && req.method === 'GET') {
+        res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+        res.setHeader('Pragma', 'no-cache');
+        res.setHeader('Expires', '0');
+
         const [rRes, rLeads] = await Promise.all([
             supabase.from('restaurants').select('*').order('name', { ascending: true }),
             supabase.from('quimieats_leads').select('*').eq('status', 'partner').order('restaurant_name', { ascending: true })
