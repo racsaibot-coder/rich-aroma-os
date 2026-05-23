@@ -138,8 +138,18 @@
                     <input type="tel" id="qa-phone" class="w-full bg-white/5 border border-white/10 p-5 rounded-2xl outline-none focus:border-cyan-500 font-bold text-white" placeholder="50499887766">
                 </div>
                 <div>
-                    <label class="text-[10px] font-black uppercase tracking-widest text-white/20 mb-2 block">Logo URL (PNG/JPG)</label>
-                    <input type="text" id="qa-logo" class="w-full bg-white/5 border border-white/10 p-5 rounded-2xl outline-none focus:border-cyan-500 text-xs text-white/60" placeholder="https://...">
+                    <label class="text-[10px] font-black uppercase tracking-widest text-white/20 mb-2 block">Logo del Negocio</label>
+                    <div class="flex gap-4">
+                        <input type="file" id="qa-file" accept="image/*" class="hidden" onchange="handleFileSelect('qa')">
+                        <button onclick="document.getElementById('qa-file').click()" class="w-20 h-20 rounded-2xl bg-white/5 border border-white/10 flex flex-col items-center justify-center hover:bg-white/10 transition-all group overflow-hidden">
+                            <img id="qa-preview" class="hidden w-full h-full object-cover">
+                            <i id="qa-icon" class="fas fa-camera text-white/20 group-hover:text-cyan-400"></i>
+                        </button>
+                        <div class="flex-1 space-y-2">
+                            <input type="text" id="qa-logo" class="w-full bg-white/5 border border-white/10 p-4 rounded-xl outline-none focus:border-cyan-500 text-[10px] text-white/40" placeholder="O pegue URL de imagen">
+                            <p class="text-[9px] text-white/20 italic">Se recomienda imagen cuadrada.</p>
+                        </div>
+                    </div>
                 </div>
                 <div>
                     <label class="text-[10px] font-black uppercase tracking-widest text-white/20 mb-2 block">Categoría</label>
@@ -171,8 +181,17 @@
                     <input type="text" id="edit-name" class="w-full bg-white/5 border border-white/10 p-5 rounded-2xl text-white outline-none focus:border-cyan-500 font-bold">
                 </div>
                 <div>
-                    <label class="text-[10px] font-black uppercase tracking-widest text-white/20 mb-2 block">Logo URL</label>
-                    <input type="text" id="edit-logo" class="w-full bg-white/5 border border-white/10 p-5 rounded-2xl text-white/60 outline-none focus:border-cyan-500 text-xs">
+                    <label class="text-[10px] font-black uppercase tracking-widest text-white/20 mb-2 block">Logo del Negocio</label>
+                    <div class="flex gap-4">
+                        <input type="file" id="edit-file" accept="image/*" class="hidden" onchange="handleFileSelect('edit')">
+                        <button onclick="document.getElementById('edit-file').click()" class="w-20 h-20 rounded-2xl bg-white/5 border border-white/10 flex flex-col items-center justify-center hover:bg-white/10 transition-all group overflow-hidden">
+                            <img id="edit-preview" class="hidden w-full h-full object-cover">
+                            <i id="edit-icon" class="fas fa-camera text-white/20 group-hover:text-cyan-400"></i>
+                        </button>
+                        <div class="flex-1 space-y-2">
+                            <input type="text" id="edit-logo" class="w-full bg-white/5 border border-white/10 p-4 rounded-xl text-white/40 outline-none focus:border-cyan-500 text-[10px]" placeholder="O pegue URL">
+                        </div>
+                    </div>
                 </div>
                 <div>
                     <label class="text-[10px] font-black uppercase tracking-widest text-white/20 mb-2 block">WhatsApp</label>
@@ -244,6 +263,46 @@
             localStorage.removeItem('quimieats_admin_pin');
             location.reload();
         }
+
+        // --- IMAGE HANDLING ---
+        function handleFileSelect(prefix) {
+            const file = document.getElementById(`${prefix}-file`).files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const preview = document.getElementById(`${prefix}-preview`);
+                const icon = document.getElementById(`${prefix}-icon`);
+                preview.src = e.target.result;
+                preview.classList.remove('hidden');
+                icon.classList.add('hidden');
+            };
+            reader.readAsDataURL(file);
+        }
+
+        async function uploadImage(file) {
+            if (!file) return null;
+            const base64 = await toBase64(file);
+            try {
+                const res = await fetch('/api/admin?action=upload_image', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${localStorage.getItem('quimieats_admin_pin')}` },
+                    body: JSON.stringify({ imageBase64: base64, fileName: file.name })
+                });
+                const data = await res.json();
+                return data.url;
+            } catch (e) {
+                console.error("Upload failed", e);
+                return null;
+            }
+        }
+
+        const toBase64 = file => new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.readAsDataURL(file);
+            reader.onload = () => resolve(reader.result);
+            reader.onerror = error => reject(error);
+        });
 
         function showUI() {
             document.getElementById('login-modal').classList.add('hidden');
@@ -320,21 +379,45 @@
         function closeQuickAdd() { document.getElementById('quick-add-modal').classList.add('hidden'); }
 
         async function submitQuickAdd() {
+            const btn = document.querySelector('#quick-add-modal .bg-cyan-500');
+            const ogText = btn.innerText;
+            btn.innerText = "Subiendo..."; btn.disabled = true;
+
             const name = document.getElementById('qa-name').value;
             const phone = document.getElementById('qa-phone').value;
-            const logo_url = document.getElementById('qa-logo').value;
+            let logo_url = document.getElementById('qa-logo').value;
             const category = document.getElementById('qa-cat').value;
-            if (!name || !phone) return alert("Faltan datos");
+            const file = document.getElementById('qa-file').files[0];
+
+            if (!name || !phone) {
+                btn.innerText = ogText; btn.disabled = false;
+                return alert("Faltan datos");
+            }
 
             try {
+                // Upload if file selected
+                if (file) {
+                    const uploadedUrl = await uploadImage(file);
+                    if (uploadedUrl) logo_url = uploadedUrl;
+                }
+
                 const res = await fetch('/api/admin?action=quick_add_restaurant', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${localStorage.getItem('quimieats_admin_pin')}` },
                     body: JSON.stringify({ name, phone, logo_url, category })
                 });
-                if (res.ok) { alert("¡Éxito!"); closeQuickAdd(); loadData(); }
+                if (res.ok) { 
+                    alert("¡Éxito!"); 
+                    closeQuickAdd(); 
+                    loadData();
+                    // Reset fields
+                    document.getElementById('qa-file').value = '';
+                    document.getElementById('qa-preview').classList.add('hidden');
+                    document.getElementById('qa-icon').classList.remove('hidden');
+                }
                 else alert("Error al crear");
             } catch (e) { alert("Error de red"); }
+            finally { btn.innerText = ogText; btn.disabled = false; }
         }
 
         function openEdit(index) {
@@ -343,26 +426,52 @@
             document.getElementById('edit-name').value = b.name;
             document.getElementById('edit-logo').value = b.logo_url || '';
             document.getElementById('edit-phone').value = b.contact_phone || '';
+            
+            const preview = document.getElementById('edit-preview');
+            const icon = document.getElementById('edit-icon');
+            if (b.logo_url) {
+                preview.src = b.logo_url;
+                preview.classList.remove('hidden');
+                icon.classList.add('hidden');
+            } else {
+                preview.classList.add('hidden');
+                icon.classList.remove('hidden');
+            }
+
             document.getElementById('edit-modal').classList.remove('hidden');
         }
 
         function closeEdit() { document.getElementById('edit-modal').classList.add('hidden'); }
 
         async function submitEdit() {
-            const payload = {
-                id: document.getElementById('edit-id').value,
-                name: document.getElementById('edit-name').value,
-                logo_url: document.getElementById('edit-logo').value,
-                phone: document.getElementById('edit-phone').value
-            };
+            const btn = document.querySelector('#edit-modal .bg-blue-600');
+            btn.innerText = "Guardando..."; btn.disabled = true;
+
+            const id = document.getElementById('edit-id').value;
+            const name = document.getElementById('edit-name').value;
+            const phone = document.getElementById('edit-phone').value;
+            let logo_url = document.getElementById('edit-logo').value;
+            const file = document.getElementById('edit-file').files[0];
+
             try {
+                if (file) {
+                    const uploadedUrl = await uploadImage(file);
+                    if (uploadedUrl) logo_url = uploadedUrl;
+                }
+
                 const res = await fetch('/api/admin?action=update_restaurant_details', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${localStorage.getItem('quimieats_admin_pin')}` },
-                    body: JSON.stringify(payload)
+                    body: JSON.stringify({ id, name, logo_url, phone })
                 });
-                if (res.ok) { alert("Guardado"); closeEdit(); loadData(); }
+                if (res.ok) { 
+                    alert("Guardado"); 
+                    closeEdit(); 
+                    loadData(); 
+                    document.getElementById('edit-file').value = '';
+                }
             } catch (e) { alert("Error"); }
+            finally { btn.innerText = "Guardar"; btn.disabled = false; }
         }
 
         async function approveLead(id) {
