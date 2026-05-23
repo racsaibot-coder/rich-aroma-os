@@ -971,6 +971,27 @@
                     logDebug("Attempting auto-login...");
                     currentPin = savedPin;
                     await login();
+                    
+                    // Handle Deep Links (Tab & Restaurant)
+                    const params = new URLSearchParams(window.location.search);
+                    const targetTab = params.get('tab');
+                    const targetResId = params.get('restaurantId');
+                    
+                    if (targetTab) {
+                        logDebug(`Deep Link: Switching to ${targetTab}`);
+                        switchTab(targetTab);
+                    }
+                    if (targetResId && targetTab === 'menu') {
+                        const selector = document.getElementById('menu-restaurant-selector');
+                        if (selector) {
+                            // We might need to wait for loadMenu to populate it, 
+                            // but we can pre-set it if the option exists
+                            setTimeout(() => {
+                                selector.value = targetResId;
+                                loadMenu();
+                            }, 500);
+                        }
+                    }
                 } else {
                     logDebug("Ready for PIN.");
                     document.getElementById('login-modal').classList.remove('hidden');
