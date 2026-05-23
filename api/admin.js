@@ -63,10 +63,12 @@ module.exports = async function handler(req, res) {
     // MENU MANAGER (GET ALL, PATCH, POST)
     if (action === 'menu' && req.method === 'GET') {
         const resId = req.query.restaurantId || 'rich-aroma';
+        logDebug(`[Menu API] Fetching menu for: ${resId}`);
+
         const [rItems, rModGroups, rModOptions, rItemModGroups] = await Promise.all([
             supabase.from('menu_items').select('*').eq('restaurant_id', resId).order('category', { ascending: true }),
             supabase.from('modifier_groups').select('*').eq('restaurant_id', resId),
-            supabase.from('modifier_options').select('*').order('name', { ascending: true }),
+            supabase.from('modifier_options').select('*'), // Options are group-linked, no need to filter by resId here as they'll be filtered by group in UI
             supabase.from('item_modifier_groups').select('*')
         ]);
 
