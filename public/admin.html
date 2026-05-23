@@ -2555,6 +2555,30 @@
             } catch(e) { console.error(e); }
         }
         
+        async function editPIN(id, name, currentPin) {
+            const newPin = prompt(`Update PIN for ${name}:`, currentPin);
+            if (newPin === null || newPin === currentPin || !newPin.trim()) return;
+
+            try {
+                const res = await fetch(`/api/admin?action=employee_update&id=${id}`, {
+                    method: 'PATCH',
+                    headers: getHeaders(),
+                    body: JSON.stringify({ pin: newPin.trim() })
+                });
+
+                if (res.ok) {
+                    alert("✅ PIN updated successfully!");
+                    loadEmployees();
+                } else {
+                    const err = await res.json();
+                    alert("❌ Error: " + (err.error || "Failed to update PIN"));
+                }
+            } catch (e) {
+                console.error(e);
+                alert("❌ Network error updating PIN");
+            }
+        }
+
         async function loadEmployees() {
             try {
                 const res = await fetch('/api/admin/employees', { headers: getHeaders() });
@@ -2576,6 +2600,7 @@
                         ? `<button onclick="toggleEmployeeStatus('${emp.id}', false)" class="text-red-500 hover:text-red-700 text-sm font-bold mr-3"><i class="fas fa-ban"></i> Disable</button>`
                         : `<button onclick="toggleEmployeeStatus('${emp.id}', true)" class="text-green-500 hover:text-green-700 text-sm font-bold mr-3"><i class="fas fa-check-circle"></i> Enable</button>`;
 
+                    const pinBtn = `<button onclick="editPIN('${emp.id}', '${escapeHtml(emp.name)}', '${emp.pin}')" class="text-blue-500 hover:text-blue-700 text-sm font-bold mr-3"><i class="fas fa-key"></i> Edit PIN</button>`;
                     const deleteBtn = `<button onclick="deleteEmployee('${emp.id}', '${escapeHtml(emp.name)}')" class="text-gray-400 hover:text-red-600 text-sm font-bold"><i class="fas fa-trash"></i></button>`;
 
                     const hourlyRate = parseFloat(emp.hourly_rate || 0).toFixed(2);
@@ -2589,7 +2614,7 @@
                             <button onclick="editHourlyRate('${emp.id}', '${escapeHtml(emp.name)}', ${hourlyRate})" class="ml-1 text-gray-300 hover:text-blue-500"><i class="fas fa-pencil-alt text-[10px]"></i></button>
                         </td>
                         <td class="p-4">${statusBadge}</td>
-                        <td class="p-4 text-right">${actionBtn}${deleteBtn}</td>
+                        <td class="p-4 text-right">${actionBtn}${pinBtn}${deleteBtn}</td>
                     `;
                     tbody.appendChild(row);
                 });
