@@ -1137,13 +1137,54 @@
                             ${r.contact_phone} <i class="fab fa-whatsapp text-green-500"></i>
                         </a>
                     </td>
-                    <td class="p-6 text-right">
+                    <td class="p-6 text-right flex justify-end gap-2">
+                        <button onclick='openEditBusinessModal(${JSON.stringify(r)})' class="bg-blue-50 text-blue-600 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-blue-100 transition-all">
+                            Editar
+                        </button>
                         <button onclick="updateQuimiLogo('${r.id}', '${r.name}')" class="bg-gray-100 text-gray-600 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-gray-200 transition-all">
-                            Cambiar Logo
+                            Logo
                         </button>
                     </td>
                 </tr>
             `).join('');
+        }
+
+        function openEditBusinessModal(biz) {
+            document.getElementById('edit-biz-id').value = biz.id;
+            document.getElementById('edit-biz-old-name').value = biz.name;
+            document.getElementById('edit-biz-name').value = biz.name;
+            document.getElementById('edit-biz-logo').value = biz.logo_url || '';
+            document.getElementById('edit-biz-phone').value = biz.contact_phone || '';
+            document.getElementById('edit-biz-modal').classList.remove('hidden');
+        }
+
+        function closeEditBusinessModal() {
+            document.getElementById('edit-biz-modal').classList.add('hidden');
+        }
+
+        async function submitEditBusiness() {
+            const id = document.getElementById('edit-biz-id').value;
+            const name = document.getElementById('edit-biz-name').value;
+            const logo_url = document.getElementById('edit-biz-logo').value;
+            const phone = document.getElementById('edit-biz-phone').value;
+            const oldName = document.getElementById('edit-biz-old-name').value;
+
+            try {
+                const res = await fetch('/api/admin?action=update_restaurant_details', {
+                    method: 'POST',
+                    headers: getHeaders(),
+                    body: JSON.stringify({ id, name, logo_url, phone, oldName })
+                });
+
+                if (res.ok) {
+                    alert("✅ Cambios Guardados");
+                    closeEditBusinessModal();
+                    loadQuimiLeads();
+                } else {
+                    const err = await res.json();
+                    alert("❌ Error: " + err.error);
+                }
+            } catch (e) { alert("Error de conexión"); }
         }
 
         async function updateQuimiLogo(id, name) {
@@ -3004,8 +3045,34 @@
         renderTasks();
     }
 </script>
-<!-- QUICK ADD BUSINESS MODAL -->
-<div id="quick-add-modal" class="hidden fixed inset-0 bg-dark/90 backdrop-blur-md flex items-center justify-center z-[250]">
+<!-- EDIT BUSINESS MODAL -->
+<div id="edit-biz-modal" class="hidden fixed inset-0 bg-dark/90 backdrop-blur-md flex items-center justify-center z-[250]">
+    <div class="bg-white rounded-[2.5rem] p-10 max-w-md w-full shadow-2xl space-y-6">
+        <h3 class="text-xl font-black uppercase tracking-tight text-dark">Editar Negocio</h3>
+        <input type="hidden" id="edit-biz-id">
+        <input type="hidden" id="edit-biz-old-name">
+        <div class="space-y-4">
+            <div>
+                <label class="text-[10px] font-black uppercase tracking-widest text-gray-400">Nombre del Negocio</label>
+                <input type="text" id="edit-biz-name" class="w-full bg-gray-50 border border-gray-100 p-4 rounded-2xl outline-none focus:border-blue-500 font-bold uppercase text-sm">
+            </div>
+            <div>
+                <label class="text-[10px] font-black uppercase tracking-widest text-gray-400">URL del Logo</label>
+                <input type="text" id="edit-biz-logo" class="w-full bg-gray-50 border border-gray-100 p-4 rounded-2xl outline-none focus:border-blue-500 text-xs">
+            </div>
+            <div>
+                <label class="text-[10px] font-black uppercase tracking-widest text-gray-400">WhatsApp</label>
+                <input type="tel" id="edit-biz-phone" class="w-full bg-gray-50 border border-gray-100 p-4 rounded-2xl outline-none focus:border-blue-500 font-bold text-sm">
+            </div>
+        </div>
+        <div class="flex gap-4 pt-4">
+            <button onclick="closeEditBusinessModal()" class="w-1/2 bg-gray-100 text-gray-400 py-4 rounded-2xl font-black uppercase tracking-widest text-[10px]">Cancelar</button>
+            <button onclick="submitEditBusiness()" class="w-1/2 bg-blue-600 text-white py-4 rounded-2xl font-black uppercase tracking-widest text-[10px] shadow-lg shadow-blue-600/20">Guardar Cambios</button>
+        </div>
+    </div>
+</div>
+
+<!-- QUICK ADD BUSINESS MODAL --><div id="quick-add-modal" class="hidden fixed inset-0 bg-dark/90 backdrop-blur-md flex items-center justify-center z-[250]">
     <div class="bg-white rounded-[2.5rem] p-10 max-w-md w-full shadow-2xl space-y-6">
         <h3 class="text-xl font-black uppercase tracking-tight text-dark">Nuevo Negocio Socio</h3>
         <div class="space-y-4">
