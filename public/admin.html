@@ -1088,8 +1088,17 @@
             }
         }
 
+        // --- QUIMIEATS LOGIC ---
+        let activeQuimiPartners = [];
+
         async function loadQuimiLeads() {
             logDebug("Loading QuimiEats data...");
+            const activeTbody = document.getElementById('activeQuimiTable');
+            const leadsTbody = document.getElementById('quimiTable');
+            
+            if (activeTbody) activeTbody.innerHTML = '<tr><td colspan="5" class="p-12 text-center text-gray-400 italic">Cargando socios...</td></tr>';
+            if (leadsTbody) leadsTbody.innerHTML = '<tr><td colspan="5" class="p-12 text-center text-gray-400 italic">Cargando interesados...</td></tr>';
+
             try {
                 // Load Leads
                 const resLeads = await fetch('/api/admin?action=quimieats_leads', { headers: getHeaders() });
@@ -1101,11 +1110,13 @@
                 const resActive = await fetch('/api/admin?action=quimieats_active', { headers: getHeaders() });
                 const active = await resActive.json();
                 if (active.error) throw new Error(active.error);
+                activeQuimiPartners = active;
                 renderActiveQuimiBusinesses(active);
                 logDebug("QuimiEats data loaded successfully.");
             } catch (e) { 
                 logDebug("QuimiEats load fail: " + e.message);
                 console.error("QuimiEats load fail", e); 
+                if (activeTbody) activeTbody.innerHTML = `<tr><td colspan="5" class="p-12 text-center text-red-400 italic">Error: ${e.message}</td></tr>`;
                 alert("Error cargando datos de QuimiEats: " + e.message);
             }
         }
@@ -1117,7 +1128,7 @@
                 tbody.innerHTML = '<tr><td colspan="5" class="p-12 text-center text-gray-400 italic">No hay socios activos aún.</td></tr>';
                 return;
             }
-            tbody.innerHTML = data.map(r => `
+            tbody.innerHTML = data.map((r, index) => `
                 <tr>
                     <td class="p-6 text-[10px] font-mono text-gray-400 uppercase">${r.id}</td>
                     <td class="p-6">
@@ -1126,7 +1137,7 @@
                                 ${r.logo_url ? `<img src="${r.logo_url}" class="w-full h-full object-cover">` : '<i class="fas fa-store text-gray-300"></i>'}
                             </div>
                             <div>
-                                <div class="font-bold text-gray-800 uppercase">${r.name}</div>
+                                <div class="font-bold text-gray-800 uppercase">${escapeHtml(r.name)}</div>
                                 <div class="text-[8px] font-black uppercase text-success">Status: ${r.status}</div>
                             </div>
                         </div>
@@ -1138,10 +1149,10 @@
                         </a>
                     </td>
                     <td class="p-6 text-right flex justify-end gap-2">
-                        <button onclick='openEditBusinessModal(${JSON.stringify(r)})' class="bg-blue-50 text-blue-600 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-blue-100 transition-all">
+                        <button onclick="openEditBusinessByIndex(${index})" class="bg-blue-50 text-blue-600 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-blue-100 transition-all">
                             Editar
                         </button>
-                        <button onclick="updateQuimiLogo('${r.id}', '${r.name}')" class="bg-gray-100 text-gray-600 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-gray-200 transition-all">
+                        <button onclick="updateQuimiLogo('${r.id}', '${escapeHtml(r.name)}')" class="bg-gray-100 text-gray-600 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-gray-200 transition-all">
                             Logo
                         </button>
                     </td>
@@ -1149,7 +1160,9 @@
             `).join('');
         }
 
-        function openEditBusinessModal(biz) {
+        function openEditBusinessByIndex(index) {
+            const biz = activeQuimiPartners[index];
+            if (!biz) return;
             document.getElementById('edit-biz-id').value = biz.id;
             document.getElementById('edit-biz-old-name').value = biz.name;
             document.getElementById('edit-biz-name').value = biz.name;
