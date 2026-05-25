@@ -27,13 +27,16 @@ async function sendEmail({ to, subject, html, from }) {
         });
 
         const data = await res.json();
-        if (!res.ok) throw new Error(JSON.stringify(data));
+        if (!res.ok) {
+            console.error("[Email Service] Resend Error:", data);
+            return { error: true, details: data };
+        }
         
         console.log("[Email Service] Sent successfully to:", recipients.join(', '));
         return data;
     } catch (err) {
-        console.error("[Email Service] Failed:", err.message);
-        return null;
+        console.error("[Email Service] Runtime Error:", err.message);
+        return { error: true, message: err.message };
     }
 }
 
