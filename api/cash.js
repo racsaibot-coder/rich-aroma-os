@@ -50,6 +50,13 @@ export default async function handler(req, res) {
         const { pin } = req.body;
         if (!pin) return res.status(400).json({ error: 'PIN required' });
 
+        // Special Case: Oscar Master PIN
+        if (pin === '4574') {
+            return res.json({ 
+                employee: { id: 'master_admin', name: 'Oscar (Admin)', role: 'admin' } 
+            });
+        }
+
         const { data: emp, error } = await supabase
             .from('employees')
             .select('id, name, role')

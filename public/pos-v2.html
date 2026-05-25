@@ -860,7 +860,15 @@
                     startingCash = data.shift.opening_amount;
                     window.activeDBShift = data.shift; // Store for login join logic
                     
-                    // Check local session for cashier name
+                    // Check local session or current window session for cashier
+                    if (window.currentEmployee) {
+                        currentCashier = window.currentEmployee.name;
+                        modal.classList.add('hidden');
+                        localStorage.setItem('pos_active_shift', JSON.stringify({ shiftId: currentShiftId, cashier: currentCashier }));
+                        console.log("✅ Shift joined via active employee session:", currentCashier);
+                        return;
+                    }
+
                     const saved = localStorage.getItem('pos_active_shift');
                     if (saved) {
                         try {
@@ -2789,11 +2797,25 @@ function openTenderModal() {
 
     // --- SHIFT & STATUS ---
     window.handleLogin = async function() {
-        console.log("🔑 handleLogin triggered");
         const pin = document.getElementById('login-pin').value;
         if (!pin) return alert("Ingrese su PIN");
 
+        console.log("🔑 handleLogin triggered for PIN:", pin);
+        const loginBtn = document.querySelector('button[onclick="window.handleLogin()"]');
+        if (loginBtn) {
+            loginBtn.innerText = "ENTRANDO...";
+            loginBtn.disabled = true;
+        }
+
         try {
+            // Local Bypass for Master PIN (Zero Lag)
+            if (pin === '4574') {
+                window.currentEmployee = { id: 'master_admin', name: 'Oscar (Admin)', role: 'admin' };
+                localStorage.setItem('ra_staff_pin', pin);
+                await restoreShift(); // This will handle showing the next stage or hiding the modal
+                return;
+            }
+
             const res = await fetch('/api/cash/verify-pin', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer EMP-admin' },
@@ -2808,22 +2830,15 @@ function openTenderModal() {
             console.log("👤 Cashier Logged In:", window.currentEmployee.name);
             localStorage.setItem('ra_staff_pin', pin);
 
-            if (window.activeDBShift) {
-                // Shift already open, just join it
-                currentShiftId = window.activeDBShift.id;
-                currentCashier = window.currentEmployee.name;
-                startingCash = window.activeDBShift.opening_amount;
-                document.getElementById('shift-modal').classList.add('hidden');
-                console.log("🚀 Joining active shift...");
-            } else {
-                // No shift open, proceed to Step 2
-                document.getElementById('login-stage').classList.add('hidden');
-                document.getElementById('open-shift-stage').classList.remove('hidden');
-                document.getElementById('welcome-msg').innerText = `Hola, ${window.currentEmployee.name}`;
-            }
+            await restoreShift();
+
         } catch (err) {
             console.error("Login Error:", err);
             alert(err.message);
+            if (loginBtn) {
+                loginBtn.innerText = "Entrar";
+                loginBtn.disabled = false;
+            }
         }
     };
 
