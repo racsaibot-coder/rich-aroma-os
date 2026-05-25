@@ -183,7 +183,8 @@
             <h2 class="text-3xl md:text-4xl font-bold tracking-tight">Regalo de Bienvenida.</h2>
             <p class="text-white/50 text-base">Ingresa tu número de WhatsApp para reclamar tus <span class="text-gold font-bold">L. 30 Gratis</span> para tu primera orden.</p>
 
-            <form id="welcome-form" onsubmit="claimWelcomeOffer(event)" class="space-y-3">
+            <!-- STEP 1: INITIAL DATA -->
+            <form id="welcome-form" onsubmit="initHandshake(event)" class="space-y-3">
                 <input type="text" id="name-input" placeholder="Tu Nombre" required class="w-full glass-dark rounded-2xl py-5 px-6 text-white focus:border-gold outline-none transition-all placeholder:text-white/20">
                 <div class="relative flex gap-2">
                     <select id="country-code" class="glass-dark rounded-2xl py-5 px-4 text-white/60 font-mono outline-none focus:border-gold appearance-none">
@@ -192,11 +193,49 @@
                     </select>
                     <input type="tel" id="phone-input" placeholder="Tu número" required class="flex-1 glass-dark rounded-2xl py-5 px-6 text-white font-mono outline-none focus:border-gold placeholder:text-white/20">
                 </div>
-                <input type="password" id="pin-input" placeholder="PIN de 4 dígitos" maxlength="4" required class="w-full glass-dark rounded-2xl py-5 px-6 text-white text-center tracking-[0.8em] font-black outline-none focus:border-gold placeholder:text-white/20 placeholder:tracking-normal">
                 <button type="submit" id="claim-btn" class="w-full gold-btn font-black py-5 rounded-2xl text-xs uppercase tracking-[0.2em] shadow-2xl hover:scale-[1.02] transition-all mt-4">
-                    Reclamar mi Saldo Gratis
+                    Reclamar mis L. 30 Gratis
                 </button>
             </form>
+
+            <!-- STEP 2: WHATSAPP HANDSHAKE -->
+            <div id="welcome-handshake" class="hidden animate-in slide-in-from-bottom-4 space-y-6">
+                <div class="p-6 bg-green-500/10 border border-green-500/20 rounded-[2rem] space-y-4">
+                    <div class="text-3xl">📱</div>
+                    <h3 class="text-xl font-bold text-white leading-tight">Envía tu código <br>por WhatsApp.</h3>
+                    <p class="text-white/60 text-sm leading-relaxed">Para activar tu saldo, haz clic abajo para enviarnos tu PIN de seguridad por WhatsApp.</p>
+                    
+                    <a id="wa-handshake-btn" href="#" target="_blank" onclick="showPinEntry()" class="flex items-center justify-center gap-3 bg-[#25D366] text-white font-black py-5 rounded-2xl text-xs uppercase tracking-widest shadow-2xl hover:scale-[1.05] transition-all">
+                        <i class="fab fa-whatsapp text-lg"></i> Enviar Mi Código
+                    </a>
+                </div>
+                <p class="text-[10px] text-white/20 uppercase font-black tracking-widest">Ya envié el mensaje, <button onclick="showPinEntry()" class="text-gold underline">ingresar código</button></p>
+            </div>
+
+            <!-- STEP 3: PIN VERIFICATION -->
+            <div id="welcome-pin-verify" class="hidden animate-in zoom-in-95 space-y-8">
+                <div class="space-y-2">
+                    <h3 class="text-xl font-bold text-white uppercase tracking-tight">Verificación</h3>
+                    <p class="text-white/40 text-xs uppercase font-black tracking-widest">Ingresa los 4 dígitos que enviaste</p>
+                </div>
+                
+                <div class="flex justify-center gap-4" id="pin-display">
+                    <div class="w-16 h-20 rounded-2xl glass-dark border-2 border-white/5 flex items-center justify-center text-4xl font-black text-gold pin-box"></div>
+                    <div class="w-16 h-20 rounded-2xl glass-dark border-2 border-white/5 flex items-center justify-center text-4xl font-black text-gold pin-box"></div>
+                    <div class="w-16 h-20 rounded-2xl glass-dark border-2 border-white/5 flex items-center justify-center text-4xl font-black text-gold pin-box"></div>
+                    <div class="w-16 h-20 rounded-2xl glass-dark border-2 border-white/5 flex items-center justify-center text-4xl font-black text-gold pin-box"></div>
+                </div>
+
+                <!-- Hidden input for mobile keyboard -->
+                <input type="tel" id="real-pin-input" maxlength="4" class="opacity-0 absolute pointer-events-none" oninput="handlePinInput(this.value)">
+
+                <div class="grid grid-cols-3 gap-3 max-w-[280px] mx-auto">
+                    ${[1,2,3,4,5,6,7,8,9].map(n => `<button onclick="typePin(${n})" class="h-16 rounded-2xl bg-white/5 text-white font-black text-xl hover:bg-white/10 active:scale-90 transition-all">${n}</button>`).join('')}
+                    <button onclick="clearPin()" class="h-16 rounded-2xl bg-red-500/10 text-red-500 font-black text-sm active:scale-90 transition-all">✕</button>
+                    <button onclick="typePin(0)" class="h-16 rounded-2xl bg-white/5 text-white font-black text-xl hover:bg-white/10 active:scale-90 transition-all">0</button>
+                    <button onclick="submitHandshake()" class="h-16 rounded-2xl bg-green-500/10 text-green-500 font-black text-lg active:scale-90 transition-all">✓</button>
+                </div>
+            </div>
 
             <div id="welcome-success" class="hidden animate-in zoom-in-95 p-8 bg-gold/10 border-2 border-gold/30 rounded-[2.5rem] space-y-4">
                 <div class="text-4xl">🎉</div>
@@ -280,51 +319,141 @@
         
         document.addEventListener('DOMContentLoaded', loadFavorites);
 
-        async function claimWelcomeOffer(e) {
+        // WhatsApp Handshake Logic
+        let tempSignupData = {};
+        let generatedPin = "";
+        let enteredPin = "";
+
+        async function initHandshake(e) {
             e.preventDefault();
             const btn = document.getElementById('claim-btn');
             const name = document.getElementById('name-input').value;
             const country = document.getElementById('country-code').value;
             const rawPhone = document.getElementById('phone-input').value.replace(/\D/g, '');
             const phone = country + rawPhone;
-            const pin = document.getElementById('pin-input').value;
             
-            if(rawPhone.length < 8 || pin.length < 4 || !name) return alert("Completa los campos correctamente.");
+            if(rawPhone.length < 8 || !name) return alert("Completa los campos correctamente.");
 
-            btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Procesando...';
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Generando Código...';
             btn.disabled = true;
 
             try {
-                const res = await fetch('/api/customers/phone/' + encodeURIComponent(phone));
-                if (res.ok) {
-                    const data = await res.json();
-                    if (data && data.id) {
+                // Check if already registered
+                const checkRes = await fetch('/api/customers/phone/' + encodeURIComponent(phone));
+                if (checkRes.ok) {
+                    const existing = await checkRes.json();
+                    if (existing && existing.id) {
                         alert("Este número ya está registrado. Por favor inicia sesión.");
                         window.location.href = '/order?cat=Combos';
                         return;
                     }
                 }
                 
-                const createRes = await fetch('/api/customers', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ name, phone, pin })
-                });
-                
-                if (!createRes.ok) throw new Error("Error");
-                
-                localStorage.setItem('ra_customer_phone', phone);
-                localStorage.setItem('ra_customer_pin', pin);
-                localStorage.setItem('ra_welcome_offer_30', 'true');
+                // Generate 4-digit PIN
+                generatedPin = Math.floor(1000 + Math.random() * 9000).toString();
+                tempSignupData = { name, phone };
 
+                // Setup WA Link
+                const shopPhone = "50497814474"; // Oscar's Shop WhatsApp
+                const msg = `Hola Rich Aroma, mi nombre es ${name} y mi código de registro es: *${generatedPin}*. ¡Quiero mis L. 30 gratis! ☕🚀`;
+                document.getElementById('wa-handshake-btn').href = `https://wa.me/${shopPhone}?text=${encodeURIComponent(msg)}`;
+
+                // UI Transition
                 document.getElementById('welcome-form').classList.add('hidden');
-                document.getElementById('welcome-success').classList.remove('hidden');
-                document.getElementById('sticky-lead').classList.add('hidden');
+                document.getElementById('welcome-handshake').classList.remove('hidden');
 
             } catch(err) {
-                alert("Error al reclamar oferta. Intenta de nuevo.");
-                btn.innerHTML = 'Reclamar mi Saldo Gratis';
+                alert("Error. Intenta de nuevo.");
+                btn.innerHTML = 'Reclamar mis L. 30 Gratis';
                 btn.disabled = false;
+            }
+        }
+
+        function showPinEntry() {
+            document.getElementById('welcome-handshake').classList.add('hidden');
+            document.getElementById('welcome-pin-verify').classList.remove('hidden');
+            // Auto-focus hidden input for better mobile experience
+            setTimeout(() => document.getElementById('real-pin-input').focus(), 300);
+        }
+
+        function typePin(num) {
+            if (enteredPin.length < 4) {
+                enteredPin += num;
+                updatePinDisplay();
+                if (enteredPin.length === 4) {
+                    setTimeout(submitHandshake, 300);
+                }
+            }
+        }
+
+        function clearPin() {
+            enteredPin = "";
+            updatePinDisplay();
+        }
+
+        function updatePinDisplay() {
+            const boxes = document.querySelectorAll('.pin-box');
+            boxes.forEach((box, i) => {
+                box.innerText = enteredPin[i] || "";
+                box.classList.toggle('border-gold', !!enteredPin[i]);
+                box.classList.toggle('border-white/5', !enteredPin[i]);
+            });
+        }
+
+        async function submitHandshake() {
+            if (enteredPin !== generatedPin) {
+                alert("Código incorrecto. Verifica el mensaje que enviaste.");
+                clearPin();
+                return;
+            }
+
+            const btn = document.querySelector('#welcome-pin-verify button:last-child');
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+            btn.disabled = true;
+
+            try {
+                // Register the verified user
+                const res = await fetch('/api/customers', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                        name: tempSignupData.name, 
+                        phone: tempSignupData.phone, 
+                        pin: enteredPin,
+                        is_verified: true 
+                    })
+                });
+                
+                if (!res.ok) throw new Error("Registration failed");
+                
+                const data = await res.json();
+                
+                // Store session
+                localStorage.setItem('ra_customer_phone', tempSignupData.phone);
+                localStorage.setItem('ra_customer_pin', enteredPin);
+                localStorage.setItem('ra_welcome_offer_30', 'true');
+
+                // Final Success UI
+                document.getElementById('welcome-pin-verify').classList.add('hidden');
+                document.getElementById('welcome-success').classList.remove('hidden');
+                
+                if (document.getElementById('sticky-lead')) {
+                    document.getElementById('sticky-lead').classList.add('hidden');
+                }
+
+            } catch(err) {
+                alert("Error al activar cuenta. Intenta de nuevo.");
+                btn.innerHTML = '✓';
+                btn.disabled = false;
+                clearPin();
+            }
+        }
+
+        function handlePinInput(val) {
+            enteredPin = val.replace(/\D/g, '').slice(0, 4);
+            updatePinDisplay();
+            if (enteredPin.length === 4) {
+                setTimeout(submitHandshake, 300);
             }
         }
     </script>
