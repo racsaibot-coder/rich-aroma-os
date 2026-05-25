@@ -47,7 +47,7 @@
         /* FAST POS OPTIMIZATIONS */
         .item-card { height: 120px; transition: all 0.2s; position: relative; overflow: hidden; }
         .item-card:active { transform: scale(0.95); opacity: 0.8; }
-        .item-initials { width: 40px; height: 40px; border-radius: 12px; display: flex; items-center; justify-content: center; font-weight: 900; font-size: 14px; margin-bottom: 8px; position: relative; overflow: hidden; }
+        .item-initials { width: 40px; height: 40px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-weight: 900; font-size: 14px; margin-bottom: 8px; position: relative; overflow: hidden; }
         
         .item-thumb {
             position: absolute;
@@ -733,39 +733,56 @@
     let pendingVerifications = [];
     let kitchenPollInterval = null;
 
+    // --- ERROR CATCHING ---
+    window.onerror = function(msg, url, line) {
+        console.error(`[POS Error] ${msg} at ${line}`);
+        return false;
+    };
+
     // --- INITIALIZATION ---
     window.onload = async () => {
         console.log("🚀 POS v2.0 Initializing...");
         
-        // --- SSO AUTO-LOGIN ---
-        const savedPin = localStorage.getItem('ra_staff_pin');
-        if (savedPin && !window.currentEmployee) {
-            console.log("🚀 SSO: POS auto-login...");
-            document.getElementById('login-pin').value = savedPin;
-            await handleLogin();
+        try {
+            // 1. Fetch Menu First (Priority)
+            await refreshMenu();
+            
+            // 2. Initial Renders
+            updateCleanFeedUI();
+            renderCart();
+            filterCategory('Combos');
+
+            // 3. SSO AUTO-LOGIN
+            const savedPin = localStorage.getItem('ra_staff_pin');
+            if (savedPin && !window.currentEmployee) {
+                console.log("🚀 SSO: POS auto-login...");
+                document.getElementById('login-pin').value = savedPin;
+                try {
+                    await handleLogin();
+                } catch(e) {
+                    console.warn("Auto-login failed:", e.message);
+                    localStorage.removeItem('ra_staff_pin');
+                }
+            }
+
+            // 4. Restore/Check Shift
+            await restoreShift();
+
+            // 5. Background Tasks
+            fetchLiveOrders();
+            fetchStoreStatus();
+            fetchPendingVerifications();
+
+            // 6. Start Polling
+            setInterval(fetchLiveOrders, 10000);
+            setInterval(fetchPendingVerifications, 10000);
+            setInterval(fetchStoreStatus, 30000);
+
+        } catch (err) {
+            console.error("Initialization Failed:", err);
+            // Emergency: Show login modal if anything crashes
+            document.getElementById('shift-modal').classList.remove('hidden');
         }
-
-        // 1. Fetch Menu
-        await refreshMenu();
-
-        // 2. Restore Shift
-        await restoreShift();
-
-        // 3. Restore Cart
-        restoreCart();
-
-        // 4. Initial Renders
-        updateCleanFeedUI();
-        renderCart();
-        filterCategory('Combos', document.querySelector('.cat-btn.active-cat'));
-        fetchLiveOrders();
-        fetchStoreStatus();
-        fetchPendingVerifications();
-
-        // 5. Start Polling
-        setInterval(fetchLiveOrders, 10000);
-        setInterval(fetchPendingVerifications, 10000);
-        setInterval(fetchStoreStatus, 30000);
     };
 
     async function refreshMenu() {
@@ -1508,11 +1525,16 @@
             const isDisabled = isSoldOut || isLocked;
             const itemCat = (item.category || 'general').toLowerCase();
             
-            // Get Initials (First letter of each word, max 3)
-            const initials = item.name.split(' ').map(n => n[0]).join('').slice(0,3).toUpperCase();
+            // Safe Initial Extraction
+            let initials = "??";
+            try {
+                if (item.name) {
+                    initials = item.name.trim().split(/\s+/).map(n => n[0]).join('').slice(0,3).toUpperCase();
+                }
+            } catch(e) { console.error("Initial extraction failed for:", item.name); }
             
             // Check if has modifiers
-            const hasMods = itemModGroups.some(img => img.item_id === item.id);
+            const hasMods = (itemModGroups || []).some(img => img.item_id === item.id);
             
             const clickAction = isLocked 
                 ? 'onclick="alert(\'Food locked during Solo Shift.\')"' 
