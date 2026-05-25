@@ -165,7 +165,7 @@
 
     
     <!-- START SHIFT / LOGIN MODAL -->
-    <div id="shift-modal" class="fixed inset-0 bg-black bg-opacity-95 flex items-center justify-center z-[100] transition-all backdrop-blur-md">
+    <div id="shift-modal" class="fixed inset-0 bg-black bg-opacity-95 flex items-center justify-center z-[9999] transition-all backdrop-blur-md">
         <div class="bg-white w-full max-w-md rounded-3xl shadow-2xl p-8 text-center border-t-8 border-gold">
             <div id="login-stage">
                 <div class="w-20 h-20 bg-gold/10 text-gold rounded-full flex items-center justify-center mx-auto mb-6 text-3xl">
@@ -174,9 +174,9 @@
                 <h2 class="text-3xl font-black text-gray-800 mb-2 uppercase tracking-tighter">Cashier Login</h2>
                 <p class="text-gray-500 mb-8 font-bold text-xs uppercase tracking-widest">Ingrese su PIN personal</p>
                 
-                <input type="password" id="login-pin" maxlength="4" onkeyup="if(event.key==='Enter') handleLogin()" class="text-center text-5xl tracking-[0.5em] w-full border-b-4 border-gray-100 rounded-none p-4 mb-8 focus:border-gold outline-none font-black text-gold" placeholder="****">
+                <input type="password" id="login-pin" maxlength="4" onkeyup="if(event.key==='Enter') window.handleLogin()" class="text-center text-5xl tracking-[0.5em] w-full border-b-4 border-gray-100 rounded-none p-4 mb-8 focus:border-gold outline-none font-black text-gold" placeholder="****">
                 
-                <button onclick="handleLogin()" class="w-full bg-gray-900 text-white py-5 rounded-2xl font-black text-xl shadow-xl hover:bg-black active:scale-95 transition-all uppercase tracking-widest">Entrar</button>
+                <button onclick="window.handleLogin()" class="w-full bg-gray-900 text-white py-5 rounded-2xl font-black text-xl shadow-xl hover:bg-black active:scale-95 transition-all uppercase tracking-widest">Entrar</button>
             </div>
 
             <div id="open-shift-stage" class="hidden">
@@ -188,10 +188,10 @@
                 
                 <div class="mb-8">
                     <label class="block text-left text-[10px] font-black uppercase text-gray-400 tracking-widest mb-2">Base de Caja (Lempiras)</label>
-                    <input type="number" id="shift-cash" onkeyup="if(event.key==='Enter') confirmStartShift()" class="text-center text-5xl w-full border-b-4 border-gray-100 rounded-none p-4 focus:border-green-500 outline-none font-black text-green-600" placeholder="0.00">
+                    <input type="number" id="shift-cash" onkeyup="if(event.key==='Enter') window.confirmStartShift()" class="text-center text-5xl w-full border-b-4 border-gray-100 rounded-none p-4 focus:border-green-500 outline-none font-black text-green-600" placeholder="0.00">
                 </div>
                 
-                <button onclick="confirmStartShift()" class="w-full bg-green-600 text-white py-5 rounded-2xl font-black text-xl shadow-xl hover:bg-green-700 active:scale-95 transition-all uppercase tracking-widest">Abrir Registro</button>
+                <button onclick="window.confirmStartShift()" class="w-full bg-green-600 text-white py-5 rounded-2xl font-black text-xl shadow-xl hover:bg-green-700 active:scale-95 transition-all uppercase tracking-widest">Abrir Registro</button>
             </div>
         </div>
     </div>
@@ -739,62 +739,71 @@
         return false;
     };
 
+    window.savePin = async function() {
+        const pin = document.getElementById('new-pin').value;
+        if (pin.length < 4) return alert("PIN debe ser de 4 dígitos");
+        console.log("Saving new PIN...");
+        // Placeholder for real logic if needed
+        document.getElementById('pin-modal').classList.add('hidden');
+    };
+
     // --- INITIALIZATION ---
-    window.onload = async () => {
+    window.onload = function() {
         console.log("🚀 POS v2.0 Initializing...");
         const grid = document.getElementById('menu-grid');
         if (grid) grid.innerHTML = '<div class="col-span-4 text-center py-20 text-gray-400 italic"><i class="fas fa-spinner fa-spin mr-2"></i> Cargando Menú...</div>';
         
-        try {
-            // 1. Initial UI Setup (Synchronous)
-            updateCleanFeedUI();
-            renderCart();
+        // Use internal async block to keep onload compatible
+        (async () => {
+            try {
+                // 1. Initial UI Setup
+                updateCleanFeedUI();
+                renderCart();
 
-            // 2. Fetch Menu
-            await refreshMenu();
-            
-            // 3. Render Default Category
-            if (menu.length > 0) {
-                console.log("Rendering default category: All");
-                filterCategory('all'); // Show everything by default to ensure UI is not blank
-            } else {
-                console.error("❌ Menu is empty after fetch");
-                grid.innerHTML = '<div class="col-span-4 text-center py-20 text-red-500 font-bold">Error: Menú vacío. Contactar soporte.</div>';
-            }
-
-            // 4. SSO AUTO-LOGIN (Safe check)
-            const savedPin = localStorage.getItem('ra_staff_pin');
-            if (savedPin && !window.currentEmployee) {
-                console.log("🚀 SSO: Attempting auto-login...");
-                document.getElementById('login-pin').value = savedPin;
-                try {
-                    await handleLogin();
-                } catch(e) {
-                    console.warn("Auto-login failed:", e.message);
-                    localStorage.removeItem('ra_staff_pin');
+                // 2. Fetch Menu
+                await refreshMenu();
+                
+                // 3. Render Default Category
+                if (menu.length > 0) {
+                    console.log("Rendering default category: All");
+                    filterCategory('all'); 
                 }
+
+                // 4. SSO AUTO-LOGIN
+                const savedPin = localStorage.getItem('ra_staff_pin');
+                if (savedPin && !window.currentEmployee) {
+                    console.log("🚀 SSO: Attempting auto-login...");
+                    document.getElementById('login-pin').value = savedPin;
+                    try {
+                        await handleLogin();
+                    } catch(e) {
+                        localStorage.removeItem('ra_staff_pin');
+                    }
+                }
+
+                // 5. Restore Shift
+                await restoreShift();
+
+                // 6. Background Tasks
+                fetchLiveOrders();
+                fetchStoreStatus();
+                fetchPendingVerifications();
+
+                // 7. Start Polling
+                setInterval(fetchLiveOrders, 10000);
+                setInterval(fetchPendingVerifications, 10000);
+                setInterval(fetchStoreStatus, 30000);
+
+                // 8. Auto-focus login
+                if (!document.getElementById('shift-modal').classList.contains('hidden')) {
+                    setTimeout(() => document.getElementById('login-pin').focus(), 500);
+                }
+
+            } catch (err) {
+                console.error("CRITICAL: Initialization Failed:", err);
+                document.getElementById('shift-modal').classList.remove('hidden');
             }
-
-            // 5. Restore Shift (Decides if we hide the modal)
-            await restoreShift();
-
-            // 6. Background Tasks (Non-blocking)
-            fetchLiveOrders();
-            fetchStoreStatus();
-            fetchPendingVerifications();
-
-            // 7. Start Polling
-            setInterval(fetchLiveOrders, 10000);
-            setInterval(fetchPendingVerifications, 10000);
-            setInterval(fetchStoreStatus, 30000);
-
-        } catch (err) {
-            console.error("CRITICAL: Initialization Failed:", err);
-            // Don't hide the modal if we crashed
-            const modal = document.getElementById('shift-modal');
-            if (modal) modal.classList.remove('hidden');
-            alert("Error al iniciar POS. Por favor recarga la página.");
-        }
+        })();
     };
 
     async function refreshMenu() {
@@ -2779,7 +2788,8 @@ function openTenderModal() {
     }
 
     // --- SHIFT & STATUS ---
-    async function handleLogin() {
+    window.handleLogin = async function() {
+        console.log("🔑 handleLogin triggered");
         const pin = document.getElementById('login-pin').value;
         if (!pin) return alert("Ingrese su PIN");
 
@@ -2796,6 +2806,7 @@ function openTenderModal() {
             // Successful Login
             window.currentEmployee = data.employee;
             console.log("👤 Cashier Logged In:", window.currentEmployee.name);
+            localStorage.setItem('ra_staff_pin', pin);
 
             if (window.activeDBShift) {
                 // Shift already open, just join it
@@ -2811,11 +2822,13 @@ function openTenderModal() {
                 document.getElementById('welcome-msg').innerText = `Hola, ${window.currentEmployee.name}`;
             }
         } catch (err) {
+            console.error("Login Error:", err);
             alert(err.message);
         }
-    }
+    };
 
-    async function confirmStartShift() {
+    window.confirmStartShift = async function() {
+        console.log("🚀 confirmStartShift triggered");
         const cash = document.getElementById('shift-cash').value;
         if (!cash) return alert("Ingrese la base de caja");
 
