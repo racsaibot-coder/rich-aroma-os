@@ -76,12 +76,42 @@
 
         .cat-general { background: #f9fafb; border-color: #e5e7eb; }
         .cat-general .item-initials { background: #374151; color: #ffffff; }
+
+        /* COLLAPSIBLE SIDEBAR */
+        #heartbeat-sidebar { transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1); width: 20%; position: relative; }
+        #heartbeat-sidebar.collapsed { width: 0; min-width: 0; border-right-width: 0; }
+        #heartbeat-sidebar.collapsed > * { opacity: 0; visibility: hidden; pointer-events: none; }
+        
+        #menu-container { transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1); flex: 1; }
+        
+        .hb-toggle {
+            position: absolute;
+            left: 20%;
+            top: 50%;
+            transform: translateY(-50%);
+            z-index: 100;
+            width: 24px;
+            height: 60px;
+            background: #120C09;
+            color: #C9A66B;
+            border-radius: 0 12px 12px 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            border: 1px solid black;
+            border-left: none;
+            box-shadow: 4px 0 10px rgba(0,0,0,0.1);
+        }
+        .hb-toggle.collapsed { left: 0; }
+        .hb-toggle:hover { background: #1a1410; padding-left: 4px; }
     </style>
 </head>
 <body class="bg-gray-100 h-screen flex overflow-hidden">
 
     <!-- LEFT SIDEBAR: LIVE ORDER FEED -->
-    <div class="w-1/5 bg-gray-900 flex flex-col border-r border-black overflow-hidden shadow-2xl">
+    <div id="heartbeat-sidebar" class="w-1/5 bg-gray-900 flex flex-col border-r border-black overflow-hidden shadow-2xl shrink-0">
         <div class="p-4 bg-gray-800 border-b border-black flex justify-between items-center">
             <div>
                 <h3 class="text-white font-black text-xs uppercase tracking-widest flex items-center gap-2">
@@ -415,8 +445,14 @@
         </div>
     </div>
 
-    <!-- LEFT: MENU & CART -->
-    <div class="w-[55%] flex flex-col border-r border-gray-300 h-screen overflow-hidden">
+    <!-- HB TOGGLE BUTTON -->
+    <div id="hb-toggle-btn" class="hb-toggle" onclick="window.toggleHeartbeat()">
+        <i class="fas fa-chevron-left" id="hb-toggle-icon"></i>
+    </div>
+
+    <div id="menu-container" class="flex flex-1 overflow-hidden">
+        <!-- LEFT: MENU -->
+        <div class="flex-1 flex flex-col border-r border-gray-300 h-screen overflow-hidden">
         
         <!-- Header -->
         <div class="bg-white p-3 md:p-4 flex justify-between items-center shadow-sm z-50 relative shrink-0">
@@ -751,6 +787,24 @@
     window.onerror = function(msg, url, line) {
         console.error(`[POS Error] ${msg} at ${line}`);
         return false;
+    };
+
+    window.toggleHeartbeat = function() {
+        const sidebar = document.getElementById('heartbeat-sidebar');
+        const toggleBtn = document.getElementById('hb-toggle-btn');
+        const icon = document.getElementById('hb-toggle-icon');
+        
+        sidebar.classList.toggle('collapsed');
+        toggleBtn.classList.toggle('collapsed');
+        
+        if (sidebar.classList.contains('collapsed')) {
+            icon.classList.replace('fa-chevron-left', 'fa-chevron-right');
+        } else {
+            icon.classList.replace('fa-chevron-right', 'fa-chevron-left');
+        }
+        
+        // Trigger resize event to ensure grid adjusts
+        window.dispatchEvent(new Event('resize'));
     };
 
     window.savePin = async function() {
@@ -3974,6 +4028,9 @@ function openTenderModal() {
             </div>
         </div>
     </div>
+        </div>
+    </div>
+
     <!-- ORDER VIEW MODAL -->
     <div id="view-order-modal" class="hidden fixed inset-0 bg-black/90 z-[700] backdrop-blur-md flex items-center justify-center p-6">
         <div class="bg-dark w-full max-w-lg rounded-[3rem] border border-white/10 flex flex-col max-h-[85vh] overflow-hidden shadow-2xl">
