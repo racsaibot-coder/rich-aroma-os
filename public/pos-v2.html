@@ -2226,9 +2226,8 @@ function openTenderModal() {
     if (cart.length === 0) return;
     initPosTimeSlots();
     const calc = calculateTotalWithRule();
-...
-        document.getElementById('tender-due').innerText = `L. ${calc.total.toFixed(2)}`;
-        document.getElementById('tender-received').value = '';
+
+    document.getElementById('tender-due').innerText = `L. ${calc.total.toFixed(2)}`;        document.getElementById('tender-received').value = '';
         document.getElementById('tender-change').innerText = 'L. 0.00';
         
         const btnRico = document.getElementById('btn-tender-rico');
