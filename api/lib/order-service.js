@@ -11,6 +11,8 @@ async function createOrder(orderRequest, supabase = defaultSupabase) {
     const { 
         items, 
         paymentMethod, 
+        secondaryPaymentMethod,
+        ricoAmount,
         customerId, 
         customerPhone, 
         customerName,
@@ -149,6 +151,8 @@ async function createOrder(orderRequest, supabase = defaultSupabase) {
             tax: 0,
             status: orderStatus,
             payment_method: paymentMethod,
+            secondary_payment_method: secondaryPaymentMethod,
+            rico_amount_paid: ricoAmount || 0,
             customer_id: finalCustomerId,
             restaurant_id: targetResId,
             shift_id: shiftId,

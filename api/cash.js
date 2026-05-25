@@ -141,11 +141,14 @@ export default async function handler(req, res) {
         // 1. Fetch all orders that happened since the shift started
         const { data: allOrders } = await supabase
             .from('orders')
-            .select('total, payment_method, secondary_payment_method, rico_amount_paid, shift_id, created_at')
+            .select('total, payment_method, secondary_payment_method, rico_amount_paid, shift_id, created_at, restaurant_id')
             .gte('created_at', shift.opened_at)
+            .eq('restaurant_id', shift.restaurant_id || 'rich-aroma')
             .not('status', 'eq', 'cancelled');
             
-        const shiftOrders = (allOrders || []).filter(o => o.shift_id === shiftId || !o.shift_id);
+        const shiftOrders = (allOrders || []).filter(o => 
+            o.shift_id === shiftId || (!o.shift_id && o.created_at >= shift.opened_at)
+        );
 
         const cashSales = (shiftOrders || []).reduce((sum, o) => {
             const total = parseFloat(o.total) || 0;

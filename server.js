@@ -3509,17 +3509,23 @@ app.post('/api/cash/close-shift', ensureAuthenticated, async (req, res) => {
         const closedAt = new Date().toISOString();
 
         // 2. Calculate Sales Breakdown (Orders)
-        // CRITICAL FIX: Only include orders that are explicitly tied to this shift_id.
-        // Previously it was fetching everything by date, which included mobile orders from outside the shift.
+        // ROBUST FIX: Include orders tied to this shift_id OR orders that happened 
+        // during this shift's timeframe for this restaurant.
         const { data: allOrders, error: ordersError } = await client
             .from('orders')
-            .select('total, payment_method, secondary_payment_method, rico_amount_paid, subtotal, shift_id')
-            .eq('shift_id', shiftId)
+            .select('total, payment_method, secondary_payment_method, rico_amount_paid, subtotal, shift_id, created_at')
+            .gte('created_at', shift.opened_at)
+            .eq('restaurant_id', shift.restaurant_id || 'rich-aroma')
             .not('status', 'eq', 'cancelled');
 
         if (ordersError) console.error("[Shift] Error fetching orders:", ordersError);
 
-        const salesBreakdown = (allOrders || []).reduce((acc, o) => {
+        // Filter: Keep if explicitly matched OR if missing shift_id but within timeframe
+        const shiftOrders = (allOrders || []).filter(o => 
+            o.shift_id === shiftId || (!o.shift_id && o.created_at >= shift.opened_at)
+        );
+
+        const salesBreakdown = (shiftOrders || []).reduce((acc, o) => {
             const total = parseFloat(o.total) || 0;
             const ricoPaid = parseFloat(o.rico_amount_paid) || 0;
             const remainingTotal = total - ricoPaid;

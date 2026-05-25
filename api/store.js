@@ -414,13 +414,16 @@ module.exports = async (req, res) => {
         // --- 4. ORDER UPDATE (PATCH) ---
         if (action === 'order_update' || (id && req.method === 'PATCH')) {
             const orderId = id || req.body.id;
-            const { status, notes, items, total } = req.body;
+            const { status, notes, items, total, shiftId, ricoAmount, secondaryPaymentMethod } = req.body;
             
             const updates = {};
             if (status) updates.status = status;
             if (notes) updates.notes = notes;
             if (items) updates.items = items;
-            if (total) updates.total = total;
+            if (total !== undefined) updates.total = total;
+            if (shiftId) updates.shift_id = shiftId;
+            if (ricoAmount !== undefined) updates.rico_amount_paid = ricoAmount;
+            if (secondaryPaymentMethod) updates.secondary_payment_method = secondaryPaymentMethod;
 
             const { data, error } = await supabase.from('orders').update(updates).eq('id', orderId).select().single();
             if (error) throw error;
@@ -449,7 +452,7 @@ module.exports = async (req, res) => {
 
         // --- 5. CREATE ORDER (POST) ---
         if (req.method === 'POST' && (!action || action === 'orders')) {
-            const { items, total, paymentMethod, customerId, notes, fulfillment, fulfillment_type, guestPhone, restaurantId } = req.body;
+            const { items, total, paymentMethod, customerId, notes, fulfillment, fulfillment_type, guestPhone, restaurantId, shiftId, ricoAmount, secondaryPaymentMethod } = req.body;
             
             const targetResId = restaurantId || 'rich-aroma';
             
@@ -484,6 +487,9 @@ module.exports = async (req, res) => {
                 discount: 0,
                 payment_method: paymentMethod, 
                 customer_id: customerId, 
+                shift_id: shiftId,
+                rico_amount_paid: ricoAmount || 0,
+                secondary_payment_method: secondaryPaymentMethod,
                 notes: `[FULFILLMENT: ${fulfillment || fulfillment_type || 'pickup'}] ` + finalNotes, 
                 status: 'pending', 
                 restaurant_id: targetResId
