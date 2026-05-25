@@ -895,9 +895,19 @@
         // NO ACTIVE SHIFT ON SERVER
         localStorage.removeItem('pos_active_shift');
         currentShiftId = null;
-        modal.classList.remove('hidden');
-        loginStage.classList.remove('hidden');
-        openStage.classList.add('hidden');
+
+        if (window.currentEmployee) {
+            // User is logged in but shift is closed: Show Step 2 (Open Shift)
+            modal.classList.remove('hidden');
+            loginStage.classList.add('hidden');
+            openStage.classList.remove('hidden');
+            document.getElementById('welcome-msg').innerText = `Hola, ${window.currentEmployee.name}`;
+        } else {
+            // Not logged in: Show Step 1 (PIN Login)
+            modal.classList.remove('hidden');
+            loginStage.classList.remove('hidden');
+            openStage.classList.add('hidden');
+        }
     }
 
     function restoreCart() {
