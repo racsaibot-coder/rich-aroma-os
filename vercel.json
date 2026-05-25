@@ -298,6 +298,14 @@
       "dest": "/api/cali.js"
     },
     {
+      "src": "/api/orders-v2",
+      "dest": "/api/orders-v2.js"
+    },
+    {
+      "src": "/api/test-email",
+      "dest": "/api/test-email.js"
+    },
+    {
       "src": "/api/stripe-webhook",
       "dest": "/api/stripe-webhook.js"
     },
