@@ -495,35 +495,49 @@
         <!-- Smart Upsell Banner Removed -->
 
         <!-- Category Toggles -->
-        <div class="px-4 pt-4 pb-2 flex flex-col gap-4 w-full bg-white border-b border-gray-100">
-            <!-- POWER SEARCH -->
-            <div class="relative group">
-                <i class="fas fa-search absolute left-5 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-blue-600 transition-colors"></i>
-                <input type="text" id="power-search" placeholder="BUSQUEDA RÁPIDA (Ej: Cappu, Baleada, 101...)" 
-                    class="w-full bg-gray-50 border-2 border-gray-100 rounded-2xl p-4 pl-12 text-sm font-black focus:border-blue-600 focus:bg-white outline-none transition-all uppercase"
-                    oninput="handlePowerSearch(this.value)">
-                <div class="absolute right-4 top-1/2 -translate-y-1/2 bg-gray-200 text-gray-500 text-[10px] font-black px-2 py-1 rounded">ESC TO CLEAR</div>
-            </div>
-
-            <div class="flex flex-wrap gap-2">
-                <button onclick="filterCategory('Combos', this)" class="cat-btn active-cat px-6 py-3 rounded-2xl font-black shadow-lg transition text-xs uppercase tracking-widest border-2">🔥 Combos</button>
-                <button onclick="filterCategory('Calientes', this)" class="cat-btn inactive-cat px-6 py-3 rounded-2xl font-black shadow transition text-xs uppercase tracking-widest border-2">☕ Calientes</button>
-                <button onclick="filterCategory('Heladas', this)" class="cat-btn inactive-cat px-6 py-3 rounded-2xl font-black shadow transition text-xs uppercase tracking-widest border-2">🥤 Heladas</button>
-                <button onclick="filterCategory('Comida', this)" class="cat-btn inactive-cat px-6 py-3 rounded-2xl font-black shadow transition text-xs uppercase tracking-widest border-2">🥐 Comida</button>
-                <button onclick="filterCategory('Postres', this)" class="cat-btn inactive-cat px-6 py-3 rounded-2xl font-black shadow transition text-xs uppercase tracking-widest border-2">🍰 Postres</button>
-                <button onclick="filterCategory('Sides', this)" class="cat-btn inactive-cat px-6 py-3 rounded-2xl font-black shadow transition text-xs uppercase tracking-widest border-2">🍟 Sides</button>
-                <button onclick="filterCategory('Secreto', this)" class="cat-btn inactive-cat px-6 py-3 rounded-2xl font-black shadow transition text-xs uppercase tracking-widest border-2">🤫 Secreto</button>
-                <button onclick="filterCategory('Otros', this)" class="cat-btn inactive-cat px-6 py-3 rounded-2xl font-black shadow transition text-xs uppercase tracking-widest border-2">📦 Otros</button>
-                <button onclick="openCustomItemModal()" class="bg-purple-50 text-purple-700 px-6 py-3 rounded-2xl font-black shadow transition text-xs uppercase tracking-widest border-2 border-purple-100 hover:bg-purple-100 flex items-center gap-2"><i class="fas fa-plus"></i> Custom</button>
-            </div>
-            
-            <!-- TOP SELLERS (Quick Add) -->
-            <div class="flex items-center gap-2 overflow-x-auto pb-2 no-scrollbar">
-                <span class="text-[9px] font-black text-gray-400 uppercase tracking-widest mr-2 shrink-0">Favoritos:</span>
-                <button onclick="quickAddItem('combo_1')" class="shrink-0 bg-orange-50 text-orange-700 border border-orange-100 px-3 py-1.5 rounded-lg text-[10px] font-black uppercase hover:bg-orange-100">Combo 1</button>
-                <button onclick="quickAddItem('food_baleadas')" class="shrink-0 bg-blue-50 text-blue-700 border border-blue-100 px-3 py-1.5 rounded-lg text-[10px] font-black uppercase hover:bg-blue-100">Baleada</button>
-                <button onclick="quickAddItem('hot_cappuccino')" class="shrink-0 bg-amber-50 text-amber-700 border border-amber-100 px-3 py-1.5 rounded-lg text-[10px] font-black uppercase hover:bg-amber-100">Cappuccino</button>
-                <button onclick="quickAddItem('cold_supreme_frappe')" class="shrink-0 bg-pink-50 text-pink-700 border border-pink-100 px-3 py-1.5 rounded-lg text-[10px] font-black uppercase hover:bg-pink-100">Supreme Frappe</button>
+        <div class="px-4 py-4 w-full bg-white border-b border-gray-200 shrink-0">
+            <div class="grid grid-cols-5 gap-3">
+                <button onclick="filterCategory('Combos', this)" class="cat-btn active-cat h-20 rounded-[1.5rem] font-black shadow-md transition-all text-[11px] uppercase tracking-widest border-2 flex flex-col items-center justify-center gap-1">
+                    <span class="text-xl">🔥</span>
+                    <span>Combos</span>
+                </button>
+                <button onclick="filterCategory('Calientes', this)" class="cat-btn inactive-cat h-20 rounded-[1.5rem] font-black shadow-sm transition-all text-[11px] uppercase tracking-widest border-2 flex flex-col items-center justify-center gap-1">
+                    <span class="text-xl">☕</span>
+                    <span>Café</span>
+                </button>
+                <button onclick="filterCategory('Heladas', this)" class="cat-btn inactive-cat h-20 rounded-[1.5rem] font-black shadow-sm transition-all text-[11px] uppercase tracking-widest border-2 flex flex-col items-center justify-center gap-1">
+                    <span class="text-xl">🥤</span>
+                    <span>Frío</span>
+                </button>
+                <button onclick="filterCategory('Comida', this)" class="cat-btn inactive-cat h-20 rounded-[1.5rem] font-black shadow-sm transition-all text-[11px] uppercase tracking-widest border-2 flex flex-col items-center justify-center gap-1">
+                    <span class="text-xl">🥐</span>
+                    <span>Comida</span>
+                </button>
+                <button onclick="filterCategory('Postres', this)" class="cat-btn inactive-cat h-20 rounded-[1.5rem] font-black shadow-sm transition-all text-[11px] uppercase tracking-widest border-2 flex flex-col items-center justify-center gap-1">
+                    <span class="text-xl">🍰</span>
+                    <span>Postres</span>
+                </button>
+                
+                <button onclick="filterCategory('Sides', this)" class="cat-btn inactive-cat h-20 rounded-[1.5rem] font-black shadow-sm transition-all text-[11px] uppercase tracking-widest border-2 flex flex-col items-center justify-center gap-1">
+                    <span class="text-xl">🍟</span>
+                    <span>Sides</span>
+                </button>
+                <button onclick="filterCategory('Secreto', this)" class="cat-btn inactive-cat h-20 rounded-[1.5rem] font-black shadow-sm transition-all text-[11px] uppercase tracking-widest border-2 flex flex-col items-center justify-center gap-1">
+                    <span class="text-xl">🤫</span>
+                    <span>Secreto</span>
+                </button>
+                <button onclick="filterCategory('Otros', this)" class="cat-btn inactive-cat h-20 rounded-[1.5rem] font-black shadow-sm transition-all text-[11px] uppercase tracking-widest border-2 flex flex-col items-center justify-center gap-1">
+                    <span class="text-xl">📦</span>
+                    <span>Varios</span>
+                </button>
+                <button onclick="filterCategory('all', this)" class="cat-btn inactive-cat h-20 rounded-[1.5rem] font-black shadow-sm transition-all text-[11px] uppercase tracking-widest border-2 flex flex-col items-center justify-center gap-1">
+                    <span class="text-xl">✨</span>
+                    <span>TODO</span>
+                </button>
+                <button onclick="openCustomItemModal()" class="bg-purple-50 text-purple-700 h-20 rounded-[1.5rem] font-black shadow-sm transition-all text-[11px] uppercase tracking-widest border-2 border-purple-100 hover:bg-purple-100 flex flex-col items-center justify-center gap-1">
+                    <span class="text-xl">➕</span>
+                    <span>Manual</span>
+                </button>
             </div>
         </div>
 
@@ -1463,40 +1477,6 @@
     }
 
     // --- MENU & RENDERING ---
-    function handlePowerSearch(query) {
-        if (!query) {
-            filterCategory('Combos'); // Reset to default
-            return;
-        }
-        const q = query.toLowerCase();
-        const filtered = menu.filter(i => 
-            (i.name || '').toLowerCase().includes(q) || 
-            (i.id || '').toLowerCase().includes(q) ||
-            (i.category || '').toLowerCase().includes(q)
-        );
-        
-        // Remove category highlights during search
-        document.querySelectorAll('.cat-btn').forEach(btn => btn.classList.replace('active-cat', 'inactive-cat'));
-        renderMenuGrid(filtered);
-    }
-
-    // Keyboard listener for Power Search
-    window.addEventListener('keydown', (e) => {
-        if (e.key === 'Escape') {
-            const search = document.getElementById('power-search');
-            if (search) {
-                search.value = '';
-                handlePowerSearch('');
-                search.blur();
-            }
-        }
-        // Focus search with / key
-        if (e.key === '/' && document.activeElement.tagName !== 'INPUT') {
-            e.preventDefault();
-            document.getElementById('power-search')?.focus();
-        }
-    });
-
     function quickAddItem(id) {
         const item = menu.find(m => m.id === id);
         if (!item) return;
@@ -1532,9 +1512,7 @@
     }
 
     function renderMenu() {
-        const search = document.getElementById('power-search')?.value;
-        if (search) handlePowerSearch(search);
-        else renderMenuGrid(menu);
+        renderMenuGrid(menu);
     }
 
     function renderMenuGrid(items) {
