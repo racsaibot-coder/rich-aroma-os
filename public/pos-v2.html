@@ -3190,15 +3190,43 @@ function openTenderModal() {
             closureData[key] = parseFloat(cleanVal) || 0;
 
             if (closureCurrentStep === 3) {
-                // Populate review
+                // Fetch Expected Stats for Review
                 const rCash = document.getElementById('review-cash');
                 const rCard = document.getElementById('review-card');
                 const rTransfer = document.getElementById('review-transfer');
-                if (rCash) rCash.innerText = `L. ${closureData.cash.toFixed(2)}`;
-                if (rCard) rCard.innerText = `L. ${closureData.card.toFixed(2)}`;
-                if (rTransfer) rTransfer.innerText = `L. ${closureData.transfer.toFixed(2)}`;
-            }
+                const nextBtn = document.getElementById('closure-next-btn');
 
+                if (rCash) rCash.innerHTML = `<span class="text-gray-400">Calculando...</span>`;
+                nextBtn.disabled = true;
+
+                try {
+                    const pin = localStorage.getItem('ra_staff_pin') || 'EMP-admin';
+                    const res = await fetch(`/api/cash/preview-closure?shiftId=${currentShiftId}`, {
+                        headers: { 'Authorization': `Bearer ${pin}` }
+                    });
+                    const stats = await res.json();
+
+                    if (rCash) {
+                        const diff = closureData.cash - stats.expected_cash;
+                        const diffText = diff === 0 ? '' : (diff > 0 ? `<span class="text-green-500 ml-2">(+L. ${diff.toFixed(2)})</span>` : `<span class="text-red-500 ml-2">(-L. ${Math.abs(diff).toFixed(2)})</span>`);
+                        rCash.innerHTML = `<div>L. ${closureData.cash.toFixed(2)}</div> <div class="text-[10px] font-bold text-gray-400">Sistema: L. ${stats.expected_cash.toFixed(2)} ${diffText}</div>`;
+                    }
+                    if (rCard) {
+                        const diff = closureData.card - stats.sales.card;
+                        const diffText = diff === 0 ? '' : (diff > 0 ? `<span class="text-green-500 ml-2">(+)</span>` : `<span class="text-red-500 ml-2">(-)</span>`);
+                        rCard.innerHTML = `<div>L. ${closureData.card.toFixed(2)}</div> <div class="text-[10px] font-bold text-gray-400">Sistema: L. ${stats.sales.card.toFixed(2)} ${diffText}</div>`;
+                    }
+                    if (rTransfer) {
+                        const diff = closureData.transfer - stats.sales.transfer;
+                        const diffText = diff === 0 ? '' : (diff > 0 ? `<span class="text-green-500 ml-2">(+)</span>` : `<span class="text-red-500 ml-2">(-)</span>`);
+                        rTransfer.innerHTML = `<div>L. ${closureData.transfer.toFixed(2)}</div> <div class="text-[10px] font-bold text-gray-400">Sistema: L. ${stats.sales.transfer.toFixed(2)} ${diffText}</div>`;
+                    }
+                } catch(e) {
+                    console.error("Preview failed", e);
+                } finally {
+                    nextBtn.disabled = false;
+                }
+            }
             closureCurrentStep++;
             updateClosureWizardUI();
         } else {            // FINAL SUBMISSION
@@ -3937,19 +3965,18 @@ function openTenderModal() {
                         <p class="text-gray-400 text-[10px] font-black uppercase tracking-widest">Revisa los montos ingresados</p>
                     </div>
                     <div class="space-y-2">
-                        <div class="flex justify-between p-4 bg-gray-50 rounded-2xl border border-gray-100">
+                        <div class="flex justify-between items-center p-4 bg-gray-50 rounded-2xl border border-gray-100">
                             <span class="text-gray-500 font-bold text-sm uppercase">Efectivo</span>
-                            <span id="review-cash" class="font-black text-dark">L. 0.00</span>
+                            <div id="review-cash" class="font-black text-dark text-right leading-tight">L. 0.00</div>
                         </div>
-                        <div class="flex justify-between p-4 bg-gray-50 rounded-2xl border border-gray-100">
+                        <div class="flex justify-between items-center p-4 bg-gray-50 rounded-2xl border border-gray-100">
                             <span class="text-gray-500 font-bold text-sm uppercase">Tarjetas</span>
-                            <span id="review-card" class="font-black text-dark">L. 0.00</span>
+                            <div id="review-card" class="font-black text-dark text-right leading-tight">L. 0.00</div>
                         </div>
-                        <div class="flex justify-between p-4 bg-gray-50 rounded-2xl border border-gray-100">
+                        <div class="flex justify-between items-center p-4 bg-gray-50 rounded-2xl border border-gray-100">
                             <span class="text-gray-500 font-bold text-sm uppercase">Transf.</span>
-                            <span id="review-transfer" class="font-black text-dark">L. 0.00</span>
-                        </div>
-                    </div>
+                            <div id="review-transfer" class="font-black text-dark text-right leading-tight">L. 0.00</div>
+                        </div>                    </div>
                     <textarea id="closure-notes" placeholder="Notas adicionales (opcional)..." class="w-full bg-gray-50 border-2 border-gray-100 rounded-2xl p-4 text-sm outline-none focus:border-gold min-h-[80px]"></textarea>
                 </div>
             </div>

@@ -3430,24 +3430,27 @@ app.post('/api/cash/open-shift', ensureAuthenticated, async (req, res) => {
     const client = req.supabase || supabase;
     const { openingAmount, employeeId } = req.body;
     
-    // Check if there is already an open shift
-    const { data: existing } = await client
+    // Check if there is already an open shift (Optimized for Multi-tenant)
+    const resId = req.query.restaurantId || 'rich-aroma';
+    const { data: existingShifts } = await client
         .from('cash_shifts')
         .select('id')
         .eq('status', 'open')
-        .single();
+        .eq('restaurant_id', resId)
+        .limit(1);
         
-    if (existing) {
-        return res.status(400).json({ error: 'There is already an open shift.' });
+    if (existingShifts && existingShifts.length > 0) {
+        return res.status(400).json({ error: 'Ya existe un turno abierto para este restaurante.' });
     }
     
     const { data, error } = await client
         .from('cash_shifts')
         .insert({
-            employee_id: employeeId || (req.user ? req.user.id : null), // Fallback if employeeId not sent
+            employee_id: employeeId || (req.user ? req.user.id : null), 
             opening_amount: openingAmount,
             status: 'open',
-            opened_at: new Date().toISOString()
+            opened_at: new Date().toISOString(),
+            restaurant_id: resId
         })
         .select()
         .single();
@@ -3481,6 +3484,45 @@ app.post('/api/cash/transaction', ensureAuthenticated, async (req, res) => {
         
     if (error) return res.status(500).json({ error: error.message });
     res.json(data);
+});
+
+app.get('/api/cash/preview-closure', ensureAuthenticated, async (req, res) => {
+    try {
+        const client = req.supabase || supabase;
+        const { shiftId } = req.query;
+        if (!shiftId) return res.status(400).json({ error: 'Shift ID required' });
+
+        const { data: shift } = await client.from('cash_shifts').select('*').eq('id', shiftId).single();
+        if (!shift) return res.status(404).json({ error: 'Shift not found' });
+
+        const { data: allOrders } = await client
+            .from('orders')
+            .select('total, payment_method, secondary_payment_method, rico_amount_paid, subtotal, shift_id, created_at')
+            .gte('created_at', shift.opened_at)
+            .eq('restaurant_id', shift.restaurant_id || 'rich-aroma')
+            .not('status', 'eq', 'cancelled');
+
+        const shiftOrders = (allOrders || []).filter(o => 
+            o.shift_id === shiftId || (!o.shift_id && o.created_at >= shift.opened_at)
+        );
+
+        const sales = (shiftOrders || []).reduce((acc, o) => {
+            const total = parseFloat(o.total) || 0;
+            const rico = parseFloat(o.rico_amount_paid) || 0;
+            const net = total - rico;
+            const method = o.secondary_payment_method || o.payment_method;
+            if (method === 'cash') acc.cash += net;
+            else if (method === 'card') acc.card += net;
+            else if (method === 'transfer') acc.transfer += net;
+            return acc;
+        }, { cash: 0, card: 0, transfer: 0 });
+
+        res.json({
+            opening_amount: shift.opening_amount,
+            expected_cash: parseFloat(shift.opening_amount) + sales.cash,
+            sales: sales
+        });
+    } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
 // Close Shift

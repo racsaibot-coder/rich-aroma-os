@@ -100,13 +100,15 @@ export default async function handler(req, res) {
             empId = emp.id;
         }
 
-        const { data: existing } = await supabase
+        const resId = req.query.restaurantId || 'rich-aroma';
+        const { data: existingShifts } = await supabase
             .from('cash_shifts')
             .select('id')
             .eq('status', 'open')
-            .single();
+            .eq('restaurant_id', resId)
+            .limit(1);
 
-        if (existing) return res.status(400).json({ error: 'There is already an open shift.' });
+        if (existingShifts && existingShifts.length > 0) return res.status(400).json({ error: 'Ya existe un turno abierto.' });
 
         const { data, error } = await supabase
             .from('cash_shifts')
@@ -114,7 +116,8 @@ export default async function handler(req, res) {
                 employee_id: empId,
                 opening_amount: openingAmount || 0,
                 status: 'open',
-                opened_at: new Date().toISOString()
+                opened_at: new Date().toISOString(),
+                restaurant_id: resId
             })
             .select()
             .single();
@@ -123,6 +126,40 @@ export default async function handler(req, res) {
         return res.json(data);
     }
     
+    if (action === 'preview-closure' && req.method === 'GET') {
+        const { shiftId } = req.query;
+        const { data: shift } = await supabase.from('cash_shifts').select('*').eq('id', shiftId).single();
+        if (!shift) return res.status(404).json({ error: 'Shift not found' });
+
+        const { data: allOrders } = await supabase
+            .from('orders')
+            .select('total, payment_method, secondary_payment_method, rico_amount_paid, shift_id, created_at, restaurant_id')
+            .gte('created_at', shift.opened_at)
+            .eq('restaurant_id', shift.restaurant_id || 'rich-aroma')
+            .not('status', 'eq', 'cancelled');
+            
+        const shiftOrders = (allOrders || []).filter(o => 
+            o.shift_id === shiftId || (!o.shift_id && o.created_at >= shift.opened_at)
+        );
+
+        const sales = (shiftOrders || []).reduce((acc, o) => {
+            const total = parseFloat(o.total) || 0;
+            const rico = parseFloat(o.rico_amount_paid) || 0;
+            const net = total - rico;
+            const method = o.secondary_payment_method || o.payment_method;
+            if (method === 'cash') acc.cash += net;
+            else if (method === 'card') acc.card += net;
+            else if (method === 'transfer') acc.transfer += net;
+            return acc;
+        }, { cash: 0, card: 0, transfer: 0 });
+
+        return res.json({
+            opening_amount: shift.opening_amount,
+            expected_cash: parseFloat(shift.opening_amount) + sales.cash,
+            sales: sales
+        });
+    }
+
     if (action === 'close-shift' && req.method === 'POST') {
         const { shiftId, closingAmount, declaredCard, declaredTransfer, notes } = req.body;
         console.log(`[L-Debug] Closing shift ${shiftId}. Declared Cash: ${closingAmount}`);
