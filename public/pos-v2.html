@@ -165,7 +165,7 @@
 
     
     <!-- START SHIFT / LOGIN MODAL -->
-    <div id="shift-modal" class="hidden fixed inset-0 bg-black bg-opacity-95 flex items-center justify-center z-[100] transition-all backdrop-blur-md">
+    <div id="shift-modal" class="fixed inset-0 bg-black bg-opacity-95 flex items-center justify-center z-[100] transition-all backdrop-blur-md">
         <div class="bg-white w-full max-w-md rounded-3xl shadow-2xl p-8 text-center border-t-8 border-gold">
             <div id="login-stage">
                 <div class="w-20 h-20 bg-gold/10 text-gold rounded-full flex items-center justify-center mx-auto mb-6 text-3xl">
@@ -742,20 +742,30 @@
     // --- INITIALIZATION ---
     window.onload = async () => {
         console.log("🚀 POS v2.0 Initializing...");
+        const grid = document.getElementById('menu-grid');
+        if (grid) grid.innerHTML = '<div class="col-span-4 text-center py-20 text-gray-400 italic"><i class="fas fa-spinner fa-spin mr-2"></i> Cargando Menú...</div>';
         
         try {
-            // 1. Fetch Menu First (Priority)
-            await refreshMenu();
-            
-            // 2. Initial Renders
+            // 1. Initial UI Setup (Synchronous)
             updateCleanFeedUI();
             renderCart();
-            filterCategory('Combos');
 
-            // 3. SSO AUTO-LOGIN
+            // 2. Fetch Menu
+            await refreshMenu();
+            
+            // 3. Render Default Category
+            if (menu.length > 0) {
+                console.log("Rendering default category: All");
+                filterCategory('all'); // Show everything by default to ensure UI is not blank
+            } else {
+                console.error("❌ Menu is empty after fetch");
+                grid.innerHTML = '<div class="col-span-4 text-center py-20 text-red-500 font-bold">Error: Menú vacío. Contactar soporte.</div>';
+            }
+
+            // 4. SSO AUTO-LOGIN (Safe check)
             const savedPin = localStorage.getItem('ra_staff_pin');
             if (savedPin && !window.currentEmployee) {
-                console.log("🚀 SSO: POS auto-login...");
+                console.log("🚀 SSO: Attempting auto-login...");
                 document.getElementById('login-pin').value = savedPin;
                 try {
                     await handleLogin();
@@ -765,23 +775,25 @@
                 }
             }
 
-            // 4. Restore/Check Shift
+            // 5. Restore Shift (Decides if we hide the modal)
             await restoreShift();
 
-            // 5. Background Tasks
+            // 6. Background Tasks (Non-blocking)
             fetchLiveOrders();
             fetchStoreStatus();
             fetchPendingVerifications();
 
-            // 6. Start Polling
+            // 7. Start Polling
             setInterval(fetchLiveOrders, 10000);
             setInterval(fetchPendingVerifications, 10000);
             setInterval(fetchStoreStatus, 30000);
 
         } catch (err) {
-            console.error("Initialization Failed:", err);
-            // Emergency: Show login modal if anything crashes
-            document.getElementById('shift-modal').classList.remove('hidden');
+            console.error("CRITICAL: Initialization Failed:", err);
+            // Don't hide the modal if we crashed
+            const modal = document.getElementById('shift-modal');
+            if (modal) modal.classList.remove('hidden');
+            alert("Error al iniciar POS. Por favor recarga la página.");
         }
     };
 
@@ -816,9 +828,10 @@
             console.error("❌ Menu fetch failed", e);
             // Fallback Menu
             menu = [
-                { id: 'hot_latte', name: 'Latte', price: 55, category: 'coffee', image: null, available: true },
-                { id: 'hot_americano', name: 'Americano', price: 40, category: 'coffee', image: null, available: true }
+                { id: 'hot_latte', name: 'Latte Fallback', price: 55, category: 'coffee', image: null, available: true },
+                { id: 'combo_1', name: 'Combo 1 Fallback', price: 150, category: 'combos', image: null, available: true }
             ];
+            console.log("⚠️ Using fallback menu");
         }
     }
 
