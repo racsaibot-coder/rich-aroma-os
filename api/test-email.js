@@ -16,16 +16,22 @@ module.exports = async function handler(req, res) {
         if (result) {
             res.status(200).json({ 
                 success: true, 
-                message: "Test email sent to boredneenee@gmail.com and owner.",
+                message: "Test email sent successfully!",
                 details: result 
             });
         } else {
+            // If notifyCaliOrder returns null, it hit a catch block.
             res.status(500).json({ 
                 success: false, 
-                message: "Email failed. Check if RESEND_API_KEY is set in Vercel Environment Variables." 
+                message: "Email service returned a failure. Check server logs or verify Resend configuration.",
+                env_status: process.env.RESEND_API_KEY ? 'Key Found' : 'Key Missing'
             });
         }
     } catch (e) {
-        res.status(500).json({ error: e.message });
+        res.status(500).json({ 
+            success: false,
+            error: e.message,
+            stack: e.stack
+        });
     }
 };
