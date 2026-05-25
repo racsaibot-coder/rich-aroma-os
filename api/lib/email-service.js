@@ -79,7 +79,6 @@ async function notifyCaliOrder(order, type = 'PAID') {
  */
 async function notifyOrder(order, type = 'NEW') {
     const ownerEmail = process.env.OWNER_EMAIL || 'racs01@gmail.com';
-    const extraEmail = 'boredneenee@gmail.com';
     const restaurantName = order.restaurant_id === 'rich-aroma' ? 'Rich Aroma Coffee' : order.restaurant_id.toUpperCase();
     
     const subject = `[${restaurantName}] ${type} Pedido #${order.order_number || ''}`;
@@ -116,7 +115,7 @@ async function notifyOrder(order, type = 'NEW') {
     `;
 
     return await sendEmail({
-        to: [ownerEmail, extraEmail],
+        to: [ownerEmail],
         subject,
         html
     });
