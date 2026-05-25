@@ -2,6 +2,7 @@ const { supabase: defaultSupabase } = require('./supabase');
 const { awardPoints, syncMembershipState, getHondurasDate } = require('./loyalty');
 const { applyVipBenefits, calculateSurgeDiscounts } = require('./pricing');
 const { deductInventoryForOrder } = require('./inventory-service');
+const { notifyOrder } = require('./email-service');
 
 /**
  * Main Order Orchestrator for Rich Aroma OS & QuimiEats
@@ -175,6 +176,8 @@ async function createOrder(orderRequest, supabase = defaultSupabase) {
             if (targetResId === 'rich-aroma') {
                 await deductInventoryForOrder(dbOrder.items, supabase);
             }
+            // Email Notification (Every order triggers an email)
+            await notifyOrder(data);
         })();
 
         return data;
