@@ -554,12 +554,40 @@
             // Render Items in tracking view
             const list = document.getElementById('track-items-list');
             if (list && activeOrder.items) {
-                list.innerHTML = activeOrder.items.map(item => `
+                const total = parseFloat(activeOrder.total || 0).toFixed(2);
+                const paymentStatus = (activeOrder.status === 'pending' && activeOrder.payment_method !== 'transfer') ? 'PENDIENTE DE PAGO' : activeOrder.status.toUpperCase();
+                
+                list.innerHTML = `
+                    <div class="mb-4 pb-4 border-b border-white/10">
+                        <p class="text-[8px] font-black text-white/30 uppercase tracking-[0.2em] mb-1">Estado de Pago</p>
+                        <p class="text-xs font-black ${activeOrder.status === 'paid' ? 'text-success' : 'text-amber-500'} uppercase">${paymentStatus}</p>
+                    </div>
+                ` + activeOrder.items.map(item => `
                     <div class="flex justify-between items-center py-2 border-b border-white/5">
                         <span class="text-white text-xs font-bold">${item.qty}x ${item.name}</span>
                         <span class="text-gold font-mono text-[10px]">L ${(parseFloat(item.finalPrice || item.price) * item.qty).toFixed(2)}</span>
                     </div>
-                `).join('');
+                `).join('') + `
+                    <div class="flex justify-between items-center pt-4">
+                        <span class="text-white/40 text-[10px] font-black uppercase">Total</span>
+                        <span class="text-white text-xl font-black italic">L ${total}</span>
+                    </div>
+                `;
+            }
+
+            if (window.QRCode) {
+                const qrContainer = document.getElementById('receipt-qr');
+                if (qrContainer) {
+                    qrContainer.innerHTML = "";
+                    new QRCode(qrContainer, {
+                        text: activeOrder.id,
+                        width: 120,
+                        height: 120,
+                        colorDark: "#120C09",
+                        colorLight: "#ffffff",
+                        correctLevel: QRCode.CorrectLevel.H
+                    });
+                }
             }
 
             updateTrackingUI(activeOrder);

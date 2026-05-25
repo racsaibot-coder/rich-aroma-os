@@ -1202,6 +1202,17 @@
 
         document.getElementById('view-order-total').innerText = `L. ${(parseFloat(order.total) || 0).toFixed(2)}`;
 
+        const isPaid = order.status === 'paid' || order.status === 'completed' || order.status === 'ready' || order.status === 'shipped';
+        const paymentInfo = isPaid 
+            ? `<div class="bg-green-500/10 border border-green-500/20 p-4 rounded-2xl mb-4 flex justify-between items-center">
+                 <p class="text-[9px] font-black text-green-500 uppercase tracking-widest leading-none">Estado de Pago</p>
+                 <p class="text-green-500 font-black text-xs uppercase"><i class="fas fa-check-circle mr-1"></i> PAGADO</p>
+               </div>`
+            : `<div class="bg-amber-500/10 border border-amber-500/20 p-4 rounded-2xl mb-4 flex justify-between items-center animate-pulse">
+                 <p class="text-[9px] font-black text-amber-500 uppercase tracking-widest leading-none">Estado de Pago</p>
+                 <p class="text-amber-500 font-black text-xs uppercase"><i class="fas fa-exclamation-circle mr-1"></i> COBRAR L. ${(parseFloat(order.total) || 0).toFixed(2)}</p>
+               </div>`;
+
         const waBase = `https://wa.me/${getWhatsAppLink(phone)}`;
         const orderNum = order.order_number || order.id.slice(-4);
 
@@ -1242,6 +1253,7 @@
 
         content.innerHTML = `
             <div class="space-y-4">
+                ${paymentInfo}
                 ${scheduledHtml}
                 ${(order.items || []).map(i => `
                     <div class="bg-white/5 p-5 rounded-[2rem] border border-white/5">
@@ -1266,8 +1278,21 @@
         `;
 
         const actions = document.getElementById('view-order-actions');
-        if (order.status !== 'cancelled' && order.status !== 'completed') {
-            actions.innerHTML = `<button onclick="window.closeViewOrder(); recallOrder('${order.id}')" class="bg-amber-500 text-white px-6 py-3 rounded-2xl font-black text-[10px] uppercase tracking-widest shadow-lg shadow-amber-500/20 active:scale-95 transition-all">Editar / Cobrar</button>`;
+        if (order.status !== 'cancelled' && order.status !== 'completed' && order.status !== 'delivered') {
+            let html = '';
+            
+            // Mark as On Its Way (Delivery) or Picked Up (Pickup)
+            const isDelivery = (order.notes || '').toLowerCase().includes('delivery') || order.fulfillment_type === 'delivery';
+            
+            if (isDelivery && order.status !== 'shipped') {
+                html += `<button onclick="window.closeViewOrder(); updateOrderStatus('${order.id}', 'shipped')" class="bg-blue-600 text-white px-6 py-3 rounded-2xl font-black text-[10px] uppercase tracking-widest shadow-lg shadow-blue-600/20 active:scale-95 transition-all flex-1">En Camino 🛵</button>`;
+            } else {
+                html += `<button onclick="window.closeViewOrder(); updateOrderStatus('${order.id}', 'completed')" class="bg-green-600 text-white px-6 py-3 rounded-2xl font-black text-[10px] uppercase tracking-widest shadow-lg shadow-green-600/20 active:scale-95 transition-all flex-1">Entregado / Recogido ✅</button>`;
+            }
+
+            html += `<button onclick="window.closeViewOrder(); recallOrder('${order.id}')" class="bg-amber-500 text-white px-6 py-3 rounded-2xl font-black text-[10px] uppercase tracking-widest shadow-lg shadow-amber-500/20 active:scale-95 transition-all flex-1">Editar / Cobrar</button>`;
+            
+            actions.innerHTML = `<div class="flex gap-2 w-full">${html}</div>`;
         } else {
             actions.innerHTML = `<p class="text-[10px] font-black text-white/10 uppercase italic">Orden Finalizada</p>`;
         }
@@ -1277,6 +1302,20 @@
 
     window.closeViewOrder = function() {
         document.getElementById('view-order-modal').classList.add('hidden');
+    };
+
+    window.updateOrderStatus = async function(id, status) {
+        try {
+            const res = await fetch(`/api/orders/${id}`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer EMP-admin' },
+                body: JSON.stringify({ status })
+            });
+            if (res.ok) {
+                await fetchLiveOrders();
+                console.log(`✅ Order ${id} updated to ${status}`);
+            }
+        } catch(e) { console.error("Error updating order status", e); }
     };
 
     async function deliverOrder(id) {
