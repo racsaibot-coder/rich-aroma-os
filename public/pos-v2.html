@@ -47,7 +47,20 @@
         /* FAST POS OPTIMIZATIONS */
         .item-card { height: 120px; transition: all 0.2s; position: relative; overflow: hidden; }
         .item-card:active { transform: scale(0.95); opacity: 0.8; }
-        .item-initials { width: 40px; height: 40px; border-radius: 12px; display: flex; items-center; justify-content: center; font-weight: 900; font-size: 14px; margin-bottom: 8px; }
+        .item-initials { width: 40px; height: 40px; border-radius: 12px; display: flex; items-center; justify-content: center; font-weight: 900; font-size: 14px; margin-bottom: 8px; position: relative; overflow: hidden; }
+        
+        .item-thumb {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            object-cover: cover;
+            border-radius: 12px;
+            opacity: 0;
+            transition: opacity 0.3s ease-in-out;
+            z-index: 10;
+        }
+        .item-thumb.loaded { opacity: 1; }
         
         .cat-coffee { background: #fdfaf6; border-color: #eaddd0; }
         .cat-coffee .item-initials { background: #120C09; color: #C9A66B; }
@@ -1510,7 +1523,10 @@
             html += `
                 <div ${clickAction} class="item-card cat-${itemCat} rounded-3xl border-2 p-4 flex flex-col justify-between ${isDisabled ? 'opacity-30 grayscale pointer-events-none' : 'cursor-pointer active:scale-95 shadow-sm hover:shadow-md'}">
                     <div class="flex justify-between items-start">
-                        <div class="item-initials shadow-sm">${initials}</div>
+                        <div class="item-initials shadow-sm">
+                            ${initials}
+                            ${item.image ? `<img src="${item.image}" class="item-thumb" onload="this.classList.add('loaded')" loading="lazy">` : ''}
+                        </div>
                         <div class="text-[10px] font-black text-gray-400 bg-white/50 px-2 py-0.5 rounded-full border border-black/5 uppercase tracking-tighter">L. ${(parseFloat(item.price) || 0).toFixed(0)}</div>
                     </div>
                     <div class="font-black text-xs leading-none uppercase text-gray-800 tracking-tighter truncate" title="${item.name}">${item.name}</div>

