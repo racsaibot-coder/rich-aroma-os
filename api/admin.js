@@ -664,12 +664,12 @@ module.exports = async function handler(req, res) {
 
     if (action === 'update_restaurant_details' && req.method === 'POST') {
         if (!isAdmin) return res.status(403).json({ error: "Admin access required" });
-        const { id, name, logo_url, phone, oldName } = req.body;
+        const { id, name, logo_url, phone, oldName, category } = req.body;
         
         // 1. Update main table
         const { data: resData, error: resErr } = await supabase
             .from('restaurants')
-            .update({ name, logo_url, contact_phone: phone })
+            .update({ name, logo_url, contact_phone: phone, category })
             .eq('id', id)
             .select()
             .single();
@@ -677,7 +677,7 @@ module.exports = async function handler(req, res) {
         // 2. Update Leads table to keep synced
         await supabase
             .from('quimieats_leads')
-            .update({ restaurant_name: name, logo_url, phone })
+            .update({ restaurant_name: name, logo_url, phone, category })
             .eq('restaurant_name', oldName || name);
 
         if (resErr) return res.status(500).json({ error: resErr.message });

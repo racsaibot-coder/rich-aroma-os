@@ -1,35 +1,7 @@
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 const { supabase } = require('./lib/supabase');
+const { sendEmail, notifyCaliOrder } = require('./lib/email-service');
 const fetch = require('node-fetch');
-
-async function sendEmail({ to, subject, html }) {
-    if (!process.env.RESEND_API_KEY) {
-        console.warn("[Email] RESEND_API_KEY not found. Skipping email.");
-        return;
-    }
-
-    try {
-        const res = await fetch('https://api.resend.com/emails', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${process.env.RESEND_API_KEY}`
-            },
-            body: JSON.stringify({
-                from: process.env.FROM_EMAIL || 'Rich Aroma <orders@richaromacoffee.com>',
-                to,
-                subject,
-                html
-            })
-        });
-
-        const data = await res.json();
-        console.log("[Email] Sent:", data);
-        return data;
-    } catch (err) {
-        console.error("[Email] Failed:", err);
-    }
-}
 
 module.exports = async function handler(req, res) {
     if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
@@ -58,10 +30,10 @@ module.exports = async function handler(req, res) {
 
             if (session.metadata.type === 'cali_distro' && orderId) {
                 // Update the initial order to paid
-                await supabase.from('cali_orders').update({ 
+                const { data: updatedOrder } = await supabase.from('cali_orders').update({ 
                     status: 'paid',
                     notes: `[PAID] Stripe Session: ${session.id}` 
-                }).eq('id', orderId);
+                }).eq('id', orderId).select().single();
 
                 // Send Confirmation Emails
                 if (customerEmail) {
@@ -72,13 +44,9 @@ module.exports = async function handler(req, res) {
                     });
                 }
 
-                // Notify Owner
-                if (process.env.OWNER_EMAIL) {
-                    await sendEmail({
-                        to: process.env.OWNER_EMAIL,
-                        subject: 'New Order Received - Cali Distro',
-                        html: `<h1>New Order Received!</h1><p>Order ID: ${orderId}</p><p>Customer: ${session.customer_details?.name}</p><p>Total: $${(session.amount_total / 100).toFixed(2)}</p>`
-                    });
+                // Notify Owners
+                if (updatedOrder) {
+                    await notifyCaliOrder(updatedOrder, 'PAID');
                 }
 
                 // If it's a subscription, create the record in cali_subscriptions
@@ -130,6 +98,10 @@ module.exports = async function handler(req, res) {
                     }).select().single();
 
                     // Notify Customer of recurring order
+                    if (newOrder) {
+                        await notifyCaliOrder(newOrder, 'RECURRING');
+                    }
+
                     if (sub.customer_email) {
                         await sendEmail({
                             to: sub.customer_email,

@@ -136,7 +136,26 @@
 
         function renderProductionSummary() {
             const summary = {};
-            orders.filter(o => ['pending', 'paid', 'preparing', 'drinks_ready', 'food_ready'].includes(o.status)).forEach(o => {
+            const parseDate = (dateStr) => {
+                if (!dateStr) return new Date();
+                let fixedStr = dateStr.replace(' ', 'T');
+                if (!fixedStr.includes('Z') && !fixedStr.includes('+')) fixedStr += 'Z';
+                return new Date(fixedStr);
+            };
+
+            orders.filter(o => {
+                if (!['pending', 'paid', 'preparing', 'drinks_ready', 'food_ready'].includes(o.status)) return false;
+                
+                // Scheduling Filter for Summary
+                if (o.scheduled_for) {
+                    const schedTime = parseDate(o.scheduled_for);
+                    const now = new Date();
+                    const isInPrep = o.status === 'preparing' || (o.items && o.items.some(i => i.status === 'preparing'));
+                    if (!isInPrep && (schedTime - now > 10 * 60000)) return false;
+                    if (schedTime.getFullYear() > 2050) return false;
+                }
+                return true;
+            }).forEach(o => {
                 (o.items || []).forEach(i => {
                     if (i.status === 'ready') return;
                     if (currentMode === 'drinks' && !isDrinkItem(i)) return;
@@ -165,12 +184,28 @@
 
             const activeOrders = orders.filter(o => {
                 if (['completed', 'cancelled'].includes(o.status)) return false;
+
+                // --- SCHEDULING FILTER ---
+                if (o.scheduled_for) {
+                    const schedTime = parseDate(o.scheduled_for);
+                    const now = new Date();
+                    const isInPrep = o.status === 'preparing' || (o.items && o.items.some(i => i.status === 'preparing'));
+                    // Hide if more than 10 mins away AND not in prep
+                    if (!isInPrep && (schedTime - now > 10 * 60000)) return false;
+                    // Hide "Hold" orders (year 2099)
+                    if (schedTime.getFullYear() > 2050) return false;
+                }
+
                 if (o.status === 'ready') {
                     const readyTime = parseDate(o.completed_at || o.created_at);
                     return (new Date() - readyTime) < (5 * 60000);
                 }
                 return true;
-            }).sort((a, b) => parseDate(a.created_at) - parseDate(b.created_at));
+            }).sort((a, b) => {
+                // Sort by scheduled time first, then created_at
+                const timeA = oA => parseDate(oA.scheduled_for || oA.created_at);
+                return timeA(a) - timeA(b);
+            });
             
             if (activeOrders.length === 0) {
                 container.innerHTML = '<div class="py-20 text-center text-white/10 uppercase font-black tracking-widest">Cero Pedidos Activos</div>';
@@ -198,23 +233,28 @@
                 };
 
                 const orderTime = parseDate(o.created_at);
+                const schedTime = o.scheduled_for ? parseDate(o.scheduled_for) : null;
                 const now = new Date();
                 const diffMs = now - orderTime;
-                // If diff is negative (client clock behind server), show 0. 
-                // Otherwise calculate minutes.
                 const elapsed = Math.max(0, Math.floor(diffMs / 60000));
                 const isUrgent = elapsed > 10;
-                const isScheduled = o.notes && o.notes.includes('[SCHEDULED:');
+                
+                let timeDisplay = `<p class="text-[10px] font-black uppercase tracking-widest ${isUrgent ? 'timer-urgent' : 'text-success'}">${elapsed} min</p>`;
+                if (schedTime && schedTime.getFullYear() < 2050) {
+                    const timeStr = schedTime.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+                    timeDisplay = `<p class="text-[10px] font-black text-blue-400 uppercase tracking-widest animate-pulse"><i class="fas fa-clock"></i> ${timeStr}</p>`;
+                }
+
                 const groupMatch = o.notes ? o.notes.match(/\[GROUP:\s*([^\]]+)\]/) : null;
                 const groupCode = groupMatch ? groupMatch[1] : null;
 
                 return `
-                <div class="bg-charcoal border ${isScheduled ? 'border-blue-500/40' : 'border-white/5'} rounded-[2.5rem] p-6 space-y-5 shadow-2xl order-card ${o.status === 'ready' ? 'opacity-50 grayscale' : ''}">
+                <div class="bg-charcoal border ${schedTime ? 'border-blue-500/40' : 'border-white/5'} rounded-[2.5rem] p-6 space-y-5 shadow-2xl order-card ${o.status === 'ready' ? 'opacity-50 grayscale' : ''}">
                     <div class="flex justify-between items-start">
                         <div class="flex items-center gap-3">
                             <span class="${groupCode ? 'bg-orange-500' : 'bg-gold'} text-dark w-12 h-12 rounded-2xl flex items-center justify-center font-black text-xl shadow-lg shadow-gold/20">#${o.order_number || '---'}</span>
                             <div>
-                                <h2 class="font-black text-base uppercase leading-none">${o.customers?.name || 'Invitado'}</h2>
+                                <h2 class="font-black text-base uppercase leading-none">${o.customers?.name || o.notes?.match(/Mobile:\s*([^\(]+)/)?.[1] || 'Invitado'}</h2>
                                 <div class="flex gap-2 mt-1">
                                     <p class="text-[9px] font-bold text-white/30 uppercase tracking-widest">${o.fulfillment_type || 'Aquí'}</p>
                                     ${groupCode ? `<span class="text-[9px] font-black text-orange-500 uppercase tracking-widest">[GRUPO: ${groupCode}]</span>` : ''}
@@ -222,7 +262,7 @@
                             </div>
                         </div>
                         <div class="text-right">
-                            ${isScheduled ? `<p class="text-[10px] font-black text-blue-400 uppercase tracking-widest animate-pulse"><i class="fas fa-clock"></i> ${o.notes.match(/\[SCHEDULED:\s*([^\]]+)\]/)[1]}</p>` : `<p class="text-[10px] font-black uppercase tracking-widest ${isUrgent ? 'timer-urgent' : 'text-success'}">${elapsed} min</p>`}
+                            ${timeDisplay}
                             <p class="text-[8px] font-bold text-white/20 uppercase mt-0.5">${o.status}</p>
                         </div>
                     </div>

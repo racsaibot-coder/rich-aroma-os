@@ -347,8 +347,34 @@
             else { cartBar.classList.add('translate-y-[200%]', 'opacity-0'); cartBar.classList.remove('translate-y-0', 'opacity-100'); }
         }
 
+        function initTimeSlots() {
+            const select = document.getElementById('check-schedule');
+            if (!select) return;
+            
+            let html = '<option value="asap">Lo antes posible (ASAP)</option>';
+            const now = new Date();
+            
+            // Set starting point to next 15-min block (min 20 mins from now)
+            let start = new Date(now.getTime() + 20 * 60000);
+            let mins = start.getMinutes();
+            let step = 15;
+            start.setMinutes(Math.ceil(mins / step) * step);
+            start.setSeconds(0);
+            start.setMilliseconds(0);
+
+            // Generate slots for today until 7:00 PM (Closing time)
+            for (let i = 0; i < 24; i++) {
+                if (start.getHours() >= 19) break; // Don't schedule past 7 PM
+                const timeStr = start.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+                html += `<option value="${start.toISOString()}">${timeStr}</option>`;
+                start = new Date(start.getTime() + 15 * 60000);
+            }
+            select.innerHTML = html;
+        }
+
         window.openCheckout = () => {
             const container = document.getElementById('check-items');
+            initTimeSlots();
             if(cart.length === 0) { container.innerHTML = `<div class="text-white/20 text-center py-12 italic">Tu bolsa está vacía</div>`; }
             else {
                 container.innerHTML = cart.map((item, index) => `
@@ -453,17 +479,21 @@
                 itemsMap[key].qty += 1;
             });
             const subtotal = cart.reduce((sum, item) => sum + item.finalPrice, 0);
+            const scheduleVal = document.getElementById('check-schedule').value;
+            
             const payload = {
                 items: Object.values(itemsMap), subtotal, tax: 0, discount: 0, total: subtotal, paymentMethod: currentSelectedPayment,
                 fulfillment: fulfillmentType,
                 restaurantId: resId,
                 guestPhone: phone,
+                scheduledFor: scheduleVal === 'asap' ? null : scheduleVal,
                 notes: `Mobile: ${name} (${fulfillmentType})` + (document.getElementById('check-table').value ? ` MESA: ${document.getElementById('check-table').value}` : "")
             };
             if(currentCustomer) payload.customerId = currentCustomer.id;
 
             try {
-                const res = await fetch('/api/orders', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+                // Pointing to V2 for testing the new features
+                const res = await fetch('/api/orders-v2', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
                 if(!res.ok) throw new Error('Fail');
                 const saved = await res.json();
                 cart = []; updateCartUI(); window.closeCheckout();

@@ -243,6 +243,15 @@
                 </label>
             </div>
 
+            <div class="mb-6 bg-gray-50 p-4 rounded-xl border border-gray-200">
+                <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3"><i class="fas fa-clock mr-1"></i> Programación / Hold</p>
+                <select id="pos-schedule" class="w-full bg-white border border-gray-200 p-4 rounded-xl text-gray-800 font-bold outline-none focus:border-blue-500">
+                    <option value="asap">Enviar a Cocina Ahora</option>
+                    <option value="hold">Retener (Hold)</option>
+                    <!-- Times will be injected via JS -->
+                </select>
+            </div>
+
             <div class="flex gap-4">
                 <button onclick="document.getElementById('tender-modal').classList.add('hidden')" class="w-1/3 bg-gray-200 text-gray-800 py-4 rounded-xl font-bold hover:bg-gray-300 transition">Cancelar</button>
                 <button onclick="processCobrar()" id="confirm-tender-btn" class="w-2/3 bg-gray-900 text-white py-4 rounded-xl font-bold text-xl shadow-lg hover:bg-black transition flex items-center justify-center gap-2"><i class="fas fa-check"></i> Cobrar</button>
@@ -2013,10 +2022,37 @@
     window.closeDiscountModal = function() {
         document.getElementById('discount-modal').classList.add('hidden');
     }
+function initPosTimeSlots() {
+    const select = document.getElementById('pos-schedule');
+    if (!select) return;
 
-    function openTenderModal() {
-        if (cart.length === 0) return;
-        const calc = calculateTotalWithRule();
+    // Keep the ASAP and Hold options
+    let html = '<option value="asap">Enviar a Cocina Ahora</option>';
+    html += '<option value="hold">Retener (Hold)</option>';
+
+    const now = new Date();
+    // Start from next 15-min mark
+    let start = new Date(now.getTime() + 15 * 60000);
+    let mins = start.getMinutes();
+    start.setMinutes(Math.ceil(mins / 15) * 15);
+    start.setSeconds(0);
+    start.setMilliseconds(0);
+
+    // Generate slots for today until 7 PM
+    for (let i = 0; i < 48; i++) {
+        if (start.getHours() >= 19) break;
+        const timeStr = start.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+        html += `<option value="${start.toISOString()}">Programar: ${timeStr}</option>`;
+        start = new Date(start.getTime() + 15 * 60000);
+    }
+    select.innerHTML = html;
+}
+
+function openTenderModal() {
+    if (cart.length === 0) return;
+    initPosTimeSlots();
+    const calc = calculateTotalWithRule();
+...
         document.getElementById('tender-due').innerText = `L. ${calc.total.toFixed(2)}`;
         document.getElementById('tender-received').value = '';
         document.getElementById('tender-change').innerText = 'L. 0.00';
@@ -2376,6 +2412,15 @@
             if (['drinks_ready', 'food_ready'].includes(currentOrderStatus)) newStatus = 'paid';
         }
 
+        const scheduleVal = document.getElementById('pos-schedule').value;
+        let scheduledFor = null;
+        if (scheduleVal === 'hold') {
+            // Set to 2099 to keep it hidden from KDS
+            scheduledFor = new Date('2099-01-01').toISOString();
+        } else if (scheduleVal !== 'asap') {
+            scheduledFor = scheduleVal;
+        }
+
         const payload = {
             items: cart,
             subtotal,
@@ -2388,6 +2433,8 @@
             fulfillmentType: fulfillmentType,
             status: newStatus,
             shiftId: currentShiftId,
+            scheduledFor: scheduledFor,
+            isPos: true,
             notes: (document.getElementById('guest-name-input').value.trim() ? `[CLIENTE: ${document.getElementById('guest-name-input').value.trim()}]` : '') + 
                    (discountName ? ` [DISCOUNT: ${discountName}]` : '') +
                    (manualDiscount ? ` [DISC_META:${JSON.stringify({ n: manualDiscount.name, p: manualDiscount.pct, r: manualDiscount.applyRule, i: manualDiscount.selectedItemIds })}]` : '')
@@ -2398,7 +2445,8 @@
         confirmBtn.innerText = "PROCESANDO...";
 
         try {
-            const url = currentOrderId ? `/api/orders/${currentOrderId}?v=${Date.now()}` : `/api/orders?v=${Date.now()}`;
+            // Use V2 API for new features
+            const url = currentOrderId ? `/api/orders/${currentOrderId}?v=${Date.now()}` : `/api/orders-v2?v=${Date.now()}`;
             const method = currentOrderId ? 'PATCH' : 'POST';
 
             const res = await fetch(url, {

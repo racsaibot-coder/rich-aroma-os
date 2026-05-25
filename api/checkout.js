@@ -1,5 +1,6 @@
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 const { supabase } = require('./lib/supabase');
+const { notifyCaliOrder } = require('./lib/email-service');
 
 module.exports = async function handler(req, res) {
     if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
@@ -105,6 +106,9 @@ module.exports = async function handler(req, res) {
             console.error("Supabase Insert Error:", orderErr);
             throw new Error('Order creation failed (V2): ' + orderErr.message);
         }
+
+        // Notify Owners of new pending order
+        await notifyCaliOrder(order, 'PENDING');
 
         // 4. Create Stripe Session
         if (!process.env.STRIPE_SECRET_KEY) {
