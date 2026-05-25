@@ -579,6 +579,10 @@
                 const qrContainer = document.getElementById('receipt-qr');
                 if (qrContainer) {
                     qrContainer.innerHTML = "";
+                    qrContainer.onclick = () => {
+                        alert(`ID de Orden: ${activeOrder.id}\nMuestra este ID al cajero si no puede escanear el código.`);
+                    };
+                    qrContainer.style.cursor = "pointer";
                     new QRCode(qrContainer, {
                         text: activeOrder.id,
                         width: 120,

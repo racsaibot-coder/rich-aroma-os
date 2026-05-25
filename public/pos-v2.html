@@ -993,9 +993,9 @@
 
         let html = '';
         liveOrders.forEach(o => {
-            const isMobile = o.notes && o.notes.includes('Mobile Order');
+            const isMobile = (o.notes && (o.notes.includes('Mobile Order') || o.notes.includes('Mobile:'))) || o.fulfillment_type === 'delivery';
             const isCash = o.payment_method === 'cash';
-            const isUnpaidCashMobile = isMobile && isCash && ['pending', 'preparing', 'ready'].includes(o.status);
+            const isUnpaidCashMobile = isMobile && isCash && ['pending', 'preparing', 'ready', 'drinks_ready', 'food_ready'].includes(o.status);
             const isReady = o.status === 'ready';
             
             // Station detection
@@ -1083,13 +1083,10 @@
             if (o.customers && o.customers.name) {
                 name = o.customers.name;
             } else if (o.notes) {
-                if (o.notes.includes('[CLIENTE:')) {
-                    const match = o.notes.match(/\[CLIENTE:\s*([^\]]+)\]/);
-                    if (match) name = match[1].trim();
-                } else if (o.notes.includes('[GUEST:')) {
-                    const match = o.notes.match(/\[GUEST:\s*([^|\]]+)/);
-                    if (match) name = match[1].trim();
-                }
+                const nameMatch = o.notes.match(/\[CLIENTE:\s*([^\]]+)\]/) || 
+                                 o.notes.match(/\[GUEST:\s*([^|\]]+)/) ||
+                                 o.notes.match(/Mobile:\s*([^\(]+)/);
+                if (nameMatch) name = nameMatch[1].trim();
             }
 
             html += `
