@@ -2753,9 +2753,6 @@ function openTenderModal() {
                 startingCash = window.activeDBShift.opening_amount;
                 document.getElementById('shift-modal').classList.add('hidden');
                 console.log("🚀 Joining active shift...");
-                
-                // NEW: Trigger Inventory Check
-                checkDailyInventory();
             } else {
                 // No shift open, proceed to Step 2
                 document.getElementById('login-stage').classList.add('hidden');
@@ -2808,9 +2805,6 @@ function openTenderModal() {
 
             await fetchStoreStatus();
             console.log("✅ Shift Opened successfully.");
-
-            // NEW: Trigger Inventory Check
-            checkDailyInventory();
         } catch (err) {
             alert(err.message);
         }
