@@ -2731,19 +2731,32 @@ function openTenderModal() {
         window.loadedCustomer = data;
         document.getElementById('cust-lookup-ui').classList.add('hidden');
         const profile = document.getElementById('cust-profile');
+
+        const isVipEligible = data.is_vip_eligible === true;
+
         profile.innerHTML = `
-            <div class="bg-blue-50 p-4 rounded-2xl border border-blue-100 flex justify-between items-center shadow-sm">
-                <div class="overflow-hidden mr-2">
-                    <div class="font-black text-blue-900 truncate">👑 ${data.name || 'Cliente'}</div>
-                    <div class="text-[10px] font-bold text-blue-600">Balance: L. ${(parseFloat(data.rico_balance) || 0).toFixed(2)}</div>
+            <div class="bg-blue-50 p-4 rounded-3xl border border-blue-100 shadow-xl space-y-3 relative overflow-hidden">
+                ${isVipEligible ? `
+                <div class="bg-amber-500 text-white text-[8px] font-black uppercase py-1 px-3 absolute top-0 right-0 rounded-bl-xl animate-pulse">
+                    <i class="fas fa-coffee mr-1"></i> FREE COFFEE AVAILABLE
                 </div>
-                <button onclick="clearCustomer()" class="text-xs font-bold text-gray-400 shrink-0">Clear</button>
+                ` : ''}
+
+                <div class="flex justify-between items-start pt-1">
+                    <div class="overflow-hidden mr-2">
+                        <div class="font-black text-blue-900 truncate text-sm uppercase tracking-tighter">👑 ${data.name || 'Cliente'}</div>
+                        <div class="flex gap-2 mt-1">
+                            <div class="text-[9px] font-black text-blue-600 bg-blue-100/50 px-2 py-0.5 rounded-full uppercase">L. ${(parseFloat(data.rico_balance) || 0).toFixed(0)} Rico Cash</div>
+                            <div class="text-[9px] font-black text-amber-600 bg-amber-100/50 px-2 py-0.5 rounded-full uppercase">${data.points || 0} pts</div>
+                        </div>
+                    </div>
+                    <button onclick="clearCustomer()" class="w-8 h-8 rounded-xl bg-white/50 text-blue-900/20 flex items-center justify-center hover:text-red-500 transition-all border border-blue-100 shadow-sm"><i class="fas fa-times text-xs"></i></button>
+                </div>
             </div>
         `;
         profile.classList.remove('hidden');
         renderCart(); // Recalculate discounts
     }
-
     // --- CUSTOMER LOOKUP ---
     async function lookupCustomer() {
         const country = document.getElementById('cust-country').value;

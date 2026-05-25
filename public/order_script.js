@@ -101,6 +101,8 @@
                 let dashboardHtml = '';
                 if (currentCustomer) {
                     const streak = (currentCustomer.drink_streak || 0) % 7;
+                    const coffeeAvailable = currentCustomer.is_vip_eligible;
+
                     dashboardHtml = `
                         <div class="mb-12 animate-in fade-in zoom-in duration-500">
                             <div class="bg-gradient-to-br from-gold/20 to-transparent border border-gold/20 rounded-[2.5rem] p-6 space-y-4">
@@ -108,6 +110,20 @@
                                     <h4 class="text-[10px] font-black text-gold uppercase tracking-[0.3em]">Retos & Puntos</h4>
                                     <span class="text-[10px] font-black text-white/40 uppercase">${currentCustomer.points || 0} Rico Points</span>
                                 </div>
+                                
+                                ${coffeeAvailable ? `
+                                <div class="bg-amber-500/10 border border-amber-500/20 p-4 rounded-2xl flex justify-between items-center mb-2">
+                                    <div class="flex items-center gap-3">
+                                        <span class="text-xl">☕</span>
+                                        <div>
+                                            <p class="text-[10px] font-black text-white uppercase tracking-tighter">Café Diario Gratis</p>
+                                            <p class="text-[8px] text-amber-500 font-bold uppercase">¡Disponible para hoy!</p>
+                                        </div>
+                                    </div>
+                                    <div class="w-2 h-2 bg-amber-500 rounded-full animate-ping"></div>
+                                </div>
+                                ` : ''}
+
                                 <div class="flex items-center gap-4">
                                     <div class="flex-1 space-y-2">
                                         <div class="flex justify-between text-[11px] font-bold">
@@ -732,6 +748,9 @@
             
             if(currentCustomer.is_vip) document.getElementById('prof-vip-badge').classList.remove('hidden');
             else document.getElementById('prof-vip-badge').classList.add('hidden');
+
+            if(currentCustomer.is_vip_eligible) document.getElementById('prof-coffee-badge').classList.remove('hidden');
+            else document.getElementById('prof-coffee-badge').classList.add('hidden');
 
             const streak = (currentCustomer.drink_streak || 0) % 7;
             document.getElementById('prof-streak-count').innerText = `${streak}/6`;

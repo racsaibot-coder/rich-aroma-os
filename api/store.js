@@ -129,6 +129,60 @@ module.exports = async (req, res) => {
             return res.json(mapped);
         }
 
+        // --- 1.2.5 CUSTOMER ACTIONS (GET/POST/PATCH) ---
+        if (action === 'customer_profile' && req.method === 'GET') {
+            const customerId = id || req.query.id;
+            const { data, error } = await supabase.from('customers').select('*').eq('id', customerId).single();
+            if (error) return res.status(404).json({ error: "Customer not found" });
+            
+            // Add Daily Coffee Logic
+            const today = getHondurasDate();
+            const isVip = data.is_vip === true || (data.tags && data.tags.includes('VIP'));
+            data.is_vip_eligible = isVip && (data.last_free_drink_date !== today);
+            
+            return res.json(data);
+        }
+
+        if (action === 'customer_by_phone' && req.method === 'GET') {
+            const queryPhone = req.query.query || req.query.phone;
+            const cleanPhone = queryPhone.replace(/\D/g, '');
+            const { data, error } = await supabase.from('customers').select('*').eq('phone', cleanPhone).maybeSingle();
+            if (error || !data) return res.status(404).json({ error: "Customer not found" });
+
+            // Add Daily Coffee Logic
+            const today = getHondurasDate();
+            const isVip = data.is_vip === true || (data.tags && data.tags.includes('VIP'));
+            data.is_vip_eligible = isVip && (data.last_free_drink_date !== today);
+
+            return res.json(data);
+        }
+
+        if (action === 'customer_create' && req.method === 'POST') {
+            const { name, phone, customer_type, dob } = req.body;
+            const cleanPhone = phone.replace(/\D/g, '');
+            
+            const newCust = {
+                id: 'C' + Date.now().toString().slice(-6),
+                name,
+                phone: cleanPhone,
+                points: 0,
+                tier: 'bronze',
+                tags: [customer_type || 'regular'],
+                cash_balance: 30 // Welcome Bonus
+            };
+
+            const { data, error } = await supabase.from('customers').insert(newCust).select().single();
+            if (error) throw error;
+            return res.json(data);
+        }
+
+        if (action === 'customer_update' && req.method === 'PATCH') {
+            const customerId = id || req.body.id;
+            const { data, error } = await supabase.from('customers').update(req.body).eq('id', customerId).select().single();
+            if (error) throw error;
+            return res.json(data);
+        }
+
         // --- 1.2.1 ADS & PROMOS (GET) ---
         if (action === 'get_ads' && req.method === 'GET') {
             // Hardcoded for now for speed, but ready to move to Supabase table 'ads'
