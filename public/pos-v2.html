@@ -43,6 +43,26 @@
         .active-cat { background-color: #120C09 !important; color: #C9A66B !important; border-color: #120C09 !important; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1); transform: scale(1.05); }
         .inactive-cat { background-color: #ffffff !important; color: #6b7280 !important; border-color: #f3f4f6 !important; }
         .inactive-cat:hover { background-color: #f9fafb !important; }
+        
+        /* FAST POS OPTIMIZATIONS */
+        .item-card { height: 120px; transition: all 0.2s; position: relative; overflow: hidden; }
+        .item-card:active { transform: scale(0.95); opacity: 0.8; }
+        .item-initials { width: 40px; height: 40px; border-radius: 12px; display: flex; items-center; justify-content: center; font-weight: 900; font-size: 14px; margin-bottom: 8px; }
+        
+        .cat-coffee { background: #fdfaf6; border-color: #eaddd0; }
+        .cat-coffee .item-initials { background: #120C09; color: #C9A66B; }
+        
+        .cat-food { background: #fdf7f6; border-color: #ead0cf; }
+        .cat-food .item-initials { background: #991b1b; color: #ffffff; }
+        
+        .cat-drinks { background: #f6fafdf6; border-color: #d0e4ea; }
+        .cat-drinks .item-initials { background: #1e40af; color: #ffffff; }
+
+        .cat-pastry { background: #fdf6fb; border-color: #ead0e4; }
+        .cat-pastry .item-initials { background: #86198f; color: #ffffff; }
+
+        .cat-general { background: #f9fafb; border-color: #e5e7eb; }
+        .cat-general .item-initials { background: #374151; color: #ffffff; }
     </style>
 </head>
 <body class="bg-gray-100 h-screen flex overflow-hidden">
@@ -383,10 +403,10 @@
     </div>
 
     <!-- LEFT: MENU & CART -->
-    <div class="w-[55%] flex flex-col border-r border-gray-300">
+    <div class="w-[55%] flex flex-col border-r border-gray-300 h-screen overflow-hidden">
         
         <!-- Header -->
-        <div class="bg-white p-3 md:p-4 flex justify-between items-center shadow-sm z-50 relative">
+        <div class="bg-white p-3 md:p-4 flex justify-between items-center shadow-sm z-50 relative shrink-0">
             <div class="flex items-center gap-4">
                 <button onclick="window.location.href='/os'" class="w-10 h-10 rounded-xl bg-gray-100 flex items-center justify-center hover:bg-gray-200 transition-all">
                     <i class="fas fa-home text-gray-500"></i>
@@ -501,10 +521,10 @@
     </div>
 
     <!-- RIGHT: CART & WHATSAPP BOT SIM -->
-    <div class="w-1/4 bg-white flex flex-col shadow-xl z-10">
+    <div class="w-1/4 bg-white flex flex-col shadow-xl z-10 h-screen overflow-hidden">
         
         <!-- Customer Info -->
-        <div class="p-4 border-b border-gray-200 bg-gray-50">
+        <div class="p-4 border-b border-gray-200 bg-gray-50 shrink-0">
             <div class="flex justify-between items-center mb-2">
                 <label class="text-[10px] font-black uppercase text-gray-400 tracking-widest block">Customer Identification / Cliente</label>
                 <button onclick="window.clearOrderState()" class="text-[9px] font-black uppercase text-red-500 hover:text-red-700 transition-colors">Clear / New</button>
@@ -544,7 +564,7 @@
         </div>
 
         <!-- Fulfillment Type -->
-        <div class="px-4 py-2 border-t border-gray-200 bg-white">
+        <div class="px-4 py-2 border-t border-gray-200 bg-white shrink-0">
             <div class="grid grid-cols-2 gap-2">
                 <button onclick="setFulfillment('dinein')" id="btn-fulfill-dinein" class="py-2 rounded-lg font-bold text-xs uppercase tracking-tight border-2 transition-all border-blue-600 bg-blue-50 text-blue-700 flex items-center justify-center gap-1 shadow-sm">
                     <i class="fas fa-utensils"></i> Aquí
@@ -556,7 +576,7 @@
         </div>
 
         <!-- Totals -->
-        <div class="p-4 bg-gray-50 border-t border-gray-200 space-y-2">
+        <div class="p-4 bg-gray-50 border-t border-gray-200 space-y-2 shrink-0">
             <div class="flex justify-between items-center">
                 <span class="text-gray-400 font-bold text-[10px] uppercase">Subtotal:</span>
                 <span id="cart-subtotal" class="font-mono text-xs text-gray-600">L. 0.00</span>
@@ -1454,14 +1474,12 @@
         // --- SaaS EXTRA: INJECT VIRTUAL VIP ITEM in 'Otros' ---
         if (currentCategory === 'otros') {
             html += `
-                <div onclick="addVIPToCart()" class="bg-blue-900 rounded-xl shadow flex flex-col h-48 overflow-hidden relative cursor-pointer hover:shadow-xl border-4 border-gold group animate-pulse">
-                    <div class="h-32 w-full flex items-center justify-center bg-blue-800 text-gold text-5xl">
-                        <i class="fas fa-crown"></i>
+                <div onclick="addVIPToCart()" class="item-card bg-blue-900 rounded-3xl shadow-lg flex flex-col justify-between p-4 border-4 border-gold cursor-pointer active:scale-95 animate-pulse">
+                    <div class="flex justify-between items-start">
+                        <div class="w-10 h-10 rounded-xl bg-gold text-blue-900 flex items-center justify-center text-xl shadow-lg"><i class="fas fa-crown"></i></div>
+                        <div class="text-[10px] font-black text-blue-900 bg-gold px-2 py-0.5 rounded-full uppercase tracking-tighter">L. 1500</div>
                     </div>
-                    <div class="p-3 flex justify-between items-center bg-blue-900 flex-1 text-white">
-                        <div class="font-black uppercase italic tracking-tighter text-sm">VENDER VIP</div>
-                        <div class="text-xs bg-gold text-blue-900 px-2 py-1 rounded font-black">L. 1500</div>
-                    </div>
+                    <div class="font-black uppercase italic tracking-tighter text-xs text-white leading-none">VENDER VIP</div>
                 </div>
             `;
         }
@@ -1475,29 +1493,81 @@
             const isSoldOut = item.available === false;
             const isLocked = isSoloMode && item.category === 'food';
             const isDisabled = isSoldOut || isLocked;
+            const itemCat = (item.category || 'general').toLowerCase();
+            
+            // Get Initials (First letter of each word, max 3)
+            const initials = item.name.split(' ').map(n => n[0]).join('').slice(0,3).toUpperCase();
+            
+            // Check if has modifiers
+            const hasMods = itemModGroups.some(img => img.item_id === item.id);
             
             const clickAction = isLocked 
                 ? 'onclick="alert(\'Food locked during Solo Shift.\')"' 
                 : isSoldOut 
                     ? 'onclick="alert(\'Product Sold Out!\')"'
-                    : 'onclick="openModifier(\'' + item.id + '\')"';
+                    : (hasMods ? `onclick="openModifier('${item.id}')"` : `onclick="fastAdd('${item.id}')"`);
             
-            html += '<div ' + clickAction + ' class="bg-white rounded-xl shadow flex flex-col h-48 overflow-hidden relative ' + (isDisabled ? 'opacity-50 grayscale' : 'cursor-pointer hover:shadow-md border border-gray-100 group') + '">';
-            html += '    <div class="h-32 w-full overflow-hidden bg-gray-100">';
-            if (item.image) {
-                html += '        <img src="' + item.image + '" class="w-full h-full object-cover group-hover:scale-110 transition duration-500">';
-            }
-            html += '    </div>';
-            html += '    <div class="p-3 flex justify-between items-center bg-white flex-1">';
-            html += '        <div class="font-bold text-gray-800 leading-tight text-sm">' + item.name + '</div>';
-            html += '        <div class="text-xs bg-green-100 text-green-700 px-2 py-1 rounded font-bold">L. ' + (parseFloat(item.price) || 0).toFixed(2) + '</div>';
-            html += '    </div>';
-            if (isSoldOut) {
-                html += '    <div class="absolute inset-0 bg-black/60 flex items-center justify-center font-black text-white text-xs uppercase tracking-widest border-4 border-gray-800 rounded-xl">Agotado</div>';
-            }
-            html += '</div>';
+            html += `
+                <div ${clickAction} class="item-card cat-${itemCat} rounded-3xl border-2 p-4 flex flex-col justify-between ${isDisabled ? 'opacity-30 grayscale pointer-events-none' : 'cursor-pointer active:scale-95 shadow-sm hover:shadow-md'}">
+                    <div class="flex justify-between items-start">
+                        <div class="item-initials shadow-sm">${initials}</div>
+                        <div class="text-[10px] font-black text-gray-400 bg-white/50 px-2 py-0.5 rounded-full border border-black/5 uppercase tracking-tighter">L. ${(parseFloat(item.price) || 0).toFixed(0)}</div>
+                    </div>
+                    <div class="font-black text-xs leading-none uppercase text-gray-800 tracking-tighter truncate" title="${item.name}">${item.name}</div>
+                    ${isSoldOut ? '<div class="absolute inset-0 bg-black/60 flex items-center justify-center font-black text-white text-[10px] uppercase tracking-widest">Agotado</div>' : ''}
+                </div>
+            `;
         });
         grid.innerHTML = html;
+    }
+
+    function fastAdd(id) {
+        const item = menu.find(i => i.id === id);
+        if (!item) return;
+        
+        // Find if already in cart with NO modifiers
+        const existing = cart.find(i => i.id === item.id && (!i.mods || i.mods.length === 0));
+        if (existing) {
+            existing.qty++;
+            existing.finalPrice = parseFloat(existing.price) * existing.qty;
+        } else {
+            cart.push({
+                ...item,
+                qty: 1,
+                mods: [],
+                finalPrice: parseFloat(item.price),
+                fulfillment: 'dinein'
+            });
+        }
+        
+        renderCart();
+        saveCartState();
+        
+        // Haptic feedback if available
+        if (window.navigator && window.navigator.vibrate) {
+            window.navigator.vibrate(50);
+        }
+    }
+
+    function updateCartQty(index, delta) {
+        if (!cart[index]) return;
+        cart[index].qty += delta;
+        
+        // Haptic feedback
+        if (window.navigator && window.navigator.vibrate) {
+            window.navigator.vibrate(delta > 0 ? 30 : 50);
+        }
+
+        if (cart[index].qty <= 0) {
+            cart.splice(index, 1);
+        } else {
+            // Recalculate price
+            const basePrice = parseFloat(cart[index].price);
+            const modsPrice = (cart[index].mods || []).reduce((sum, m) => sum + (parseFloat(m.price_adjustment) || 0), 0);
+            cart[index].finalPrice = (basePrice + modsPrice) * cart[index].qty;
+        }
+        renderCart();
+        saveCartState();
     }
 
     function filterCategory(cat, btnEl) {
@@ -1864,34 +1934,34 @@
         container.innerHTML = cart.map((item, index) => {
             const fulfill = item.fulfillment || 'dinein';
             return `
-            <div class="mb-3 bg-gray-50 p-4 rounded-3xl border border-gray-100 space-y-3 relative group">
+            <div class="mb-3 bg-white p-4 rounded-3xl border border-gray-100 shadow-sm space-y-3 relative group animate-in slide-in-from-right-2 duration-200">
                 <div class="flex justify-between items-start">
                     <div class="flex-1">
-                        <div class="font-black text-sm text-gray-800 uppercase tracking-tighter">${item.qty}x ${item.name}</div>
-                        <div class="text-[9px] text-gray-500 font-bold uppercase mt-1 leading-relaxed">
+                        <div class="font-black text-[13px] text-gray-800 uppercase tracking-tighter leading-none mb-1">${item.name}</div>
+                        <div class="text-[9px] text-gray-400 font-bold uppercase leading-relaxed">
                             ${(item.mods || []).map(m => m.name).join(' • ')}
-                            ${item.note ? `<br><span class="text-blue-600 font-black italic">Note: ${item.note}</span>` : ''}
+                            ${item.note ? `<br><span class="text-blue-500 font-black italic">Note: ${item.note}</span>` : ''}
                         </div>
                     </div>
-                    <div class="text-right ml-2">
-                        <div class="font-mono text-xs font-black">L. ${(parseFloat(item.finalPrice || 0)).toFixed(2)}</div>
+                    <div class="text-right ml-2 flex flex-col items-end">
+                        <div class="font-mono text-xs font-black text-gray-900">L. ${(parseFloat(item.finalPrice || 0)).toFixed(0)}</div>
                     </div>
                 </div>
 
-                <!-- ITEM ACTIONS: FULFILLMENT & DUPLICATE -->
                 <div class="flex justify-between items-center pt-2 border-t border-gray-100 gap-2">
-                    <div class="flex bg-white rounded-lg p-1 border border-gray-200 shadow-inner">
-                        <button onclick="setItemFulfillment(${index}, 'dinein')" class="px-3 py-1 rounded-md text-[8px] font-black uppercase transition-all ${fulfill === 'dinein' ? 'bg-blue-600 text-white shadow-md' : 'text-gray-400 hover:bg-gray-50'}">AQUÍ</button>
-                        <button onclick="setItemFulfillment(${index}, 'pickup')" class="px-3 py-1 rounded-md text-[8px] font-black uppercase transition-all ${fulfill === 'pickup' ? 'bg-orange-500 text-white shadow-md' : 'text-gray-400 hover:bg-gray-50'}">LLEVAR</button>
+                    <!-- QTY TOGGLE -->
+                    <div class="flex items-center bg-gray-50 rounded-xl p-1 border border-gray-200 shadow-inner">
+                        <button onclick="updateCartQty(${index}, -1)" class="w-8 h-8 rounded-lg flex items-center justify-center bg-white text-gray-600 hover:text-red-500 active:scale-90 transition-all border border-gray-100 shadow-sm"><i class="fas fa-minus text-[10px]"></i></button>
+                        <span class="px-3 font-black text-sm text-gray-800 min-w-[2rem] text-center">${item.qty}</span>
+                        <button onclick="updateCartQty(${index}, 1)" class="w-8 h-8 rounded-lg flex items-center justify-center bg-white text-gray-600 hover:text-green-500 active:scale-90 transition-all border border-gray-100 shadow-sm"><i class="fas fa-plus text-[10px]"></i></button>
                     </div>
-                    <div class="flex gap-1">
-                        <button onclick="duplicateItem(${index})" title="Duplicar" class="w-8 h-8 rounded-full bg-white border border-gray-200 text-blue-600 flex items-center justify-center hover:bg-blue-50 active:scale-90 transition-all">
-                            <i class="fas fa-copy text-[10px]"></i>
-                        </button>
-                        <button onclick="removeFromCart(${index})" title="Eliminar" class="w-8 h-8 rounded-full bg-white border border-gray-200 text-red-500 flex items-center justify-center hover:bg-red-50 active:scale-90 transition-all">
-                            <i class="fas fa-trash-alt text-[10px]"></i>
-                        </button>
+
+                    <div class="flex bg-gray-50 rounded-xl p-1 border border-gray-200 shadow-inner">
+                        <button onclick="setItemFulfillment(${index}, 'dinein')" class="px-3 py-1.5 rounded-lg text-[8px] font-black uppercase transition-all ${fulfill === 'dinein' ? 'bg-blue-600 text-white shadow-md' : 'text-gray-400 hover:bg-gray-50'}">AQUÍ</button>
+                        <button onclick="setItemFulfillment(${index}, 'pickup')" class="px-3 py-1.5 rounded-lg text-[8px] font-black uppercase transition-all ${fulfill === 'pickup' ? 'bg-orange-500 text-white shadow-md' : 'text-gray-400 hover:bg-gray-50'}">LLEVAR</button>
                     </div>
+                    
+                    <button onclick="removeFromCart(${index})" class="w-8 h-8 rounded-xl bg-red-50 text-red-400 flex items-center justify-center hover:bg-red-500 hover:text-white transition-all ml-auto border border-red-100"><i class="fas fa-trash text-[10px]"></i></button>
                 </div>
             </div>
             `;
