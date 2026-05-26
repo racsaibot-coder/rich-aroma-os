@@ -451,9 +451,12 @@ module.exports = async function handler(req, res) {
             name: req.body.name,
             role: req.body.role || 'barista',
             pin: req.body.pin,
+            pay_type: req.body.pay_type || 'hourly',
             hourly_rate: req.body.hourly_rate || 0,
+            monthly_salary: req.body.monthly_salary || null,
             color: req.body.color || '#D4A574',
-            active: req.body.active !== false
+            active: req.body.active !== false,
+            restaurant_id: req.body.restaurant_id || 'rich-aroma'
         };
         const { data, error } = await supabase.from('employees').insert(emp).select().single();
         if (error) return res.status(500).json({ error: error.message });
@@ -462,8 +465,20 @@ module.exports = async function handler(req, res) {
 
     if ((action === 'employees' || action === 'employee_update') && (req.method === 'PUT' || req.method === 'PATCH')) {
         if (!isAdmin) return res.status(403).json({ error: "Admin access required" });
+        const { name, role, pin, hourly_rate, monthly_salary, pay_type, color, active } = req.body;
+        
+        const updates = {};
+        if (name) updates.name = name;
+        if (role) updates.role = role;
+        if (pin) updates.pin = pin;
+        if (hourly_rate !== undefined) updates.hourly_rate = hourly_rate;
+        if (monthly_salary !== undefined) updates.monthly_salary = monthly_salary;
+        if (pay_type) updates.pay_type = pay_type;
+        if (color) updates.color = color;
+        if (active !== undefined) updates.active = active;
+
         const { data, error } = await supabase.from('employees')
-            .update(req.body)
+            .update(updates)
             .eq('id', id || req.query.id)
             .select().single();
         if (error) return res.status(404).json({ error: 'Employee not found' });
