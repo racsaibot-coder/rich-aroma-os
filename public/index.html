@@ -287,6 +287,7 @@
         // Version 2.0.1 - Conversion Overhaul
         function optimizeImg(url) {
             if (!url) return "";
+            if (url.startsWith('data:')) return url;
             if (url.includes('supabase.co') && url.includes('/object/public/')) {
                 return url.replace('/object/public/', '/render/image/public/') + '?width=400&quality=75&format=webp';
             }
@@ -299,32 +300,54 @@
                 const res = await fetch('/api/menu');
                 const data = await res.json();
                 if (data && data.items && data.items.length > 0) {
-                    let items = data.items.filter(i => (i.image_url || i.image) && (i.image_url || i.image).startsWith('http') && i.available !== false);
+                    // 1. Filter for available items with images (http or data)
+                    // 2. Exclude 'side' and 'retail' categories from favorites
+                    let items = data.items.filter(i => 
+                       (i.image_url || i.image) && 
+                       i.available !== false && 
+                       !['side', 'retail'].includes(i.category?.toLowerCase())
+                    );
+
+                    // Fallback if not enough high-quality favorites
                     if (items.length < 4) items = data.items.filter(i => i.available !== false);
-                    
-                    items.sort(() => Math.random() - 0.5);
+
+                    // Sort by a mix of category priority and randomness
+                    const priority = ['combos', 'coffee', 'food', 'drinks', 'pastry'];
+                    items.sort((a, b) => {
+                        const prioA = priority.indexOf(a.category?.toLowerCase() || '');
+                        const prioB = priority.indexOf(b.category?.toLowerCase() || '');
+                        if (prioA !== prioB) return (prioA === -1 ? 99 : prioA) - (prioB === -1 ? 99 : prioB);
+                        return Math.random() - 0.5;
+                    });
+
                     const selection = items.slice(0, 4);
-                    
+
                     container.innerHTML = selection.map(item => {
-                        const img = optimizeImg(item.image_url || item.image);
+                        const rawImg = item.image_url || item.image;
+                        const img = optimizeImg(rawImg);
+                        const categoryLabel = item.category === 'coffee' ? 'Café Especial' : 
+                                            item.category === 'food' ? 'Cocina' : 
+                                            item.category === 'pastry' ? 'Repostería' : 
+                                            item.category === 'drinks' ? 'Bebidas' : 'Favorito';
                         return `
-                        <a href="/order?cat=Combos" class="flex gap-5 p-5 rounded-3xl bg-charcoal border border-white/5 hover:border-gold/30 transition-all group shadow-xl">
-                            ${img ? `<img src="${img}" class="w-24 h-24 rounded-2xl object-cover shrink-0 group-hover:scale-105 transition-transform" loading="lazy" decoding="async">` : ''}
-                            <div class="flex-1 flex flex-col justify-center">
-                                <div class="flex justify-between items-start mb-1">
-                                    <h3 class="font-bold text-white text-base">${item.name}</h3>
-                                    <span class="text-gold font-mono font-black text-sm">L ${parseFloat(item.price).toFixed(0)}</span>
-                                </div>
-                                <p class="text-[10px] text-white/40 uppercase tracking-widest font-black mb-2">${item.category || 'Destacado'}</p>
-                                <span class="text-[10px] text-gold font-bold flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">Pedir ahora <i class="fas fa-plus"></i></span>
-                            </div>
-                        </a>
-                        `;
+                       <a href="/order?cat=Combos" class="flex gap-5 p-5 rounded-3xl bg-charcoal border border-white/5 hover:border-gold/30 transition-all group shadow-xl">
+                           <div class="w-24 h-24 rounded-2xl bg-white/5 overflow-hidden shrink-0 flex items-center justify-center relative">
+                               ${rawImg ? `<img src="${img}" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" loading="lazy" decoding="async">` : `<i class="fas fa-utensils text-white/10 text-2xl"></i>`}
+                           </div>
+                           <div class="flex-1 flex flex-col justify-center">
+                               <div class="flex justify-between items-start mb-1">
+                                   <h3 class="font-bold text-white text-base leading-tight">${item.name}</h3>
+                                   <span class="text-gold font-mono font-black text-sm">L ${Math.round(item.price)}</span>
+                               </div>
+                               <p class="text-[10px] text-white/40 uppercase tracking-widest font-black mb-2">${categoryLabel}</p>
+                               <span class="text-[10px] text-gold font-bold flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">Pedir ahora <i class="fas fa-plus"></i></span>
+                           </div>
+                       </a>
+                       `;
                     }).join('');
                 }
             } catch(e) { console.error('Error loading favorites', e); }
-        }
-        
+        }        
         document.addEventListener('DOMContentLoaded', loadFavorites);
 
         // WhatsApp Handshake Logic
