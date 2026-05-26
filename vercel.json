@@ -234,6 +234,14 @@
       "dest": "/api/store.js?action=valentines"
     },
     {
+      "src": "/claim",
+      "dest": "/public/claim.html"
+    },
+    {
+      "src": "/driver-portal",
+      "dest": "/public/driver-portal.html"
+    },
+    {
       "src": "/pos",
       "dest": "/public/drive-thru.html"
     },

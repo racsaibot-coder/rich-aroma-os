@@ -226,12 +226,16 @@
                 if (currentCustomer) {
                     const streak = (currentCustomer.drink_streak || 0) % 7;
                     const coffeeAvailable = currentCustomer.is_vip_eligible;
+                    const isBootcamp = Array.isArray(currentCustomer.tags) && currentCustomer.tags.includes('Bootcamp');
 
                     dashboardHtml = `
                         <div class="mb-12 animate-in fade-in zoom-in duration-500">
                             <div class="bg-gradient-to-br from-gold/20 to-transparent border border-gold/20 rounded-[2.5rem] p-6 space-y-4">
                                 <div class="flex justify-between items-center">
-                                    <h4 class="text-[10px] font-black text-gold uppercase tracking-[0.3em]">Retos & Puntos</h4>
+                                    <div>
+                                        <h4 class="text-[10px] font-black text-gold uppercase tracking-[0.3em]">Retos & Puntos</h4>
+                                        ${isBootcamp ? `<span class="inline-block mt-1 bg-blue-500 text-white text-[7px] font-black px-2 py-0.5 rounded-full uppercase tracking-widest"><i class="fas fa-dumbbell mr-1"></i> Bootcamp Member</span>` : ''}
+                                    </div>
                                     <span class="text-[10px] font-black text-white/40 uppercase">${currentCustomer.points || 0} Rico Points</span>
                                 </div>
                                 
@@ -261,6 +265,7 @@
                                     <button onclick="window.openProfile()" class="w-10 h-10 rounded-2xl bg-gold text-dark flex items-center justify-center shadow-lg"><i class="fas fa-gift text-sm"></i></button>
                                 </div>
                                 <p class="text-[9px] text-white/30 font-bold uppercase tracking-widest text-center">${streak === 6 ? '¡PRÓXIMA BEBIDA GRATIS!' : 'Faltan ' + (6-streak) + ' bebidas para tu premio'}</p>
+                                ${isBootcamp ? `<p class="text-[8px] text-blue-400 font-bold uppercase tracking-tighter text-center">¡Precio Especial Post-Workout Activo! (5am-8am / 6pm-10pm)</p>` : ''}
                             </div>
                         </div>
                     `;

@@ -459,8 +459,9 @@ module.exports = async (req, res) => {
         }
 
         // --- 3. SINGLE ORDER (GET) ---
-        if (id && req.method === 'GET') {
-            const { data, error } = await supabase.from('orders').select('*').eq('id', id).single();
+        if ((action === 'order' || id) && req.method === 'GET') {
+            const orderId = id || req.query.id;
+            const { data, error } = await supabase.from('orders').select('*, customers(name, phone)').eq('id', orderId).single();
             if (error) return res.status(404).json({ error: "Order not found" });
             return res.json(data);
         }

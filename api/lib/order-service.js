@@ -1,6 +1,6 @@
 const { supabase: defaultSupabase } = require('./supabase');
 const { awardPoints, syncMembershipState, getHondurasDate } = require('./loyalty');
-const { applyVipBenefits, calculateSurgeDiscounts } = require('./pricing');
+const { applyVipBenefits, applyBootcampBenefits, calculateSurgeDiscounts } = require('./pricing');
 const { deductInventoryForOrder } = require('./inventory-service');
 const { notifyOrder } = require('./email-service');
 
@@ -117,6 +117,11 @@ async function createOrder(orderRequest, supabase = defaultSupabase) {
             if (freeDrinkClaimed) {
                 await supabase.from('customers').update({ last_free_drink_date: getHondurasDate() }).eq('id', customer.id);
             }
+        } else if (customer && customer.tags && customer.tags.includes('Bootcamp')) {
+            const bootCalc = applyBootcampBenefits(itemsWithMeta, customer);
+            finalOrderData.items = bootCalc.items;
+            finalOrderData.total = bootCalc.total - surgeDiscount;
+            finalOrderData.discount += bootCalc.items.reduce((sum, i) => sum + (i.appliedDiscount || 0), 0);
         }
 
         // 3. Rico Balance Logic

@@ -810,6 +810,19 @@
         window.dispatchEvent(new Event('resize'));
     };
 
+    window.notifyChef = function(orderNum) {
+        const msg = `🍳 Cocina: Nuevo Pedido #${orderNum} listo para preparar. Ver KDS: https://www.richaromacoffee.com/kitchen`;
+        // Shop number/Chef number
+        const chefPhone = "50497814474";
+        window.open(`https://wa.me/${chefPhone}?text=${encodeURIComponent(msg)}`, '_blank');
+    };
+
+    window.notifyDriver = function(orderId, orderNum) {
+        const msg = `📦 REPARTIDOR: Nuevo pedido listo para entrega (#${orderNum}). Reclámalo aquí para ver dirección: https://www.richaromacoffee.com/claim?id=${orderId}`;
+        // Open without specific number to allow sharing to a group or specific driver
+        window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, '_blank');
+    };
+
     window.savePin = async function() {
         const pin = document.getElementById('new-pin').value;
         if (pin.length < 4) return alert("PIN debe ser de 4 dígitos");
@@ -1385,8 +1398,17 @@
                     
                     <!-- Ready for Pickup/Delivery -->
                     <a href="${waBase}?text=${encodeURIComponent(`¡Buenas noticias! Tu orden #${orderNum} está lista. ${(order.notes||'').includes('delivery') ? 'El repartidor va en camino.' : 'Ya puedes pasar por ella a la barra.'} ¡Te esperamos! 🥐✨`)}" target="_blank" class="w-full inline-flex items-center justify-center gap-2 bg-green-500/10 text-green-500 px-4 py-3 rounded-xl text-[9px] font-black uppercase tracking-widest border border-green-500/10 active:scale-95 transition-all">
-                        <i class="fas fa-check-circle"></i> Notificar: ¡LISTA!
+                        <i class="fas fa-check-circle"></i> Notificar Cliente: ¡LISTA!
                     </a>
+
+                    <div class="grid grid-cols-2 gap-2 mt-2">
+                        <button onclick="window.notifyChef('${orderNum}')" class="flex-1 py-4 bg-orange-600/10 text-orange-400 rounded-2xl flex items-center justify-center gap-2 font-black text-[9px] uppercase tracking-widest border border-orange-600/10 active:scale-95 transition-all">
+                            <i class="fas fa-fire-alt"></i> Cocina
+                        </button>
+                        <button onclick="window.notifyDriver('${order.id}', '${orderNum}')" class="flex-1 py-4 bg-blue-600/10 text-blue-400 rounded-2xl flex items-center justify-center gap-2 font-black text-[9px] uppercase tracking-widest border border-blue-600/10 active:scale-95 transition-all">
+                            <i class="fas fa-motorcycle"></i> Driver
+                        </button>
+                    </div>
 
                     ${order.notes.includes('[RECEIPT_URL:') ? `
                         <a href="${order.notes.match(/\[RECEIPT_URL:\s*([^\]]+)\]/)[1]}" target="_blank" class="w-full inline-flex items-center justify-center gap-2 bg-purple-500/10 text-purple-400 px-4 py-3 rounded-xl text-[9px] font-black uppercase tracking-widest border border-purple-500/10 active:scale-95 transition-all">
@@ -2736,6 +2758,7 @@ function openTenderModal() {
         const profile = document.getElementById('cust-profile');
 
         const isVipEligible = data.is_vip_eligible === true;
+        const isBootcamp = Array.isArray(data.tags) && data.tags.includes('Bootcamp');
 
         profile.innerHTML = `
             <div class="bg-blue-50 p-4 rounded-3xl border border-blue-100 shadow-xl space-y-3 relative overflow-hidden">
@@ -2743,7 +2766,11 @@ function openTenderModal() {
                 <div class="bg-amber-500 text-white text-[8px] font-black uppercase py-1 px-3 absolute top-0 right-0 rounded-bl-xl animate-pulse">
                     <i class="fas fa-coffee mr-1"></i> FREE COFFEE AVAILABLE
                 </div>
-                ` : ''}
+                ` : (isBootcamp ? `
+                <div class="bg-blue-600 text-white text-[8px] font-black uppercase py-1 px-3 absolute top-0 right-0 rounded-bl-xl">
+                    <i class="fas fa-dumbbell mr-1"></i> BOOTCAMP ATHLETE
+                </div>
+                ` : '')}
 
                 <div class="flex justify-between items-start pt-1">
                     <div class="overflow-hidden mr-2">
@@ -3874,7 +3901,7 @@ function openTenderModal() {
 
             <div class="p-8 bg-gray-50 border-t border-gray-100 flex gap-3 shrink-0">
                 <button onclick="window.print()" class="w-12 h-12 bg-white border border-gray-200 text-gray-400 rounded-xl flex items-center justify-center active:scale-90 transition-all"><i class="fas fa-print"></i></button>
-                <button onclick="window.location.reload()" class="flex-1 py-4 bg-[#120C09] text-white font-black rounded-xl shadow-xl uppercase tracking-widest text-xs active:scale-95 transition-all">Finalizar y Salir</button>
+                <button onclick="window.location.href='/os'" class="flex-1 py-4 bg-[#120C09] text-white font-black rounded-xl shadow-xl uppercase tracking-widest text-xs active:scale-95 transition-all">Finalizar y Salir</button>
             </div>
         </div>
     </div>

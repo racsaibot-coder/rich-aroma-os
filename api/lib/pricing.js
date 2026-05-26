@@ -52,6 +52,47 @@ function applyVipBenefits(orderItems, customer) {
 }
 
 /**
+ * Applies Bootcamp Member discounts (20% off during workout hours)
+ */
+function applyBootcampBenefits(orderItems, customer) {
+    const isBootcamp = Array.isArray(customer.tags) && customer.tags.includes('Bootcamp');
+    if (!isBootcamp) return { items: orderItems, total: orderItems.reduce((s, i) => s + (parseFloat(i.price) * (i.qty || 1)), 0) };
+
+    const now = new Date();
+    // Convert to Honduras hour
+    const hour = (now.getUTCHours() - 6 + 24) % 24;
+    
+    // Rule: Discount valid during workout blocks (5am-8am or 6pm-10pm)
+    const isWorkoutHour = (hour >= 5 && hour < 8) || (hour >= 18 && hour < 22);
+
+    const processedItems = orderItems.map(item => {
+        let finalPrice = parseFloat(item.price) || 0;
+        let appliedDiscount = 0;
+        const cat = (item.category || '').toLowerCase();
+
+        // 20% Discount on Coffee and Healthy Drinks (Frío/Heladas)
+        if (isWorkoutHour && (cat.includes('coffee') || cat.includes('hot') || cat.includes('cold') || cat.includes('drink'))) {
+            appliedDiscount = finalPrice * 0.20;
+            finalPrice -= appliedDiscount;
+        }
+
+        return {
+            ...item,
+            finalPrice: parseFloat(finalPrice.toFixed(2)),
+            appliedDiscount: parseFloat(appliedDiscount.toFixed(2)),
+            qty: item.qty || 1
+        };
+    });
+
+    const finalTotal = processedItems.reduce((sum, i) => sum + (i.finalPrice * i.qty), 0);
+
+    return {
+        items: processedItems,
+        total: parseFloat(finalTotal.toFixed(2))
+    };
+}
+
+/**
  * Calculates Surge Discounts
  */
 function calculateSurgeDiscounts(items, activeSurges) {
@@ -86,5 +127,6 @@ function calculateSurgeDiscounts(items, activeSurges) {
 
 module.exports = {
     applyVipBenefits,
+    applyBootcampBenefits,
     calculateSurgeDiscounts
 };

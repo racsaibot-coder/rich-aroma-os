@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <link rel="icon" type="image/png" href="/favicon.png">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Rich Aroma | Driver Portal</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: { gold: '#C9A66B', dark: '#120C09', success: '#10B981' }
+                }
+            }
+        }
+    </script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap');
+        body { font-family: 'Inter', sans-serif; background-color: #120C09; color: white; }
+        .glass { background: rgba(255, 255, 255, 0.03); backdrop-filter: blur(10px); border: 1px border-white/10; }
+        .hide-scrollbar::-webkit-scrollbar { display: none; }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col p-6">
+
+    <header class="flex justify-between items-center mb-8">
+        <div>
+            <h1 class="text-2xl font-black uppercase tracking-tighter">Repartidores</h1>
+            <p id="driver-name" class="text-[9px] text-gold font-bold uppercase tracking-widest">Inicie Sesión</p>
+        </div>
+        <button onclick="logout()" class="w-10 h-10 flex items-center justify-center rounded-xl bg-white/5 text-white/20"><i class="fas fa-sign-out-alt"></i></button>
+    </header>
+
+    <!-- TABS -->
+    <div class="flex gap-2 mb-6 bg-white/5 p-1 rounded-2xl">
+        <button id="tab-available" onclick="setTab('available')" class="flex-1 py-3 rounded-xl font-black text-[10px] uppercase tracking-widest transition-all bg-gold text-dark">Disponibles</button>
+        <button id="tab-my" onclick="setTab('my')" class="flex-1 py-3 rounded-xl font-black text-[10px] uppercase tracking-widest transition-all text-white/40">Mis Entregas</button>
+    </div>
+
+    <main id="orders-list" class="flex-1 space-y-4 overflow-y-auto hide-scrollbar pb-20">
+        <div class="py-20 text-center text-white/10 italic text-sm">Cargando pedidos...</div>
+    </main>
+
+    <!-- LOGIN MODAL -->
+    <div id="login-modal" class="fixed inset-0 z-[100] bg-dark flex items-center justify-center p-8 backdrop-blur-3xl">
+        <div class="max-w-xs w-full space-y-10 text-center">
+            <div class="w-24 h-24 bg-gold/10 text-gold rounded-[2.5rem] flex items-center justify-center mx-auto shadow-2xl rotate-3 border border-gold/20"><i class="fas fa-user-lock text-4xl"></i></div>
+            <h2 class="text-3xl font-black tracking-tighter uppercase text-white">Driver Login</h2>
+            <input type="password" id="login-pin" maxlength="4" inputmode="numeric" onkeyup="if(event.key==='Enter') doLogin()" class="w-full bg-transparent border-b-4 border-white/10 text-center text-6xl font-black text-gold outline-none tracking-[0.5em] py-4 focus:border-gold" placeholder="****">
+            <button onclick="doLogin()" class="w-full bg-gold text-dark py-5 rounded-[2rem] font-black text-xl shadow-xl active:scale-95 transition-all">INGRESAR</button>
+        </div>
+    </div>
+
+    <script>
+        let currentDriver = null;
+        let activeTab = 'available';
+
+        window.onload = () => {
+            const saved = localStorage.getItem('ra_driver_session');
+            if (saved) {
+                currentDriver = JSON.parse(saved);
+                document.getElementById('login-modal').classList.add('hidden');
+                document.getElementById('driver-name').innerText = currentDriver.name;
+                fetchOrders();
+            }
+        };
+
+        async function doLogin() {
+            const pin = document.getElementById('login-pin').value;
+            try {
+                const res = await fetch('/api/driver/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ pin })
+                });
+                const data = await res.json();
+                if (res.ok) {
+                    currentDriver = data.driver;
+                    localStorage.setItem('ra_driver_session', JSON.stringify(currentDriver));
+                    document.getElementById('login-modal').classList.add('hidden');
+                    document.getElementById('driver-name').innerText = currentDriver.name;
+                    fetchOrders();
+                } else alert("PIN Inválido");
+            } catch(e) { alert("Error de conexión"); }
+        }
+
+        function logout() {
+            localStorage.removeItem('ra_driver_session');
+            location.reload();
+        }
+
+        function setTab(t) {
+            activeTab = t;
+            document.getElementById('tab-available').className = t === 'available' ? 'flex-1 py-3 rounded-xl font-black text-[10px] uppercase tracking-widest transition-all bg-gold text-dark' : 'flex-1 py-3 rounded-xl font-black text-[10px] uppercase tracking-widest transition-all text-white/40';
+            document.getElementById('tab-my').className = t === 'my' ? 'flex-1 py-3 rounded-xl font-black text-[10px] uppercase tracking-widest transition-all bg-gold text-dark' : 'flex-1 py-3 rounded-xl font-black text-[10px] uppercase tracking-widest transition-all text-white/40';
+            fetchOrders();
+        }
+
+        async function fetchOrders() {
+            const list = document.getElementById('orders-list');
+            try {
+                const res = await fetch(`/api/driver/orders?mode=${activeTab}&driverId=${currentDriver.id}`);
+                const { orders } = await res.json();
+                
+                if (!orders || orders.length === 0) {
+                    list.innerHTML = `<div class="py-20 text-center text-white/10 uppercase font-black tracking-widest">No hay pedidos</div>`;
+                    return;
+                }
+
+                list.innerHTML = orders.map(o => `
+                    <div class="glass p-6 rounded-[2.5rem] space-y-4 border border-white/5">
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <span class="text-[8px] font-black text-white/20 uppercase tracking-widest">Orden</span>
+                                <h3 class="text-xl font-black text-white leading-none">#${o.order_number}</h3>
+                            </div>
+                            <span class="bg-blue-600/20 text-blue-400 px-3 py-1 rounded-lg text-[8px] font-black uppercase tracking-widest">${o.status}</span>
+                        </div>
+
+                        <div class="space-y-1">
+                            <p class="text-[10px] font-bold text-white/60 uppercase">${o.customers?.name || 'Invitado'}</p>
+                            <p class="text-[9px] text-white/20 leading-relaxed">${o.notes || 'Sin dirección específica'}</p>
+                        </div>
+
+                        ${activeTab === 'available' ? `
+                            <button onclick="claimOrder('${o.id}')" class="w-full bg-gold text-dark py-4 rounded-2xl font-black text-[10px] uppercase tracking-[0.2em] shadow-lg active:scale-95 transition-all">RECLAMAR</button>
+                        ` : `
+                            <div class="flex gap-2">
+                                <a href="https://wa.me/${o.customers?.phone}" class="flex-1 bg-white/5 py-3 rounded-xl text-[9px] font-black uppercase flex items-center justify-center gap-2 border border-white/10"><i class="fab fa-whatsapp"></i> Chat</a>
+                                <button onclick="markDelivered('${o.id}')" class="flex-[2] bg-success text-white py-3 rounded-xl text-[9px] font-black uppercase tracking-widest shadow-lg">Entregado</button>
+                            </div>
+                        `}
+                    </div>
+                `).join('');
+            } catch(e) { console.error(e); }
+        }
+
+        async function claimOrder(id) {
+            try {
+                const res = await fetch(`/api/driver/orders/${id}/claim`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ driverId: currentDriver.id })
+                });
+                if (res.ok) {
+                    alert("✅ Pedido reclamado");
+                    setTab('my');
+                } else {
+                    const data = await res.json();
+                    alert(data.error || "Error al reclamar");
+                }
+            } catch(e) { alert("Error de red"); }
+        }
+
+        async function markDelivered(id) {
+            if (!confirm("¿Confirmar entrega?")) return;
+            try {
+                const res = await fetch(`/api/driver/orders/${id}/delivery-status`, {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ status: 'delivered', driverId: currentDriver.id })
+                });
+                if (res.ok) {
+                    alert("✅ Entrega finalizada");
+                    fetchOrders();
+                }
+            } catch(e) { alert("Error de red"); }
+        }
+
+        // Auto refresh
+        setInterval(fetchOrders, 30000);
+    </script>
+</body>
+</html>
