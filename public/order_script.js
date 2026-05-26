@@ -35,6 +35,129 @@
         let isAddonMode = false;
         let currentSelectedPayment = 'cash';
 
+        let currentBookingItem = null;
+        let selectedBookingDate = "";
+        let selectedBookingSlot = null;
+        let bookingDuration = 1;
+
+        window.openBooking = (id) => {
+            currentBookingItem = menuItems.find(i => i.id === id);
+            if (!currentBookingItem) return;
+
+            document.getElementById('booking-item-name').innerText = currentBookingItem.name;
+            
+            // Set default date to today
+            const today = new Date().toISOString().split('T')[0];
+            const dateInput = document.getElementById('booking-date');
+            dateInput.value = today;
+            dateInput.min = today;
+            selectedBookingDate = today;
+            
+            bookingDuration = 1;
+            selectedBookingSlot = null;
+            updateBookingSlots();
+            updateBookingSummary();
+
+            document.getElementById('booking-drawer').classList.add('active');
+            document.getElementById('booking-overlay').classList.remove('hidden');
+            setTimeout(() => document.getElementById('booking-overlay').style.opacity = "1", 10);
+        };
+
+        window.closeBooking = () => {
+            document.getElementById('booking-drawer').classList.remove('active');
+            document.getElementById('booking-overlay').style.opacity = "0";
+            setTimeout(() => document.getElementById('booking-overlay').classList.add('hidden'), 400);
+        };
+
+        window.updateBookingSlots = () => {
+            selectedBookingDate = document.getElementById('booking-date').value;
+            const container = document.getElementById('booking-slots-grid');
+            if (!container) return;
+
+            let html = '';
+            const now = new Date();
+            const isToday = selectedBookingDate === now.toISOString().split('T')[0];
+            
+            // Generate slots 5am to 10pm
+            let start = 5;
+            let end = 22;
+
+            for (let h = start; h < end; h++) {
+                const hour12 = h > 12 ? h - 12 : h;
+                const ampm = h >= 12 ? 'PM' : 'AM';
+                const timeStr = `${hour12}:00 ${ampm}`;
+                const fullTime = `${h.toString().padStart(2, '0')}:00`;
+                
+                // Check if slot is in the past
+                let isPast = false;
+                if (isToday) {
+                    if (h <= now.getHours()) isPast = true;
+                }
+
+                const isSelected = selectedBookingSlot === fullTime;
+                
+                html += `
+                    <button onclick="selectBookingSlot('${fullTime}')" 
+                        class="p-4 rounded-2xl border-2 font-black text-[10px] uppercase tracking-widest transition-all ${isPast ? 'opacity-20 grayscale pointer-events-none' : (isSelected ? 'bg-gold text-dark border-gold shadow-lg' : 'bg-white/5 text-white/40 border-white/5 hover:bg-white/10')}">
+                        ${timeStr}
+                    </button>
+                `;
+            }
+            container.innerHTML = html;
+        };
+
+        window.selectBookingSlot = (time) => {
+            selectedBookingSlot = time;
+            updateBookingSlots();
+            updateBookingSummary();
+        };
+
+        window.changeBookingDuration = (delta) => {
+            bookingDuration = Math.max(1, Math.min(8, bookingDuration + delta));
+            document.getElementById('booking-duration').innerText = bookingDuration;
+            updateBookingSummary();
+        };
+
+        function updateBookingSummary() {
+            if (!currentBookingItem) return;
+            const total = parseFloat(currentBookingItem.price) * bookingDuration;
+            document.getElementById('booking-total-price').innerText = `L ${total.toFixed(0)}`;
+            
+            const label = document.getElementById('booking-time-label');
+            if (selectedBookingSlot) {
+                label.innerText = `${selectedBookingSlot} (${bookingDuration}hr)`;
+                label.classList.remove('text-white/20');
+                label.classList.add('text-gold');
+            } else {
+                label.innerText = "Selecciona horario";
+                label.classList.add('text-white/20');
+            }
+        }
+
+        window.submitBookingToCart = () => {
+            if (!selectedBookingSlot) return alert("Por favor selecciona una hora");
+            
+            const startTime = new Date(`${selectedBookingDate}T${selectedBookingSlot}:00`);
+            
+            // Add to cart as a special item
+            const bookingItem = {
+                ...currentBookingItem,
+                qty: bookingDuration,
+                finalPrice: parseFloat(currentBookingItem.price) * bookingDuration,
+                mods: [],
+                note: `RESERVA: ${selectedBookingDate} @ ${selectedBookingSlot} (${bookingDuration}hr)`,
+                scheduledFor: startTime.toISOString()
+            };
+            
+            // Since cart normally handles 1-qty items from menu, we push this directly
+            cart.push(bookingItem);
+            updateCartUI();
+            closeBooking();
+            
+            // Open cart immediately to show success
+            setTimeout(window.openCheckout, 500);
+        };
+
         async function loadMenu() {
             try {
                 console.log("Loading menu...");
@@ -60,6 +183,7 @@
                 {id:'Café', n:'Café', i:'☕'},
                 {id:'Heladas', n:'Heladas', i:'🥤'},
                 {id:'Postres', n:'Postres', i:'🍰'},
+                {id:'retail', n:'Deportes', i:'⚽️'},
                 {id:'Menú Secreto', n:'Secreto', i:'🤫'}
             ];
             const nav = document.getElementById('sticky-cats');
@@ -149,6 +273,7 @@
                     
                     // --- REINFORCED CATEGORIZATION (Combos first) ---
                     if (catLower === 'combos' || catLower === 'combo' || catLower.includes('paquete') || itemName.includes('combo') || itemName.includes('paquete')) cat = 'Combos';
+                    else if (catLower === 'retail' || catLower.includes('deportes')) cat = 'Deportes';
                     else if (catLower === 'hot_drinks' || catLower === 'coffee' || catLower.includes('caliente')) cat = 'Café';
                     else if (catLower === 'cold_drinks' || catLower === 'drinks' || catLower.includes('helada')) cat = 'Heladas';
                     else if (catLower === 'food' || catLower === 'comida') cat = 'Comida';
@@ -159,7 +284,7 @@
                     categories[cat].push(item);
                 });
 
-                const categoryOrder = ['Combos', 'Comida', 'Café', 'Heladas', 'Postres', 'Menú Secreto', 'Otros'];
+                const categoryOrder = ['Combos', 'Deportes', 'Comida', 'Café', 'Heladas', 'Postres', 'Menú Secreto', 'Otros'];
                 const sortedCategories = Object.keys(categories).sort((a, b) => {
                     let indexA = categoryOrder.indexOf(a);
                     let indexB = categoryOrder.indexOf(b);
@@ -184,24 +309,28 @@
                     
                     items.forEach(item => {
                         const isCombo = category === 'Combos';
+                        const isBooking = item.id.startsWith('sports_court') || item.id.startsWith('event_');
                         const cardClass = isCombo ? "item-card rounded-[2rem] bg-white/5 border border-gold/30 overflow-hidden flex flex-col group active:scale-95 transition-all shadow-xl" : "item-card rounded-[2rem] bg-white/5 border border-white/5 overflow-hidden flex flex-col group active:scale-95 transition-all";
+                        const clickAction = isBooking ? `openBooking('${item.id}')` : `openModifier('${item.id}')`;
+                        const btnLabel = isBooking ? 'Reservar' : 'Agregar';
+                        
                         const imgUrl = optimizeImg(item.image_url);
                         const imgHtml = imgUrl ? `
                                 <div class="w-full h-40 bg-charcoal overflow-hidden relative">
                                     <img src="${imgUrl}" class="w-full h-full object-cover" loading="lazy">
                                     <div class="absolute inset-0 bg-gradient-to-t from-dark/80 to-transparent"></div>
-                                    <div class="absolute bottom-3 right-3 w-10 h-10 rounded-2xl bg-gold text-dark flex items-center justify-center shadow-lg transform rotate-3 group-hover:rotate-0 transition-transform"><i class="fas fa-plus text-sm"></i></div>
+                                    <div class="absolute bottom-3 right-3 w-max px-3 h-10 rounded-2xl bg-gold text-dark flex items-center justify-center gap-2 shadow-lg transform rotate-3 group-hover:rotate-0 transition-transform"><span class="text-[9px] font-black uppercase tracking-widest">${btnLabel}</span><i class="fas fa-plus text-xs"></i></div>
                                 </div>` : `
                                 <div class="w-full h-16 bg-charcoal relative flex items-center justify-end px-4">
-                                    <div class="w-10 h-10 rounded-2xl bg-gold text-dark flex items-center justify-center shadow-lg"><i class="fas fa-plus text-sm"></i></div>
+                                    <div class="w-max px-3 h-10 rounded-2xl bg-gold text-dark flex items-center justify-center gap-2 shadow-lg"><span class="text-[9px] font-black uppercase tracking-widest">${btnLabel}</span><i class="fas fa-plus text-xs"></i></div>
                                 </div>`;
                         
                         html += `
-                            <div class="${cardClass}" onclick="openModifier('${item.id}')">
+                            <div class="${cardClass}" onclick="${clickAction}">
                                 ${imgHtml}
                                 <div class="p-5 flex-1 flex flex-col justify-between">
                                     <h3 class="font-black text-sm leading-tight mb-2 text-white/90">${item.name}</h3>
-                                    <span class="text-gold font-mono font-black text-base">L ${(Number(item.price) || 0).toFixed(2)}</span>
+                                    <span class="text-gold font-mono font-black text-base">L ${(Number(item.price) || 0).toFixed(0)}</span>
                                 </div>
                             </div>`;
                     });
@@ -497,12 +626,16 @@
             const subtotal = cart.reduce((sum, item) => sum + item.finalPrice, 0);
             const scheduleVal = document.getElementById('check-schedule').value;
             
+            // Check if cart has a booking item (prioritize its schedule)
+            const bookingItem = cart.find(i => i.scheduledFor);
+            const finalSchedule = bookingItem ? bookingItem.scheduledFor : (scheduleVal === 'asap' ? null : scheduleVal);
+
             const payload = {
                 items: Object.values(itemsMap), subtotal, tax: 0, discount: 0, total: subtotal, paymentMethod: currentSelectedPayment,
                 fulfillment: fulfillmentType,
                 restaurantId: resId,
                 guestPhone: phone,
-                scheduledFor: scheduleVal === 'asap' ? null : scheduleVal,
+                scheduledFor: finalSchedule,
                 notes: `Mobile: ${name} (${fulfillmentType})` + (document.getElementById('check-table').value ? ` MESA: ${document.getElementById('check-table').value}` : "")
             };
             if(currentCustomer) payload.customerId = currentCustomer.id;

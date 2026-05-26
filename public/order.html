@@ -43,6 +43,7 @@
         .glass { background: rgba(255, 255, 255, 0.03); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.05); }
         .drawer { transform: translateY(100%); transition: transform 0.4s cubic-bezier(0.32, 0.72, 0, 1); }
         .drawer.active { transform: translateY(0); }
+        .glass-dark { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); backdrop-filter: blur(10px); }
         .hide-scrollbar::-webkit-scrollbar { display: none; }
         .item-card { transition: all 0.3s ease; }
         .item-card:active { transform: scale(0.95); opacity: 0.8; }
@@ -123,6 +124,56 @@
             Soy Miembro
         </button>
     </header>
+
+    <!-- BOOKING DRAWER -->
+    <div id="booking-overlay" class="hidden fixed inset-0 bg-black/90 z-[2100] backdrop-blur-md opacity-0 transition-opacity duration-300" onclick="closeBooking()"></div>
+    <div id="booking-drawer" class="drawer fixed bottom-0 left-0 right-0 z-[2110] bg-dark rounded-t-[3rem] h-[92vh] flex flex-col border-t border-white/10 shadow-2xl overflow-hidden">
+        <div class="p-8 flex justify-between items-center shrink-0 border-b border-white/5">
+            <div>
+                <h3 class="text-2xl font-display font-black text-white uppercase tracking-tight">Reservar Espacio</h3>
+                <p id="booking-item-name" class="text-gold text-[10px] font-black uppercase tracking-[0.3em] mt-1">Cancha Multi-Uso</p>
+            </div>
+            <button onclick="closeBooking()" class="w-12 h-12 rounded-full bg-white/5 flex items-center justify-center text-white/40"><i class="fas fa-times"></i></button>
+        </div>
+
+        <div class="flex-1 overflow-y-auto p-8 space-y-10 hide-scrollbar pb-32">
+            <!-- 1. Select Date -->
+            <div class="space-y-4">
+                <p class="text-[10px] font-black text-white/30 uppercase tracking-[0.3em]">1. Selecciona el Día</p>
+                <input type="date" id="booking-date" class="w-full bg-white/5 border border-white/10 p-6 rounded-[2rem] text-white text-xl font-bold outline-none focus:border-gold" onchange="updateBookingSlots()">
+            </div>
+
+            <!-- 2. Select Time -->
+            <div class="space-y-4">
+                <p class="text-[10px] font-black text-white/30 uppercase tracking-[0.3em]">2. Selecciona la Hora</p>
+                <div id="booking-slots-grid" class="grid grid-cols-2 gap-3">
+                    <!-- Slots injected via JS -->
+                </div>
+            </div>
+
+            <!-- 3. Duration -->
+            <div class="space-y-4">
+                <p class="text-[10px] font-black text-white/30 uppercase tracking-[0.3em]">3. Duración (Horas)</p>
+                <div class="flex items-center gap-6 bg-white/5 p-4 rounded-[2rem] border border-white/5 w-max">
+                    <button onclick="changeBookingDuration(-1)" class="w-12 h-12 rounded-2xl bg-white/5 text-white flex items-center justify-center active:scale-90 transition-all border border-white/5"><i class="fas fa-minus"></i></button>
+                    <span id="booking-duration" class="text-2xl font-black text-white w-8 text-center">1</span>
+                    <button onclick="changeBookingDuration(1)" class="w-12 h-12 rounded-2xl bg-gold text-dark flex items-center justify-center active:scale-90 transition-all shadow-lg"><i class="fas fa-plus"></i></button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sticky Bottom -->
+        <div class="p-8 border-t border-white/5 shrink-0 bg-dark/80 backdrop-blur-md">
+            <div class="flex justify-between items-end mb-6">
+                <div>
+                    <p class="text-[10px] font-black text-white/30 uppercase tracking-widest leading-none mb-1">Total Reserva</p>
+                    <p id="booking-total-price" class="text-3xl font-black text-white">L 0.00</p>
+                </div>
+                <p id="booking-time-label" class="text-gold font-black text-[10px] uppercase tracking-widest italic">Selecciona horario</p>
+            </div>
+            <button onclick="submitBookingToCart()" id="booking-add-btn" class="w-full gold-gradient py-6 rounded-[2.5rem] font-black text-sm uppercase tracking-widest text-dark shadow-2xl active:scale-95 transition-all">Agregar Reserva a Bolsa</button>
+        </div>
+    </div>
 
     <!-- LOGIN DRAWER -->
     <div id="login-overlay" class="hidden fixed inset-0 bg-black/90 z-[2100] backdrop-blur-md opacity-0 transition-opacity duration-300" onclick="closeLogin()"></div>
