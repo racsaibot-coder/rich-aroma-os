@@ -256,6 +256,14 @@
                         <option value="servicios">Servicios</option>
                     </select>
                 </div>
+
+                <div class="pt-4 border-t border-white/5 space-y-4">
+                    <p class="text-[9px] font-black uppercase tracking-widest text-cyan-400/60">Datos Bancarios (Opcional)</p>
+                    <div class="grid grid-cols-2 gap-4">
+                        <input type="text" id="qa-bank" placeholder="Banco" class="w-full bg-white/5 border border-white/10 p-4 rounded-xl text-white outline-none focus:border-cyan-500 text-xs">
+                        <input type="text" id="qa-account" placeholder="N° Cuenta" class="w-full bg-white/5 border border-white/10 p-4 rounded-xl text-white outline-none focus:border-cyan-500 text-xs">
+                    </div>
+                </div>
             </div>
             <div class="flex gap-4 pt-4">
                 <button onclick="closeQuickAdd()" class="w-1/2 py-5 text-[10px] font-black uppercase tracking-widest text-white/20 hover:text-white transition-all">Cancelar</button>
@@ -290,6 +298,15 @@
                 <div>
                     <label class="text-[10px] font-black uppercase tracking-widest text-white/20 mb-2 block">WhatsApp</label>
                     <input type="tel" id="edit-phone" class="w-full bg-white/5 border border-white/10 p-5 rounded-2xl text-white outline-none focus:border-cyan-500 font-bold">
+                </div>
+                
+                <div class="pt-4 border-t border-white/5 space-y-4">
+                    <p class="text-[9px] font-black uppercase tracking-widest text-cyan-400/60">Datos Bancarios (Para Transferencias)</p>
+                    <div class="grid grid-cols-2 gap-4">
+                        <input type="text" id="edit-bank" placeholder="Banco (Ej: BAC)" class="w-full bg-white/5 border border-white/10 p-4 rounded-xl text-white outline-none focus:border-cyan-500 text-xs">
+                        <input type="text" id="edit-account" placeholder="N° de Cuenta" class="w-full bg-white/5 border border-white/10 p-4 rounded-xl text-white outline-none focus:border-cyan-500 text-xs">
+                    </div>
+                    <input type="text" id="edit-holder" placeholder="Nombre del Titular" class="w-full bg-white/5 border border-white/10 p-4 rounded-xl text-white outline-none focus:border-cyan-500 text-xs">
                 </div>
             </div>
             <div class="flex gap-4 pt-4">
@@ -750,10 +767,13 @@
                     if (uploadedUrl) logo_url = uploadedUrl;
                 }
 
+                const bank_name = document.getElementById('qa-bank').value;
+                const account_number = document.getElementById('qa-account').value;
+
                 const res = await fetch('/api/admin?action=quick_add_restaurant', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${localStorage.getItem('quimieats_admin_pin')}` },
-                    body: JSON.stringify({ name, phone, logo_url, category })
+                    body: JSON.stringify({ name, phone, logo_url, category, bank_name, account_number })
                 });
                 if (res.ok) { 
                     alert("¡Éxito!"); 
@@ -776,6 +796,11 @@
             document.getElementById('edit-logo').value = b.logo_url || '';
             document.getElementById('edit-phone').value = b.contact_phone || '';
             
+            // Populate Bank Info
+            document.getElementById('edit-bank').value = b.bank_name || '';
+            document.getElementById('edit-account').value = b.account_number || '';
+            document.getElementById('edit-holder').value = b.account_holder || '';
+
             const preview = document.getElementById('edit-preview');
             const icon = document.getElementById('edit-icon');
             if (b.logo_url) {
@@ -794,6 +819,7 @@
 
         async function submitEdit() {
             const btn = document.querySelector('#edit-modal .bg-blue-600');
+            const ogText = "Guardar";
             btn.innerText = "Guardando..."; btn.disabled = true;
 
             const id = document.getElementById('edit-id').value;
@@ -801,6 +827,10 @@
             const phone = document.getElementById('edit-phone').value;
             let logo_url = document.getElementById('edit-logo').value;
             const file = document.getElementById('edit-file').files[0];
+            
+            const bank_name = document.getElementById('edit-bank').value;
+            const account_number = document.getElementById('edit-account').value;
+            const account_holder = document.getElementById('edit-holder').value;
 
             try {
                 if (file) {
@@ -811,7 +841,10 @@
                 const res = await fetch('/api/admin?action=update_restaurant_details', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${localStorage.getItem('quimieats_admin_pin')}` },
-                    body: JSON.stringify({ id, name, logo_url, phone })
+                    body: JSON.stringify({ 
+                        id, name, logo_url, phone,
+                        bank_name, account_number, account_holder
+                    })
                 });
                 if (res.ok) { 
                     alert("Guardado"); 
@@ -820,7 +853,7 @@
                     document.getElementById('edit-file').value = '';
                 }
             } catch (e) { alert("Error"); }
-            finally { btn.innerText = "Guardar"; btn.disabled = false; }
+            finally { btn.innerText = ogText; btn.disabled = false; }
         }
 
         async function approveLead(id) {
