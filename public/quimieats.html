@@ -53,9 +53,6 @@
             <h1 class="text-3xl font-black italic tracking-tighter">
                 QUIMI<span class="text-cyan text-glow">EATS</span>
             </h1>
-            <div class="flex items-center gap-4">
-                <button onclick="window.location.href='/order'" class="w-10 h-10 rounded-full glass flex items-center justify-center text-gold"><i class="fas fa-user"></i></button>
-            </div>
         </header>
 
         <!-- Location & Search -->
@@ -230,6 +227,26 @@
         </div>
         <div id="checkout-section" class="p-8 border-t border-white/5 space-y-6 bg-dark/80 backdrop-blur-md">
             <div class="space-y-4">
+                <p class="text-[10px] font-black text-white/30 uppercase tracking-[0.3em]">Método de Pago</p>
+                <div class="grid grid-cols-2 gap-2">
+                    <button onclick="setPayment('cash')" id="pay-cash" class="pay-btn p-4 rounded-2xl glass border-cyan text-cyan flex flex-col items-center gap-2">
+                        <i class="fas fa-money-bill-wave"></i>
+                        <span class="text-[9px] font-black uppercase">Efectivo</span>
+                    </button>
+                    <button onclick="setPayment('card')" id="pay-card" class="pay-btn p-4 rounded-2xl glass border-white/5 text-white/40 flex flex-col items-center gap-2">
+                        <i class="fas fa-credit-card"></i>
+                        <span class="text-[9px] font-black uppercase">Tarjeta</span>
+                    </button>
+                    <button onclick="setPayment('transfer')" id="pay-transfer" class="pay-btn p-4 rounded-2xl glass border-white/5 text-white/40 flex flex-col items-center gap-2">
+                        <i class="fas fa-university"></i>
+                        <span class="text-[9px] font-black uppercase">Transfer</span>
+                    </button>
+                    <button onclick="setPayment('rico_balance')" id="pay-rico" class="pay-btn p-4 rounded-2xl glass border-white/5 text-white/40 flex flex-col items-center gap-2">
+                        <i class="fas fa-wallet text-gold"></i>
+                        <span class="text-[9px] font-black uppercase">Rico Cash</span>
+                    </button>
+                </div>
+                
                 <input type="tel" id="checkout-phone" placeholder="Tu WhatsApp (504...)" class="w-full bg-white/5 border border-white/10 p-5 rounded-2xl outline-none focus:border-cyan text-white font-bold">
                 <input type="text" id="checkout-notes" placeholder="Dirección de entrega o instrucciones..." class="w-full bg-white/5 border border-white/10 p-5 rounded-2xl outline-none focus:border-cyan text-white text-sm">
             </div>
@@ -237,6 +254,68 @@
                 <span>Enviar Pedido</span>
                 <span id="final-total">L. 0.00</span>
             </button>
+        </div>
+    </div>
+
+    <!-- VIEW: ORDER TRACKING (SPA) -->
+    <div id="tracking-view" class="view-hidden fixed inset-0 bg-dark z-[400] overflow-y-auto">
+        <header class="p-8 flex justify-between items-center bg-dark/80 backdrop-blur-md sticky top-0 z-50">
+            <div>
+                <h2 class="text-2xl font-black uppercase tracking-tight">Estado de Pedido</h2>
+                <p id="track-order-id" class="text-[9px] text-cyan font-black uppercase tracking-[0.3em] mt-1">---</p>
+            </div>
+            <button onclick="closeTracking()" class="w-12 h-12 rounded-full glass flex items-center justify-center text-white/40"><i class="fas fa-times"></i></button>
+        </header>
+
+        <div class="p-8 space-y-10 pb-32">
+            <!-- Progress Tracker -->
+            <div class="relative flex justify-between items-start pt-4 px-4">
+                <div class="absolute top-7 left-0 right-0 h-0.5 bg-white/5 z-0">
+                    <div id="track-progress-bar" class="h-full bg-cyan shadow-[0_0_15px_rgba(0,242,255,0.5)] transition-all duration-1000" style="width: 0%"></div>
+                </div>
+                
+                <div id="step-marker-1" class="relative z-10 flex flex-col items-center gap-3">
+                    <div id="step-1" class="w-8 h-8 rounded-full bg-cyan text-dark flex items-center justify-center text-xs font-black shadow-lg shadow-cyan/20"><i class="fas fa-check"></i></div>
+                    <span class="text-[8px] font-black text-white/60 uppercase tracking-widest">Recibido</span>
+                </div>
+                <div id="step-marker-2" class="relative z-10 flex flex-col items-center gap-3">
+                    <div id="step-2" class="w-8 h-8 rounded-full bg-white/5 text-white/20 flex items-center justify-center text-xs font-black border border-white/10 transition-all duration-500"><i class="fas fa-fire-alt"></i></div>
+                    <span class="text-[8px] font-black text-white/20 uppercase tracking-widest">Preparando</span>
+                </div>
+                <div id="step-marker-3" class="relative z-10 flex flex-col items-center gap-3">
+                    <div id="step-3" class="w-8 h-8 rounded-full bg-white/5 text-white/20 flex items-center justify-center text-xs font-black border border-white/10 transition-all duration-500"><i class="fas fa-motorcycle"></i></div>
+                    <span class="text-[8px] font-black text-white/20 uppercase tracking-widest">En Camino</span>
+                </div>
+            </div>
+
+            <!-- Bank Transfer Section -->
+            <div id="transfer-section" class="hidden glass p-8 rounded-[2.5rem] space-y-6 border border-cyan/20">
+                <div class="text-center space-y-2">
+                    <div class="w-16 h-16 bg-cyan/10 text-cyan rounded-full flex items-center justify-center mx-auto text-2xl"><i class="fas fa-university"></i></div>
+                    <h3 class="text-xl font-black uppercase tracking-tight">Pago por Transferencia</h3>
+                    <p class="text-white/40 text-xs font-bold uppercase tracking-widest">Confirma tu pedido enviando el comprobante</p>
+                </div>
+
+                <div id="bank-details" class="bg-white/5 p-6 rounded-2xl border border-white/5 space-y-3">
+                    <!-- Bank details injected here -->
+                </div>
+
+                <div class="space-y-4">
+                    <input type="file" id="receipt-upload" accept="image/*" class="hidden" onchange="handleReceiptUpload()">
+                    <button id="upload-btn" onclick="document.getElementById('receipt-upload').click()" class="w-full py-5 bg-white/5 border-2 border-dashed border-white/10 rounded-2xl text-white font-black text-[10px] uppercase tracking-widest hover:bg-white/10 transition-all">
+                        <i class="fas fa-cloud-upload-alt mr-2"></i> Subir Comprobante
+                    </button>
+                    <p id="upload-status" class="text-[9px] text-white/20 text-center uppercase font-black tracking-widest"></p>
+                </div>
+            </div>
+
+            <!-- Order Items -->
+            <div class="space-y-4">
+                <p class="text-[10px] font-black text-white/30 uppercase tracking-[0.3em]">Resumen del Pedido</p>
+                <div id="track-items-list-container" class="space-y-3">
+                    <!-- Injected via JS -->
+                </div>
+            </div>
         </div>
     </div>
 
@@ -249,6 +328,9 @@
         let modOptions = [];
         let currentItem = null;
         let selectedMods = {};
+        let currentPayment = 'cash';
+        let activeOrder = null;
+        let trackingInterval = null;
 
         window.onload = () => {
             loadPartners();
@@ -522,6 +604,19 @@
             if(cart.length === 0) closeCart();
         }
 
+        function setPayment(method) {
+            currentPayment = method;
+            document.querySelectorAll('.pay-btn').forEach(btn => {
+                btn.classList.replace('border-cyan', 'border-white/5');
+                btn.classList.replace('text-cyan', 'text-white/40');
+            });
+            const selected = document.getElementById(`pay-${method.replace('_', '-')}`);
+            if(selected) {
+                selected.classList.replace('border-white/5', 'border-cyan');
+                selected.classList.replace('text-white/40', 'text-cyan');
+            }
+        }
+
         function closeModifier() {
             document.getElementById('modifier-drawer').classList.remove('active');
             document.getElementById('modal-overlay').style.opacity = "0";
@@ -556,7 +651,7 @@
             const payload = {
                 items: cart,
                 total,
-                paymentMethod: 'cash',
+                paymentMethod: currentPayment,
                 fulfillment_type: 'delivery',
                 restaurantId: currentStoreId,
                 guestPhone: phone,
@@ -570,16 +665,119 @@
                     body: JSON.stringify(payload)
                 });
                 const order = await res.json();
+                activeOrder = order;
                 
+                // Show tracking instead of redirect
+                closeCart();
+                closeStoreMenu();
+                showTracking(order);
+
                 // WhatsApp Handshake
                 const msg = `🚀 *¡Nueva Orden QuimiEats!* \n\n*Pedido #* : ${order.order_number}\n*Total* : L. ${total}\n*Cliente* : ${phone}\n\n*Detalles* :\n${cart.map(i => `- ${i.name} ${i.mods.length ? '('+i.mods.map(m=>m.name).join(', ')+')' : ''}`).join('\n')}\n\n*Instrucciones* : ${notes}`;
                 
                 window.open(`https://wa.me/${partner.contact_phone || '50497814474'}?text=${encodeURIComponent(msg)}`, '_blank');
                 
-                alert("¡Pedido enviado! Serás redirigido a WhatsApp para confirmar con el comercio.");
-                window.location.href = `/order?id=${order.id}`;
-
             } catch(e) { alert("Error al enviar pedido"); btn.disabled = false; btn.innerText = "Enviar Pedido"; }
+        }
+
+        function showTracking(order) {
+            document.getElementById('tracking-view').classList.remove('view-hidden');
+            document.getElementById('track-order-id').innerText = order.id;
+            
+            const itemsList = document.getElementById('track-items-list-container');
+            itemsList.innerHTML = order.items.map(i => `
+                <div class="flex justify-between items-center py-3 border-b border-white/5">
+                    <span class="text-white/80 font-bold">${i.qty}x ${i.name}</span>
+                    <span class="text-gold font-mono">L. ${parseFloat(i.finalPrice || i.price).toFixed(0)}</span>
+                </div>
+            `).join('');
+
+            itemsList.innerHTML += `
+                <div class="flex justify-between items-center pt-4">
+                    <span class="text-white/20 text-[10px] font-black uppercase">Total Pagado</span>
+                    <span class="text-white text-2xl font-black italic">L. ${parseFloat(order.total).toFixed(0)}</span>
+                </div>
+            `;
+
+            // Bank Transfer Logic
+            const partner = allPartners.find(p => p.id === order.restaurant_id);
+            const transferSec = document.getElementById('transfer-section');
+            if (order.payment_method === 'transfer' && partner && partner.bank_name) {
+                transferSec.classList.remove('hidden');
+                document.getElementById('bank-details').innerHTML = `
+                    <div class="flex justify-between"><span class="text-white/40">Banco:</span><span class="text-white font-black">${partner.bank_name}</span></div>
+                    <div class="flex justify-between"><span class="text-white/40">Cuenta:</span><span class="text-white font-black font-mono">${partner.account_number}</span></div>
+                    <div class="flex justify-between"><span class="text-white/40">Titular:</span><span class="text-white font-black">${partner.account_holder || partner.name}</span></div>
+                `;
+            } else {
+                transferSec.classList.add('hidden');
+            }
+
+            updateTrackingUI(order);
+            startTrackingPoll(order.id);
+        }
+
+        function updateTrackingUI(order) {
+            const bar = document.getElementById('track-progress-bar');
+            const steps = { 'pending': 0, 'pending_verification': 10, 'paid': 33, 'preparing': 66, 'ready': 85, 'shipped': 100, 'completed': 100 };
+            const progress = steps[order.status] || 0;
+            bar.style.width = progress + '%';
+
+            // Glow steps
+            if (progress >= 33) document.getElementById('step-1').classList.add('bg-cyan', 'text-dark');
+            if (progress >= 66) document.getElementById('step-2').classList.replace('bg-white/5', 'bg-cyan');
+            if (progress >= 100) document.getElementById('step-3').classList.replace('bg-white/5', 'bg-cyan');
+        }
+
+        function startTrackingPoll(id) {
+            if(trackingInterval) clearInterval(trackingInterval);
+            trackingInterval = setInterval(async () => {
+                try {
+                    const res = await fetch(`/api/store?action=order&id=${id}`);
+                    const order = await res.json();
+                    if(order.status !== activeOrder.status) {
+                        activeOrder = order;
+                        updateTrackingUI(order);
+                    }
+                    if(['completed', 'cancelled', 'delivered'].includes(order.status)) clearInterval(trackingInterval);
+                } catch(e) {}
+            }, 5000);
+        }
+
+        function closeTracking() {
+            document.getElementById('tracking-view').classList.add('view-hidden');
+            if(trackingInterval) clearInterval(trackingInterval);
+        }
+
+        async function handleReceiptUpload() {
+            const file = document.getElementById('receipt-upload').files[0];
+            if (!file) return;
+
+            const status = document.getElementById('upload-status');
+            const btn = document.getElementById('upload-btn');
+            
+            status.innerText = "Subiendo...";
+            btn.disabled = true;
+
+            try {
+                const reader = new FileReader();
+                reader.readAsDataURL(file);
+                reader.onload = async () => {
+                    const base64 = reader.result;
+                    const res = await fetch('/api/receipt', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ orderId: activeOrder.id, imageBase64: base64, fileName: file.name })
+                    });
+                    if (res.ok) {
+                        status.innerText = "✅ ¡Enviado! Esperando validación.";
+                        btn.classList.add('hidden');
+                    } else {
+                        status.innerText = "❌ Error al subir.";
+                        btn.disabled = false;
+                    }
+                };
+            } catch (e) { status.innerText = "❌ Error."; btn.disabled = false; }
         }
 
         async function loadAds() {
