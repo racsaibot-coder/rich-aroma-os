@@ -166,10 +166,17 @@ module.exports = async (req, res) => {
         if (action === 'locations' && (req.method === 'POST' || (req.method === 'PUT' && id) || (req.method === 'DELETE' && id))) {
             if (!isAdmin) return res.status(401).json({ error: 'Unauthorized' });
             let result;
+            
+            // Ensure distributor_name is not null (DB requirement)
+            const locationData = {
+                ...req.body,
+                distributor_name: req.body.distributor_name || ''
+            };
+
             if (req.method === 'POST') {
-                result = await supabase.from('cali_locations').insert(req.body).select().single();
+                result = await supabase.from('cali_locations').insert(locationData).select().single();
             } else if (req.method === 'PUT') {
-                result = await supabase.from('cali_locations').update(req.body).eq('id', id).select().single();
+                result = await supabase.from('cali_locations').update(locationData).eq('id', id).select().single();
             } else if (req.method === 'DELETE') {
                 result = await supabase.from('cali_locations').delete().eq('id', id);
             }

@@ -403,6 +403,10 @@
                     <label class="block text-[9px] font-black uppercase tracking-[0.2em] text-gray-400 mb-2 ml-1">City / Neighborhood</label>
                     <input type="text" id="loc-city" placeholder="Anaheim, CA" class="w-full bg-gray-50 border border-gray-100 rounded-2xl px-5 py-4 text-sm outline-none focus:border-brand-brown shadow-inner">
                 </div>
+                <div>
+                    <label class="block text-[9px] font-black uppercase tracking-[0.2em] text-gray-400 mb-2 ml-1">Distributor / Partner</label>
+                    <input type="text" id="loc-distributor" placeholder="e.g. Cali Base" class="w-full bg-gray-50 border border-gray-100 rounded-2xl px-5 py-4 text-sm outline-none focus:border-brand-brown shadow-inner">
+                </div>
                 <div class="flex items-center justify-between p-2">
                     <div class="flex items-center gap-3">
                         <input type="checkbox" id="loc-active" checked class="w-5 h-5 rounded-lg border-gray-300 text-brand-brown focus:ring-brand-brown">
@@ -861,12 +865,14 @@
                 document.getElementById('loc-id').value = l.id;
                 document.getElementById('loc-name').value = l.name;
                 document.getElementById('loc-city').value = l.city;
+                document.getElementById('loc-distributor').value = l.distributor_name || '';
                 document.getElementById('loc-active').checked = l.active;
                 delBtn.classList.remove('hidden');
             } else {
                 document.getElementById('loc-id').value = '';
                 document.getElementById('loc-name').value = '';
                 document.getElementById('loc-city').value = '';
+                document.getElementById('loc-distributor').value = '';
                 document.getElementById('loc-active').checked = true;
                 delBtn.classList.add('hidden');
             }
@@ -881,6 +887,7 @@
             const payload = {
                 name: document.getElementById('loc-name').value,
                 city: document.getElementById('loc-city').value,
+                distributor_name: document.getElementById('loc-distributor').value || '',
                 active: document.getElementById('loc-active').checked
             };
 
