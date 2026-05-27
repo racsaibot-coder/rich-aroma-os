@@ -76,6 +76,7 @@
         <div class="flex gap-4 border-b border-white/10 pb-2 overflow-x-auto no-scrollbar">
             <button onclick="switchTab('partners')" id="tab-partners" class="tab-btn font-black text-[10px] uppercase tracking-widest pb-3 px-4 border-b-2 border-cyan-400 text-cyan-400">Socios</button>
             <button onclick="switchTab('products')" id="tab-products" class="tab-btn font-black text-[10px] uppercase tracking-widest pb-3 px-4 text-white/40 hover:text-white">Productos</button>
+            <button onclick="switchTab('reservations')" id="tab-reservations" class="tab-btn font-black text-[10px] uppercase tracking-widest pb-3 px-4 text-white/40 hover:text-white">Reservas</button>
             <button onclick="switchTab('drivers')" id="tab-drivers" class="tab-btn font-black text-[10px] uppercase tracking-widest pb-3 px-4 text-white/40 hover:text-white">Drivers</button>
             <button onclick="switchTab('sales')" id="tab-sales" class="tab-btn font-black text-[10px] uppercase tracking-widest pb-3 px-4 text-white/40 hover:text-white">Ventas / P&L</button>
             </div>
@@ -146,6 +147,32 @@
         <!-- SALES VIEW -->
         <div id="view-sales" class="hidden space-y-10">
             <div class="py-20 text-center text-white/10 italic text-sm font-black uppercase tracking-[0.3em]">Cargando Reporte de Marketplace...</div>
+        </div>
+
+        <!-- RESERVATIONS VIEW -->
+        <div id="view-reservations" class="hidden space-y-10">
+            <section class="space-y-6">
+                <div class="flex justify-between items-center">
+                    <h2 class="text-xl font-black uppercase tracking-tight text-white/80">Agenda y Citas</h2>
+                    <button onclick="loadReservations()" class="text-white/20 hover:text-cyan-400 transition-colors"><i class="fas fa-sync-alt text-xs"></i></button>
+                </div>
+                <div class="glass rounded-[3rem] overflow-hidden">
+                    <table class="w-full text-left">
+                        <thead class="bg-white/5 text-[10px] uppercase font-black tracking-[0.2em] text-white/30 border-b border-white/5">
+                            <tr>
+                                <th class="p-8">Servicio</th>
+                                <th class="p-8">Horario</th>
+                                <th class="p-8">Cliente</th>
+                                <th class="p-8">Estado</th>
+                                <th class="p-8 text-right">Acción</th>
+                            </tr>
+                        </thead>
+                        <tbody id="reservations-table" class="divide-y divide-white/5">
+                            <!-- Data -->
+                        </tbody>
+                    </table>
+                </div>
+            </section>
         </div>
         </section>
 
@@ -480,11 +507,82 @@
             document.getElementById(`tab-${t}`).classList.add('border-b-2', 'border-cyan-400', 'text-cyan-400');
             
             if (t === 'partners') loadData();
+            if (t === 'products') loadProducts();
             if (t === 'drivers') loadDrivers();
             if (t === 'sales') loadSalesStats();
+            if (t === 'reservations') loadReservations();
         }
 
         // --- DATA LOGIC ---
+        async function deletePartner(id, name) {
+            if(!confirm(`¿Deseas eliminar permanentemente el negocio "${name}" y todos sus productos?`)) return;
+            try {
+                const res = await fetch(`/api/admin?action=delete_restaurant&id=${id}`, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': `Bearer ${localStorage.getItem('quimieats_admin_pin')}` }
+                });
+                if (res.ok) {
+                    alert("Negocio eliminado");
+                    loadData();
+                } else {
+                    const err = await res.json();
+                    alert("Error: " + err.error);
+                }
+            } catch(e) { console.error(e); }
+        }
+
+        async function loadReservations() {
+            const tbody = document.getElementById('reservations-table');
+            tbody.innerHTML = '<tr><td colspan="5" class="p-20 text-center text-white/10 italic">Cargando agenda...</td></tr>';
+            
+            try {
+                const resOrders = await fetch('/api/orders?v=' + Date.now()); 
+                const { orders } = await resOrders.json();
+                
+                const reservations = (orders || []).filter(o => o.scheduled_for);
+                renderReservations(reservations);
+            } catch(e) { console.error(e); }
+        }
+
+        function renderReservations(data) {
+            const tbody = document.getElementById('reservations-table');
+            if (data.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" class="p-20 text-center text-white/10 italic">No hay reservas programadas</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = data.map(o => {
+                const date = new Date(o.scheduled_for);
+                const timeStr = date.toLocaleString('es-HN', { weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
+                const serviceName = (o.items || []).map(i => i.name).join(', ') || 'Servicio';
+                const statusColor = o.status === 'completed' ? 'text-green-400' : (o.status === 'pending' ? 'text-amber-400' : 'text-cyan-400');
+                
+                return `
+                    <tr class="hover:bg-white/[0.02] transition-colors">
+                        <td class="p-8">
+                            <div class="font-black uppercase tracking-tight text-sm text-white/80">${serviceName}</div>
+                            <div class="text-[8px] font-black text-white/20 uppercase tracking-widest">${o.restaurant_id}</div>
+                        </td>
+                        <td class="p-8">
+                            <div class="text-xs font-black text-cyan-400 uppercase">${timeStr}</div>
+                        </td>
+                        <td class="p-8">
+                            <div class="text-xs font-bold text-white/60">${o.customers?.name || 'Invitado'}</div>
+                            <div class="text-[9px] text-white/20 font-mono">${o.customers?.phone || ''}</div>
+                        </td>
+                        <td class="p-8">
+                            <span class="px-3 py-1 rounded-full text-[8px] font-black uppercase tracking-widest bg-white/5 ${statusColor}">
+                                ${o.status}
+                            </span>
+                        </td>
+                        <td class="p-8 text-right">
+                            <button onclick="window.location.href='/order?id=${o.id}'" class="text-[10px] font-black uppercase text-white/20 hover:text-white transition-all">Ver Detalles</button>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
         async function loadData() {
             const token = localStorage.getItem('quimieats_admin_pin');
             const headers = { 'Authorization': `Bearer ${token}` };
@@ -716,8 +814,9 @@
                     <td class="p-8">
                         <a href="https://wa.me/${r.contact_phone}" target="_blank" class="text-cyan-400 font-bold text-xs underline">${r.contact_phone}</a>
                     </td>
-                    <td class="p-8 text-right">
-                        <button onclick="openEdit(${i})" class="text-[10px] font-black uppercase text-white/20 hover:text-white transition-all mr-4">Editar</button>
+                    <td class="p-8 text-right flex items-center justify-end gap-3">
+                        <button onclick="deletePartner('${r.id}', '${r.name}')" class="text-[10px] font-black uppercase text-red-400/20 hover:text-red-400 transition-all"><i class="fas fa-trash-alt mr-1"></i> Eliminar</button>
+                        <button onclick="openEdit(${i})" class="text-[10px] font-black uppercase text-white/20 hover:text-white transition-all">Editar</button>
                         <button onclick="window.location.href='/admin?tab=menu&restaurantId=${r.id}'" class="text-[10px] font-black uppercase text-cyan-400 hover:text-cyan-300">Menú <i class="fas fa-external-link-alt ml-1"></i></button>
                     </td>
                 </tr>

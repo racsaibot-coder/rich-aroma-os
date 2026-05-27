@@ -4,20 +4,33 @@ const { supabase } = require('./lib/supabase');
 module.exports = async function handler(req, res) {
     try {
         let { action, id } = req.query;
+        
+        // Better extraction for REST-style paths
+        if (!action) {
+            const urlParts = req.url.split('?')[0].split('/');
+            // Expecting /api/admin/action or /api/admin/action/id
+            const adminIdx = urlParts.indexOf('admin');
+            if (adminIdx !== -1 && urlParts[adminIdx + 1]) {
+                action = urlParts[adminIdx + 1];
+                if (urlParts[adminIdx + 2]) id = urlParts[adminIdx + 2];
+            }
+        }
+
         if (!action) action = 'none';
-        console.log(`[Admin API] ${req.method} ${req.url} Action: ${action}`);
+        
+        console.log(`[Admin API] ${req.method} ${req.url} Action: ${action}, ID: ${id}`);
+        
         res.setHeader('Access-Control-Allow-Origin', '*');
         res.setHeader('Access-Control-Allow-Methods', 'GET,POST,PATCH,PUT,DELETE,OPTIONS');
         res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
 
         if (req.method === 'OPTIONS') return res.status(200).end();
-    
-    // Support REST-style nested actions like /api/admin/employees/emp_123
-    if (action && action.includes('/')) {
-        const parts = action.split('/');
-        action = parts[0];
-        if (!id) id = parts[1];
-    }
+
+        if (action && action.includes('/')) {
+            const parts = action.split('/');
+            action = parts[0];
+            if (!id) id = parts[1];
+        }
 
     // RBAC HELPER: Verify Admin
     const verifyAdmin = async (token) => {
@@ -445,7 +458,11 @@ module.exports = async function handler(req, res) {
     }
 
     if (action === 'employees' && req.method === 'POST') {
-        if (!isAdmin) return res.status(403).json({ error: "Admin access required" });
+        console.log(`[Admin API] Attempting to create employee: ${req.body.name}, isAdmin: ${isAdmin}`);
+        if (!isAdmin) {
+            console.warn(`[Admin API] Unauthorized employee creation attempt by: ${authHeader}`);
+            return res.status(403).json({ error: "Admin access required" });
+        }
         const emp = {
             id: 'emp_' + Date.now() + Math.random().toString(36).substr(2, 5),
             name: req.body.name,
@@ -458,8 +475,13 @@ module.exports = async function handler(req, res) {
             active: req.body.active !== false,
             restaurant_id: req.body.restaurant_id || 'rich-aroma'
         };
+        console.log(`[Admin API] Inserting into Supabase:`, emp);
         const { data, error } = await supabase.from('employees').insert(emp).select().single();
-        if (error) return res.status(500).json({ error: error.message });
+        if (error) {
+            console.error(`[Admin API] Supabase Insert Error:`, error);
+            return res.status(500).json({ error: error.message });
+        }
+        console.log(`[Admin API] Employee created successfully: ${data.id}`);
         return res.json(data);
     }
 
@@ -504,6 +526,25 @@ module.exports = async function handler(req, res) {
         const { error } = await supabase.from('employees').delete().eq('id', targetId);
         
         if (error) return res.status(500).json({ error: error.message });
+        return res.json({ success: true });
+    }
+
+    if (action === 'delete_restaurant' && req.method === 'DELETE') {
+        if (!isAdmin) return res.status(403).json({ error: "Admin access required" });
+        const targetId = id || req.query.id;
+        if (!targetId) return res.status(400).json({ error: "Restaurant ID required" });
+
+        // 1. Delete all related data to avoid Foreign Key constraints
+        await Promise.all([
+            supabase.from('quimieats_ledger').delete().eq('restaurant_id', targetId),
+            supabase.from('orders').delete().eq('restaurant_id', targetId),
+            supabase.from('menu_items').delete().eq('restaurant_id', targetId)
+        ]);
+
+        // 2. Finally delete the restaurant record
+        const { error } = await supabase.from('restaurants').delete().eq('id', targetId);
+        if (error) return res.status(500).json({ error: error.message });
+        
         return res.json({ success: true });
     }
 

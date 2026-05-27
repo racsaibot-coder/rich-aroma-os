@@ -735,7 +735,7 @@ app.post('/api/campaign/valentines', async (req, res) => {
 const adminHandler = require('./api/admin.js');
 
 // UNIFIED ADMIN API
-app.all('/api/admin', async (req, res) => {
+app.all(['/api/admin', '/api/admin/*'], async (req, res) => {
     const { action } = req.query;
     
     // 1. Handle Preflight

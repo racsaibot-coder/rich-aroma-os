@@ -27,8 +27,8 @@
     <div class="w-full max-w-md space-y-8">
         <!-- Header -->
         <div class="text-center space-y-2">
-            <h1 class="text-3xl font-black uppercase tracking-tighter">¡Bienvenido Chef!</h1>
-            <p class="text-white/40 text-xs font-bold uppercase tracking-widest">Configura tu tienda en 2 minutos</p>
+            <h1 class="text-3xl font-black uppercase tracking-tighter">¡Bienvenido Socio!</h1>
+            <p class="text-white/40 text-xs font-bold uppercase tracking-widest">Configura tu negocio en 2 minutos</p>
         </div>
 
         <!-- Progress Track -->
@@ -55,8 +55,8 @@
         <!-- Step 2: First Product -->
         <div id="step-2" class="hidden glass p-8 rounded-[2.5rem] space-y-6">
             <div class="text-center">
-                <h2 class="text-xl font-black uppercase">Tu Primer Plato</h2>
-                <p class="text-[10px] text-white/40 font-bold uppercase mt-1">Sube lo que vas a vender hoy</p>
+                <h2 class="text-xl font-black uppercase">Tu Primer Producto o Servicio</h2>
+                <p class="text-[10px] text-white/40 font-bold uppercase mt-1">Configura tu oferta inicial</p>
             </div>
             
             <div class="space-y-4">
@@ -69,11 +69,11 @@
                         <button onclick="document.getElementById('product-img').click()" class="text-[10px] font-black uppercase tracking-widest text-cyan">Subir Foto</button>
                     </div>
                 </div>
-                <input type="text" id="product-name" placeholder="Nombre del Plato" class="w-full bg-white/5 border border-white/10 p-4 rounded-xl outline-none focus:border-cyan">
-                <input type="number" id="product-price" placeholder="Precio (Lempiras)" class="w-full bg-white/5 border border-white/10 p-4 rounded-xl outline-none focus:border-cyan">
+                <input type="text" id="product-name" placeholder="Nombre (ej: Consulta Dental, Pizza, etc)" class="w-full bg-white/5 border border-white/10 p-4 rounded-xl outline-none focus:border-cyan">
+                <input type="number" id="product-price" placeholder="Precio o Tarifa Base (Lempiras)" class="w-full bg-white/5 border border-white/10 p-4 rounded-xl outline-none focus:border-cyan">
             </div>
 
-            <button id="save-product-btn" onclick="saveFirstProduct()" class="w-full bg-cyan text-dark py-5 rounded-2xl font-black uppercase tracking-widest">Publicar Plato</button>
+            <button id="save-product-btn" onclick="saveFirstProduct()" class="w-full bg-cyan text-dark py-5 rounded-2xl font-black uppercase tracking-widest">Publicar Oferta</button>
         </div>
 
         <!-- Step 3: Success -->
@@ -83,13 +83,13 @@
             </div>
             <div class="space-y-2">
                 <h2 class="text-2xl font-black uppercase">¡Estás en Vivo!</h2>
-                <p class="text-sm text-white/40">Tu tienda ya aparece en QuimiEats.com</p>
+                <p class="text-sm text-white/40">Tu negocio ya aparece en QuimiEats.com</p>
             </div>
             
             <div class="p-4 bg-white/5 rounded-2xl border border-white/10">
-                <p class="text-[10px] font-black text-cyan uppercase mb-2">Tu Dashboard de Cocina</p>
+                <p class="text-[10px] font-black text-cyan uppercase mb-2">Tu Panel de Control</p>
                 <a id="os-link" href="/os" class="text-xs font-bold text-white underline break-all">quimieats.com/os</a>
-                <p class="text-[8px] text-white/20 mt-2 uppercase">Usa tu PIN para ver los pedidos que entren</p>
+                <p class="text-[8px] text-white/20 mt-2 uppercase">Usa tu PIN para ver los pedidos o citas que entren</p>
             </div>
 
             <button onclick="window.location.href='/os'" class="w-full bg-white text-dark py-5 rounded-2xl font-black uppercase tracking-widest">Ir al Panel de Control</button>

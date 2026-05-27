@@ -60,9 +60,9 @@
 
     <!-- Navigation -->
     <nav id="main-nav" class="hidden bg-charcoal border-b border-white/5 px-6 flex gap-6">
-        <button onclick="switchTab('menu')" id="tab-menu" class="py-4 text-[10px] font-black uppercase tracking-widest tab-active">Mi Menú</button>
-        <button onclick="switchTab('orders')" id="tab-orders" class="py-4 text-[10px] font-black uppercase tracking-widest text-white/40">Órdenes Live</button>
-        <button onclick="switchTab('wallet')" id="tab-wallet" class="py-4 text-[10px] font-black uppercase tracking-widest text-white/40">Mi Billetera</button>
+        <button onclick="switchTab('menu')" id="tab-menu" class="py-4 text-[10px] font-black uppercase tracking-widest tab-active">Catálogo</button>
+        <button onclick="switchTab('orders')" id="tab-orders" class="py-4 text-[10px] font-black uppercase tracking-widest text-white/40">Órdenes/Citas</button>
+        <button onclick="switchTab('wallet')" id="tab-wallet" class="py-4 text-[10px] font-black uppercase tracking-widest text-white/40">Billetera</button>
     </nav>
 
     <!-- Content Area -->
@@ -71,7 +71,7 @@
         <!-- SECTION: MENU -->
         <div id="section-menu" class="space-y-6">
             <div class="flex justify-between items-center">
-                <h3 class="text-xl font-black uppercase tracking-tight">Gestión de Productos</h3>
+                <h3 class="text-xl font-black uppercase tracking-tight">Gestión de Ofertas</h3>
                 <button onclick="openAddModal()" class="bg-cyan text-dark px-6 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest shadow-lg active:scale-95 transition-all">+ Nuevo Item</button>
             </div>
             
@@ -132,7 +132,7 @@
     <!-- Add/Edit Item Modal -->
     <div id="item-modal" class="hidden fixed inset-0 bg-dark/95 backdrop-blur-md z-[200] flex items-center justify-center p-6">
         <div class="bg-charcoal w-full max-w-sm rounded-[3rem] p-8 space-y-6 shadow-2xl border border-white/5">
-            <h3 class="text-2xl font-black uppercase tracking-tight text-center">Editar Producto</h3>
+            <h3 class="text-2xl font-black uppercase tracking-tight text-center">Editar Item</h3>
             <div class="space-y-4">
                 <div id="mod-img-preview" class="w-full h-40 bg-white/5 rounded-[2rem] border border-dashed border-white/10 flex items-center justify-center overflow-hidden">
                     <i class="fas fa-image text-4xl text-white/10"></i>

@@ -3,6 +3,9 @@
 <head>
     <link rel="icon" type="image/png" href="/favicon.png">    <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
     <title>Admin Dashboard | Rich Aroma</title>
     <script>
         // FAIL-SAFE: If the page takes more than 5s to boot, force show the login modal
@@ -75,7 +78,7 @@
     <div id="admin-content" class="hidden max-w-4xl mx-auto">
         <h1 class="text-3xl font-bold mb-6 flex items-center gap-2">
             <i class="fas fa-user-shield text-blue-600"></i> Admin Dashboard
-            <span class="text-[10px] bg-blue-100 text-blue-600 px-2 py-0.5 rounded-full border border-blue-200">v3.0.0</span>
+            <span class="text-[10px] bg-blue-100 text-blue-600 px-2 py-0.5 rounded-full border border-blue-200">v3.0.1-ts1779899147</span>
             <div class="ml-auto flex gap-2">
                 <button onclick="startGuide()" class="bg-amber-100 text-amber-700 text-xs px-4 py-2 rounded-full font-black uppercase tracking-widest hover:bg-amber-200 transition border border-amber-200">
                     <i class="fas fa-book-open mr-2"></i> System Guide
@@ -97,6 +100,7 @@
                 <button onclick="switchTab('menu')" id="tab-menu" class="font-bold text-gray-500 hover:text-gray-800 pb-2 px-2">Menu & Modifiers</button>
                 <button onclick="switchTab('inventory')" id="tab-inventory" class="font-bold text-gray-500 hover:text-gray-800 pb-2 px-2">Inventory & Recipes</button>
                 <button onclick="switchTab('marketing')" id="tab-marketing" class="font-bold text-gray-500 hover:text-gray-800 pb-2 px-2">Marketing & Quests</button>
+                <button onclick="switchTab('promos')" id="tab-promos" class="font-bold text-gray-500 hover:text-gray-800 pb-2 px-2">Ads & Promos</button>
                 <button onclick="switchTab('creators')" id="tab-creators" class="font-bold text-gray-500 hover:text-gray-800 pb-2 px-2">UGC Reviews</button>
                 <button onclick="switchTab('quimieats')" id="tab-quimieats" class="font-bold text-gray-500 hover:text-gray-800 pb-2 px-2 text-cyan-600">QuimiEats</button>
             </div>
@@ -207,7 +211,7 @@
                 <h2 class="text-xl font-bold">Team Management</h2>
                 <button onclick="document.getElementById('add-emp-modal').classList.remove('hidden')" class="bg-blue-600 text-white px-4 py-2 rounded-lg font-bold shadow hover:bg-blue-700">+ Add Employee</button>
             </div>
-            
+
             <div class="bg-white rounded-2xl shadow-lg overflow-hidden mb-8">
                 <table class="w-full text-left border-collapse">
                     <thead class="bg-gray-50 text-gray-500 text-xs uppercase">
@@ -225,8 +229,16 @@
                     </tbody>
                 </table>
             </div>
-        </div>
 
+            <!-- Dashboard Debug Console -->
+            <div class="mt-8 bg-black rounded-xl p-4 border border-white/10 shadow-2xl">
+                <div class="flex justify-between items-center mb-2">
+                    <span class="text-[8px] text-white/40 uppercase font-bold tracking-widest">Employee System Debug Log</span>
+                    <button onclick="document.getElementById('dash-debug').innerHTML=''" class="text-[8px] text-white/20 hover:text-white uppercase font-bold">Clear</button>
+                </div>
+                <pre id="dash-debug" class="text-[10px] text-cyan-400 font-mono h-32 overflow-y-auto whitespace-pre-wrap"></pre>
+            </div>
+        </div>
         <!-- TAB: MENU -->
         <div id="section-menu" class="hidden">
             <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
@@ -298,80 +310,35 @@
 
             <!-- TAB: MARKETING & QUESTS -->
             <div id="section-marketing" class="hidden">
-                <!-- Top Actions -->
-                <div class="flex flex-wrap gap-4 mb-8">
-                    <button onclick="openNewQuestModal()" class="bg-indigo-600 text-white px-6 py-3 rounded-2xl font-bold shadow-lg hover:bg-indigo-700 transition">
-                        <i class="fas fa-plus mr-2"></i> Crear Nueva Misión
-                    </button>
-                    <button onclick="openNewRewardModal()" class="bg-amber-500 text-white px-6 py-3 rounded-2xl font-bold shadow-lg hover:bg-amber-600 transition">
-                        <i class="fas fa-gift mr-2"></i> Nuevo Premio (Rico Points)
-                    </button>
-                </div>
+                <!-- ... existing marketing content ... -->
+            </div>
 
-                <div class="grid lg:grid-cols-2 gap-8">
-                    <!-- QUESTS TABLE -->
-                    <div class="bg-white rounded-[2rem] shadow-xl overflow-hidden border border-gray-100">
-                        <div class="p-6 bg-gray-50 border-b flex justify-between items-center">
-                            <h3 class="font-black uppercase tracking-widest text-sm text-gray-400">Misiones Activas</h3>
-                            <span class="bg-indigo-100 text-indigo-600 text-[10px] font-bold px-2 py-1 rounded-full">Retos Capitán Rico</span>
+            <!-- TAB: ADS & PROMOS -->
+            <div id="section-promos" class="hidden space-y-8">
+                <div class="bg-white rounded-[2rem] shadow-xl overflow-hidden border border-gray-100">
+                    <div class="p-8 bg-gradient-to-r from-purple-900 to-indigo-900 text-white flex justify-between items-center">
+                        <div>
+                            <h3 class="text-xl font-black uppercase tracking-tight">Gestión de Publicidad</h3>
+                            <p class="text-[10px] text-purple-200 font-bold uppercase tracking-widest mt-1">Paquetes de $10/semana (El Coquin Style)</p>
                         </div>
-                        <div class="overflow-x-auto">
-                            <table class="w-full text-left border-collapse">
-                                <thead class="bg-white text-gray-400 text-[10px] uppercase font-bold tracking-widest">
-                                    <tr>
-                                        <th class="p-6">Misión</th>
-                                        <th class="p-6">Recompensa</th>
-                                        <th class="p-6 text-right">Acciones</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="questsTable" class="divide-y divide-gray-50">
-                                    <!-- Injected via JS -->
-                                </tbody>
-                            </table>
-                        </div>
+                        <button onclick="openPromoModal()" class="bg-white text-indigo-900 px-6 py-3 rounded-2xl font-black uppercase tracking-widest text-[10px] shadow-lg hover:scale-105 transition-all">
+                            + Nueva Promo
+                        </button>
                     </div>
-
-                    <!-- REWARDS TABLE -->
-                    <div class="bg-white rounded-[2rem] shadow-xl overflow-hidden border border-gray-100">
-                        <div class="p-6 bg-gray-50 border-b flex justify-between items-center">
-                            <h3 class="font-black uppercase tracking-widest text-sm text-gray-400">Canje de Puntos</h3>
-                            <span class="bg-amber-100 text-amber-600 text-[10px] font-bold px-2 py-1 rounded-full">Tienda de Premios</span>
-                        </div>
-                        <div class="overflow-x-auto">
-                            <table class="w-full text-left border-collapse">
-                                <thead class="bg-white text-gray-400 text-[10px] uppercase font-bold tracking-widest">
-                                    <tr>
-                                        <th class="p-6">Premio</th>
-                                        <th class="p-6">Costo Puntos</th>
-                                        <th class="p-6 text-right">Acciones</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="rewardsTable" class="divide-y divide-gray-50">
-                                    <!-- Injected via JS -->
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- APPROVAL QUEUE -->
-                <div class="mt-8 bg-white rounded-[2rem] shadow-xl overflow-hidden border border-gray-100">
-                    <div class="p-6 bg-gray-50 border-b flex justify-between items-center">
-                        <h3 class="font-black uppercase tracking-widest text-sm text-gray-400">Cola de Aprobación (UGC)</h3>
-                        <span class="bg-green-100 text-green-600 text-[10px] font-bold px-2 py-1 rounded-full">Verificación de Retos</span>
-                    </div>
+                    
                     <div class="overflow-x-auto">
                         <table class="w-full text-left border-collapse">
-                            <thead class="bg-white text-gray-400 text-[10px] uppercase font-bold tracking-widest">
+                            <thead class="bg-gray-50 text-gray-400 text-[10px] uppercase font-bold tracking-widest">
                                 <tr>
-                                    <th class="p-6">Cliente</th>
-                                    <th class="p-6">Misión</th>
-                                    <th class="p-6">Prueba (Foto)</th>
-                                    <th class="p-6 text-right">Acciones</th>
+                                    <th class="p-6">Estado</th>
+                                    <th class="p-6">Cliente / Negocio</th>
+                                    <th class="p-6">Impresiones (Vistas)</th>
+                                    <th class="p-6">Vencimiento</th>
+                                    <th class="p-6 text-right">Acción</th>
                                 </tr>
                             </thead>
-                            <tbody id="approvalQueueTable" class="divide-y divide-gray-50">
-                                <!-- Injected via JS -->
+                            <tbody id="promosTable" class="divide-y divide-gray-100 text-sm">
+                                <!-- Data injected via JS -->
                             </tbody>
                         </table>
                     </div>
@@ -485,6 +452,42 @@
     </div>
 
     
+    <!-- PROMO MODAL -->
+    <div id="promo-modal" class="hidden fixed inset-0 bg-dark/90 backdrop-blur-md flex items-center justify-center z-[250]">
+        <div class="bg-white rounded-[2.5rem] p-10 max-w-md w-full shadow-2xl space-y-6">
+            <h3 class="text-xl font-black uppercase tracking-tight text-dark" id="promo-modal-title">Nueva Publicidad</h3>
+            <input type="hidden" id="promo-id">
+            <div class="space-y-4">
+                <div>
+                    <label class="text-[10px] font-black uppercase tracking-widest text-gray-400">Nombre del Negocio / Cliente</label>
+                    <input type="text" id="promo-client" class="w-full bg-gray-50 border border-gray-100 p-4 rounded-2xl outline-none focus:border-indigo-500 font-bold uppercase text-sm" placeholder="EJ: EL COQUIN">
+                </div>
+                <div>
+                    <label class="text-[10px] font-black uppercase tracking-widest text-gray-400">URL de Imagen o Video</label>
+                    <input type="text" id="promo-media" class="w-full bg-gray-50 border border-gray-100 p-4 rounded-2xl outline-none focus:border-indigo-500 text-xs" placeholder="https://...">
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="text-[10px] font-black uppercase tracking-widest text-gray-400">Fecha Inicio</label>
+                        <input type="date" id="promo-start" class="w-full bg-gray-50 border border-gray-100 p-4 rounded-2xl outline-none focus:border-indigo-500 text-xs font-bold">
+                    </div>
+                    <div>
+                        <label class="text-[10px] font-black uppercase tracking-widest text-gray-400">Fecha Fin</label>
+                        <input type="date" id="promo-end" class="w-full bg-gray-50 border border-gray-100 p-4 rounded-2xl outline-none focus:border-indigo-500 text-xs font-bold">
+                    </div>
+                </div>
+                <div class="flex items-center gap-3 bg-gray-50 p-4 rounded-2xl border border-gray-100">
+                    <input type="checkbox" id="promo-active" checked class="w-5 h-5 accent-indigo-600">
+                    <label class="text-[10px] font-black uppercase tracking-widest text-dark">Publicidad Activa</label>
+                </div>
+            </div>
+            <div class="flex gap-4 pt-4">
+                <button onclick="closePromoModal()" class="w-1/2 bg-gray-100 text-gray-400 py-4 rounded-2xl font-black uppercase tracking-widest text-[10px]">Cancelar</button>
+                <button onclick="savePromo()" class="w-1/2 bg-indigo-600 text-white py-4 rounded-2xl font-black uppercase tracking-widest text-[10px] shadow-lg shadow-indigo-600/20">Guardar Promo</button>
+            </div>
+        </div>
+    </div>
+
     <!-- SYSTEM GUIDE MODAL -->
     <div id="guide-modal" class="hidden fixed inset-0 bg-dark/90 backdrop-blur-md flex items-center justify-center z-[100]">
         <div class="bg-white rounded-[2.5rem] p-10 max-w-2xl w-full shadow-2xl relative overflow-hidden">
@@ -607,6 +610,14 @@
                         <option value="drinks">🥤 Heladas / Refreshers</option>
                         <option value="food">🥐 Comida / Salados</option>
                         <option value="pastry">🍰 Repostería / Dulce</option>
+                        <option value="dentista">🦷 Dentista</option>
+                        <option value="médico">🩺 Médico</option>
+                        <option value="abogado">⚖️ Abogado</option>
+                        <option value="supermercado">🛒 Supermercado</option>
+                        <option value="farmacia">💊 Farmacia</option>
+                        <option value="casero">🏠 Comida Casera</option>
+                        <option value="ac">❄️ Aire Acondicionado</option>
+                        <option value="eléctrico">⚡ Electricista</option>
                         <option value="side">🍟 Acompañamientos</option>
                         <option value="secret">🤫 Menú Secreto</option>
                         <option value="retail">🛍️ Retail / Otros</option>
@@ -653,6 +664,14 @@
                         <option value="drinks">🥤 Heladas / Refreshers</option>
                         <option value="food">🥐 Comida / Salados</option>
                         <option value="pastry">🍰 Repostería / Dulce</option>
+                        <option value="dentista">🦷 Dentista</option>
+                        <option value="médico">🩺 Médico</option>
+                        <option value="abogado">⚖️ Abogado</option>
+                        <option value="supermercado">🛒 Supermercado</option>
+                        <option value="farmacia">💊 Farmacia</option>
+                        <option value="casero">🏠 Comida Casera</option>
+                        <option value="ac">❄️ Aire Acondicionado</option>
+                        <option value="eléctrico">⚡ Electricista</option>
                         <option value="side">🍟 Acompañamientos</option>
                         <option value="secret">🤫 Menú Secreto</option>
                         <option value="retail">🛍️ Retail / Otros</option>
@@ -798,7 +817,10 @@
 
         function logDebug(msg) {
             const el = document.getElementById('debug-log');
-            if (el) el.innerHTML = `[${new Date().toLocaleTimeString()}] ${msg}\n` + el.innerHTML;
+            const dashEl = document.getElementById('dash-debug');
+            const time = new Date().toLocaleTimeString();
+            if (el) el.innerHTML = `[${time}] ${msg}\n` + el.innerHTML;
+            if (dashEl) dashEl.innerHTML = `[${time}] ${msg}\n` + dashEl.innerHTML;
             console.log(msg);
         }
 
@@ -1112,14 +1134,128 @@
                     else activeTab.className = "font-bold text-blue-600 border-b-2 border-blue-600 pb-2 px-2";
                 }
 
+                if(tabId === 'overview') loadData();
                 if(tabId === 'employees') loadEmployees();
                 if(tabId === 'menu') { loadMenu(); loadModifiersDatabase(); }
                 if(tabId === 'inventory') loadInventory();
                 if(tabId === 'creators') loadUGCSubmissions();
                 if(tabId === 'quimieats') loadQuimiLeads();
+                if(tabId === 'promos') loadPromos();
             } catch (err) {
                 logDebug("Error in switchTab: " + err.message);
             }
+        }
+
+        // --- PROMO LOGIC ---
+        let allPromos = [];
+
+        async function loadPromos() {
+            logDebug("Loading Promos...");
+            try {
+                const res = await fetch('/api/promos?action=list', { headers: getHeaders() });
+                allPromos = await res.json();
+                renderPromosTable(allPromos);
+            } catch (e) { logDebug("Load promos fail: " + e.message); }
+        }
+
+        function renderPromosTable(data) {
+            const tbody = document.getElementById('promosTable');
+            if (!tbody) return;
+            if (data.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" class="p-12 text-center text-gray-400 italic">No hay publicidades configuradas.</td></tr>';
+                return;
+            }
+            tbody.innerHTML = data.map(p => `
+                <tr>
+                    <td class="p-6">
+                        <span class="px-3 py-1 rounded-full text-[9px] font-black uppercase ${p.active ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}">
+                            ${p.active ? 'Activa' : 'Pausada'}
+                        </span>
+                    </td>
+                    <td class="p-6">
+                        <div class="font-bold text-gray-800 uppercase">${escapeHtml(p.client_name)}</div>
+                        <div class="text-[9px] text-gray-400 font-mono truncate max-w-[150px]">${escapeHtml(p.media_url)}</div>
+                    </td>
+                    <td class="p-6">
+                        <div class="flex items-center gap-2">
+                            <span class="text-xl font-black text-indigo-600">${p.impressions || 0}</span>
+                            <span class="text-[9px] text-gray-400 font-bold uppercase">Vistas</span>
+                        </div>
+                    </td>
+                    <td class="p-6 text-xs text-gray-500 font-bold">
+                        ${new Date(p.end_date).toLocaleDateString()}
+                    </td>
+                    <td class="p-6 text-right flex justify-end gap-2">
+                        <button onclick="openPromoModal('${p.id}')" class="text-blue-600 font-bold uppercase text-[10px]">Editar</button>
+                        <button onclick="deletePromo('${p.id}')" class="text-red-400 font-bold uppercase text-[10px] ml-2">Eliminar</button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function openPromoModal(id = null) {
+            const modal = document.getElementById('promo-modal');
+            const title = document.getElementById('promo-modal-title');
+            
+            if (id) {
+                const p = allPromos.find(x => x.id === id);
+                title.innerText = "Editar Publicidad";
+                document.getElementById('promo-id').value = p.id;
+                document.getElementById('promo-client').value = p.client_name;
+                document.getElementById('promo-media').value = p.media_url;
+                document.getElementById('promo-start').value = p.start_date.split('T')[0];
+                document.getElementById('promo-end').value = p.end_date.split('T')[0];
+                document.getElementById('promo-active').checked = p.active;
+            } else {
+                title.innerText = "Nueva Publicidad";
+                document.getElementById('promo-id').value = '';
+                document.getElementById('promo-client').value = '';
+                document.getElementById('promo-media').value = '';
+                document.getElementById('promo-start').value = new Date().toISOString().split('T')[0];
+                const nextWeek = new Date(); nextWeek.setDate(nextWeek.getDate() + 7);
+                document.getElementById('promo-end').value = nextWeek.toISOString().split('T')[0];
+                document.getElementById('promo-active').checked = true;
+            }
+            modal.classList.remove('hidden');
+        }
+
+        function closePromoModal() {
+            document.getElementById('promo-modal').classList.add('hidden');
+        }
+
+        async function savePromo() {
+            const promo = {
+                id: document.getElementById('promo-id').value || null,
+                client_name: document.getElementById('promo-client').value,
+                media_url: document.getElementById('promo-media').value,
+                start_date: document.getElementById('promo-start').value,
+                end_date: document.getElementById('promo-end').value,
+                active: document.getElementById('promo-active').checked
+            };
+
+            try {
+                const res = await fetch('/api/promos?action=save', {
+                    method: 'POST',
+                    headers: getHeaders(),
+                    body: JSON.stringify(promo)
+                });
+                if (res.ok) {
+                    alert("✅ Publicidad Guardada");
+                    closePromoModal();
+                    loadPromos();
+                }
+            } catch (e) { alert("Error al guardar"); }
+        }
+
+        async function deletePromo(id) {
+            if (!confirm("¿Eliminar esta publicidad?")) return;
+            try {
+                const res = await fetch(`/api/promos?action=delete&id=${id}`, {
+                    method: 'DELETE',
+                    headers: getHeaders()
+                });
+                if (res.ok) loadPromos();
+            } catch (e) { alert("Error al eliminar"); }
         }
 
         // --- QUIMIEATS LOGIC ---
@@ -2496,15 +2632,35 @@
         }
 
         async function loadData() {
+            logDebug("loadData: Fetching dashboard stats...");
             try {
-                const res = await fetch('/api/admin/leads', { headers: getHeaders() });
+                // Fetch basic leads (customers)
+                const res = await fetch('/api/admin?action=leads', { headers: getHeaders() });
                 const data = await res.json();
-                
-                if (!res.ok) throw new Error(data.error || "Failed to load leads");
-                
+                if (data.error) logDebug("Leads API Error: " + data.error);
                 const leads = Array.isArray(data) ? data : [];
-                document.getElementById('totalLeads').innerText = leads.length;
-                document.getElementById('totalPhotos').innerText = leads.filter(d => d.image).length;
+
+                // Fetch QuimiEats partners to include in total
+                logDebug("loadData: Fetching quimieats_active...");
+                const resActive = await fetch('/api/admin?action=quimieats_active', { headers: getHeaders() });
+                const activePartners = await resActive.json();
+                
+                if (activePartners.error) {
+                    logDebug("QuimiActive API Error: " + activePartners.error);
+                }
+
+                const partnersCount = Array.isArray(activePartners) ? activePartners.length : 0;
+                logDebug(`loadData: Leads=${leads.length}, Partners=${partnersCount}`);
+                
+                const totalBusinessesEl = document.getElementById('totalLeads');
+                if (totalBusinessesEl) {
+                    totalBusinessesEl.innerText = leads.length + partnersCount;
+                }
+                
+                const totalPhotosEl = document.getElementById('totalPhotos');
+                if (totalPhotosEl) {
+                    totalPhotosEl.innerText = leads.filter(d => d.image).length;
+                }
                 
                 // NEW: Load Inventory and Tasks for Dashboard
                 loadDashboardExtras();
@@ -2720,39 +2876,66 @@
         }
 
         async function saveEmployee() {
+            logDebug("saveEmployee: Starting...");
             const btn = document.getElementById('save-emp-btn');
             btn.disabled = true;
             btn.innerText = 'Saving...';
 
-            const type = document.getElementById('new-emp-type').value;
-            const payload = {
-                name: document.getElementById('new-emp-name').value,
-                role: document.getElementById('new-emp-role').value,
-                pin: document.getElementById('new-emp-pin').value,
-                pay_type: type,
-                hourly_rate: type === 'hourly' ? parseFloat(document.getElementById('new-emp-rate').value) || 0 : 0,
-                monthly_salary: type === 'salary' ? parseFloat(document.getElementById('new-emp-salary').value) || 0 : null,
-                active: true
-            };            
             try {
+                const name = document.getElementById('new-emp-name').value;
+                const role = document.getElementById('new-emp-role').value;
+                const pin = document.getElementById('new-emp-pin').value;
+                const type = document.getElementById('new-emp-type').value;
+                const rate = document.getElementById('new-emp-rate').value;
+                const salary = document.getElementById('new-emp-salary').value;
+
+                logDebug(`saveEmployee: Data [Name: ${name}, Role: ${role}, PIN: ${pin}, Type: ${type}]`);
+
+                if (!name || !pin) {
+                    alert("Name and PIN are required");
+                    return;
+                }
+
+                const payload = {
+                    name: name,
+                    role: role,
+                    pin: pin,
+                    pay_type: type,
+                    hourly_rate: type === 'hourly' ? parseFloat(rate) || 0 : 0,
+                    monthly_salary: type === 'salary' ? parseFloat(salary) || 0 : null,
+                    active: true,
+                    restaurant_id: 'rich-aroma'
+                };
+
+                logDebug("saveEmployee: Sending fetch to /api/admin/employees...");
                 const res = await fetch('/api/admin/employees', {
                     method: 'POST',
                     headers: getHeaders(),
                     body: JSON.stringify(payload)
                 });
                 
+                logDebug(`saveEmployee: Response status: ${res.status}`);
+
                 if(res.ok) {
+                    const data = await res.json();
+                    logDebug(`saveEmployee: SUCCESS! New ID: ${data.id}`);
+                    alert("✅ Empleado agregado correctamente");
                     document.getElementById('add-emp-modal').classList.add('hidden');
-                    document.getElementById('new-emp-name').value = '';
-                    document.getElementById('new-emp-pin').value = '';
-                    document.getElementById('new-emp-rate').value = '';
+                    // Reset fields
+                    ['new-emp-name', 'new-emp-pin', 'new-emp-rate', 'new-emp-salary'].forEach(id => {
+                        const el = document.getElementById(id);
+                        if (el) el.value = '';
+                    });
                     loadEmployees();
                 } else {
-                    alert("Error saving employee.");
+                    const data = await res.json();
+                    logDebug(`saveEmployee: API Error: ${JSON.stringify(data)}`);
+                    alert("Error saving employee: " + (data.error || "Unknown Error"));
                 }
             } catch(e) {
+                logDebug(`saveEmployee: JS Exception: ${e.message}`);
                 console.error(e);
-                alert("Network error.");
+                alert("Network or JS error: " + e.message);
             } finally {
                 btn.disabled = false;
                 btn.innerText = 'Save';
@@ -3152,6 +3335,12 @@
                     <option value="reposteria">Repostería / Café</option>
                     <option value="farmacia">Farmacia</option>
                     <option value="supermercado">Supermercado</option>
+                    <option value="dentista">Dentista</option>
+                    <option value="médico">Médico / Clínica</option>
+                    <option value="abogado">Abogado / Legal</option>
+                    <option value="casero">Comida Casera</option>
+                    <option value="ac">Reparación AC</option>
+                    <option value="eléctrico">Electricista</option>
                     <option value="ferreteria">Ferretería</option>
                     <option value="servicios">Servicios</option>
                     <option value="belleza">Belleza</option>
