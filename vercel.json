@@ -279,6 +279,11 @@
     },
     {
       "src": "/admin",
+      "has": [{ "type": "host", "value": "(.*)quimieats.com" }],
+      "dest": "/public/quimieats-admin.html"
+    },
+    {
+      "src": "/admin",
       "dest": "/public/admin.html"
     },
     {
