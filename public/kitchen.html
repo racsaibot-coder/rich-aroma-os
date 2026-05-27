@@ -77,6 +77,8 @@
         let orders = [];
         let currentMode = 'drinks';
         let currentEmployee = null;
+        const urlParams = new URLSearchParams(window.location.search);
+        const currentResId = urlParams.get('restaurantId') || 'rich-aroma';
 
         window.onload = () => {
             const savedPin = localStorage.getItem('ra_staff_pin');
@@ -105,7 +107,7 @@
 
         async function fetchOrders() {
             try {
-                const res = await fetch('/api/orders?v=' + Date.now());
+                const res = await fetch(`/api/orders?restaurantId=${currentResId}&v=` + Date.now());
                 const data = await res.json();
                 orders = data.orders || [];
                 renderKDS();
@@ -113,7 +115,6 @@
                 document.getElementById('sync-status').innerText = 'Synced ' + new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit', second:'2-digit'});
             } catch (e) { console.error(e); }
         }
-
         function setMode(mode) {
             currentMode = mode;
             document.getElementById('btn-drinks').className = mode === 'drinks' ? "px-5 py-2 rounded-full text-[10px] font-black uppercase bg-gold text-dark" : "px-5 py-2 rounded-full text-[10px] font-black uppercase text-white/40";
