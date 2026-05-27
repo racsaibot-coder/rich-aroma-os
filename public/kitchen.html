@@ -73,8 +73,12 @@
         <main class="flex-1 p-4 space-y-6 pb-32 overflow-y-auto" id="kds-container"></main>
     </div>
 
+    <!-- Audio Chimes -->
+    <audio id="chime-new" src="https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3" preload="auto"></audio>
+
     <script>
         let orders = [];
+        let lastOrderCount = 0;
         let currentMode = 'drinks';
         let currentEmployee = null;
         const urlParams = new URLSearchParams(window.location.search);
@@ -109,7 +113,19 @@
             try {
                 const res = await fetch(`/api/orders?restaurantId=${currentResId}&v=` + Date.now());
                 const data = await res.json();
-                orders = data.orders || [];
+                const newOrders = data.orders || [];
+
+                // Sound Alert Logic
+                if (newOrders.length > lastOrderCount && lastOrderCount !== 0) {
+                    const chime = document.getElementById('chime-new');
+                    if (chime) {
+                        chime.currentTime = 0;
+                        chime.play().catch(e => console.log("Sound blocked by browser interaction rules"));
+                    }
+                }
+                lastOrderCount = newOrders.length;
+
+                orders = newOrders;
                 renderKDS();
                 renderProductionSummary();
                 document.getElementById('sync-status').innerText = 'Synced ' + new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit', second:'2-digit'});
@@ -222,16 +238,6 @@
                     return true;
                 });
                 if (items.length === 0) return '';
-
-                // Robust Date Parsing for KDS Timer
-                const parseDate = (dateStr) => {
-                    if (!dateStr) return new Date();
-                    // Replace space with T for better ISO-8601 compatibility on mobile browsers
-                    // and ensure there's a timezone marker if missing
-                    let fixedStr = dateStr.replace(' ', 'T');
-                    if (!fixedStr.includes('Z') && !fixedStr.includes('+')) fixedStr += 'Z';
-                    return new Date(fixedStr);
-                };
 
                 const orderTime = parseDate(o.created_at);
                 const schedTime = o.scheduled_for ? parseDate(o.scheduled_for) : null;
