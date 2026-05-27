@@ -234,6 +234,21 @@
       "dest": "/api/store.js?action=valentines"
     },
     {
+      "src": "/kitchen",
+      "has": [{ "type": "host", "value": "(.*)quimieats.com" }],
+      "dest": "/public/kitchen.html"
+    },
+    {
+      "src": "/os",
+      "has": [{ "type": "host", "value": "(.*)quimieats.com" }],
+      "dest": "/public/os.html"
+    },
+    {
+      "src": "/driver-portal",
+      "has": [{ "type": "host", "value": "(.*)quimieats.com" }],
+      "dest": "/public/driver-portal.html"
+    },
+    {
       "src": "/claim",
       "dest": "/public/claim.html"
     },
