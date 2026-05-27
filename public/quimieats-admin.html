@@ -72,32 +72,81 @@
             </div>
         </div>
 
-        <!-- PARTNERS TABLE -->
-        <section class="space-y-6">
-            <div class="flex justify-between items-center">
-                <h2 class="text-xl font-black uppercase tracking-tight text-white/80">Socios Activos</h2>
-                <button onclick="loadData()" class="text-white/20 hover:text-cyan-400 transition-colors">
-                    <i class="fas fa-sync-alt text-xs"></i>
-                </button>
+        <!-- Navigation Tabs -->
+        <div class="flex gap-4 border-b border-white/10 pb-2 overflow-x-auto no-scrollbar">
+            <button onclick="switchTab('partners')" id="tab-partners" class="tab-btn font-black text-[10px] uppercase tracking-widest pb-3 px-4 border-b-2 border-cyan-400 text-cyan-400">Socios</button>
+            <button onclick="switchTab('products')" id="tab-products" class="tab-btn font-black text-[10px] uppercase tracking-widest pb-3 px-4 text-white/40 hover:text-white">Productos</button>
+            <button onclick="switchTab('drivers')" id="tab-drivers" class="tab-btn font-black text-[10px] uppercase tracking-widest pb-3 px-4 text-white/40 hover:text-white">Drivers</button>
+            <button onclick="switchTab('sales')" id="tab-sales" class="tab-btn font-black text-[10px] uppercase tracking-widest pb-3 px-4 text-white/40 hover:text-white">Ventas / P&L</button>
             </div>
-            
+
+            <div id="view-partners" class="space-y-10">
+            ...
+            </div>
+
+            <!-- PRODUCTS VIEW -->
+            <div id="view-products" class="hidden space-y-10">
+            <header class="flex flex-col md:flex-row justify-between items-end gap-6">
+                <div class="flex-1 space-y-2">
+                    <label class="text-[10px] font-black uppercase text-white/20 tracking-widest">Seleccionar Negocio</label>
+                    <select id="prod-res-selector" onchange="loadProducts()" class="w-full bg-white/5 border border-white/10 p-5 rounded-2xl outline-none focus:border-cyan-500 font-bold text-white text-lg">
+                        <!-- Restaurants injected here -->
+                    </select>
+                </div>
+                <button onclick="openAddProduct()" class="bg-cyan-500 text-black px-8 py-5 rounded-2xl font-black uppercase tracking-widest text-[10px] shadow-lg shadow-cyan-500/20 active:scale-95 transition-all">
+                    + Nuevo Producto
+                </button>
+            </header>
+
             <div class="glass rounded-[3rem] overflow-hidden">
-                <div class="overflow-x-auto">
+                <table class="w-full text-left">
+                    <thead class="bg-white/5 text-[10px] uppercase font-black tracking-[0.2em] text-white/30 border-b border-white/5">
+                        <tr>
+                            <th class="p-8">Producto</th>
+                            <th class="p-8">Precio</th>
+                            <th class="p-8">Estado</th>
+                            <th class="p-8 text-right">Acción</th>
+                        </tr>
+                    </thead>
+                    <tbody id="products-table" class="divide-y divide-white/5">
+                        <!-- Data -->
+                    </tbody>
+                </table>
+            </div>
+            </div>
+...
+            </section>
+        </div>
+
+        <!-- DRIVERS VIEW -->
+        <div id="view-drivers" class="hidden space-y-10">
+            <section class="space-y-6">
+                <div class="flex justify-between items-center">
+                    <h2 class="text-xl font-black uppercase tracking-tight text-white/80">Flota de Repartidores</h2>
+                    <button onclick="openAddDriver()" class="bg-white text-black px-6 py-3 rounded-xl font-black uppercase text-[9px] tracking-widest">+ Nuevo Driver</button>
+                </div>
+                <div class="glass rounded-[3rem] overflow-hidden">
                     <table class="w-full text-left">
                         <thead class="bg-white/5 text-[10px] uppercase font-black tracking-[0.2em] text-white/30 border-b border-white/5">
                             <tr>
-                                <th class="p-8">Negocio</th>
-                                <th class="p-8">Categoría</th>
-                                <th class="p-8">Contacto</th>
-                                <th class="p-8 text-right">Gestión</th>
+                                <th class="p-8">Nombre</th>
+                                <th class="p-8">PIN</th>
+                                <th class="p-8">Estado</th>
+                                <th class="p-8 text-right">Acción</th>
                             </tr>
                         </thead>
-                        <tbody id="partners-table" class="divide-y divide-white/5">
+                        <tbody id="drivers-table" class="divide-y divide-white/5">
                             <!-- Data -->
                         </tbody>
                     </table>
                 </div>
-            </div>
+            </section>
+        </div>
+
+        <!-- SALES VIEW -->
+        <div id="view-sales" class="hidden space-y-10">
+            <div class="py-20 text-center text-white/10 italic text-sm font-black uppercase tracking-[0.3em]">Cargando Reporte de Marketplace...</div>
+        </div>
         </section>
 
         <!-- NEW INTERESTS TABLE -->
@@ -124,7 +173,52 @@
 
     </div>
 
-    <!-- QUICK ADD MODAL -->
+    <!-- PRODUCT MODAL -->
+    <div id="product-modal" class="hidden fixed inset-0 bg-black/90 backdrop-blur-xl flex items-center justify-center z-[1000] p-6">
+        <div class="glass bg-[#121214] p-10 rounded-[3rem] max-w-md w-full space-y-6 border border-white/10 shadow-2xl">
+            <h3 class="text-2xl font-black uppercase tracking-tighter text-white">Gestionar Producto</h3>
+            <input type="hidden" id="prod-id">
+            <div class="space-y-4">
+                <div>
+                    <label class="text-[10px] font-black uppercase tracking-widest text-white/20 mb-2 block">Nombre del Producto</label>
+                    <input type="text" id="prod-name" class="w-full bg-white/5 border border-white/10 p-5 rounded-2xl text-white outline-none focus:border-cyan-500 font-bold uppercase">
+                </div>
+                <div>
+                    <label class="text-[10px] font-black uppercase tracking-widest text-white/20 mb-2 block">Imagen del Producto</label>
+                    <div class="flex gap-4">
+                        <input type="file" id="prod-file" accept="image/*" class="hidden" onchange="handleFileSelect('prod')">
+                        <button onclick="document.getElementById('prod-file').click()" class="w-20 h-20 rounded-2xl bg-white/5 border border-white/10 flex flex-col items-center justify-center hover:bg-white/10 transition-all group overflow-hidden">
+                            <img id="prod-preview" class="hidden w-full h-full object-cover">
+                            <i id="prod-icon" class="fas fa-camera text-white/20 group-hover:text-cyan-400"></i>
+                        </button>
+                        <div class="flex-1 space-y-2">
+                            <input type="text" id="prod-image-url" class="w-full bg-white/5 border border-white/10 p-4 rounded-xl text-white/40 outline-none focus:border-cyan-500 text-[10px]" placeholder="O pegue URL">
+                        </div>
+                    </div>
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="text-[10px] font-black uppercase tracking-widest text-white/20 mb-2 block">Precio (Lps)</label>
+                        <input type="number" id="prod-price" class="w-full bg-white/5 border border-white/10 p-5 rounded-2xl text-white outline-none focus:border-cyan-500 font-bold">
+                    </div>
+                    <div>
+                        <label class="text-[10px] font-black uppercase tracking-widest text-white/20 mb-2 block">Categoría</label>
+                        <select id="prod-cat" class="w-full bg-white/5 border border-white/10 p-5 rounded-2xl text-white outline-none focus:border-cyan-500 font-bold">
+                            <option value="food">Comida</option>
+                            <option value="drinks">Bebidas</option>
+                            <option value="coffee">Café</option>
+                            <option value="pastry">Postres</option>
+                            <option value="retail">Varios</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+            <div class="flex gap-4 pt-4">
+                <button onclick="closeModal('product-modal')" class="w-1/2 py-5 text-[10px] font-black uppercase tracking-widest text-white/20 hover:text-white transition-all">Cancelar</button>
+                <button onclick="saveProduct()" id="save-prod-btn" class="w-1/2 py-5 bg-cyan-500 text-black rounded-2xl font-black uppercase tracking-widest text-[10px] shadow-lg shadow-cyan-500/20 active:scale-95 transition-all">Guardar</button>
+            </div>
+        </div>
+    </div>
     <div id="quick-add-modal" class="hidden fixed inset-0 bg-black/90 backdrop-blur-xl flex items-center justify-center z-[1000] p-6">
         <div class="glass bg-[#121214] p-10 rounded-[3rem] max-w-md w-full space-y-6 border border-white/10 shadow-2xl">
             <h3 class="text-2xl font-black uppercase tracking-tighter text-white">Activar Negocio</h3>
@@ -205,10 +299,57 @@
         </div>
     </div>
 
+    <!-- ADD DRIVER MODAL -->
+    <div id="add-driver-modal" class="hidden fixed inset-0 bg-black/90 backdrop-blur-xl flex items-center justify-center z-[1000] p-6">
+        <div class="glass bg-[#121214] p-10 rounded-[3rem] max-w-md w-full space-y-6 border border-white/10 shadow-2xl">
+            <h3 class="text-2xl font-black uppercase tracking-tighter text-white">Nuevo Repartidor</h3>
+            <div class="space-y-4">
+                <div>
+                    <label class="text-[10px] font-black uppercase tracking-widest text-white/20 mb-2 block">Nombre Completo</label>
+                    <input type="text" id="nd-name" class="w-full bg-white/5 border border-white/10 p-5 rounded-2xl outline-none focus:border-cyan-500 font-bold text-white uppercase" placeholder="Juan Perez">
+                </div>
+                <div>
+                    <label class="text-[10px] font-black uppercase tracking-widest text-white/20 mb-2 block">PIN de Acceso (4 dígitos)</label>
+                    <input type="text" id="nd-pin" maxlength="4" class="w-full bg-white/5 border border-white/10 p-5 rounded-2xl outline-none focus:border-cyan-500 font-bold text-white tracking-widest text-xl text-center" placeholder="0000">
+                </div>
+            </div>
+            <div class="flex gap-4 pt-4">
+                <button onclick="closeModal('add-driver-modal')" class="w-1/2 py-5 text-[10px] font-black uppercase tracking-widest text-white/20 hover:text-white transition-all">Cancelar</button>
+                <button onclick="saveDriver()" id="save-driver-btn" class="w-1/2 py-5 bg-cyan-500 text-black rounded-2xl font-black uppercase tracking-widest text-[10px] shadow-lg shadow-cyan-500/20 active:scale-95 transition-all">Registrar</button>
+            </div>
+        </div>
+    </div>
+
     <script>
         let currentPin = '';
         let staffUser = null;
         let activePartners = [];
+
+        function openAddDriver() { document.getElementById('add-driver-modal').classList.remove('hidden'); }
+        function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
+
+        async function saveDriver() {
+            const btn = document.getElementById('save-driver-btn');
+            const name = document.getElementById('nd-name').value;
+            const pin = document.getElementById('nd-pin').value;
+
+            if(!name || pin.length !== 4) return alert("Complete los campos");
+
+            btn.innerText = "Registrando..."; btn.disabled = true;
+            try {
+                const res = await fetch('/api/admin/employees', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${localStorage.getItem('quimieats_admin_pin')}` },
+                    body: JSON.stringify({ name, pin, role: 'driver', active: true })
+                });
+                if(res.ok) {
+                    alert("Driver registrado");
+                    closeModal('add-driver-modal');
+                    loadDrivers();
+                } else alert("Error al registrar");
+            } catch(e) { console.error(e); }
+            finally { btn.innerText = "Registrar"; btn.disabled = false; }
+        }
 
         // --- AUTH LOGIC ---
         function setupPinPad() {
@@ -307,7 +448,23 @@
         function showUI() {
             document.getElementById('login-modal').classList.add('hidden');
             document.getElementById('admin-content').classList.remove('hidden');
-            loadData();
+            switchTab('partners');
+        }
+
+        function switchTab(t) {
+            document.querySelectorAll('[id^="view-"]').forEach(v => v.classList.add('hidden'));
+            document.querySelectorAll('.tab-btn').forEach(b => {
+                b.classList.remove('border-b-2', 'border-cyan-400', 'text-cyan-400');
+                b.classList.add('text-white/40');
+            });
+
+            document.getElementById(`view-${t}`).classList.remove('hidden');
+            document.getElementById(`tab-${t}`).classList.remove('text-white/40');
+            document.getElementById(`tab-${t}`).classList.add('border-b-2', 'border-cyan-400', 'text-cyan-400');
+            
+            if (t === 'partners') loadData();
+            if (t === 'drivers') loadDrivers();
+            if (t === 'sales') loadSalesStats();
         }
 
         // --- DATA LOGIC ---
@@ -322,6 +479,10 @@
                 renderPartners(activePartners);
                 document.getElementById('stat-active').innerText = activePartners.length;
 
+                // Populate product restaurant selector
+                const selector = document.getElementById('prod-res-selector');
+                selector.innerHTML = activePartners.map(r => `<option value="${r.id}">${r.name}</option>`).join('');
+
                 // 2. Load Leads
                 const resLeads = await fetch('/api/admin?action=quimieats_leads', { headers });
                 const leads = await resLeads.json();
@@ -329,6 +490,194 @@
                 document.getElementById('stat-leads').innerText = (leads || []).filter(l => l.status === 'new').length;
 
             } catch (e) { console.error(e); }
+        }
+
+        async function loadProducts() {
+            const resId = document.getElementById('prod-res-selector').value;
+            const tbody = document.getElementById('products-table');
+            tbody.innerHTML = '<tr><td colspan="4" class="p-20 text-center text-white/10 italic">Cargando menú...</td></tr>';
+
+            try {
+                const res = await fetch(`/api/admin/menu?restaurantId=${resId}`, {
+                    headers: { 'Authorization': `Bearer ${localStorage.getItem('quimieats_admin_pin')}` }
+                });
+                const data = await res.json();
+                renderProducts(data.items || []);
+            } catch(e) { console.error(e); }
+        }
+
+        let currentCategoryProducts = [];
+        function renderProducts(items) {
+            currentCategoryProducts = items;
+            const tbody = document.getElementById('products-table');
+            if (items.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="4" class="p-20 text-center text-white/10 italic">No hay productos en este negocio.</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = items.map((item, i) => `
+                <tr class="hover:bg-white/[0.02] transition-colors">
+                    <td class="p-8">
+                        <div class="flex items-center gap-4">
+                            <div class="w-10 h-10 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center overflow-hidden">
+                                ${item.image_url ? `<img src="${item.image_url}" class="w-full h-full object-cover">` : '<i class="fas fa-utensils text-white/10 text-[10px]"></i>'}
+                            </div>
+                            <div class="font-black uppercase tracking-tight text-sm text-white/80">${item.name}</div>
+                        </div>
+                    </td>
+                    <td class="p-8 font-mono text-cyan-400 font-bold">L. ${item.price}</td>
+                    <td class="p-8">
+                        <span class="px-3 py-1 rounded-full text-[8px] font-black uppercase tracking-widest ${item.available ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'}">
+                            ${item.available ? 'Disponible' : 'Agotado'}
+                        </span>
+                    </td>
+                    <td class="p-8 text-right">
+                        <button onclick="toggleProductStatus(${i})" class="${item.available ? 'text-amber-400/40 hover:text-amber-400' : 'text-green-400/40 hover:text-green-400'} text-[10px] font-black uppercase transition-all mr-4">${item.available ? 'Agotar' : 'Activar'}</button>
+                        <button onclick="openEditProduct(${i})" class="text-[10px] font-black uppercase text-white/20 hover:text-white transition-all mr-4">Editar</button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        async function toggleProductStatus(index) {
+            const item = currentCategoryProducts[index];
+            const newStatus = !item.available;
+            try {
+                const res = await fetch(`/api/admin/menu?id=${item.id}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${localStorage.getItem('quimieats_admin_pin')}` },
+                    body: JSON.stringify({ available: newStatus })
+                });
+                if(res.ok) loadProducts();
+            } catch(e) { console.error(e); }
+        }
+
+        function openAddProduct() {
+            document.getElementById('prod-id').value = '';
+            document.getElementById('prod-name').value = '';
+            document.getElementById('prod-price').value = '';
+            document.getElementById('prod-image-url').value = '';
+            document.getElementById('prod-preview').classList.add('hidden');
+            document.getElementById('prod-icon').classList.remove('hidden');
+            document.getElementById('product-modal').classList.remove('hidden');
+        }
+
+        function openEditProduct(index) {
+            const item = currentCategoryProducts[index];
+            document.getElementById('prod-id').value = item.id;
+            document.getElementById('prod-name').value = item.name;
+            document.getElementById('prod-price').value = item.price;
+            document.getElementById('prod-image-url').value = item.image_url || '';
+            document.getElementById('prod-cat').value = item.category || 'food';
+            
+            const preview = document.getElementById('prod-preview');
+            const icon = document.getElementById('prod-icon');
+            if (item.image_url) {
+                preview.src = item.image_url;
+                preview.classList.remove('hidden');
+                icon.classList.add('hidden');
+            } else {
+                preview.classList.add('hidden');
+                icon.classList.remove('hidden');
+            }
+
+            document.getElementById('product-modal').classList.remove('hidden');
+        }
+
+        async function saveProduct() {
+            const btn = document.getElementById('save-prod-btn');
+            const resId = document.getElementById('prod-res-selector').value;
+            const id = document.getElementById('prod-id').value;
+            const name = document.getElementById('prod-name').value;
+            const price = document.getElementById('prod-price').value;
+            let image_url = document.getElementById('prod-image-url').value;
+            const category = document.getElementById('prod-cat').value;
+            const file = document.getElementById('prod-file').files[0];
+
+            if(!name || !price) return alert("Nombre y Precio son requeridos");
+
+            btn.innerText = "Guardando..."; btn.disabled = true;
+            try {
+                if (file) {
+                    const uploadedUrl = await uploadImage(file);
+                    if (uploadedUrl) image_url = uploadedUrl;
+                }
+
+                const payload = { name, price: parseFloat(price), image_url, category, restaurant_id: resId, available: true };
+                const url = id ? `/api/admin/menu?id=${id}` : '/api/admin/menu';
+                const method = id ? 'PUT' : 'POST';
+
+                const res = await fetch(url, {
+                    method,
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${localStorage.getItem('quimieats_admin_pin')}` },
+                    body: JSON.stringify(payload)
+                });
+                if(res.ok) {
+                    alert("Producto guardado");
+                    closeModal('product-modal');
+                    loadProducts();
+                } else alert("Error al guardar");
+            } catch(e) { console.error(e); }
+            finally { btn.innerText = "Guardar"; btn.disabled = false; }
+        }
+
+        async function loadDrivers() {
+            const token = localStorage.getItem('quimieats_admin_pin');
+            const headers = { 'Authorization': `Bearer ${token}` };
+            try {
+                const res = await fetch('/api/admin/employees', { headers });
+                const data = await res.json();
+                const drivers = (data.employees || []).filter(e => e.role === 'driver' || e.role === 'repartidor');
+                renderDrivers(drivers);
+            } catch(e) { console.error(e); }
+        }
+
+        function renderDrivers(data) {
+            const tbody = document.getElementById('drivers-table');
+            tbody.innerHTML = (data || []).map(d => `
+                <tr class="hover:bg-white/[0.02] transition-colors">
+                    <td class="p-8">
+                        <div class="font-black uppercase tracking-tight text-sm text-white/80">${d.name}</div>
+                    </td>
+                    <td class="p-8 font-mono text-cyan-400 font-bold">${d.pin}</td>
+                    <td class="p-8">
+                        <span class="px-3 py-1 rounded-full text-[8px] font-black uppercase tracking-widest ${d.active ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'}">
+                            ${d.active ? 'Activo' : 'Inactivo'}
+                        </span>
+                    </td>
+                    <td class="p-8 text-right">
+                        <button onclick="deleteEmployee('${d.id}', '${d.name}')" class="text-[10px] font-black uppercase text-red-400/40 hover:text-red-400 transition-all">Eliminar</button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        async function deleteEmployee(id, name) {
+            if(!confirm(`¿Eliminar repartidor ${name}?`)) return;
+            try {
+                const res = await fetch(`/api/admin/employees?id=${id}`, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': `Bearer ${localStorage.getItem('quimieats_admin_pin')}` }
+                });
+                if (res.ok) loadDrivers();
+            } catch(e) { console.error(e); }
+        }
+
+        async function loadSalesStats() {
+            const container = document.getElementById('view-sales');
+            // Placeholder for real sales engine
+            container.innerHTML = `
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="glass p-10 rounded-[3rem] text-center space-y-4">
+                        <p class="text-[10px] font-black text-white/20 uppercase tracking-widest">Revenue Bruto (Marketplace)</p>
+                        <h2 class="text-5xl font-black text-white">L. --.--</h2>
+                    </div>
+                    <div class="glass p-10 rounded-[3rem] text-center space-y-4 border-2 border-cyan-500/20">
+                        <p class="text-[10px] font-black text-cyan-400 uppercase tracking-widest">Comisiones QuimiEats (10%)</p>
+                        <h2 class="text-5xl font-black text-cyan-400 shadow-cyan-400/20">L. --.--</h2>
+                    </div>
+                </div>
+            `;
         }
 
         function renderPartners(data) {
