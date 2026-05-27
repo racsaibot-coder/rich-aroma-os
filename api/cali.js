@@ -1,9 +1,10 @@
-const { createClient } = require('@supabase/supabase-js');
-const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
-
-const supabaseUrl = process.env.SUPABASE_URL || 'https://zcqubacfcettwawcimsy.supabase.co';
-const supabaseKey = process.env.SUPABASE_ANON_KEY || 'sb_publishable_hRVyru_6sektmVGQyJFfwQ_4b2-7MKq';
-const supabase = createClient(supabaseUrl, supabaseKey);
+const { supabase } = require('./lib/supabase');
+let stripe;
+try {
+    stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
+} catch (e) {
+    console.warn("Stripe initialization failed (likely missing key)");
+}
 
 module.exports = async (req, res) => {
     try {
@@ -227,6 +228,6 @@ module.exports = async (req, res) => {
 
     } catch (e) {
         console.error("Cali API Error:", e);
-        res.status(500).send(e.message);
+        res.status(500).json({ error: e.message });
     }
 };
