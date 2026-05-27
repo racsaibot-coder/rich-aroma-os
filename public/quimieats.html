@@ -343,6 +343,9 @@
                 return;
             }
 
+            const partner = allPartners.find(p => p.id === currentStoreId);
+            const resCat = (partner?.category || '').toLowerCase();
+
             const categories = {};
             items.forEach(item => {
                 let cat = item.category || 'Otros';
@@ -350,8 +353,19 @@
                 categories[cat].push(item);
             });
 
-            const categoryOrder = ['Combos', 'Comida', 'Café', 'Heladas', 'Postres', 'Otros'];
-            const sortedCats = Object.keys(categories).sort((a, b) => (categoryOrder.indexOf(a) === -1 ? 99 : categoryOrder.indexOf(a)) - (categoryOrder.indexOf(b) === -1 ? 99 : categoryOrder.indexOf(b)));
+            // Dynamic Category Ordering based on Business Type
+            let categoryOrder = ['Combos', 'Comida', 'Café', 'Heladas', 'Postres', 'Otros'];
+            if (resCat === 'farmacia') categoryOrder = ['Medicamentos', 'Higiene', 'Cuidado Personal', 'Otros'];
+            if (resCat === 'ferreteria') categoryOrder = ['Herramientas', 'Eléctrico', 'Pintura', 'Otros'];
+            if (resCat === 'supermercado') categoryOrder = ['Canasta Básica', 'Bebidas', 'Limpieza', 'Otros'];
+
+            const sortedCats = Object.keys(categories).sort((a, b) => {
+                let indexA = categoryOrder.indexOf(a);
+                let indexB = categoryOrder.indexOf(b);
+                if (indexA === -1) indexA = 99;
+                if (indexB === -1) indexB = 99;
+                return indexA - indexB;
+            });
 
             container.innerHTML = sortedCats.map(cat => `
                 <div class="space-y-6">

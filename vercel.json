@@ -234,7 +234,12 @@
       "dest": "/api/store.js?action=valentines"
     },
     {
-      "src": "/kitchen",
+      "src": "/hub",
+      "has": [{ "type": "host", "value": "(.*)quimieats.com" }],
+      "dest": "/public/kitchen.html"
+    },
+    {
+      "src": "/terminal",
       "has": [{ "type": "host", "value": "(.*)quimieats.com" }],
       "dest": "/public/kitchen.html"
     },

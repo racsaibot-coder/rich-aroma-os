@@ -81,14 +81,44 @@
         let lastOrderCount = 0;
         let currentMode = 'drinks';
         let currentEmployee = null;
+        let restaurantInfo = null; // New: Store restaurant info
         const urlParams = new URLSearchParams(window.location.search);
         const currentResId = urlParams.get('restaurantId') || 'rich-aroma';
 
         window.onload = () => {
+            fetchRestaurantInfo(); // Fetch info on load
             const savedPin = localStorage.getItem('ra_staff_pin');
             if (savedPin) { document.getElementById('login-pin').value = savedPin; handleLogin(); }
             else { document.getElementById('login-pin').focus(); }
         };
+
+        async function fetchRestaurantInfo() {
+            try {
+                const res = await fetch(`/api/store?action=restaurant_info&id=${currentResId}`);
+                if (res.ok) {
+                    restaurantInfo = await res.json();
+                    adaptUIForCategory();
+                }
+            } catch (e) { console.error("Res info failed", e); }
+        }
+
+        function adaptUIForCategory() {
+            if (!restaurantInfo) return;
+            
+            // Update Title
+            const title = document.querySelector('h1');
+            if (title) title.innerText = restaurantInfo.name + ' Hub';
+            
+            // Update Tab Labels for non-food
+            const cat = (restaurantInfo.category || '').toLowerCase();
+            const btnDrinks = document.getElementById('btn-drinks');
+            const btnFood = document.getElementById('btn-food');
+
+            if (['farmacia', 'ferreteria', 'supermercado', 'servicios'].includes(cat)) {
+                if (btnDrinks) btnDrinks.innerText = 'Despacho';
+                if (btnFood) btnFood.innerText = 'Stock / Almacén';
+            }
+        }
 
         async function handleLogin() {
             const pin = document.getElementById('login-pin').value;

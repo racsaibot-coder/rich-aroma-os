@@ -811,10 +811,11 @@
     };
 
     window.notifyChef = function(orderNum) {
-        const msg = `🍳 Cocina: Nuevo Pedido #${orderNum} listo para preparar. Ver KDS: https://www.richaromacoffee.com/kitchen`;
-        // Shop number/Chef number
-        const chefPhone = "50497814474";
-        window.open(`https://wa.me/${chefPhone}?text=${encodeURIComponent(msg)}`, '_blank');
+        const hubUrl = `https://quimieats.com/hub?restaurantId=${currentResId}`;
+        const msg = `📦 Despacho: Nuevo Pedido #${orderNum} listo para procesar. Ver Terminal: ${hubUrl}`;
+        // Shop number/Staff number
+        const staffPhone = "50497814474";
+        window.open(`https://wa.me/${staffPhone}?text=${encodeURIComponent(msg)}`, '_blank');
     };
 
     window.notifyDriver = function(orderId, orderNum) {

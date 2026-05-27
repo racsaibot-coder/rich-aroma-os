@@ -183,6 +183,33 @@ module.exports = async (req, res) => {
             return res.json(data);
         }
 
+        // --- 1.2.6 RESTAURANT INFO (GET) ---
+        if (action === 'restaurant_info' && req.method === 'GET') {
+            const resId = id || req.query.id;
+            if (!resId) return res.status(400).json({ error: "Restaurant ID required" });
+
+            if (resId === 'rich-aroma') {
+                return res.json({ id: 'rich-aroma', name: 'Rich Aroma', category: 'reposteria' });
+            }
+
+            // Check primary table
+            const { data: restaurant } = await supabase.from('restaurants').select('*').eq('id', resId).maybeSingle();
+            if (restaurant) return res.json(restaurant);
+
+            // Check leads table as fallback (for approved partners)
+            const { data: lead } = await supabase.from('quimieats_leads').select('*').eq('restaurant_name', resId).maybeSingle();
+            if (lead) {
+                return res.json({
+                    id: lead.restaurant_name,
+                    name: lead.restaurant_name,
+                    category: lead.category || 'restaurante',
+                    logo_url: lead.logo_url
+                });
+            }
+
+            return res.status(404).json({ error: "Restaurant not found" });
+        }
+
         // --- 1.2.1 ADS & PROMOS (GET) ---
         if (action === 'get_ads' && req.method === 'GET') {
             // Hardcoded for now for speed, but ready to move to Supabase table 'ads'
