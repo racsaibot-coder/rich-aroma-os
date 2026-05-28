@@ -1,25 +1,38 @@
 const { getHondurasDate } = require('./loyalty');
 
 /**
- * Applies VIP benefits to order items
+ * Applies VIP / Black Card benefits to order items
  */
 function applyVipBenefits(orderItems, customer) {
     const today = getHondurasDate();
     let freeDrinkClaimedThisOrder = false;
 
-    // A customer is VIP if is_vip is true AND their expiry date is in the future
+    // 1. IDENTITY DETECTION
     const now = new Date();
     const expiry = customer.vip_expiry ? new Date(customer.vip_expiry) : null;
-    const isVip = (customer.is_vip === true || (Array.isArray(customer.tags) && customer.tags.includes('VIP'))) && (!expiry || expiry > now);
+    const tags = Array.isArray(customer.tags) ? customer.tags : [];
+    
+    // Employee: Lifetime discount as long as they are staff
+    const isEmployee = tags.includes('Employee');
+    
+    // Black Card: 50% Power Member (Paid monthly)
+    const isBlackCard = tags.includes('BlackCard') && (!expiry || expiry > now);
+    
+    // Legacy VIP: Standard benefits
+    const isLegacyVip = (customer.is_vip === true || tags.includes('VIP')) && (!expiry || expiry > now);
 
-    // Check daily eligibility for free drink
-    const canClaimFreeDrink = isVip && (customer.last_free_drink_date !== today);
+    // Rule: Employee and Black Card get the "Status Engine" 50% power
+    const hasFiftyPercentPower = isEmployee || isBlackCard;
+
+    // Check daily eligibility for free drink (Legacy VIP perk)
+    const canClaimFreeDrink = isLegacyVip && !isBlackCard && (customer.last_free_drink_date !== today);
 
     const processedItems = orderItems.map(item => {
         let finalPrice = parseFloat(item.price) || 0;
         let appliedDiscount = 0;
+        const itemId = (item.id || '').toLowerCase();
 
-        // RULE 1: Daily Drink Validation (Free)
+        // RULE 1: Daily Drink Validation (Free) - Legacy VIP ONLY
         if (canClaimFreeDrink && !freeDrinkClaimedThisOrder && item.is_vip_free_eligible) {
             appliedDiscount = finalPrice;
             finalPrice = 0;
@@ -27,8 +40,19 @@ function applyVipBenefits(orderItems, customer) {
             item.is_free_benefit = true;
         }
 
-        // RULE 2: 50% Discount on Bakery/Premium (House-made)
-        if (isVip && item.is_house_made && finalPrice > 0) {
+        // RULE 2: Status Engine 50% Power
+        // Conditions: In-house made, NOT Dubai Chocolate, NOT Retail
+        const isExclusion = itemId.includes('dubai_chocolate') || (item.category || '').toLowerCase().includes('retail');
+        
+        if (hasFiftyPercentPower && item.is_house_made && !isExclusion && finalPrice > 0) {
+            const discount = finalPrice * 0.50;
+            finalPrice -= discount;
+            appliedDiscount += discount;
+            item.status_discount_applied = true;
+        }
+        
+        // Legacy 50% on Bakery if not already discounted
+        if (isLegacyVip && !hasFiftyPercentPower && item.is_house_made && finalPrice > 0 && appliedDiscount === 0) {
             const discount = finalPrice * 0.50;
             finalPrice -= discount;
             appliedDiscount += discount;
@@ -47,7 +71,8 @@ function applyVipBenefits(orderItems, customer) {
     return {
         items: processedItems,
         total: parseFloat(finalTotal.toFixed(2)),
-        freeDrinkClaimed: freeDrinkClaimedThisOrder
+        freeDrinkClaimed: freeDrinkClaimedThisOrder,
+        tier: isBlackCard ? 'BlackCard' : (isEmployee ? 'Employee' : (isLegacyVip ? 'VIP' : 'Basic'))
     };
 }
 

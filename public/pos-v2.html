@@ -2889,25 +2889,38 @@ function openTenderModal() {
             return;
         }
 
+        // --- SMART DETECT: MEMBER ID (e.g. 001, 101) ---
+        const cleanDigits = query.replace(/\D/g, '');
+        const isShortId = cleanDigits.length > 0 && cleanDigits.length <= 3;
+
         // --- SMART DETECT: CUSTOMER ID (from Member QR) ---
-        if (query.startsWith('CUST-') || query.startsWith('C0')) {
-             console.log("👤 Customer ID detected. Fetching profile...");
+        if (query.startsWith('CUST-') || query.startsWith('C0') || isShortId) {
+             console.log("👤 Customer/Member ID detected. Fetching profile...");
              try {
-                const res = await fetch(`/api/store?action=customer_profile&id=${query}`, {
+                const searchId = isShortId ? cleanDigits : query;
+                const res = await fetch(`/api/store?action=customer_profile&id=${searchId}`, {
                     headers: { 'Authorization': 'Bearer EMP-admin' }
                 });
                 const data = await res.json();
-                if (data && data.id) { loadCustomerProfile(data); input.value = ""; return; }
+                if (data && data.id) { 
+                    loadCustomerProfile(data); 
+                    input.value = ""; 
+                    return; 
+                }
              } catch(e) { console.error("Customer ID lookup failed", e); }
         }
 
-        // --- DEFAULT: PHONE NUMBER LOOKUP ---
+        // --- DEFAULT: PHONE OR NAME LOOKUP ---
         let cleanPhone = query.replace(/\D/g, '');
-        if (cleanPhone.length < 8) return; // Wait for full number
-        if (!cleanPhone.startsWith('+') && cleanPhone.length > 0) cleanPhone = country + cleanPhone;
+        
+        // If it looks like a phone number, clean it
+        if (cleanPhone.length >= 8 && !cleanPhone.startsWith('+')) {
+            cleanPhone = country + cleanPhone;
+        }
 
         try {
-            const res = await fetch(`/api/store?action=customer_by_phone&query=${cleanPhone}`, {
+            // The API now handles both Phone and Name searches
+            const res = await fetch(`/api/store?action=customer_by_phone&query=${cleanPhone || query}`, {
                 headers: { 'Authorization': 'Bearer EMP-admin' }
             });
             

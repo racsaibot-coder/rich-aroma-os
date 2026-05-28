@@ -103,25 +103,32 @@ async function createOrder(orderRequest, supabase = defaultSupabase) {
             items: itemsWithMeta,
             subtotal: itemsWithMeta.reduce((sum, i) => sum + (parseFloat(i.price) * (i.qty || 1)), 0),
             total: itemsWithMeta.reduce((sum, i) => sum + (parseFloat(i.price) * (i.qty || 1)), 0) - surgeDiscount,
-            discount: surgeDiscount
+            discount: surgeDiscount,
+            tier: 'Basic'
         };
 
         let freeDrinkClaimed = false;
-        if (customer && (customer.is_vip || (customer.tags && customer.tags.includes('VIP')))) {
-            const vipCalc = applyVipBenefits(itemsWithMeta, customer);
-            finalOrderData.items = vipCalc.items;
-            finalOrderData.total = vipCalc.total - surgeDiscount;
-            finalOrderData.discount += vipCalc.items.reduce((sum, i) => sum + (i.appliedDiscount || 0), 0);
-            freeDrinkClaimed = vipCalc.freeDrinkClaimed;
+        if (customer) {
+            const tags = Array.isArray(customer.tags) ? customer.tags : [];
+            const isVip = customer.is_vip || tags.includes('VIP') || tags.includes('BlackCard') || tags.includes('Employee');
             
-            if (freeDrinkClaimed) {
-                await supabase.from('customers').update({ last_free_drink_date: getHondurasDate() }).eq('id', customer.id);
+            if (isVip) {
+                const vipCalc = applyVipBenefits(itemsWithMeta, customer);
+                finalOrderData.items = vipCalc.items;
+                finalOrderData.total = vipCalc.total - surgeDiscount;
+                finalOrderData.discount += vipCalc.items.reduce((sum, i) => sum + (i.appliedDiscount || 0), 0);
+                finalOrderData.tier = vipCalc.tier;
+                
+                if (vipCalc.freeDrinkClaimed) {
+                    await supabase.from('customers').update({ last_free_drink_date: getHondurasDate() }).eq('id', customer.id);
+                }
+            } else if (tags.includes('Bootcamp')) {
+                const bootCalc = applyBootcampBenefits(itemsWithMeta, customer);
+                finalOrderData.items = bootCalc.items;
+                finalOrderData.total = bootCalc.total - surgeDiscount;
+                finalOrderData.discount += bootCalc.items.reduce((sum, i) => sum + (i.appliedDiscount || 0), 0);
+                finalOrderData.tier = 'Bootcamp';
             }
-        } else if (customer && customer.tags && customer.tags.includes('Bootcamp')) {
-            const bootCalc = applyBootcampBenefits(itemsWithMeta, customer);
-            finalOrderData.items = bootCalc.items;
-            finalOrderData.total = bootCalc.total - surgeDiscount;
-            finalOrderData.discount += bootCalc.items.reduce((sum, i) => sum + (i.appliedDiscount || 0), 0);
         }
 
         // 3. Rico Balance Logic
@@ -162,7 +169,10 @@ async function createOrder(orderRequest, supabase = defaultSupabase) {
             restaurant_id: targetResId,
             shift_id: shiftId,
             scheduled_for: scheduledFor,
-            notes: `[FULFILLMENT: ${fulfillment || 'pickup'}] ` + (guestPhone ? `[TEL: ${guestPhone}] ` : '') + (notes || '')
+            notes: (finalOrderData.tier !== 'Basic' ? `[STATUS: ${finalOrderData.tier.toUpperCase()}] ` : '') + 
+                   `[FULFILLMENT: ${fulfillment || 'pickup'}] ` + 
+                   (guestPhone ? `[TEL: ${guestPhone}] ` : '') + 
+                   (notes || '')
         };
 
         // QuimiEats Commission Note

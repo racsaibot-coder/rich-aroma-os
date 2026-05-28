@@ -72,7 +72,13 @@ module.exports = async (req, res) => {
                 supabase.from('item_modifier_groups').select('*')
             ]);
 
-            const filteredItems = (rItems.data || []).filter(i => isAdmin || i.available !== false);
+            const filteredItems = (rItems.data || []).filter(i => isAdmin || i.available !== false).map(item => {
+                // Apply 15% Status Engine Increase (Non-Member Tax)
+                // Round to nearest 5 Lps for clean cash handling
+                let premiumPrice = (parseFloat(item.price) || 0) * 1.15;
+                premiumPrice = Math.round(premiumPrice / 5) * 5;
+                return { ...item, price: premiumPrice };
+            });
             const categoryMeta = { combos: { name: 'Combos', icon: '🔥' }, calientes: { name: 'Calientes', icon: '☕' }, heladas: { name: 'Heladas', icon: '🥤' }, comida: { name: 'Comida', icon: '🥐' } };
             const grouped = {};
             filteredItems.forEach(item => {
@@ -144,17 +150,37 @@ module.exports = async (req, res) => {
         }
 
         if (action === 'customer_by_phone' && req.method === 'GET') {
-            const queryPhone = req.query.query || req.query.phone;
-            const cleanPhone = queryPhone.replace(/\D/g, '');
-            const { data, error } = await supabase.from('customers').select('*').eq('phone', cleanPhone).maybeSingle();
-            if (error || !data) return res.status(404).json({ error: "Customer not found" });
+            const query = req.query.query || req.query.phone;
+            const cleanQuery = query.replace(/\D/g, '');
+            
+            let result;
+            // 1. Check for Member ID (if 3 digits or less)
+            if (cleanQuery.length > 0 && cleanQuery.length <= 3) {
+                const { data } = await supabase.from('customers').select('*').eq('id', cleanQuery).maybeSingle();
+                result = data;
+            }
+
+            // 2. Fallback to Phone
+            if (!result && cleanQuery.length >= 8) {
+                const { data } = await supabase.from('customers').select('*').eq('phone', cleanQuery).maybeSingle();
+                result = data;
+            }
+
+            // 3. Fallback to Name Search
+            if (!result && query.length >= 3) {
+                const { data } = await supabase.from('customers').select('*').ilike('name', `%${query}%`).limit(1).maybeSingle();
+                result = data;
+            }
+
+            if (!result) return res.status(404).json({ error: "Customer not found" });
 
             // Add Daily Coffee Logic
             const today = getHondurasDate();
-            const isVip = data.is_vip === true || (data.tags && data.tags.includes('VIP'));
-            data.is_vip_eligible = isVip && (data.last_free_drink_date !== today);
+            const tags = Array.isArray(result.tags) ? result.tags : [];
+            const isVip = result.is_vip === true || tags.includes('VIP') || tags.includes('BlackCard');
+            result.is_vip_eligible = isVip && (result.last_free_drink_date !== today);
 
-            return res.json(data);
+            return res.json(result);
         }
 
         if (action === 'customer_create' && req.method === 'POST') {
