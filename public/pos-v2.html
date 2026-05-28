@@ -606,7 +606,7 @@
                         <option value="+1">+1</option>
                     </select>
                     <div class="flex-1 relative">
-                        <input type="tel" id="cust-id" placeholder="Phone/Scan..." oninput="if(this.value.replace(/\D/g,'').length >= 8) lookupCustomer()" class="w-full bg-white border-2 border-gray-200 rounded-lg p-2 pr-8 text-xs font-bold outline-none">
+                        <input type="text" id="cust-id" placeholder="Phone, Name or ID..." oninput="if(this.value.length >= 3) { clearTimeout(window.searchTimer); window.searchTimer = setTimeout(lookupCustomer, 500); }" class="w-full bg-white border-2 border-gray-200 rounded-lg p-2 pr-8 text-xs font-bold outline-none">
                         <button onclick="lookupCustomer()" class="absolute right-1 top-1 w-6 h-6 bg-blue-600 text-white rounded flex items-center justify-center shadow-md active:scale-90 transition-all">
                             <i class="fas fa-search text-[10px]"></i>
                         </button>

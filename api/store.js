@@ -166,10 +166,34 @@ module.exports = async (req, res) => {
                 result = data;
             }
 
-            // 3. Fallback to Name Search
+            // 3. Fallback to Name Search in Customers
             if (!result && query.length >= 3) {
                 const { data } = await supabase.from('customers').select('*').ilike('name', `%${query}%`).limit(1).maybeSingle();
                 result = data;
+            }
+
+            // 4. ULTIMATE FALLBACK: Check Employees Table (for staff without phone numbers)
+            if (!result && query.length >= 3) {
+                const { data: emp } = await supabase.from('employees')
+                    .select('*')
+                    .ilike('name', `%${query}%`)
+                    .eq('active', true)
+                    .limit(1)
+                    .maybeSingle();
+                
+                if (emp) {
+                    console.log(`[Pricing] Found staff member ${emp.name} without customer profile. Creating virtual profile...`);
+                    result = {
+                        id: `STAFF-${emp.id}`,
+                        name: emp.name,
+                        phone: `EMP${emp.pin}`,
+                        tags: ['Employee'],
+                        is_vip: true,
+                        tier: 'gold',
+                        rico_balance: 0,
+                        points: 0
+                    };
+                }
             }
 
             if (!result) return res.status(404).json({ error: "Customer not found" });
