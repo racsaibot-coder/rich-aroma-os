@@ -476,6 +476,9 @@
             </div>
 
             <div class="flex gap-3 items-center">
+                <div id="sync-indicator" class="hidden bg-orange-500 text-white px-3 py-1.5 rounded-lg font-mono text-[10px] animate-pulse">
+                    SYNC PENDING (<span id="sync-count">0</span>)
+                </div>
                 <div id="connection-status" class="bg-green-100 text-green-800 px-3 py-1.5 rounded-lg font-mono text-sm transition-colors duration-300">
                     ONLINE 🟢
                 </div>
@@ -690,6 +693,69 @@
     // ==========================================
     // ☕️ RICH AROMA POS v2.0 - CORE SCRIPT
     // ==========================================
+
+    // --- OFFLINE SYNC ENGINE ---
+    const SYNC_KEY = 'pos_sync_queue';
+    
+    function addToSyncQueue(order) {
+        console.log("📥 Adding order to offline queue...");
+        const queue = JSON.parse(localStorage.getItem(SYNC_KEY) || '[]');
+        queue.push({
+            id: 'sync_' + Date.now(),
+            data: order,
+            timestamp: new Date().toISOString()
+        });
+        localStorage.setItem(SYNC_KEY, JSON.stringify(queue));
+        updateSyncUI();
+    }
+
+    function updateSyncUI() {
+        const queue = JSON.parse(localStorage.getItem(SYNC_KEY) || '[]');
+        const indicator = document.getElementById('sync-indicator');
+        const count = document.getElementById('sync-count');
+        
+        if (queue.length > 0) {
+            indicator.classList.remove('hidden');
+            indicator.classList.add('flex');
+            count.innerText = queue.length;
+        } else {
+            indicator.classList.add('hidden');
+            indicator.classList.remove('flex');
+        }
+    }
+
+    async function processSyncQueue() {
+        const queue = JSON.parse(localStorage.getItem(SYNC_KEY) || '[]');
+        if (queue.length === 0) return;
+
+        console.log(`🔄 Attempting to sync ${queue.length} orders...`);
+        const remaining = [];
+        
+        for (const item of queue) {
+            try {
+                const res = await fetch('/api/orders-v2', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(item.data)
+                });
+                
+                if (res.ok) {
+                    console.log(`✅ Synced order ${item.id}`);
+                } else {
+                    remaining.push(item);
+                }
+            } catch (e) {
+                remaining.push(item);
+            }
+        }
+        
+        localStorage.setItem(SYNC_KEY, JSON.stringify(remaining));
+        updateSyncUI();
+    }
+
+    // Auto-sync every 30 seconds
+    setInterval(processSyncQueue, 30000);
+    window.addEventListener('online', processSyncQueue);
 
     // --- GLOBAL STATE ---
     let menu = [];
@@ -2685,6 +2751,17 @@ function openTenderModal() {
         confirmBtn.disabled = true;
         confirmBtn.innerText = "PROCESANDO...";
 
+        // --- OFFLINE FIRST BACKUP ---
+        const syncItem = {
+            id: 'sync_' + Date.now(),
+            data: payload,
+            timestamp: new Date().toISOString()
+        };
+        const queue = JSON.parse(localStorage.getItem(SYNC_KEY) || '[]');
+        queue.push(syncItem);
+        localStorage.setItem(SYNC_KEY, JSON.stringify(queue));
+        updateSyncUI();
+
         try {
             // Use V2 API for new features
             const url = currentOrderId ? `/api/orders/${currentOrderId}?v=${Date.now()}` : `/api/orders-v2?v=${Date.now()}`;
@@ -2700,22 +2777,30 @@ function openTenderModal() {
             });
 
             if (res.ok) {
+                // Success! Remove from sync queue
+                const finalQueue = JSON.parse(localStorage.getItem(SYNC_KEY) || '[]');
+                const filtered = finalQueue.filter(q => q.id !== syncItem.id);
+                localStorage.setItem(SYNC_KEY, JSON.stringify(filtered));
+                updateSyncUI();
+
                 alert("✅ Venta Completada");
                 clearOrderState(true);
                 document.getElementById('tender-modal').classList.add('hidden');
                 fetchLiveOrders();
             } else {
                 const err = await res.json();
-                alert("Error: " + (err.error || "No se pudo procesar pago"));
-                confirmBtn.disabled = false;
-                confirmBtn.innerText = "Cobrar";
+                alert(`⚠️ Error Servidor: ${err.error || "No se pudo procesar pago"}. La orden quedó guardada en el dispositivo y se sincronizará luego.`);
+                clearOrderState(true);
+                document.getElementById('tender-modal').classList.add('hidden');
             }
         } catch(e) { 
-            alert("Error de Conexión: " + e.message); 
-            confirmBtn.disabled = false;
-            confirmBtn.innerText = "Cobrar";
+            alert("📡 SIN INTERNET: La orden se guardó en el teléfono y se enviará automáticamente al volver la conexión.");
+            clearOrderState(true);
+            document.getElementById('tender-modal').classList.add('hidden');
         } finally {
             isProcessingCharge = false;
+            confirmBtn.disabled = false;
+            confirmBtn.innerText = "Cobrar";
         }
     }
 
