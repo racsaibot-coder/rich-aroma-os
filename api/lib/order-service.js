@@ -113,6 +113,20 @@ async function createOrder(orderRequest, supabase = defaultSupabase) {
             const isVip = customer.is_vip || tags.includes('VIP') || tags.includes('BlackCard') || tags.includes('Employee');
             
             if (isVip) {
+                // --- TIME LOCK CHECK (Anti-Sharing) ---
+                // Prevent multiple status orders within 20 mins to prevent sharing
+                const twentyMinsAgo = new Date(Date.now() - 20 * 60000).toISOString();
+                const { data: recentOrders } = await supabase
+                    .from('orders')
+                    .select('id')
+                    .eq('customer_id', customer.id)
+                    .gte('created_at', twentyMinsAgo)
+                    .limit(1);
+
+                if (recentOrders && recentOrders.length > 0 && !isPos) {
+                    throw new Error('STATUS_COOLDOWN: Debes esperar 20 minutos entre pedidos con descuento de membresía.');
+                }
+
                 const vipCalc = applyVipBenefits(itemsWithMeta, customer);
                 finalOrderData.items = vipCalc.items;
                 finalOrderData.total = vipCalc.total - surgeDiscount;
@@ -169,7 +183,7 @@ async function createOrder(orderRequest, supabase = defaultSupabase) {
             restaurant_id: targetResId,
             shift_id: shiftId,
             scheduled_for: scheduledFor,
-            notes: (finalOrderData.tier !== 'Basic' ? `[STATUS: ${finalOrderData.tier.toUpperCase()}] ` : '') + 
+            notes: (finalOrderData.tier !== 'Basic' ? `[STATUS: ${finalOrderData.tier.toUpperCase()}] [VERIFICAR ID] ` : '') + 
                    `[FULFILLMENT: ${fulfillment || 'pickup'}] ` + 
                    (guestPhone ? `[TEL: ${guestPhone}] ` : '') + 
                    (notes || '')
