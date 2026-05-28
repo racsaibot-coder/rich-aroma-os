@@ -600,6 +600,25 @@ module.exports = async function handler(req, res) {
         return res.json({ success: true, deleted: toDelete.length, kept: kept.size });
     }
 
+    if (action === 'bulk_menu_import' && req.method === 'POST') {
+        if (!isAdmin) return res.status(403).json({ error: "Admin access required" });
+        const { items } = req.body;
+        if (!Array.isArray(items) || items.length === 0) return res.status(400).json({ error: "No items provided" });
+
+        // Add IDs to items
+        const preparedItems = items.map(item => ({
+            ...item,
+            id: 'item_' + Date.now() + Math.random().toString(36).substr(2, 5)
+        }));
+
+        const { data, error } = await supabase.from('menu_items').insert(preparedItems);
+        if (error) {
+            console.error("[Admin API] Bulk Import Error:", error);
+            return res.status(500).json({ error: error.message });
+        }
+        return res.json({ success: true, count: preparedItems.length });
+    }
+
     // LEADS
     if (action === 'leads' && req.method === 'GET') {
         if (!isAdmin) return res.status(403).json({ error: "Admin access required" });
