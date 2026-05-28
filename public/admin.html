@@ -130,7 +130,7 @@
 
         <h1 class="text-3xl font-bold mb-6 flex items-center gap-2">
             <i class="fas fa-user-shield text-blue-600"></i> Admin Dashboard
-            <span class="text-[10px] bg-blue-100 text-blue-600 px-2 py-0.5 rounded-full border border-blue-200">v3.0.1-ts1779939900</span>
+            <span class="text-[10px] bg-blue-100 text-blue-600 px-2 py-0.5 rounded-full border border-blue-200">v3.0.1-ts1779946800</span>
             <div class="ml-auto flex gap-2">
                 <button onclick="startGuide()" class="bg-amber-100 text-amber-700 text-xs px-4 py-2 rounded-full font-black uppercase tracking-widest hover:bg-amber-200 transition border border-amber-200">
                     <i class="fas fa-book-open mr-2"></i> System Guide
@@ -959,7 +959,12 @@
 
                 if (res.status === 401) {
                     logDebug("Login: REJECTED (Wrong PIN)");
-                    alert("PIN incorrecto.");
+                    const now = Date.now();
+                    const lastAlert = parseInt(localStorage.getItem('last_pin_alert') || '0');
+                    if (now - lastAlert > 3000) { // Only alert once every 3s
+                        localStorage.setItem('last_pin_alert', now.toString());
+                        alert("PIN incorrecto.");
+                    }
                     resetPin();
                     return;
                 }
@@ -1135,6 +1140,10 @@
         async function fetchStoreStatus() {
             try {
                 const res = await fetch('/api/store/status', { headers: getHeaders() });
+                if (res.status === 401 || res.status === 403) {
+                    // Silently ignore auth errors in background poll to prevent intrusive alerts
+                    return;
+                }
                 const data = await res.json();
                 updateStoreStatusUI(data.isOpen);
             } catch (e) {
