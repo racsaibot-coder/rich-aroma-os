@@ -2139,15 +2139,13 @@
                         console.log(`[Pricing] 50% Power applied to ${unitsToDiscount}x ${item.name}`);
                     }
                 }
-                // 3. Fallback to Legacy VIP 50% on food if applicable
-                else if (window.loadedCustomer.is_vip && isFood(item) && discountedCount < MAX_STATUS_DISCOUNTS && !isBlackCard && !isEmployee) {
-                    const remainingSpots = MAX_STATUS_DISCOUNTS - discountedCount;
-                    const unitsToDiscount = Math.min(item.qty, remainingSpots);
-                    if (unitsToDiscount > 0) {
-                        discountAmt += (parseFloat(item.price) * 0.5 * unitsToDiscount);
-                        discountedCount += unitsToDiscount;
-                        if (!discountName || discountName === "DESCUENTO") discountName = "VIP FOOD 50%";
-                    }
+                // 3. Fallback to Legacy VIP (Daily Customer) - 15% OFF house-made
+                // This offsets the 15% "Non-Member Tax" for your regulars.
+                else if (window.loadedCustomer.is_vip && item.is_house_made && !isBlackCard && !isEmployee) {
+                    discountAmt += (parseFloat(item.price) * 0.15 * item.qty);
+                    if (!discountName || discountName === "DESCUENTO") discountName = "REGULAR (15% OFF)";
+                    console.log(`[Pricing] Regular 15% applied to ${item.name}`);
+                }
                 }
             });
         }

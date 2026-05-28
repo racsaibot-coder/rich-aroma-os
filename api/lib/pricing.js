@@ -64,11 +64,12 @@ function applyVipBenefits(orderItems, customer) {
             }
         }
         
-        // Legacy 50% for VIPs who aren't BlackCard
-        if (isLegacyVip && !hasFiftyPercentPower && !item.is_free_benefit && item.is_house_made && finalPrice > 0) {
-            const discount = finalPrice * 0.50;
+        // RULE 3: Daily Customer Discount (Legacy VIP) - 15% OFF house-made
+        if (isLegacyVip && !hasFiftyPercentPower && !item.is_free_benefit && item.is_house_made && !isExclusion && finalPrice > 0) {
+            const discount = finalPrice * 0.15;
             finalPrice -= discount;
             appliedDiscount += discount;
+            item.regular_discount_applied = true;
         }
 
         return {
