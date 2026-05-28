@@ -569,10 +569,40 @@
             reader.onerror = error => reject(error);
         });
 
+        function goToRestaurantMenu(id) {
+            const selector = document.getElementById('prod-res-selector');
+            if (selector) {
+                selector.value = id;
+                switchTab('products');
+            }
+        }
+
         function showUI() {
             document.getElementById('login-modal').classList.add('hidden');
             document.getElementById('admin-content').classList.remove('hidden');
-            switchTab('partners');
+            
+            // Check URL Params
+            const params = new URLSearchParams(window.location.search);
+            const tab = params.get('tab');
+            const resId = params.get('restaurantId');
+
+            if (tab === 'products' || tab === 'menu') {
+                if (resId) {
+                    setTimeout(() => {
+                        const selector = document.getElementById('prod-res-selector');
+                        if (selector) {
+                            selector.value = resId;
+                            switchTab('products');
+                        }
+                    }, 500);
+                } else {
+                    switchTab('products');
+                }
+            } else if (tab) {
+                switchTab(tab);
+            } else {
+                switchTab('partners');
+            }
         }
 
         function switchTab(t) {
@@ -1013,7 +1043,7 @@
                     <td class="p-8 text-right flex items-center justify-end gap-3">
                         <button onclick="deletePartner('${r.id}', '${r.name}')" class="text-[10px] font-black uppercase text-red-400/20 hover:text-red-400 transition-all"><i class="fas fa-trash-alt mr-1"></i> Eliminar</button>
                         <button onclick="openEdit(${i})" class="text-[10px] font-black uppercase text-white/20 hover:text-white transition-all">Editar</button>
-                        <button onclick="window.location.href='/admin?tab=menu&restaurantId=${r.id}'" class="text-[10px] font-black uppercase text-cyan-400 hover:text-cyan-300">Menú <i class="fas fa-external-link-alt ml-1"></i></button>
+                        <button onclick="goToRestaurantMenu('${r.id}')" class="text-[10px] font-black uppercase text-cyan-400 hover:text-cyan-300">Productos <i class="fas fa-external-link-alt ml-1"></i></button>
                     </td>
                 </tr>
             `).join('');
