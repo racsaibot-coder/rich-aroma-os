@@ -75,15 +75,59 @@
         <!-- Navigation Tabs -->
         <div class="flex gap-4 border-b border-white/10 pb-2 overflow-x-auto no-scrollbar">
             <button onclick="switchTab('partners')" id="tab-partners" class="tab-btn font-black text-[10px] uppercase tracking-widest pb-3 px-4 border-b-2 border-cyan-400 text-cyan-400">Socios</button>
+            <button onclick="switchTab('promos')" id="tab-promos" class="tab-btn font-black text-[10px] uppercase tracking-widest pb-3 px-4 text-white/40 hover:text-white">Promos/Ads</button>
             <button onclick="switchTab('products')" id="tab-products" class="tab-btn font-black text-[10px] uppercase tracking-widest pb-3 px-4 text-white/40 hover:text-white">Productos</button>
             <button onclick="switchTab('reservations')" id="tab-reservations" class="tab-btn font-black text-[10px] uppercase tracking-widest pb-3 px-4 text-white/40 hover:text-white">Reservas</button>
             <button onclick="switchTab('drivers')" id="tab-drivers" class="tab-btn font-black text-[10px] uppercase tracking-widest pb-3 px-4 text-white/40 hover:text-white">Drivers</button>
             <button onclick="switchTab('sales')" id="tab-sales" class="tab-btn font-black text-[10px] uppercase tracking-widest pb-3 px-4 text-white/40 hover:text-white">Ventas / P&L</button>
-            </div>
+        </div>
 
-            <div id="view-partners" class="space-y-10">
-            ...
-            </div>
+        <!-- PARTNERS VIEW -->
+        <div id="view-partners" class="space-y-10">
+            <section class="space-y-6">
+                <div class="glass rounded-[3rem] overflow-hidden">
+                    <table class="w-full text-left">
+                        <thead class="bg-white/5 text-[10px] uppercase font-black tracking-[0.2em] text-white/30 border-b border-white/5">
+                            <tr>
+                                <th class="p-8">Negocio</th>
+                                <th class="p-8">Categoría</th>
+                                <th class="p-8">Contacto</th>
+                                <th class="p-8 text-right">Acción</th>
+                            </tr>
+                        </thead>
+                        <tbody id="partners-table" class="divide-y divide-white/5">
+                            <!-- Data -->
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+        </div>
+
+        <!-- PROMOS VIEW -->
+        <div id="view-promos" class="hidden space-y-10">
+            <section class="space-y-6">
+                <div class="flex justify-between items-center">
+                    <h2 class="text-xl font-black uppercase tracking-tight text-white/80">Publicidad Pagada</h2>
+                    <button onclick="openPromoModal()" class="bg-cyan-500 text-black px-6 py-3 rounded-xl font-black uppercase text-[9px] tracking-widest">+ Nueva Promo</button>
+                </div>
+                <div class="glass rounded-[3rem] overflow-hidden">
+                    <table class="w-full text-left">
+                        <thead class="bg-white/5 text-[10px] uppercase font-black tracking-[0.2em] text-white/30 border-b border-white/5">
+                            <tr>
+                                <th class="p-8">Estado</th>
+                                <th class="p-8">Cliente</th>
+                                <th class="p-8">Impresiones</th>
+                                <th class="p-8">Vencimiento</th>
+                                <th class="p-8 text-right">Acción</th>
+                            </tr>
+                        </thead>
+                        <tbody id="promos-table" class="divide-y divide-white/5">
+                            <!-- Data -->
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+        </div>
 
             <!-- PRODUCTS VIEW -->
             <div id="view-products" class="hidden space-y-10">
@@ -198,6 +242,42 @@
             </div>
         </section>
 
+    </div>
+
+    <!-- PROMO MODAL -->
+    <div id="promo-modal" class="hidden fixed inset-0 bg-black/90 backdrop-blur-xl flex items-center justify-center z-[1000] p-6">
+        <div class="glass bg-[#121214] p-10 rounded-[3rem] max-w-md w-full space-y-6 border border-white/10 shadow-2xl">
+            <h3 class="text-2xl font-black uppercase tracking-tighter text-white" id="promo-modal-title">Nueva Publicidad</h3>
+            <input type="hidden" id="promo-id">
+            <div class="space-y-4">
+                <div>
+                    <label class="text-[10px] font-black uppercase tracking-widest text-white/20 mb-2 block">Nombre del Cliente</label>
+                    <input type="text" id="promo-client" class="w-full bg-white/5 border border-white/10 p-5 rounded-2xl text-white outline-none focus:border-cyan-500 font-bold uppercase">
+                </div>
+                <div>
+                    <label class="text-[10px] font-black uppercase tracking-widest text-white/20 mb-2 block">URL Multimedia (Imagen/Video)</label>
+                    <input type="text" id="promo-media" class="w-full bg-white/5 border border-white/10 p-5 rounded-2xl text-white outline-none focus:border-cyan-500 text-xs">
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="text-[10px] font-black uppercase tracking-widest text-white/20 mb-2 block">Inicio</label>
+                        <input type="date" id="promo-start" class="w-full bg-white/5 border border-white/10 p-4 rounded-xl text-white outline-none focus:border-cyan-500 text-xs">
+                    </div>
+                    <div>
+                        <label class="text-[10px] font-black uppercase tracking-widest text-white/20 mb-2 block">Fin</label>
+                        <input type="date" id="promo-end" class="w-full bg-white/5 border border-white/10 p-4 rounded-xl text-white outline-none focus:border-cyan-500 text-xs">
+                    </div>
+                </div>
+                <div class="flex items-center gap-3 bg-white/5 p-4 rounded-2xl border border-white/10">
+                    <input type="checkbox" id="promo-active" checked class="w-5 h-5 accent-cyan-400">
+                    <label class="text-[10px] font-black uppercase tracking-widest text-white">Publicidad Activa</label>
+                </div>
+            </div>
+            <div class="flex gap-4 pt-4">
+                <button onclick="closeModal('promo-modal')" class="w-1/2 py-5 text-[10px] font-black uppercase tracking-widest text-white/20 hover:text-white transition-all">Cancelar</button>
+                <button onclick="savePromo()" class="w-1/2 py-5 bg-cyan-500 text-black rounded-2xl font-black uppercase tracking-widest text-[10px] shadow-lg shadow-cyan-500/20 active:scale-95 transition-all">Guardar</button>
+            </div>
+        </div>
     </div>
 
     <!-- PRODUCT MODAL -->
@@ -433,12 +513,12 @@
                     body: JSON.stringify({ pin: currentPin })
                 });
                 const data = await res.json();
-                if (data.success && data.employee.role === 'admin') {
+                if (data.success) {
                     staffUser = data.employee;
                     localStorage.setItem('quimieats_admin_pin', currentPin);
                     showUI();
                 } else {
-                    alert("PIN Maestro Requerido.");
+                    alert(data.error || "PIN Incorrecto.");
                     resetPin();
                 }
             } catch (e) { alert("Error de red"); resetPin(); }
@@ -507,10 +587,120 @@
             document.getElementById(`tab-${t}`).classList.add('border-b-2', 'border-cyan-400', 'text-cyan-400');
             
             if (t === 'partners') loadData();
+            if (t === 'promos') loadPromos();
             if (t === 'products') loadProducts();
             if (t === 'drivers') loadDrivers();
             if (t === 'sales') loadSalesStats();
             if (t === 'reservations') loadReservations();
+        }
+
+        // --- PROMO LOGIC ---
+        let allPromos = [];
+        async function loadPromos() {
+            const tbody = document.getElementById('promos-table');
+            tbody.innerHTML = '<tr><td colspan="5" class="p-20 text-center text-white/10 italic">Cargando publicidades...</td></tr>';
+            try {
+                const res = await fetch('/api/promos?action=list', {
+                    headers: { 'Authorization': `Bearer ${localStorage.getItem('quimieats_admin_pin')}` }
+                });
+                allPromos = await res.json();
+                renderPromosTable(allPromos);
+            } catch (e) { console.error(e); }
+        }
+
+        function renderPromosTable(data) {
+            const tbody = document.getElementById('promos-table');
+            if (data.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" class="p-20 text-center text-white/10 italic">No hay publicidades configuradas.</td></tr>';
+                return;
+            }
+            tbody.innerHTML = data.map(p => `
+                <tr class="hover:bg-white/[0.02] transition-colors">
+                    <td class="p-8">
+                        <span class="px-3 py-1 rounded-full text-[8px] font-black uppercase tracking-widest ${p.active ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'}">
+                            ${p.active ? 'Activa' : 'Pausada'}
+                        </span>
+                    </td>
+                    <td class="p-8">
+                        <div class="font-black uppercase tracking-tight text-sm text-white/80">${p.client_name}</div>
+                        <div class="text-[8px] text-white/20 font-mono truncate max-w-[150px]">${p.media_url}</div>
+                    </td>
+                    <td class="p-8">
+                        <div class="flex items-center gap-2">
+                            <span class="text-xl font-black text-cyan-400">${p.impressions || 0}</span>
+                            <span class="text-[8px] text-white/20 font-black uppercase tracking-widest">Vistas</span>
+                        </div>
+                    </td>
+                    <td class="p-8 text-[10px] text-white/40 font-black">
+                        ${new Date(p.end_date).toLocaleDateString()}
+                    </td>
+                    <td class="p-8 text-right flex justify-end gap-4">
+                        <button onclick="openPromoModal('${p.id}')" class="text-cyan-400/40 hover:text-cyan-400 font-black uppercase text-[10px] tracking-widest transition-all">Editar</button>
+                        <button onclick="deletePromo('${p.id}')" class="text-red-400/40 hover:text-red-400 font-black uppercase text-[10px] tracking-widest transition-all">Eliminar</button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function openPromoModal(id = null) {
+            const modal = document.getElementById('promo-modal');
+            const title = document.getElementById('promo-modal-title');
+            
+            if (id) {
+                const p = allPromos.find(x => x.id === id);
+                title.innerText = "Editar Publicidad";
+                document.getElementById('promo-id').value = p.id;
+                document.getElementById('promo-client').value = p.client_name;
+                document.getElementById('promo-media').value = p.media_url;
+                document.getElementById('promo-start').value = p.start_date.split('T')[0];
+                document.getElementById('promo-end').value = p.end_date.split('T')[0];
+                document.getElementById('promo-active').checked = p.active;
+            } else {
+                title.innerText = "Nueva Publicidad";
+                document.getElementById('promo-id').value = '';
+                document.getElementById('promo-client').value = '';
+                document.getElementById('promo-media').value = '';
+                document.getElementById('promo-start').value = new Date().toISOString().split('T')[0];
+                const nextWeek = new Date(); nextWeek.setDate(nextWeek.getDate() + 7);
+                document.getElementById('promo-end').value = nextWeek.toISOString().split('T')[0];
+                document.getElementById('promo-active').checked = true;
+            }
+            modal.classList.remove('hidden');
+        }
+
+        async function savePromo() {
+            const promo = {
+                id: document.getElementById('promo-id').value || null,
+                client_name: document.getElementById('promo-client').value,
+                media_url: document.getElementById('promo-media').value,
+                start_date: document.getElementById('promo-start').value,
+                end_date: document.getElementById('promo-end').value,
+                active: document.getElementById('promo-active').checked
+            };
+
+            try {
+                const res = await fetch('/api/promos?action=save', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${localStorage.getItem('quimieats_admin_pin')}` },
+                    body: JSON.stringify(promo)
+                });
+                if (res.ok) {
+                    alert("✅ Publicidad Guardada");
+                    closeModal('promo-modal');
+                    loadPromos();
+                }
+            } catch (e) { alert("Error al guardar"); }
+        }
+
+        async function deletePromo(id) {
+            if (!confirm("¿Eliminar esta publicidad?")) return;
+            try {
+                await fetch(`/api/promos?action=delete&id=${id}`, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': `Bearer ${localStorage.getItem('quimieats_admin_pin')}` }
+                });
+                loadPromos();
+            } catch (e) { alert("Error al eliminar"); }
         }
 
         // --- DATA LOGIC ---
@@ -588,7 +778,7 @@
             const headers = { 'Authorization': `Bearer ${token}` };
 
             try {
-                // 1. Load Partners
+                // 1. Load Partners (Active)
                 const resActive = await fetch('/api/admin?action=quimieats_active', { headers });
                 activePartners = await resActive.json();
                 renderPartners(activePartners);
@@ -596,15 +786,21 @@
 
                 // Populate product restaurant selector
                 const selector = document.getElementById('prod-res-selector');
-                selector.innerHTML = activePartners.map(r => `<option value="${r.id}">${r.name}</option>`).join('');
+                if (selector) {
+                    selector.innerHTML = activePartners.map(r => `<option value="${r.id}">${r.name}</option>`).join('');
+                }
 
-                // 2. Load Leads
+                // 2. Load Leads (Potential Partners)
                 const resLeads = await fetch('/api/admin?action=quimieats_leads', { headers });
                 const leads = await resLeads.json();
                 renderLeads(leads);
-                document.getElementById('stat-leads').innerText = (leads || []).filter(l => l.status === 'new').length;
+                
+                const newLeadsCount = (leads || []).filter(l => l.status === 'new').length;
+                document.getElementById('stat-leads').innerText = newLeadsCount;
 
-            } catch (e) { console.error(e); }
+            } catch (e) { 
+                console.error("loadData error:", e);
+            }
         }
 
         async function loadProducts() {
@@ -874,6 +1070,9 @@
                     headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${localStorage.getItem('quimieats_admin_pin')}` },
                     body: JSON.stringify({ name, phone, logo_url, category, bank_name, account_number })
                 });
+                
+                const data = await res.json();
+
                 if (res.ok) { 
                     alert("¡Éxito!"); 
                     closeQuickAdd(); 
@@ -883,7 +1082,9 @@
                     document.getElementById('qa-preview').classList.add('hidden');
                     document.getElementById('qa-icon').classList.remove('hidden');
                 }
-                else alert("Error al crear");
+                else {
+                    alert("Error al crear: " + (data.error || "Desconocido"));
+                }
             } catch (e) { alert("Error de red"); }
             finally { btn.innerText = ogText; btn.disabled = false; }
         }

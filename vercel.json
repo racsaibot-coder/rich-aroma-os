@@ -26,6 +26,15 @@
       "dest": "/public/quimieats.html"
     },
     {
+      "src": "/admin",
+      "has": [{ "type": "host", "value": "(.*)quimieats.com" }],
+      "dest": "/public/quimieats-admin.html"
+    },
+    {
+      "src": "/admin",
+      "dest": "/public/admin.html"
+    },
+    {
       "src": "/socios",
       "dest": "/public/socios.html"
     },
@@ -296,15 +305,6 @@
     {
       "src": "/creators",
       "dest": "/src/creators/creators.html"
-    },
-    {
-      "src": "/admin",
-      "has": [{ "type": "host", "value": "(.*)quimieats.com" }],
-      "dest": "/public/quimieats-admin.html"
-    },
-    {
-      "src": "/admin",
-      "dest": "/public/admin.html"
     },
     {
       "src": "/admin-new",
