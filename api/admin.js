@@ -476,13 +476,36 @@ module.exports = async function handler(req, res) {
             restaurant_id: req.body.restaurant_id || 'rich-aroma'
         };
         console.log(`[Admin API] Inserting into Supabase:`, emp);
-        const { data, error } = await supabase.from('employees').insert(emp).select().single();
+        const { data: newEmp, error } = await supabase.from('employees').insert(emp).select().single();
         if (error) {
             console.error(`[Admin API] Supabase Insert Error:`, error);
             return res.status(500).json({ error: error.message });
         }
-        console.log(`[Admin API] Employee created successfully: ${data.id}`);
-        return res.json(data);
+
+        // --- STATUS ENGINE: Auto-link to Customer Profile ---
+        if (req.body.phone) {
+            const cleanPhone = req.body.phone.replace(/\D/g, '');
+            if (cleanPhone.length >= 8) {
+                try {
+                    const { data: existingCust } = await supabase.from('customers').select('tags').eq('phone', cleanPhone).maybeSingle();
+                    let tags = Array.isArray(existingCust?.tags) ? existingCust.tags : [];
+                    if (!tags.includes('Employee')) tags.push('Employee');
+                    
+                    await supabase.from('customers').upsert({
+                        phone: cleanPhone,
+                        name: req.body.name, // Keep original name, maybe add [STAFF] prefix if you want
+                        pin: req.body.pin,   // Sync PIN for /order login
+                        tags: tags,
+                        is_vip: true,        // Staff are always VIP
+                        tier: 'gold'
+                    }, { onConflict: 'phone' });
+                    console.log(`[Admin API] Synced employee ${req.body.name} to customer profile ${cleanPhone}`);
+                } catch (e) { console.error("[Admin API] Customer sync failed:", e); }
+            }
+        }
+
+        console.log(`[Admin API] Employee created successfully: ${newEmp.id}`);
+        return res.json(newEmp);
     }
 
     if ((action === 'employees' || action === 'employee_update') && (req.method === 'PUT' || req.method === 'PATCH')) {

@@ -319,6 +319,25 @@
                         const clickAction = isBooking ? `openBooking('${item.id}')` : `openModifier('${item.id}')`;
                         const btnLabel = isBooking ? 'Reservar' : 'Agregar';
                         
+                        // --- STATUS ENGINE: Price Preview ---
+                        const tags = Array.isArray(currentCustomer?.tags) ? currentCustomer.tags : [];
+                        const hasFiftyPower = tags.includes('Employee') || tags.includes('BlackCard');
+                        const isExclusion = item.id.includes('dubai_chocolate') || (item.category || '').toLowerCase().includes('retail');
+                        
+                        let displayPrice = parseFloat(item.price) || 0;
+                        let priceHtml = `<span class="text-gold font-mono font-black text-base">L ${displayPrice.toFixed(0)}</span>`;
+                        
+                        if (hasFiftyPower && !isExclusion && !isBooking) {
+                            const discounted = displayPrice * 0.5;
+                            priceHtml = `
+                                <div class="flex flex-col">
+                                    <span class="text-white/20 text-[9px] font-bold line-through tracking-tighter italic leading-none mb-1">Público: L ${displayPrice.toFixed(0)}</span>
+                                    <span class="text-cyan-400 font-mono font-black text-lg leading-none">L ${discounted.toFixed(0)}</span>
+                                    <span class="text-[7px] text-cyan-400/50 font-black uppercase tracking-widest mt-1">Status 50% OFF</span>
+                                </div>
+                            `;
+                        }
+
                         const imgUrl = optimizeImg(item.image_url);
                         const imgHtml = imgUrl ? `
                                 <div class="w-full h-40 bg-charcoal overflow-hidden relative">
@@ -335,7 +354,7 @@
                                 ${imgHtml}
                                 <div class="p-5 flex-1 flex flex-col justify-between">
                                     <h3 class="font-black text-sm leading-tight mb-2 text-white/90">${item.name}</h3>
-                                    <span class="text-gold font-mono font-black text-base">L ${(Number(item.price) || 0).toFixed(0)}</span>
+                                    ${priceHtml}
                                 </div>
                             </div>`;
                     });
@@ -887,6 +906,13 @@
             if(currentCustomer.is_vip) document.getElementById('prof-vip-badge').classList.remove('hidden');
             else document.getElementById('prof-vip-badge').classList.add('hidden');
 
+            const isStaff = Array.isArray(currentCustomer.tags) && currentCustomer.tags.includes('Employee');
+            if(isStaff) {
+                document.getElementById('prof-vip-badge').innerText = "Employee Member";
+                document.getElementById('prof-vip-badge').classList.remove('hidden');
+                document.getElementById('prof-vip-badge').className = "mt-2 inline-flex items-center gap-1.5 bg-cyan-500/20 text-cyan-400 px-3 py-1 rounded-full text-[9px] font-black uppercase border border-cyan-500/30";
+            }
+
             if(currentCustomer.is_vip_eligible) document.getElementById('prof-coffee-badge').classList.remove('hidden');
             else document.getElementById('prof-coffee-badge').classList.add('hidden');
 
@@ -986,6 +1012,16 @@
             }
             const phone = localStorage.getItem('ra_customer_phone') || localStorage.getItem('ra_phone');
             if (phone) {
-                fetch(`/api/customer/profile?phone=${encodeURIComponent(phone)}`).then(r => r.json()).then(u => { if(u && !u.error) { currentCustomer = u; document.getElementById('user-pill').classList.remove('hidden'); document.getElementById('login-btn').classList.add('hidden'); document.getElementById('user-first-name').innerText = u.name.split(' ')[0]; } });
+                fetch(`/api/customer/profile?phone=${encodeURIComponent(phone)}`).then(r => r.json()).then(u => { 
+                    if(u && !u.error) { 
+                        currentCustomer = u; 
+                        document.getElementById('user-pill').classList.remove('hidden'); 
+                        document.getElementById('login-btn').classList.add('hidden'); 
+                        
+                        const isEmployee = Array.isArray(u.tags) && u.tags.includes('Employee');
+                        const firstName = u.name.split(' ')[0];
+                        document.getElementById('user-first-name').innerText = isEmployee ? `[STAFF] ${firstName}` : firstName;
+                    } 
+                });
             }
         });

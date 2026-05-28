@@ -99,6 +99,10 @@
                         <label class="block text-[10px] font-black text-gray-400 uppercase mb-1 tracking-widest">POS PIN (4 digits)</label>
                         <input type="text" id="new-emp-pin" maxlength="4" class="w-full border-2 border-gray-100 rounded-2xl p-4 outline-none focus:border-blue-500 tracking-[0.5em] text-xl font-black text-center" placeholder="1234">
                     </div>
+                    <div>
+                        <label class="block text-[10px] font-black text-gray-400 uppercase mb-1 tracking-widest">Phone Number (For /order Login)</label>
+                        <input type="tel" id="new-emp-phone" class="w-full border-2 border-gray-100 rounded-2xl p-4 outline-none focus:border-blue-500 font-bold" placeholder="50499998888">
+                    </div>
                     <div class="grid grid-cols-2 gap-4">
                         <div>
                             <label class="block text-[10px] font-black text-gray-400 uppercase mb-1 tracking-widest">Pay Type</label>
@@ -2956,11 +2960,12 @@
                 const name = document.getElementById('new-emp-name').value;
                 const role = document.getElementById('new-emp-role').value;
                 const pin = document.getElementById('new-emp-pin').value;
+                const phone = document.getElementById('new-emp-phone').value;
                 const type = document.getElementById('new-emp-type').value;
                 const rate = document.getElementById('new-emp-rate').value;
                 const salary = document.getElementById('new-emp-salary').value;
 
-                logDebug(`saveEmployee: Data [Name: ${name}, Role: ${role}, PIN: ${pin}, Type: ${type}]`);
+                logDebug(`saveEmployee: Data [Name: ${name}, Role: ${role}, PIN: ${pin}, Phone: ${phone}]`);
 
                 if (!name || !pin) {
                     alert("Name and PIN are required");
@@ -2971,6 +2976,7 @@
                     name: name,
                     role: role,
                     pin: pin,
+                    phone: phone,
                     pay_type: type,
                     hourly_rate: type === 'hourly' ? parseFloat(rate) || 0 : 0,
                     monthly_salary: type === 'salary' ? parseFloat(salary) || 0 : null,
@@ -2993,7 +2999,7 @@
                     alert("✅ Empleado agregado correctamente");
                     document.getElementById('add-emp-modal').classList.add('hidden');
                     // Reset fields
-                    ['new-emp-name', 'new-emp-pin', 'new-emp-rate', 'new-emp-salary'].forEach(id => {
+                    ['new-emp-name', 'new-emp-pin', 'new-emp-phone', 'new-emp-rate', 'new-emp-salary'].forEach(id => {
                         const el = document.getElementById(id);
                         if (el) el.value = '';
                     });
