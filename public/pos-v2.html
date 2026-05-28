@@ -1189,7 +1189,8 @@
         const DAILY_GOAL = 10000;
         // Only count orders that belong to the current active shift
         const todayOrders = liveOrders.filter(o => o.shift_id === currentShiftId);
-        const activeOrdersForSales = todayOrders.filter(o => !['completed', 'cancelled'].includes(o.status));
+        // INCLUSION: Count everything that was paid or completed
+        const activeOrdersForSales = todayOrders.filter(o => !['cancelled'].includes(o.status));
         const totalSales = activeOrdersForSales.reduce((s,o) => s + (parseFloat(o.total) || 0), 0);
         
         const salesEl = document.getElementById('health-sales');
@@ -1996,22 +1997,26 @@
 
     function confirmItem() {
         const mods = [];
+        let priceWithMods = parseFloat(currentItem.price) || 0;
         for (const gid in currentMods) {
             currentMods[gid].forEach(oid => {
                 const opt = modOptions.find(o => o.id === oid);
-                if (opt) mods.push({ name: opt.name });
+                if (opt) {
+                    mods.push({ name: opt.name });
+                    priceWithMods += (parseFloat(opt.price_adjustment) || 0);
+                }
             });
         }
         const note = document.getElementById('mod-note')?.value || "";
-        const unitPrice = parseFloat(document.getElementById('mod-final-price').innerText.replace('L. ', '')) / currentQuantity;
         const item = {
             ...currentItem,
             qty: currentQuantity,
-            price: unitPrice, // Unit Price
+            price: parseFloat(currentItem.price) || 0, // Base Price
+            unitPrice: priceWithMods, // Price + Mods
             mods,
             note,
-            finalPrice: unitPrice * currentQuantity, // Line Total
-            is_addon: currentOrderId ? true : false // Flag as new item for existing order
+            finalPrice: priceWithMods * currentQuantity, // Line Total
+            is_addon: currentOrderId ? true : false
         };
         cart.push(item);
         saveCartState();
@@ -2059,69 +2064,79 @@
         let applyRule = false;
         let selectedItemIds = [];
 
+        // --- STATUS ENGINE DETECTION ---
+        const tags = window.loadedCustomer && Array.isArray(window.loadedCustomer.tags) ? window.loadedCustomer.tags : [];
+        const isBlackCard = tags.includes('BlackCard');
+        const isEmployee = tags.includes('Employee');
+        const isVipEligible = window.loadedCustomer && window.loadedCustomer.is_vip_eligible;
+        
+        console.log(`[Pricing] Status: BC=${isBlackCard}, EMP=${isEmployee}, EligibleRitual=${isVipEligible}`);
+        
+        let freeDrinkUsed = false;
+        let discountedCount = 0;
+        const MAX_STATUS_DISCOUNTS = 2;
+
         if (manualDiscount) {
             discountPct = manualDiscount.pct;
             discountName = manualDiscount.name.toUpperCase();
             applyRule = manualDiscount.applyRule || false;
             selectedItemIds = manualDiscount.selectedItemIds || [];
-        } else if (window.loadedCustomer) {
-            const roleData = {
-                'senior': { pct: 25, name: 'TERCERA EDAD', rule: true },
-                'senior_plus': { pct: 35, name: 'CUARTA EDAD', rule: true },
-                'hero': { pct: 15, name: 'COMMUNITY HERO', rule: true },
-                'employee': { pct: 20, name: 'STAFF', rule: false }
-            };
-            const r = roleData[window.loadedCustomer.customer_type];
-            if (r) {
-                discountPct = r.pct;
-                discountName = r.name;
-                applyRule = r.rule;
-            }
         }
 
         let discountAmt = 0;
 
+        // --- PROCESS DISCOUNTS ---
         if (discountPct > 0) {
-            if (applyRule) {
-                if (selectedItemIds.length > 0) {
-                    // Use manually selected items
-                    selectedItemIds.forEach(idx => {
-                        const item = cart[idx];
-                        if (item) discountAmt += (parseFloat(item.price) * (discountPct / 100));
-                    });
-                } else {
-                    // Fallback to auto-select most expensive 1 drink + 1 food
-                    let foodDiscounted = false;
-                    let drinkDiscounted = false;
-                    const sorted = [...cart].sort((a,b) => parseFloat(b.price) - parseFloat(a.price));
-                    sorted.forEach(item => {
-                        // Don't discount the event fee!
-                        if (item.id === 'event_terrace_rental') return;
-
-                        if (isFood(item) && !foodDiscounted) {
-                            discountAmt += (parseFloat(item.price) * (discountPct / 100));
-                            foodDiscounted = true;
-                        } else if (isDrink(item) && !drinkDiscounted) {
-                            discountAmt += (parseFloat(item.price) * (discountPct / 100));
-                            drinkDiscounted = true;
-                        }
-                    });
+            // Manual Discount Logic
+            // ... (rest of logic)
+        } else if (window.loadedCustomer) {
+            // --- STATUS ENGINE AUTO-LOGIC ---
+            // Sort cart by price descending to discount most expensive items first
+            const sortedIndices = cart.map((_, i) => i).sort((a, b) => parseFloat(cart[b].price) - parseFloat(a.price));
+            
+            sortedIndices.forEach(idx => {
+                const item = cart[idx];
+                const itemId = (item.id || '').toLowerCase();
+                // Match items like 'hot_americano' or 'americano'
+                const isExclusion = itemId.includes('dubai_chocolate') || (item.category || '').toLowerCase().includes('retail');
+                
+                if (isExclusion) {
+                    console.log(`[Pricing] Skipping exclusion: ${item.name}`);
+                    return;
                 }
-            } else {
-                // If it's a flat discount (like employee), apply to everything EXCEPT event fee
-                const discountableSubtotal = cart.reduce((sum, item) => {
-                    if (item.id === 'event_terrace_rental') return sum;
-                    return sum + (parseFloat(item.finalPrice || 0));
-                }, 0);
-                discountAmt = discountableSubtotal * (discountPct / 100);
-            }
+
+                // 1. Check for Free Daily Ritual (Standard Coffee)
+                // Use a broader check for IDs like 'hot_americano'
+                const isStandardCoffee = itemId.includes('americano') || itemId.includes('latte') || itemId.includes('cappuccino') || (itemId.includes('iced_coffee') && !itemId.includes('frappe'));
+                
+                if (isVipEligible && !freeDrinkUsed && isStandardCoffee) {
+                    console.log(`[Pricing] Applying FREE ritual to: ${item.name}`);
+                    discountAmt += parseFloat(item.price);
+                    freeDrinkUsed = true;
+                    discountName = "RITUAL DIARIO (FREE)";
+                } 
+                // 2. Check for 50% Power (BlackCard or Employee)
+                else if ((isBlackCard || isEmployee) && discountedCount < MAX_STATUS_DISCOUNTS) {
+                    console.log(`[Pricing] Applying 50% Status Power to: ${item.name}`);
+                    discountAmt += (parseFloat(item.price) * 0.5);
+                    discountedCount++;
+                    if (!discountName || discountName === "DESCUENTO") discountName = isBlackCard ? "BLACK CARD 50%" : "STAFF 50%";
+                }
+                // 3. Fallback to Legacy VIP 50% on food if applicable
+                else if (window.loadedCustomer.is_vip && isFood(item) && discountedCount < MAX_STATUS_DISCOUNTS && !isBlackCard && !isEmployee) {
+                    console.log(`[Pricing] Applying 50% VIP Food to: ${item.name}`);
+                    discountAmt += (parseFloat(item.price) * 0.5);
+                    discountedCount++;
+                    if (!discountName || discountName === "DESCUENTO") discountName = "VIP FOOD 50%";
+                }
+            });
         }
 
         const rawTotal = subtotal - discountAmt;
         const roundedTotal = Math.round(rawTotal / 5) * 5;
         const finalDiscount = subtotal - roundedTotal;
 
-        return { subtotal, total: roundedTotal, discount: finalDiscount, name: discountName, pct: discountPct, applyRule, selectedItemIds };
+        return { subtotal, total: roundedTotal, discount: finalDiscount, name: discountName || "DESCUENTO", pct: discountPct, applyRule, selectedItemIds };
     }
     function renderCart() {
         const container = document.getElementById('cart-items');
@@ -2183,7 +2198,7 @@
             if (calc.selectedItemIds && calc.selectedItemIds.length > 0) {
                 hint.innerText = "* Aplicado a artículos seleccionados.";
             } else {
-                hint.innerText = "* Aplicado a 1 bebida y 1 comida máx.";
+                hint.innerText = "* Aplicado por Status (Máx 2 artículos).";
             }
             document.getElementById('discount-display').appendChild(hint);
         } else {
