@@ -183,7 +183,7 @@ async function createOrder(orderRequest, supabase = defaultSupabase) {
             restaurant_id: targetResId,
             shift_id: shiftId,
             scheduled_for: scheduledFor,
-            notes: (finalOrderData.tier !== 'Basic' ? `[STATUS: ${finalOrderData.tier.toUpperCase()}] [VERIFICAR ID] ` : '') + 
+            notes: (finalOrderData.tier !== 'Basic' ? `[STATUS: ${finalOrderData.tier.toUpperCase()}] [SALUDO: ${(customer?.name || '').split(' ')[0].toUpperCase()}] ` : '') + 
                    `[FULFILLMENT: ${fulfillment || 'pickup'}] ` + 
                    (guestPhone ? `[TEL: ${guestPhone}] ` : '') + 
                    (notes || '')
