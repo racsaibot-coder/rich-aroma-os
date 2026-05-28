@@ -336,6 +336,54 @@
         </div>
     </div>
 
+    <!-- LOGIN MODAL -->
+    <div id="login-overlay" class="hidden fixed inset-0 bg-black/95 z-[3000] backdrop-blur-xl flex items-center justify-center p-6 animate-in fade-in duration-300">
+        <div class="w-full max-w-sm space-y-8 text-center">
+            <div class="space-y-2">
+                <div class="w-20 h-20 bg-gold/10 rounded-[2rem] flex items-center justify-center mx-auto border border-gold/20 mb-4">
+                    <i class="fas fa-user-lock text-3xl text-gold"></i>
+                </div>
+                <h2 class="text-3xl font-display font-black text-white tracking-tight italic">¡Hola de nuevo!</h2>
+                <p class="text-white/40 text-[10px] font-black uppercase tracking-widest">Ingresa tu número y PIN para continuar</p>
+            </div>
+
+            <div class="space-y-4">
+                <div class="flex gap-2">
+                    <select id="login-country" class="bg-white/5 border border-white/10 p-5 rounded-[1.5rem] text-xs font-black text-gold outline-none">
+                        <option value="+504">🇭🇳 +504</option>
+                        <option value="+1">🇺🇸 +1</option>
+                    </select>
+                    <input type="tel" id="login-phone" placeholder="WhatsApp" class="flex-1 bg-white/5 border border-white/10 p-5 rounded-[1.5rem] text-white outline-none focus:border-gold font-bold">
+                </div>
+                
+                <!-- PIN Display Dots -->
+                <div class="flex justify-center gap-3 py-4">
+                    <div id="lpin-1" class="w-4 h-4 rounded-full border-2 border-white/20"></div>
+                    <div id="lpin-2" class="w-4 h-4 rounded-full border-2 border-white/20"></div>
+                    <div id="lpin-3" class="w-4 h-4 rounded-full border-2 border-white/20"></div>
+                    <div id="lpin-4" class="w-4 h-4 rounded-full border-2 border-white/20"></div>
+                </div>
+
+                <div class="grid grid-cols-3 gap-3">
+                    <button onclick="typeLoginPin('1')" class="h-16 rounded-2xl bg-white/5 text-white font-black text-xl active:bg-gold active:text-dark transition-all">1</button>
+                    <button onclick="typeLoginPin('2')" class="h-16 rounded-2xl bg-white/5 text-white font-black text-xl active:bg-gold active:text-dark transition-all">2</button>
+                    <button onclick="typeLoginPin('3')" class="h-16 rounded-2xl bg-white/5 text-white font-black text-xl active:bg-gold active:text-dark transition-all">3</button>
+                    <button onclick="typeLoginPin('4')" class="h-16 rounded-2xl bg-white/5 text-white font-black text-xl active:bg-gold active:text-dark transition-all">4</button>
+                    <button onclick="typeLoginPin('5')" class="h-16 rounded-2xl bg-white/5 text-white font-black text-xl active:bg-gold active:text-dark transition-all">5</button>
+                    <button onclick="typeLoginPin('6')" class="h-16 rounded-2xl bg-white/5 text-white font-black text-xl active:bg-gold active:text-dark transition-all">6</button>
+                    <button onclick="typeLoginPin('7')" class="h-16 rounded-2xl bg-white/5 text-white font-black text-xl active:bg-gold active:text-dark transition-all">7</button>
+                    <button onclick="typeLoginPin('8')" class="h-16 rounded-2xl bg-white/5 text-white font-black text-xl active:bg-gold active:text-dark transition-all">8</button>
+                    <button onclick="typeLoginPin('9')" class="h-16 rounded-2xl bg-white/5 text-white font-black text-xl active:bg-gold active:text-dark transition-all">9</button>
+                    <button onclick="clearLoginPin()" class="h-16 rounded-2xl bg-white/5 text-white/20 font-black text-sm active:bg-red-500/20"><i class="fas fa-backspace"></i></button>
+                    <button onclick="typeLoginPin('0')" class="h-16 rounded-2xl bg-white/5 text-white font-black text-xl active:bg-gold active:text-dark transition-all">0</button>
+                    <button id="login-submit-btn" onclick="submitLogin()" class="h-16 rounded-2xl bg-gold/20 text-gold font-black text-sm uppercase tracking-widest active:scale-95 transition-all">OK</button>
+                </div>
+            </div>
+
+            <button onclick="window.closeLogin()" class="text-white/20 text-[10px] font-black uppercase tracking-widest pt-4">Cancelar</button>
+        </div>
+    </div>
+
     <!-- STICKY CATEGORIES -->
     <nav id="sticky-cats" class="sticky top-[68px] z-50 bg-dark/80 backdrop-blur-sm border-b border-white/5 flex gap-2 overflow-x-auto p-4 hide-scrollbar"></nav>
 

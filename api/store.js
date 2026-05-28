@@ -143,7 +143,8 @@ module.exports = async (req, res) => {
             
             // Add Daily Coffee Logic
             const today = getHondurasDate();
-            const isVip = data.is_vip === true || (data.tags && data.tags.includes('VIP'));
+            const tags = Array.isArray(data.tags) ? data.tags : [];
+            const isVip = data.is_vip === true || tags.includes('VIP') || tags.includes('BlackCard');
             data.is_vip_eligible = isVip && (data.last_free_drink_date !== today);
             
             return res.json(data);

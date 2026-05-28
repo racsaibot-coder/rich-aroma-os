@@ -893,6 +893,89 @@
             }
         }
 
+        let loginPin = "";
+        window.openLogin = () => {
+            document.getElementById('login-overlay').classList.remove('hidden');
+            loginPin = "";
+            updateLoginPinDisplay();
+        };
+
+        window.closeLogin = () => {
+            document.getElementById('login-overlay').classList.add('hidden');
+        };
+
+        window.typeLoginPin = (num) => {
+            if (loginPin.length < 4) {
+                loginPin += num;
+                updateLoginPinDisplay();
+                if (loginPin.length === 4) {
+                    setTimeout(submitLogin, 300);
+                }
+            }
+        };
+
+        window.clearLoginPin = () => {
+            loginPin = "";
+            updateLoginPinDisplay();
+        };
+
+        function updateLoginPinDisplay() {
+            for (let i = 1; i <= 4; i++) {
+                const dot = document.getElementById(`lpin-${i}`);
+                if (dot) {
+                    dot.classList.toggle('bg-white', i <= loginPin.length);
+                    dot.classList.toggle('border-white/20', i > loginPin.length);
+                }
+            }
+        }
+
+        window.submitLogin = async () => {
+            const country = document.getElementById('login-country').value;
+            const rawPhone = document.getElementById('login-phone').value.replace(/\D/g, '');
+            const phone = country + rawPhone;
+            const btn = document.getElementById('login-submit-btn');
+
+            if (rawPhone.length < 8 || loginPin.length < 4) {
+                alert("Ingresa tu número y PIN completo.");
+                return;
+            }
+
+            btn.innerText = "...";
+            btn.disabled = true;
+
+            try {
+                // 1. Verify PIN and get profile
+                const res = await fetch(`/api/customer/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ phone, pin: loginPin })
+                });
+
+                const data = await res.json();
+
+                if (res.ok && data.success) {
+                    localStorage.setItem('ra_customer_phone', phone);
+                    localStorage.setItem('ra_customer_pin', loginPin);
+                    location.reload(); // Refresh to apply status pricing
+                } else {
+                    alert(data.error || "PIN Incorrecto o cuenta no encontrada.");
+                    window.clearLoginPin();
+                }
+            } catch (e) {
+                alert("Error de conexión. Intenta de nuevo.");
+            } finally {
+                btn.innerText = "OK";
+                btn.disabled = false;
+            }
+        };
+
+        window.logout = () => {
+            localStorage.removeItem('ra_customer_phone');
+            localStorage.removeItem('ra_customer_pin');
+            localStorage.removeItem('ra_active_order');
+            location.reload();
+        };
+
         window.openProfile = () => {
             if(!currentCustomer) return window.openLogin();
             document.getElementById('prof-name').innerText = currentCustomer.name;
