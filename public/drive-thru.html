@@ -53,6 +53,7 @@
             </div>
         </div>
         <div class="flex items-center gap-2">
+            <button onclick="startPersonalOrder()" id="btn-self-order" class="hidden h-10 px-4 flex items-center justify-center bg-gold/10 text-gold border border-gold/20 rounded-xl text-[9px] font-black uppercase tracking-widest">Personal</button>
             <button onclick="startScanner()" class="w-10 h-10 flex items-center justify-center bg-blue-600 rounded-xl text-white shadow-lg shadow-blue-900/40"><i class="fas fa-qrcode"></i></button>
             <button onclick="logout()" class="w-10 h-10 flex items-center justify-center bg-white/5 rounded-xl text-white/20"><i class="fas fa-sign-out-alt"></i></button>
         </div>
@@ -406,8 +407,41 @@
                     localStorage.setItem('ra_pos_session', JSON.stringify(currentEmployee));
                     document.getElementById('login-modal').classList.add('hidden');
                     document.getElementById('cashier-name').innerText = currentEmployee.name;
+                    document.getElementById('btn-self-order').classList.remove('hidden');
                 } else { alert(data.error || "PIN Inválido"); clearPin(); }
             } catch(e) { alert("Error de red"); clearPin(); }
+        }
+
+        async function startPersonalOrder() {
+            if (!currentEmployee) return;
+            try {
+                // Fetch or Create the staff customer profile
+                const res = await fetch(`/api/store?action=customer_by_phone&query=${encodeURIComponent(currentEmployee.name)}`, {
+                    headers: { 'Authorization': 'Bearer EMP-admin' }
+                });
+                
+                let customer;
+                if (res.ok) {
+                    customer = await res.json();
+                } else {
+                    const createRes = await fetch('/api/store?action=customer_create', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer EMP-admin' },
+                        body: JSON.stringify({
+                            name: `[STAFF] ${currentEmployee.name}`,
+                            phone: `EMP${currentEmployee.pin}`,
+                            customer_type: 'Employee'
+                        })
+                    });
+                    customer = await createRes.json();
+                }
+                
+                currentCustomerId = customer.id;
+                alert(`👋 ¡Hola ${currentEmployee.name}! Tu consumo personal ahora tiene 50% de descuento.`);
+                showView('menu');
+            } catch (e) {
+                alert("Error vinculando perfil de consumo.");
+            }
         }
 
         function logout() { localStorage.removeItem('ra_pos_session'); location.reload(); }

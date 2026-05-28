@@ -32,19 +32,25 @@ function applyVipBenefits(orderItems, customer) {
         let appliedDiscount = 0;
         const itemId = (item.id || '').toLowerCase();
 
-        // RULE 1: Daily Drink Validation (Free) - Legacy VIP ONLY
-        if (canClaimFreeDrink && !freeDrinkClaimedThisOrder && item.is_vip_free_eligible) {
+        // RULE 1: Daily Drink Validation (Free)
+        // Black Card gets 1 standard coffee free per day.
+        // Legacy VIP also gets 1 free drink.
+        const isStandardCoffee = itemId.includes('americano') || itemId.includes('latte') || itemId.includes('cappuccino') || (itemId.includes('iced_coffee') && !itemId.includes('frappe'));
+        
+        if (canClaimFreeDrink && !freeDrinkClaimedThisOrder && isStandardCoffee) {
             appliedDiscount = finalPrice;
             finalPrice = 0;
             freeDrinkClaimedThisOrder = true;
             item.is_free_benefit = true;
+            item.free_drink_note = "Ritual Diario";
         }
 
         // RULE 2: Status Engine 50% Power
         // Conditions: In-house made, NOT Dubai Chocolate, NOT Retail
         const isExclusion = itemId.includes('dubai_chocolate') || (item.category || '').toLowerCase().includes('retail');
         
-        if (hasFiftyPercentPower && item.is_house_made && !isExclusion && finalPrice > 0) {
+        // If it was already made free, don't apply 50%
+        if (hasFiftyPercentPower && item.is_house_made && !isExclusion && finalPrice > 0 && appliedDiscount === 0) {
             const discount = finalPrice * 0.50;
             finalPrice -= discount;
             appliedDiscount += discount;
