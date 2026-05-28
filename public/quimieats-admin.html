@@ -12,6 +12,21 @@
         .glass { background: rgba(255, 255, 255, 0.03); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.05); }
         .cyan-glow { box-shadow: 0 0 20px rgba(0, 242, 255, 0.15); }
         .hide-scrollbar::-webkit-scrollbar { display: none; }
+        
+        /* Fix for White-on-White Dropdowns */
+        select {
+            background-color: #1A1A1C !important;
+            color: white !important;
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='white'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 1rem center;
+            background-size: 1em;
+        }
+        select option {
+            background-color: #1A1A1C;
+            color: white;
+        }
     </style>
 </head>
 <body class="p-4 md:p-10">
@@ -134,7 +149,7 @@
             <header class="flex flex-col md:flex-row justify-between items-end gap-6">
                 <div class="flex-1 space-y-2">
                     <label class="text-[10px] font-black uppercase text-white/20 tracking-widest">Seleccionar Negocio</label>
-                    <select id="prod-res-selector" onchange="loadProducts()" class="w-full bg-white/5 border border-white/10 p-5 rounded-2xl outline-none focus:border-cyan-500 font-bold text-white text-lg">
+                    <select id="prod-res-selector" onchange="loadProducts()" class="w-full border-2 border-white/5 p-5 rounded-2xl outline-none focus:border-cyan-500 font-bold text-white text-lg cursor-pointer hover:bg-white/5 transition-all">
                         <!-- Restaurants injected here -->
                     </select>
                 </div>
