@@ -76,9 +76,57 @@
             </div>
             </div>
     <div id="admin-content" class="hidden max-w-4xl mx-auto">
+        <!-- MODALS (Inside content to ensure they show when dashboard is active) -->
+        <div id="add-emp-modal" class="hidden" style="position: fixed; inset: 0; background: rgba(0,0,0,0.85); display: none; align-items: center; justify-center: center; z-index: 99999; backdrop-filter: blur(8px);">
+            <div class="bg-white w-full max-w-sm rounded-[2rem] shadow-2xl p-10 animate-in fade-in zoom-in duration-300">
+                <h2 class="text-3xl font-black uppercase tracking-tight mb-6 text-dark">New Employee</h2>
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-[10px] font-black text-gray-400 uppercase mb-1 tracking-widest">Full Name</label>
+                        <input type="text" id="new-emp-name" class="w-full border-2 border-gray-100 rounded-2xl p-4 outline-none focus:border-blue-500 font-bold" placeholder="Juan Perez">
+                    </div>
+                    <div>
+                        <label class="block text-[10px] font-black text-gray-400 uppercase mb-1 tracking-widest">Role</label>
+                        <select id="new-emp-role" class="w-full border-2 border-gray-100 rounded-2xl p-4 outline-none focus:border-blue-500 font-bold">
+                            <option value="barista">Barista / Operator</option>
+                            <option value="barista_cashier">Barista / Caja</option>
+                            <option value="cook">Cocinero (Cook)</option>
+                            <option value="barista_cook">Barista / Cocina</option>
+                            <option value="admin">Manager / Admin</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-[10px] font-black text-gray-400 uppercase mb-1 tracking-widest">POS PIN (4 digits)</label>
+                        <input type="text" id="new-emp-pin" maxlength="4" class="w-full border-2 border-gray-100 rounded-2xl p-4 outline-none focus:border-blue-500 tracking-[0.5em] text-xl font-black text-center" placeholder="1234">
+                    </div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-[10px] font-black text-gray-400 uppercase mb-1 tracking-widest">Pay Type</label>
+                            <select id="new-emp-type" class="w-full border-2 border-gray-100 rounded-2xl p-4 outline-none focus:border-blue-500 font-bold" onchange="togglePayFields()">
+                                <option value="hourly">Hourly</option>
+                                <option value="salary">Salary (Mensual)</option>
+                            </select>
+                        </div>
+                        <div id="hourly-rate-container">
+                            <label class="block text-[10px] font-black text-gray-400 uppercase mb-1 tracking-widest">Rate (Lps/hr)</label>
+                            <input type="number" id="new-emp-rate" class="w-full border-2 border-gray-100 rounded-2xl p-4 outline-none focus:border-blue-500 font-black" placeholder="75">
+                        </div>
+                        <div id="salary-container" class="hidden">
+                            <label class="block text-[10px] font-black text-gray-400 uppercase mb-1 tracking-widest">Monthly Salary</label>
+                            <input type="number" id="new-emp-salary" class="w-full border-2 border-gray-100 rounded-2xl p-4 outline-none focus:border-blue-500 font-black" placeholder="12540">
+                        </div>
+                    </div>
+                </div>
+                <div class="flex gap-4 mt-8">
+                    <button onclick="closeModal('add-emp-modal')" class="w-1/2 bg-gray-100 text-gray-400 py-4 rounded-2xl font-black uppercase tracking-widest text-[10px]">Cancel</button>
+                    <button onclick="saveEmployee()" id="save-emp-btn" class="w-1/2 bg-blue-600 text-white py-4 rounded-2xl font-black uppercase tracking-widest text-[10px] shadow-lg shadow-blue-600/20">Save</button>
+                </div>
+            </div>
+        </div>
+
         <h1 class="text-3xl font-bold mb-6 flex items-center gap-2">
             <i class="fas fa-user-shield text-blue-600"></i> Admin Dashboard
-            <span class="text-[10px] bg-blue-100 text-blue-600 px-2 py-0.5 rounded-full border border-blue-200">v3.0.1-ts1779939700</span>
+            <span class="text-[10px] bg-blue-100 text-blue-600 px-2 py-0.5 rounded-full border border-blue-200">v3.0.1-ts1779939900</span>
             <div class="ml-auto flex gap-2">
                 <button onclick="startGuide()" class="bg-amber-100 text-amber-700 text-xs px-4 py-2 rounded-full font-black uppercase tracking-widest hover:bg-amber-200 transition border border-amber-200">
                     <i class="fas fa-book-open mr-2"></i> System Guide
