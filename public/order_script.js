@@ -183,7 +183,6 @@
                 {id:'Café', n:'Café', i:'☕'},
                 {id:'Heladas', n:'Heladas', i:'🥤'},
                 {id:'Postres', n:'Postres', i:'🍰'},
-                {id:'retail', n:'Deportes', i:'⚽️'},
                 {id:'Menú Secreto', n:'Secreto', i:'🤫'}
             ];
             const nav = document.getElementById('sticky-cats');
@@ -300,6 +299,9 @@
 
                 let html = dashboardHtml;
                 sortedCategories.forEach(category => {
+                    // --- SECURITY: Hide internal categories from public view ---
+                    if (category === 'Deportes' || category === 'retail') return;
+
                     let items = categories[category];
                     items.sort((a, b) => a.name.localeCompare(b.name, undefined, {numeric: true, sensitivity: 'base'}));
 

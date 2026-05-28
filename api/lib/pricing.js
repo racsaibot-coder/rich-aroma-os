@@ -24,13 +24,13 @@ function applyVipBenefits(orderItems, customer) {
     // Rule: Employee and Black Card get the "Status Engine" 50% power
     const hasFiftyPercentPower = isEmployee || isBlackCard;
 
-    // --- STATUS FAIRNESS RULES ---
-    // 1. Quantity Cap: Max 2 items per order get the 50% power (prevents buying for the whole office)
+    // Check daily eligibility for free drink (Black Card or Legacy VIP)
+    // NOTE: Black Card gets the ritual too
+    const canClaimFreeDrink = (isBlackCard || isLegacyVip) && (customer.last_free_drink_date !== today);
+
+    // Fairness Cap
     const MAX_DISCOUNTED_ITEMS = 2;
     let discountedItemCount = 0;
-
-    // Check daily eligibility for free drink (Legacy VIP perk)
-    const canClaimFreeDrink = isLegacyVip && !isBlackCard && (customer.last_free_drink_date !== today);
 
     const processedItems = orderItems.map(item => {
         let finalPrice = parseFloat(item.price) || 0;
@@ -38,7 +38,6 @@ function applyVipBenefits(orderItems, customer) {
         const itemId = (item.id || '').toLowerCase();
 
         // RULE 1: Daily Drink Validation (Free)
-        // ... (Standard Coffee Logic)
         const isStandardCoffee = itemId.includes('americano') || itemId.includes('latte') || itemId.includes('cappuccino') || (itemId.includes('iced_coffee') && !itemId.includes('frappe'));
         
         if (canClaimFreeDrink && !freeDrinkClaimedThisOrder && isStandardCoffee) {
@@ -52,21 +51,21 @@ function applyVipBenefits(orderItems, customer) {
         // RULE 2: Status Engine 50% Power
         const isExclusion = itemId.includes('dubai_chocolate') || (item.category || '').toLowerCase().includes('retail');
         
-        if (hasFiftyPercentPower && item.is_house_made && !isExclusion && finalPrice > 0 && appliedDiscount === 0) {
-            // Apply cap logic
+        if (hasFiftyPercentPower && !item.is_free_benefit && item.is_house_made && !isExclusion && finalPrice > 0) {
+            // console.log(`[Pricing] Power active for ${item.name}. Count: ${discountedItemCount}/${MAX_DISCOUNTED_ITEMS}`);
             if (discountedItemCount < MAX_DISCOUNTED_ITEMS) {
                 const discount = finalPrice * 0.50;
                 finalPrice -= discount;
                 appliedDiscount += discount;
                 item.status_discount_applied = true;
-                discountedItemCount += (item.qty || 1);
+                discountedItemCount += 1;
             } else {
-                item.status_discount_capped = true; // Noted for UI
+                item.status_discount_capped = true;
             }
         }
         
-        // Legacy 50% on Bakery if not already discounted
-        if (isLegacyVip && !hasFiftyPercentPower && item.is_house_made && finalPrice > 0 && appliedDiscount === 0) {
+        // Legacy 50% for VIPs who aren't BlackCard
+        if (isLegacyVip && !hasFiftyPercentPower && !item.is_free_benefit && item.is_house_made && finalPrice > 0) {
             const discount = finalPrice * 0.50;
             finalPrice -= discount;
             appliedDiscount += discount;
@@ -76,11 +75,12 @@ function applyVipBenefits(orderItems, customer) {
             ...item,
             finalPrice: parseFloat(finalPrice.toFixed(2)),
             appliedDiscount: parseFloat(appliedDiscount.toFixed(2)),
-            qty: item.qty || 1
+            qty: item.qty || 1,
+            free_drink_note: item.free_drink_note
         };
     });
 
-    const finalTotal = processedItems.reduce((sum, i) => sum + (i.finalPrice * i.qty), 0);
+    const finalTotal = processedItems.reduce((sum, i) => sum + (i.finalPrice * (i.qty || 1)), 0);
 
     return {
         items: processedItems,
