@@ -38,7 +38,7 @@
             <div>
                 <h2 class="text-3xl font-black text-white tracking-tight">Staff Login</h2>
                 <p class="text-white/50 text-xs font-bold uppercase tracking-widest mt-2">Rich Aroma OS v3.0.1-DEPLOYED</p>
-                <div class="mt-2 inline-block px-2 py-1 bg-green-500/20 text-green-400 text-[8px] font-bold rounded uppercase tracking-widest border border-green-500/30">Build: ts1779899147</div>
+                <div class="mt-2 inline-block px-2 py-1 bg-green-500/20 text-green-400 text-[8px] font-bold rounded uppercase tracking-widest border border-green-500/30">Build: ts1779939500</div>
             </div>
 
             <!-- PIN Display -->
@@ -78,7 +78,7 @@
     <div id="admin-content" class="hidden max-w-4xl mx-auto">
         <h1 class="text-3xl font-bold mb-6 flex items-center gap-2">
             <i class="fas fa-user-shield text-blue-600"></i> Admin Dashboard
-            <span class="text-[10px] bg-blue-100 text-blue-600 px-2 py-0.5 rounded-full border border-blue-200">v3.0.1-ts1779899147</span>
+            <span class="text-[10px] bg-blue-100 text-blue-600 px-2 py-0.5 rounded-full border border-blue-200">v3.0.1-ts1779939500</span>
             <div class="ml-auto flex gap-2">
                 <button onclick="startGuide()" class="bg-amber-100 text-amber-700 text-xs px-4 py-2 rounded-full font-black uppercase tracking-widest hover:bg-amber-200 transition border border-amber-200">
                     <i class="fas fa-book-open mr-2"></i> System Guide
@@ -209,7 +209,7 @@
         <div id="section-employees" class="hidden">
             <div class="flex justify-between items-center mb-4">
                 <h2 class="text-xl font-bold">Team Management</h2>
-                <button onclick="document.getElementById('add-emp-modal').classList.remove('hidden')" class="bg-blue-600 text-white px-4 py-2 rounded-lg font-bold shadow hover:bg-blue-700">+ Add Employee</button>
+                <button onclick="document.getElementById('add-emp-modal').style.display='flex'; document.getElementById('add-emp-modal').classList.remove('hidden')" class="bg-blue-600 text-white px-4 py-2 rounded-lg font-bold shadow hover:bg-blue-700">+ Add Employee</button>
             </div>
 
             <div class="bg-white rounded-2xl shadow-lg overflow-hidden mb-8">
@@ -692,7 +692,7 @@
             </div>
         </div>
     </div>
-    <div id="add-emp-modal" class="hidden fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50">
+    <div id="add-emp-modal" class="hidden fixed inset-0 bg-black/70 flex items-center justify-center z-[300]">
         <div class="bg-white w-full max-w-sm rounded-2xl shadow-2xl p-6">
             <h2 class="text-2xl font-bold mb-4">New Employee</h2>
             <div class="space-y-4">
@@ -740,7 +740,7 @@
     </div>
 
     <!-- EDIT MODIFIERS MODAL -->
-    <div id="edit-modifiers-modal" class="hidden fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50">
+    <div id="edit-modifiers-modal" class="hidden fixed inset-0 bg-black/70 flex items-center justify-center z-[300]">
         <div class="bg-white w-full max-w-sm rounded-2xl shadow-2xl p-6 max-h-[80vh] flex flex-col">
             <h2 class="text-xl font-bold mb-4" id="edit-modifiers-title">Edit Modifiers</h2>
             <input type="hidden" id="edit-modifiers-item-id">
