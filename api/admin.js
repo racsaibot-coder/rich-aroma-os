@@ -681,14 +681,22 @@ module.exports = async function handler(req, res) {
         
         // Merge them
         const restaurants = rRes.data || [];
-        const partnersFromLeads = (rLeads.data || []).map(l => ({
-            id: l.restaurant_name.toLowerCase().trim().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, ''),
-            name: l.restaurant_name,
-            logo_url: l.logo_url,
-            contact_phone: l.phone,
-            category: l.category || 'restaurante',
-            status: 'active'
-        }));
+        const partnersFromLeads = (rLeads.data || []).map(l => {
+            // Stability: Use existing lead ID if it's already a slug, or generate a clean one
+            const slug = l.restaurant_name.toLowerCase().trim()
+                .replace(/\s+/g, '-')       // spaces to -
+                .replace(/-+/g, '-')        // collapse multiple -- to -
+                .replace(/[^a-z0-9-]/g, ''); // remove non-alphanumeric except -
+            
+            return {
+                id: slug,
+                name: l.restaurant_name,
+                logo_url: l.logo_url,
+                contact_phone: l.phone,
+                category: l.category || 'restaurante',
+                status: 'active'
+            };
+        });
 
         // Combine and remove duplicates by name
         const combined = [...restaurants];
