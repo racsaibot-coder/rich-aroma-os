@@ -682,11 +682,15 @@ module.exports = async function handler(req, res) {
         // Merge them
         const restaurants = rRes.data || [];
         const partnersFromLeads = (rLeads.data || []).map(l => {
-            // Stability: Use existing lead ID if it's already a slug, or generate a clean one
-            const slug = l.restaurant_name.toLowerCase().trim()
-                .replace(/\s+/g, '-')       // spaces to -
-                .replace(/-+/g, '-')        // collapse multiple -- to -
-                .replace(/[^a-z0-9-]/g, ''); // remove non-alphanumeric except -
+            // Priority: If it is Fradas, we MUST use the ID that matches the menu_items table
+            let slug = l.restaurant_name.toLowerCase().trim()
+                .replace(/\s+/g, '-')
+                .replace(/-+/g, '-')
+                .replace(/[^a-z0-9-]/g, '');
+
+            if (l.restaurant_name.includes('Fradas')) {
+                slug = 'fradas-bar--grill-445'; // Hard match for current menu data
+            }
             
             return {
                 id: slug,
