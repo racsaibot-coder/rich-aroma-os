@@ -696,60 +696,51 @@ module.exports = async function handler(req, res) {
         res.setHeader('Pragma', 'no-cache');
         res.setHeader('Expires', '0');
 
-        const [rRes, rLeads] = await Promise.all([
-            supabase.from('restaurants').select('*').order('name', { ascending: true }),
-            supabase.from('quimieats_leads').select('*').eq('status', 'partner').order('restaurant_name', { ascending: true })
-        ]);
-        
-        // Merge them
-        const restaurants = rRes.data || [];
-        const partnersFromLeads = (rLeads.data || []).map(l => {
-            // Stability: Use existing lead ID if it's already a slug, or generate a clean one
-            let slug = l.restaurant_name.toLowerCase().trim()
-                .replace(/\s+/g, '-')
-                .replace(/-+/g, '-')
-                .replace(/[^a-z0-9-]/g, '');
+        try {
+            // 1. Fetch EVERYTHING from both tables to find our Elite 4
+            const [rRes, rLeads] = await Promise.all([
+                supabase.from('restaurants').select('*'),
+                supabase.from('quimieats_leads').select('*')
+            ]);
 
-            if (l.restaurant_name.includes('Fradas')) slug = 'fradas-bar--grill-445';
-            if (l.restaurant_name.includes('Tony')) slug = 'tonys-pizza';
-            if (l.restaurant_name.includes('Aroma')) slug = 'rich-aroma';
-            if (l.restaurant_name.includes('Mes')) slug = 'el-meson';
+            const allData = [...(rRes.data || []), ...(rLeads.data || [])];
+            
+            // 2. Define the Elite 4 Search Rules
+            const eliteRules = [
+                { match: 'Fradas', id: 'fradas-bar--grill-445', name: 'Fradas Bar & Grill', cat: 'restaurante' },
+                { match: 'Aroma', id: 'rich-aroma', name: 'Rich Aroma Coffee Shop', cat: 'café' },
+                { match: 'Tony', id: 'tonys-pizza', name: "Tonny's Pizza", cat: 'restaurante' },
+                { match: 'Mes', id: 'el-meson', name: 'El Mesón Del Pan', cat: 'pastry' }
+            ];
 
-            return {
-                id: slug,
-                name: l.restaurant_name,
-                logo_url: l.logo_url,
-                contact_phone: l.phone,
-                category: l.category || 'restaurante',
-                status: 'active'
-            };
-        });
+            const finalElite = [];
+            const seenIds = new Set();
 
-        // --- THE ELITE 4 WHITELIST ---
-        // Force the marketplace to ONLY show these 4 core businesses
-        const whitelist = ['fradas-bar--grill-445', 'tonys-pizza', 'rich-aroma', 'el-meson'];
-        
-        const combined = [];
-        const seen = new Set();
+            eliteRules.forEach(rule => {
+                // Find the first record that matches this rule
+                const record = allData.find(d => 
+                    (d.name && d.name.includes(rule.match)) || 
+                    (d.restaurant_name && d.restaurant_name.includes(rule.match))
+                );
 
-        // Process whitelist in order
-        [...restaurants, ...partnersFromLeads].forEach(p => {
-            if (whitelist.includes(p.id) && !seen.has(p.id)) {
-                combined.push(p);
-                seen.add(p.id);
-            }
-        });
+                if (record && !seenIds.has(rule.id)) {
+                    finalElite.push({
+                        id: rule.id,
+                        name: rule.name,
+                        logo_url: record.logo_url || '',
+                        contact_phone: record.phone || record.contact_phone || '',
+                        category: rule.cat,
+                        status: 'active'
+                    });
+                    seenIds.add(rule.id);
+                }
+            });
 
-        // Ensure proper names for those that might have weird lead names
-        const finalElite = combined.map(res => {
-            if (res.id === 'fradas-bar--grill-445') res.name = "Fradas Bar & Grill";
-            if (res.id === 'tonys-pizza') res.name = "Tonny's Pizza";
-            if (res.id === 'rich-aroma') res.name = "Rich Aroma Coffee Shop";
-            if (res.id === 'el-meson') res.name = "El Mesón Del Pan";
-            return res;
-        });
-
-        return res.json(finalElite);
+            return res.json(finalElite);
+        } catch (e) {
+            console.error("[Admin API] Elite 4 Fetch Fail:", e);
+            return res.status(500).json({ error: e.message });
+        }
     }
 
     if (action === 'approve_quimieats_lead' && req.method === 'POST') {
