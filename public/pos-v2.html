@@ -2098,8 +2098,39 @@
 
         // --- PROCESS DISCOUNTS ---
         if (discountPct > 0) {
-            // Manual Discount Logic
-            // ... (rest of logic)
+            // --- MANUAL DISCOUNT LOGIC ---
+            if (applyRule) {
+                // Rule-based (e.g. 👵 Tercera Edad)
+                if (selectedItemIds.length > 0) {
+                    selectedItemIds.forEach(idx => {
+                        const item = cart[idx];
+                        // FIX: Account for quantity in manual discount
+                        if (item) discountAmt += (parseFloat(item.price) * item.qty * (discountPct / 100));
+                    });
+                } else {
+                    // Auto-select most expensive 1 food + 1 drink (Legacy style)
+                    let foodDiscounted = false;
+                    let drinkDiscounted = false;
+                    const sorted = [...cart].sort((a,b) => parseFloat(b.price) - parseFloat(a.price));
+                    sorted.forEach(item => {
+                        if (item.id === 'event_terrace_rental') return;
+                        if (isFood(item) && !foodDiscounted) {
+                            discountAmt += (parseFloat(item.price) * (discountPct / 100)); // Still 1x for legacy rules
+                            foodDiscounted = true;
+                        } else if (isDrink(item) && !drinkDiscounted) {
+                            discountAmt += (parseFloat(item.price) * (discountPct / 100)); // Still 1x
+                            drinkDiscounted = true;
+                        }
+                    });
+                }
+            } else {
+                // Flat Discount (e.g. 20% OFF total)
+                const discountableSubtotal = cart.reduce((sum, item) => {
+                    if (item.id === 'event_terrace_rental') return sum;
+                    return sum + (parseFloat(item.finalPrice || 0));
+                }, 0);
+                discountAmt = discountableSubtotal * (discountPct / 100);
+            }
         } else if (window.loadedCustomer) {
             // --- STATUS ENGINE AUTO-LOGIC ---
             // Sort cart by price descending to discount most expensive items first
@@ -2112,35 +2143,41 @@
                 
                 // Exclusions: Retail, Sports, and high-cost items
                 const isExclusion = itemId.includes('dubai_chocolate') || itemCat.includes('retail') || itemCat.includes('deporte') || itemCat.includes('deportes');
-                const isHouseMade = item.is_house_made || !isExclusion; // Robust fallback
+                const isHouseMade = item.is_house_made || !isExclusion;
 
                 if (isExclusion) return;
 
                 // 1. Check for Free Daily Ritual (Standard Coffee)
                 const isStandardCoffee = itemId.includes('americano') || itemId.includes('latte') || itemId.includes('cappuccino') || (itemId.includes('iced_coffee') && !itemId.includes('frappe'));
                 
+                let unitsHandled = 0;
+
                 if (isVipEligible && !freeDrinkUsed && isStandardCoffee) {
                     discountAmt += parseFloat(item.price);
                     freeDrinkUsed = true;
+                    unitsHandled = 1;
                     discountName = "RITUAL DIARIO (FREE)";
                 } 
                 
                 // 2. Check for 50% Power (BlackCard or Employee)
-                else if ((isBlackCard || isEmployee) && discountedCount < MAX_STATUS_DISCOUNTS && isHouseMade) {
+                if ((isBlackCard || isEmployee) && isHouseMade) {
                     const remainingSpots = MAX_STATUS_DISCOUNTS - discountedCount;
-                    const alreadyDiscountedUnits = (freeDrinkUsed && isStandardCoffee && item.id === cart[idx].id) ? 1 : 0;
-                    const unitsToDiscount = Math.min(item.qty - alreadyDiscountedUnits, remainingSpots);
+                    const unitsToFifty = Math.min(item.qty - unitsHandled, Math.max(0, remainingSpots));
                     
-                    if (unitsToDiscount > 0) {
-                        discountAmt += (parseFloat(item.price) * 0.5 * unitsToDiscount);
-                        discountedCount += unitsToDiscount;
+                    if (unitsToFifty > 0) {
+                        discountAmt += (parseFloat(item.price) * 0.5 * unitsToFifty);
+                        discountedCount += unitsToFifty;
+                        unitsHandled += unitsToFifty;
                         if (!discountName || discountName === "DESCUENTO") discountName = isBlackCard ? "BLACK CARD 50%" : "STAFF 50%";
                     }
+
+                    // 3. FALLBACK: 15% OFF for remaining units of this item (Status protection)
+                    const remainingUnits = item.qty - unitsHandled;
+                    if (remainingUnits > 0) {
+                        discountAmt += (parseFloat(item.price) * 0.15 * remainingUnits);
+                    }
                 }
-                
-                // 3. Status Engine Fallback (15% OFF)
-                // BlackCard/Employee get 15% on everything else (offsets the 15% hike)
-                // Regular VIP gets 15% on everything house-made
+                // 4. Fallback for Regular VIPs (15% OFF everything house-made)
                 else if (window.loadedCustomer.is_vip && isHouseMade) {
                     discountAmt += (parseFloat(item.price) * 0.15 * item.qty);
                     if (!discountName || discountName === "DESCUENTO") discountName = "REGULAR (15% OFF)";
@@ -2289,7 +2326,7 @@
                         <div class="flex items-center gap-3">
                             <input type="checkbox" 
                                    ${!canSelect ? 'disabled' : ''} 
-                                   onchange="window.toggleDiscountItem('${idx}', this.checked)"
+                                   onchange="window.toggleDiscountItem('${idx}', this.checked, this)"
                                    class="w-5 h-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500">
                             <div>
                                 <p class="text-[11px] font-black uppercase text-dark">${item.qty}x ${item.name}</p>
@@ -2306,7 +2343,7 @@
         }
     };
 
-    window.toggleDiscountItem = (idx, checked) => {
+    window.toggleDiscountItem = (idx, checked, target) => {
         idx = parseInt(idx);
         const item = cart[idx];
         if (checked) {
@@ -2317,11 +2354,11 @@
             const selectedItems = pendingDiscount.selectedItemIds.map(i => cart[i]);
             if (isD && selectedItems.some(x => isDrink(x))) {
                 alert("Solo se puede aplicar a 1 bebida por orden");
-                event.target.checked = false; return;
+                if (target) target.checked = false; return;
             }
             if (isF && selectedItems.some(x => isFood(x))) {
                 alert("Solo se puede aplicar a 1 comida por orden");
-                event.target.checked = false; return;
+                if (target) target.checked = false; return;
             }
             pendingDiscount.selectedItemIds.push(idx);
         } else {
