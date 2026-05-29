@@ -627,11 +627,15 @@ module.exports = async function handler(req, res) {
         const { items } = req.body;
         if (!Array.isArray(items) || items.length === 0) return res.status(400).json({ error: "No items provided" });
 
-        // Add IDs to items
+        // Add IDs and required fields to items
         const preparedItems = items.map(item => ({
             ...item,
-            id: 'item_' + Date.now() + Math.random().toString(36).substr(2, 5)
+            id: 'item_' + Date.now() + Math.random().toString(36).substr(2, 5),
+            name_es: item.name, // Fallback for Spanish name
+            is_house_made: true // Default for marketplace speed
         }));
+
+        console.log(`[Admin API] Bulk Import: Attempting to insert ${preparedItems.length} items for ${preparedItems[0].restaurant_id}`);
 
         const { data, error } = await supabase.from('menu_items').insert(preparedItems);
         if (error) {

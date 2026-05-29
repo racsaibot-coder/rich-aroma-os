@@ -798,7 +798,8 @@
                             alert(`✅ ¡Éxito! Se importaron ${items.length} productos.`);
                             loadProducts();
                         } else {
-                            alert("Error en la importación masiva.");
+                            const errData = await res.json();
+                            alert("Error en la importación masiva: " + (errData.error || "Desconocido"));
                         }
                     } catch (e) { console.error(e); alert("Error de red"); }
                 }
