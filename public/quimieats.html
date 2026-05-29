@@ -346,16 +346,23 @@
             const container = document.getElementById('menu-items-container');
             let html = "";
 
-            for (const catName in categories) {
-                const items = categories[catName];
+            if (!Array.isArray(categories)) {
+                console.error("Categories is not an array:", categories);
+                return;
+            }
+
+            categories.forEach(cat => {
+                const items = cat.items || [];
+                if (items.length === 0) return;
+
                 html += `
                     <div class="space-y-4">
-                        <h4 class="text-cyan-400 font-black uppercase tracking-widest text-[9px] border-b border-cyan-400/20 pb-2">${catName}</h4>
+                        <h4 class="text-cyan-400 font-black uppercase tracking-widest text-[9px] border-b border-cyan-400/20 pb-2">${cat.name}</h4>
                         <div class="grid grid-cols-1 gap-4">
                             ${items.map(item => `
                                 <div onclick="window.location.href='/order?restaurantId=${resId}'" class="flex gap-4 bg-white/5 p-4 rounded-[2rem] border border-white/5 active:scale-95 transition-all">
                                     <div class="w-20 h-20 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center overflow-hidden shrink-0">
-                                        ${item.image_url ? `<img src="${item.image_url}" class="w-full h-full object-cover">` : `<span class="text-white/10 font-black text-xl">QE</span>`}
+                                        ${item.image_url && !item.image_url.startsWith('data:') ? `<img src="${item.image_url}" class="w-full h-full object-cover">` : `<span class="text-white/10 font-black text-xl">QE</span>`}
                                     </div>
                                     <div class="flex flex-col justify-center flex-1">
                                         <h5 class="font-black text-white/90 text-[11px] uppercase tracking-tight">${item.name}</h5>
@@ -369,7 +376,7 @@
                         </div>
                     </div>
                 `;
-            }
+            });
             container.innerHTML = html;
         }
 
