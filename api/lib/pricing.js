@@ -7,73 +7,78 @@ function applyVipBenefits(orderItems, customer) {
     const today = getHondurasDate();
     let freeDrinkClaimedThisOrder = false;
 
-    // 1. IDENTITY DETECTION
-    const now = new Date();
-    const expiry = customer.vip_expiry ? new Date(customer.vip_expiry) : null;
+    // --- IDENTITY DETECTION ---
     const tags = Array.isArray(customer.tags) ? customer.tags : [];
     
-    // Employee: Lifetime discount as long as they are staff
+    // Black Card / Diamond (5 Slots)
+    const isBlackCard = tags.includes('BlackCard') || tags.includes('Diamond');
+    
+    // Gold Card (15 Slots)
+    const isGoldCard = tags.includes('GoldCard');
+    
+    // Silver Card (20 Slots)
+    const isSilverCard = tags.includes('SilverCard');
+
+    // Employee
     const isEmployee = tags.includes('Employee');
-    
-    // Black Card: 50% Power Member (Paid monthly)
-    const isBlackCard = tags.includes('BlackCard') && (!expiry || expiry > now);
-    
-    // Legacy VIP: Standard benefits
-    const isLegacyVip = (customer.is_vip === true || tags.includes('VIP')) && (!expiry || expiry > now);
 
-    // Rule: Employee and Black Card get the "Status Engine" 50% power
-    const hasFiftyPercentPower = isEmployee || isBlackCard;
+    // Logic Assignment
+    const hasFiftyPower = isBlackCard || isEmployee;
+    const hasThirtyPower = isGoldCard;
+    const hasFifteenPower = isSilverCard || (customer.is_vip === true || tags.includes('VIP'));
 
-    // Check daily eligibility for free drink (Black Card or Legacy VIP)
-    // NOTE: Black Card gets the ritual too
-    const canClaimFreeDrink = (isBlackCard || isLegacyVip) && (customer.last_free_drink_date !== today);
+    // Black and Gold get the Ritual (Free Daily Coffee)
+    const canClaimFreeDrink = (isBlackCard || isGoldCard || tags.includes('VIP')) && (customer.last_free_drink_date !== today);
 
-    // Fairness Cap
-    const MAX_DISCOUNTED_ITEMS = 2;
-    let discountedItemCount = 0;
+    // Fairness Cap for heavy discounts (50% and 30%)
+    const MAX_POWER_ITEMS = 2;
+    let powerItemsCount = 0;
 
     const processedItems = orderItems.map(item => {
         let finalPrice = parseFloat(item.price) || 0;
         let appliedDiscount = 0;
         const itemId = (item.id || '').toLowerCase();
+        const itemCat = (item.category || '').toLowerCase();
 
-        // RULE 1: Daily Drink Validation (Free)
+        // EXCLUSIONS: Retail, Deportes, Dubai Chocolate
+        const isExclusion = itemId.includes('dubai_chocolate') || itemCat.includes('retail') || itemCat.includes('deporte');
+        const isHouseMade = item.is_house_made || !isExclusion;
+
+        if (isExclusion) return { ...item, finalPrice, appliedDiscount: 0, qty: item.qty || 1 };
+
+        // RULE 1: Daily Drink Ritual (FREE)
         const isStandardCoffee = itemId.includes('americano') || itemId.includes('latte') || itemId.includes('cappuccino') || (itemId.includes('iced_coffee') && !itemId.includes('frappe'));
         
+        let isRitual = false;
         if (canClaimFreeDrink && !freeDrinkClaimedThisOrder && isStandardCoffee) {
             appliedDiscount = finalPrice;
             finalPrice = 0;
             freeDrinkClaimedThisOrder = true;
-            item.is_free_benefit = true;
-            item.free_drink_note = "Ritual Diario";
+            isRitual = true;
         }
 
-        // RULE 2: Status Engine 50% Power
-        const itemCat = (item.category || '').toLowerCase();
-        const isExclusion = itemId.includes('dubai_chocolate') || itemCat.includes('retail') || itemCat.includes('deporte') || itemCat.includes('deportes');
-        const isHouseMade = item.is_house_made || !isExclusion;
-
-        if (hasFiftyPercentPower && !item.is_free_benefit && isHouseMade && !isExclusion && finalPrice > 0) {
-            if (discountedItemCount < MAX_DISCOUNTED_ITEMS) {
+        // RULE 2: Power Discounts (50% or 30%) with 2-item CAP
+        if (!isRitual && isHouseMade && finalPrice > 0) {
+            if (hasFiftyPower && powerItemsCount < MAX_POWER_ITEMS) {
                 const discount = finalPrice * 0.50;
                 finalPrice -= discount;
                 appliedDiscount += discount;
+                powerItemsCount += 1;
                 item.status_discount_applied = true;
-                discountedItemCount += 1;
-            } else {
-                // FALLBACK: 15% for extra items (offsets the 15% hike)
+            } else if (hasThirtyPower && powerItemsCount < MAX_POWER_ITEMS) {
+                const discount = finalPrice * 0.30;
+                finalPrice -= discount;
+                appliedDiscount += discount;
+                powerItemsCount += 1;
+                item.status_discount_applied = true;
+            } else if (hasFifteenPower) {
+                // RULE 3: Regular / Silver / Over-limit Power members (15% OFF)
+                // This keeps everyone at the "Old Price"
                 const discount = finalPrice * 0.15;
                 finalPrice -= discount;
                 appliedDiscount += discount;
+                item.regular_discount_applied = true;
             }
-        }
-        
-        // RULE 3: Daily Customer Discount (Legacy VIP) - 15% OFF house-made
-        if (isLegacyVip && !hasFiftyPercentPower && !item.is_free_benefit && isHouseMade && !isExclusion && finalPrice > 0) {
-            const discount = finalPrice * 0.15;
-            finalPrice -= discount;
-            appliedDiscount += discount;
-            item.regular_discount_applied = true;
         }
 
         return {
@@ -81,7 +86,8 @@ function applyVipBenefits(orderItems, customer) {
             finalPrice: parseFloat(finalPrice.toFixed(2)),
             appliedDiscount: parseFloat(appliedDiscount.toFixed(2)),
             qty: item.qty || 1,
-            free_drink_note: item.free_drink_note
+            is_free_benefit: isRitual,
+            tier_label: isBlackCard ? 'Diamond' : (isGoldCard ? 'Gold' : (isSilverCard ? 'Silver' : 'Basic'))
         };
     });
 
@@ -91,7 +97,7 @@ function applyVipBenefits(orderItems, customer) {
         items: processedItems,
         total: parseFloat(finalTotal.toFixed(2)),
         freeDrinkClaimed: freeDrinkClaimedThisOrder,
-        tier: isBlackCard ? 'BlackCard' : (isEmployee ? 'Employee' : (isLegacyVip ? 'VIP' : 'Basic'))
+        tier: isBlackCard ? 'Diamond' : (isGoldCard ? 'Gold' : (isSilverCard ? 'Silver' : 'Basic'))
     };
 }
 
