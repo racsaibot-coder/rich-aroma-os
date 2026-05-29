@@ -627,15 +627,35 @@ module.exports = async function handler(req, res) {
         const { items } = req.body;
         if (!Array.isArray(items) || items.length === 0) return res.status(400).json({ error: "No items provided" });
 
-        // Add IDs and required fields to items
+        const targetResId = items[0].restaurant_id;
+
+        // --- STEP 1: ENSURE RESTAURANT EXISTS (Foreign Key Shield) ---
+        const { data: resExists } = await supabase.from('restaurants').select('id').eq('id', targetResId).maybeSingle();
+        
+        if (!resExists) {
+            console.log(`[Admin API] Activating restaurant ${targetResId} on-the-fly...`);
+            // Find name from our whitelist or lead data
+            const resMap = {
+                'fradas-bar--grill-445': 'Fradas Bar & Grill',
+                'rich-aroma': 'Rich Aroma Coffee Shop',
+                'tonys-pizza': "Tonny's Pizza",
+                'el-meson': 'El Mesón Del Pan'
+            };
+            
+            await supabase.from('restaurants').upsert({
+                id: targetResId,
+                name: resMap[targetResId] || targetResId,
+                status: 'active'
+            });
+        }
+
+        // --- STEP 2: PREPARE AND INSERT ITEMS ---
         const preparedItems = items.map(item => ({
             ...item,
             id: 'item_' + Date.now() + Math.random().toString(36).substr(2, 5),
-            name_es: item.name, // Fallback for Spanish name
-            is_house_made: true // Default for marketplace speed
+            name_es: item.name,
+            is_house_made: true
         }));
-
-        console.log(`[Admin API] Bulk Import: Attempting to insert ${preparedItems.length} items for ${preparedItems[0].restaurant_id}`);
 
         const { data, error } = await supabase.from('menu_items').insert(preparedItems);
         if (error) {
