@@ -713,7 +713,7 @@ module.exports = async function handler(req, res) {
             if (l.restaurant_name.includes('Fradas')) slug = 'fradas-bar--grill-445';
             if (l.restaurant_name.includes('Tony')) slug = 'tonys-pizza';
             if (l.restaurant_name.includes('Aroma')) slug = 'rich-aroma';
-            if (l.restaurant_name.includes('Mez')) slug = 'el-meson';
+            if (l.restaurant_name.includes('Mes')) slug = 'el-meson';
 
             return {
                 id: slug,
