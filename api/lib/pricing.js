@@ -49,10 +49,11 @@ function applyVipBenefits(orderItems, customer) {
         }
 
         // RULE 2: Status Engine 50% Power
-        const isExclusion = itemId.includes('dubai_chocolate') || (item.category || '').toLowerCase().includes('retail');
-        
-        if (hasFiftyPercentPower && !item.is_free_benefit && item.is_house_made && !isExclusion && finalPrice > 0) {
-            // console.log(`[Pricing] Power active for ${item.name}. Count: ${discountedItemCount}/${MAX_DISCOUNTED_ITEMS}`);
+        const itemCat = (item.category || '').toLowerCase();
+        const isExclusion = itemId.includes('dubai_chocolate') || itemCat.includes('retail') || itemCat.includes('deporte') || itemCat.includes('deportes');
+        const isHouseMade = item.is_house_made || !isExclusion;
+
+        if (hasFiftyPercentPower && !item.is_free_benefit && isHouseMade && !isExclusion && finalPrice > 0) {
             if (discountedItemCount < MAX_DISCOUNTED_ITEMS) {
                 const discount = finalPrice * 0.50;
                 finalPrice -= discount;
@@ -60,12 +61,15 @@ function applyVipBenefits(orderItems, customer) {
                 item.status_discount_applied = true;
                 discountedItemCount += 1;
             } else {
-                item.status_discount_capped = true;
+                // FALLBACK: 15% for extra items (offsets the 15% hike)
+                const discount = finalPrice * 0.15;
+                finalPrice -= discount;
+                appliedDiscount += discount;
             }
         }
         
         // RULE 3: Daily Customer Discount (Legacy VIP) - 15% OFF house-made
-        if (isLegacyVip && !hasFiftyPercentPower && !item.is_free_benefit && item.is_house_made && !isExclusion && finalPrice > 0) {
+        if (isLegacyVip && !hasFiftyPercentPower && !item.is_free_benefit && isHouseMade && !isExclusion && finalPrice > 0) {
             const discount = finalPrice * 0.15;
             finalPrice -= discount;
             appliedDiscount += discount;

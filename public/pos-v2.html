@@ -2108,27 +2108,26 @@
             sortedIndices.forEach(idx => {
                 const item = cart[idx];
                 const itemId = (item.id || '').toLowerCase();
-                const isExclusion = itemId.includes('dubai_chocolate') || (item.category || '').toLowerCase().includes('retail');
+                const itemCat = (item.category || '').toLowerCase();
                 
+                // Exclusions: Retail, Sports, and high-cost items
+                const isExclusion = itemId.includes('dubai_chocolate') || itemCat.includes('retail') || itemCat.includes('deporte') || itemCat.includes('deportes');
+                const isHouseMade = item.is_house_made || !isExclusion; // Robust fallback
+
                 if (isExclusion) return;
 
                 // 1. Check for Free Daily Ritual (Standard Coffee)
                 const isStandardCoffee = itemId.includes('americano') || itemId.includes('latte') || itemId.includes('cappuccino') || (itemId.includes('iced_coffee') && !itemId.includes('frappe'));
                 
-                // Note: Ritual applies to ONE unit of the most expensive eligible coffee
                 if (isVipEligible && !freeDrinkUsed && isStandardCoffee) {
                     discountAmt += parseFloat(item.price);
                     freeDrinkUsed = true;
                     discountName = "RITUAL DIARIO (FREE)";
-                    console.log(`[Pricing] Ritual applied to ${item.name}`);
                 } 
                 
                 // 2. Check for 50% Power (BlackCard or Employee)
-                // Applies to up to MAX_STATUS_DISCOUNTS units total
-                if ((isBlackCard || isEmployee) && discountedCount < MAX_STATUS_DISCOUNTS) {
+                else if ((isBlackCard || isEmployee) && discountedCount < MAX_STATUS_DISCOUNTS && isHouseMade) {
                     const remainingSpots = MAX_STATUS_DISCOUNTS - discountedCount;
-                    // How many units of THIS line item can we discount?
-                    // If it was the free ritual item, one unit is already discounted.
                     const alreadyDiscountedUnits = (freeDrinkUsed && isStandardCoffee && item.id === cart[idx].id) ? 1 : 0;
                     const unitsToDiscount = Math.min(item.qty - alreadyDiscountedUnits, remainingSpots);
                     
@@ -2136,15 +2135,15 @@
                         discountAmt += (parseFloat(item.price) * 0.5 * unitsToDiscount);
                         discountedCount += unitsToDiscount;
                         if (!discountName || discountName === "DESCUENTO") discountName = isBlackCard ? "BLACK CARD 50%" : "STAFF 50%";
-                        console.log(`[Pricing] 50% Power applied to ${unitsToDiscount}x ${item.name}`);
                     }
                 }
-                // 3. Fallback to Legacy VIP (Daily Customer) - 15% OFF house-made
-                // This offsets the 15% "Non-Member Tax" for your regulars.
-                else if (window.loadedCustomer.is_vip && item.is_house_made && !isBlackCard && !isEmployee) {
+                
+                // 3. Status Engine Fallback (15% OFF)
+                // BlackCard/Employee get 15% on everything else (offsets the 15% hike)
+                // Regular VIP gets 15% on everything house-made
+                else if (window.loadedCustomer.is_vip && isHouseMade) {
                     discountAmt += (parseFloat(item.price) * 0.15 * item.qty);
                     if (!discountName || discountName === "DESCUENTO") discountName = "REGULAR (15% OFF)";
-                    console.log(`[Pricing] Regular 15% applied to ${item.name}`);
                 }
             });
         }
