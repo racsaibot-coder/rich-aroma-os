@@ -30,9 +30,9 @@ function applyVipBenefits(orderItems, customer) {
     // Black and Gold get the Ritual (Free Daily Coffee)
     const canClaimFreeDrink = (isBlackCard || isGoldCard || tags.includes('VIP')) && (customer.last_free_drink_date !== today);
 
-    // Fairness Cap for heavy discounts (50% and 30%)
-    const MAX_POWER_ITEMS = 2;
-    let powerItemsCount = 0;
+    // --- STATUS ENGINE: UNCAPPED POWER ---
+    // Diamond and Gold members can now buy for their whole group/car. 
+    // We removed the 2-item cap to maximize the "Status/Bad Ass" feeling.
 
     const processedItems = orderItems.map(item => {
         let finalPrice = parseFloat(item.price) || 0;
@@ -40,7 +40,7 @@ function applyVipBenefits(orderItems, customer) {
         const itemId = (item.id || '').toLowerCase();
         const itemCat = (item.category || '').toLowerCase();
 
-        // EXCLUSIONS: Retail, Deportes, Dubai Chocolate
+        // EXCLUSIONS: Retail, Deportes, Dubai Chocolate (Protect Margins)
         const isExclusion = itemId.includes('dubai_chocolate') || itemCat.includes('retail') || itemCat.includes('deporte');
         const isHouseMade = item.is_house_made || !isExclusion;
 
@@ -57,23 +57,20 @@ function applyVipBenefits(orderItems, customer) {
             isRitual = true;
         }
 
-        // RULE 2: Power Discounts (50% or 30%) with 2-item CAP
+        // RULE 2: Status Engine Power (Uncapped for Tiers)
         if (!isRitual && isHouseMade && finalPrice > 0) {
-            if (hasFiftyPower && powerItemsCount < MAX_POWER_ITEMS) {
+            if (hasFiftyPower) {
                 const discount = finalPrice * 0.50;
                 finalPrice -= discount;
                 appliedDiscount += discount;
-                powerItemsCount += 1;
                 item.status_discount_applied = true;
-            } else if (hasThirtyPower && powerItemsCount < MAX_POWER_ITEMS) {
+            } else if (hasThirtyPower) {
                 const discount = finalPrice * 0.30;
                 finalPrice -= discount;
                 appliedDiscount += discount;
-                powerItemsCount += 1;
                 item.status_discount_applied = true;
             } else if (hasFifteenPower) {
-                // RULE 3: Regular / Silver / Over-limit Power members (15% OFF)
-                // This keeps everyone at the "Old Price"
+                // RULE 3: Regular / Silver (15% OFF)
                 const discount = finalPrice * 0.15;
                 finalPrice -= discount;
                 appliedDiscount += discount;
