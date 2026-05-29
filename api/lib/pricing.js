@@ -15,6 +15,9 @@ function applyVipBenefits(orderItems, customer) {
     
     // Gold Card (15 Slots)
     const isGoldCard = tags.includes('GoldCard');
+
+    // Familia (Extended Family - Gifted Status)
+    const isFamilia = tags.includes('Familia');
     
     // Silver Card (20 Slots)
     const isSilverCard = tags.includes('SilverCard');
@@ -25,6 +28,7 @@ function applyVipBenefits(orderItems, customer) {
     // Logic Assignment
     const hasFiftyPower = isBlackCard || isEmployee;
     const hasThirtyPower = isGoldCard;
+    const hasTwentyPower = isFamilia;
     const hasFifteenPower = isSilverCard || (customer.is_vip === true || tags.includes('VIP'));
 
     // Black and Gold get the Ritual (Free Daily Coffee)
@@ -57,7 +61,7 @@ function applyVipBenefits(orderItems, customer) {
             isRitual = true;
         }
 
-        // RULE 2: Status Engine Power (Uncapped for Tiers)
+        // RULE 2: Status Engine Power
         if (!isRitual && isHouseMade && finalPrice > 0) {
             if (hasFiftyPower) {
                 const discount = finalPrice * 0.50;
@@ -66,6 +70,12 @@ function applyVipBenefits(orderItems, customer) {
                 item.status_discount_applied = true;
             } else if (hasThirtyPower) {
                 const discount = finalPrice * 0.30;
+                finalPrice -= discount;
+                appliedDiscount += discount;
+                item.status_discount_applied = true;
+            } else if (hasTwentyPower) {
+                // RULE: Familia (20% OFF Everything)
+                const discount = finalPrice * 0.20;
                 finalPrice -= discount;
                 appliedDiscount += discount;
                 item.status_discount_applied = true;
@@ -84,7 +94,7 @@ function applyVipBenefits(orderItems, customer) {
             appliedDiscount: parseFloat(appliedDiscount.toFixed(2)),
             qty: item.qty || 1,
             is_free_benefit: isRitual,
-            tier_label: isBlackCard ? 'Diamond' : (isGoldCard ? 'Gold' : (isSilverCard ? 'Silver' : 'Basic'))
+            tier_label: isBlackCard ? 'Diamond' : (isGoldCard ? 'Gold' : (isFamilia ? 'Familia' : (isSilverCard ? 'Silver' : 'Basic')))
         };
     });
 
@@ -94,7 +104,7 @@ function applyVipBenefits(orderItems, customer) {
         items: processedItems,
         total: parseFloat(finalTotal.toFixed(2)),
         freeDrinkClaimed: freeDrinkClaimedThisOrder,
-        tier: isBlackCard ? 'Diamond' : (isGoldCard ? 'Gold' : (isSilverCard ? 'Silver' : 'Basic'))
+        tier: isBlackCard ? 'Diamond' : (isGoldCard ? 'Gold' : (isFamilia ? 'Familia' : (isSilverCard ? 'Silver' : 'Basic')))
     };
 }
 

@@ -2077,11 +2077,13 @@
 
         // --- STATUS ENGINE DETECTION ---
         const tags = window.loadedCustomer && Array.isArray(window.loadedCustomer.tags) ? window.loadedCustomer.tags : [];
-        const isBlackCard = tags.includes('BlackCard');
+        const isBlackCard = tags.includes('BlackCard') || tags.includes('Diamond');
+        const isGoldCard = tags.includes('GoldCard');
+        const isFamilia = tags.includes('Familia');
         const isEmployee = tags.includes('Employee');
         const isVipEligible = window.loadedCustomer && window.loadedCustomer.is_vip_eligible;
         
-        console.log(`[Pricing] Status: BC=${isBlackCard}, EMP=${isEmployee}, EligibleRitual=${isVipEligible}`);
+        console.log(`[Pricing] Status: BC=${isBlackCard}, GC=${isGoldCard}, FAM=${isFamilia}, EMP=${isEmployee}, EligibleRitual=${isVipEligible}`);
         
         let freeDrinkUsed = false;
         let discountedCount = 0;
@@ -2159,8 +2161,8 @@
                     discountName = "RITUAL DIARIO (FREE)";
                 } 
                 
-                // 2. Check for 50% Power (BlackCard or Employee)
-                if ((isBlackCard || isEmployee) && isHouseMade) {
+                // 2. Check for Power Power (Diamond, Gold, Employee, Familia)
+                if (isBlackCard || isEmployee) {
                     const remainingSpots = MAX_STATUS_DISCOUNTS - discountedCount;
                     const unitsToFifty = Math.min(item.qty - unitsHandled, Math.max(0, remainingSpots));
                     
@@ -2168,19 +2170,31 @@
                         discountAmt += (parseFloat(item.price) * 0.5 * unitsToFifty);
                         discountedCount += unitsToFifty;
                         unitsHandled += unitsToFifty;
-                        if (!discountName || discountName === "DESCUENTO") discountName = isBlackCard ? "BLACK CARD 50%" : "STAFF 50%";
+                        if (!discountName || discountName === "DESCUENTO") discountName = isBlackCard ? "DIAMOND 50%" : "STAFF 50%";
                     }
-
-                    // 3. FALLBACK: 15% OFF for remaining units of this item (Status protection)
-                    const remainingUnits = item.qty - unitsHandled;
-                    if (remainingUnits > 0) {
-                        discountAmt += (parseFloat(item.price) * 0.15 * remainingUnits);
+                } else if (isGoldCard) {
+                    const remainingSpots = MAX_STATUS_DISCOUNTS - discountedCount;
+                    const unitsToThirty = Math.min(item.qty - unitsHandled, Math.max(0, remainingSpots));
+                    if (unitsToThirty > 0) {
+                        discountAmt += (parseFloat(item.price) * 0.3 * unitsToThirty);
+                        discountedCount += unitsToThirty;
+                        unitsHandled += unitsToThirty;
+                        if (!discountName || discountName === "DESCUENTO") discountName = "GOLD 30%";
                     }
+                } else if (isFamilia) {
+                    // RULE: Familia is 20% OFF Uncapped (Gifted status)
+                    discountAmt += (parseFloat(item.price) * 0.20 * item.qty);
+                    unitsHandled = item.qty;
+                    if (!discountName || discountName === "DESCUENTO") discountName = "FAMILIA (20% OFF)";
                 }
-                // 4. Fallback for Regular VIPs (15% OFF everything house-made)
-                else if (window.loadedCustomer.is_vip && isHouseMade) {
-                    discountAmt += (parseFloat(item.price) * 0.15 * item.qty);
-                    if (!discountName || discountName === "DESCUENTO") discountName = "REGULAR (15% OFF)";
+
+                // 3. Status Engine Fallback (15% OFF)
+                // BlackCard/Gold/Employee get 15% on remaining units of this item (Status protection)
+                // Regular VIP also gets 15% on everything house-made
+                const remainingUnits = item.qty - unitsHandled;
+                if (remainingUnits > 0 && (window.loadedCustomer.is_vip || isBlackCard || isGoldCard || isEmployee) && isHouseMade) {
+                    discountAmt += (parseFloat(item.price) * 0.15 * remainingUnits);
+                    if (!discountName || discountName === "DESCUENTO") discountName = "STATUS (15% OFF)";
                 }
             });
         }

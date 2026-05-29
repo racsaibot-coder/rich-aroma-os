@@ -110,7 +110,7 @@ async function createOrder(orderRequest, supabase = defaultSupabase) {
         let freeDrinkClaimed = false;
         if (customer) {
             const tags = Array.isArray(customer.tags) ? customer.tags : [];
-            const isVip = customer.is_vip || tags.includes('VIP') || tags.includes('BlackCard') || tags.includes('Employee');
+            const isVip = customer.is_vip || tags.includes('VIP') || tags.includes('BlackCard') || tags.includes('Diamond') || tags.includes('GoldCard') || tags.includes('Familia') || tags.includes('Employee');
             
             if (isVip) {
                 // --- TIME LOCK CHECK (Anti-Sharing) ---
