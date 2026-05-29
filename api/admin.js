@@ -574,18 +574,23 @@ module.exports = async function handler(req, res) {
         const { ids } = req.body;
         if (!Array.isArray(ids) || ids.length === 0) return res.status(400).json({ error: "IDs required" });
 
-        console.log(`[Admin API] BULK DELETE for: ${ids.join(', ')}`);
+        console.log(`[Admin API] BULK DELETE for ${ids.length} items`);
 
-        // Perform deletions in parallel for all IDs across all tables
-        const tasks = ids.flatMap(targetId => [
-            supabase.from('quimieats_ledger').delete().eq('restaurant_id', targetId),
-            supabase.from('orders').delete().eq('restaurant_id', targetId),
-            supabase.from('menu_items').delete().eq('restaurant_id', targetId),
-            supabase.from('restaurants').delete().eq('id', targetId),
-            supabase.from('quimieats_leads').delete().ilike('restaurant_name', targetId.replace(/-/g, '%'))
-        ]);
+        // Perform deletions in smaller chunks (5 at a time) to avoid timeouts
+        const chunkSize = 5;
+        for (let i = 0; i < ids.length; i += chunkSize) {
+            const chunk = ids.slice(i, i + chunkSize);
+            console.log(`[Admin API] Deleting chunk: ${chunk.join(', ')}`);
+            
+            await Promise.all(chunk.flatMap(targetId => [
+                supabase.from('quimieats_ledger').delete().eq('restaurant_id', targetId),
+                supabase.from('orders').delete().eq('restaurant_id', targetId),
+                supabase.from('menu_items').delete().eq('restaurant_id', targetId),
+                supabase.from('restaurants').delete().eq('id', targetId),
+                supabase.from('quimieats_leads').delete().ilike('restaurant_name', targetId.replace(/-/g, '%'))
+            ]));
+        }
 
-        await Promise.all(tasks);
         return res.json({ success: true, deleted_count: ids.length });
     }
     if (action === 'cleanup_duplicates' && req.method === 'POST') {
