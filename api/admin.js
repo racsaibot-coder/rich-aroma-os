@@ -553,24 +553,41 @@ module.exports = async function handler(req, res) {
     }
 
     if (action === 'delete_restaurant' && req.method === 'DELETE') {
+        // ... (existing single delete)
         if (!isAdmin) return res.status(403).json({ error: "Admin access required" });
         const targetId = id || req.query.id;
         if (!targetId) return res.status(400).json({ error: "Restaurant ID required" });
 
-        // 1. Delete all related data to avoid Foreign Key constraints
         await Promise.all([
             supabase.from('quimieats_ledger').delete().eq('restaurant_id', targetId),
             supabase.from('orders').delete().eq('restaurant_id', targetId),
-            supabase.from('menu_items').delete().eq('restaurant_id', targetId)
+            supabase.from('menu_items').delete().eq('restaurant_id', targetId),
+            supabase.from('restaurants').delete().eq('id', targetId),
+            // Also try to remove from leads if name matches the ID slug
+            supabase.from('quimieats_leads').delete().ilike('restaurant_name', targetId.replace(/-/g, '%'))
         ]);
-
-        // 2. Finally delete the restaurant record
-        const { error } = await supabase.from('restaurants').delete().eq('id', targetId);
-        if (error) return res.status(500).json({ error: error.message });
-        
         return res.json({ success: true });
     }
 
+    if (action === 'bulk_delete_restaurants' && req.method === 'POST') {
+        if (!isAdmin) return res.status(403).json({ error: "Admin access required" });
+        const { ids } = req.body;
+        if (!Array.isArray(ids) || ids.length === 0) return res.status(400).json({ error: "IDs required" });
+
+        console.log(`[Admin API] BULK DELETE for: ${ids.join(', ')}`);
+
+        // Perform deletions in parallel for all IDs across all tables
+        const tasks = ids.flatMap(targetId => [
+            supabase.from('quimieats_ledger').delete().eq('restaurant_id', targetId),
+            supabase.from('orders').delete().eq('restaurant_id', targetId),
+            supabase.from('menu_items').delete().eq('restaurant_id', targetId),
+            supabase.from('restaurants').delete().eq('id', targetId),
+            supabase.from('quimieats_leads').delete().ilike('restaurant_name', targetId.replace(/-/g, '%'))
+        ]);
+
+        await Promise.all(tasks);
+        return res.json({ success: true, deleted_count: ids.length });
+    }
     if (action === 'cleanup_duplicates' && req.method === 'POST') {
         if (!isAdmin) return res.status(403).json({ error: "Admin access required" });
         

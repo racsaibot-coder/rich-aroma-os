@@ -101,10 +101,19 @@
         <!-- PARTNERS VIEW -->
         <div id="view-partners" class="space-y-10">
             <section class="space-y-6">
+                <div class="flex justify-between items-center px-4">
+                    <h2 class="text-xl font-black uppercase tracking-tight text-white/80">Listado de Socios</h2>
+                    <button id="btn-bulk-delete" onclick="bulkDeletePartners()" class="hidden bg-red-500/20 text-red-500 border border-red-500/30 px-6 py-3 rounded-xl font-black uppercase text-[9px] tracking-widest hover:bg-red-500 hover:text-white transition-all">
+                        <i class="fas fa-trash-alt mr-2"></i> Eliminar Seleccionados (<span id="bulk-count">0</span>)
+                    </button>
+                </div>
                 <div class="glass rounded-[3rem] overflow-hidden">
                     <table class="w-full text-left">
                         <thead class="bg-white/5 text-[10px] uppercase font-black tracking-[0.2em] text-white/30 border-b border-white/5">
                             <tr>
+                                <th class="p-8 w-10">
+                                    <input type="checkbox" onclick="toggleAllPartners(this.checked)" class="w-5 h-5 rounded border-white/10 bg-white/5 accent-cyan-400">
+                                </th>
                                 <th class="p-8">Negocio</th>
                                 <th class="p-8">Categoría</th>
                                 <th class="p-8">Contacto</th>
@@ -1090,6 +1099,9 @@
             tbody.innerHTML = (data || []).map((r, i) => `
                 <tr class="hover:bg-white/[0.02] transition-colors">
                     <td class="p-8">
+                        <input type="checkbox" data-id="${r.id}" data-name="${r.name}" class="partner-checkbox w-5 h-5 rounded border-white/10 bg-white/5 accent-cyan-400" onchange="updateBulkUI()">
+                    </td>
+                    <td class="p-8">
                         <div class="flex items-center gap-4">
                             <div class="w-12 h-12 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center overflow-hidden">
                                 ${r.logo_url ? `<img src="${r.logo_url}" class="w-full h-full object-cover">` : '<i class="fas fa-store text-white/10 text-xs"></i>'}
@@ -1111,6 +1123,51 @@
                     </td>
                 </tr>
             `).join('');
+            updateBulkUI();
+        }
+
+        function toggleAllPartners(checked) {
+            document.querySelectorAll('.partner-checkbox').forEach(cb => cb.checked = checked);
+            updateBulkUI();
+        }
+
+        function updateBulkUI() {
+            const selected = document.querySelectorAll('.partner-checkbox:checked');
+            const btn = document.getElementById('btn-bulk-delete');
+            const count = document.getElementById('bulk-count');
+            if (selected.length > 0) {
+                btn.classList.remove('hidden');
+                count.innerText = selected.length;
+            } else {
+                btn.classList.add('hidden');
+            }
+        }
+
+        async function bulkDeletePartners() {
+            const selected = Array.from(document.querySelectorAll('.partner-checkbox:checked')).map(cb => ({
+                id: cb.getAttribute('data-id'),
+                name: cb.getAttribute('data-name')
+            }));
+
+            if (selected.length === 0) return;
+            if (!confirm(`¿Estás SEGURO de eliminar ${selected.length} negocios permanentemente? Esta acción borrará todos sus productos y órdenes.`)) return;
+
+            const ids = selected.map(s => s.id);
+            try {
+                const res = await fetch('/api/admin?action=bulk_delete_restaurants', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${localStorage.getItem('quimieats_admin_pin')}` },
+                    body: JSON.stringify({ ids })
+                });
+
+                if (res.ok) {
+                    alert("✅ Limpieza completada con éxito.");
+                    loadData();
+                } else {
+                    const err = await res.json();
+                    alert("Error en limpieza masiva: " + err.error);
+                }
+            } catch (e) { console.error(e); }
         }
 
         function renderLeads(data) {
