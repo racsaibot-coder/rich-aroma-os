@@ -341,15 +341,37 @@
                         }
 
                         const imgUrl = optimizeImg(item.image_url);
-                        const imgHtml = imgUrl ? `
+                        let imgHtml = "";
+                        
+                        if (imgUrl) {
+                            imgHtml = `
                                 <div class="w-full h-40 bg-charcoal overflow-hidden relative">
                                     <img src="${imgUrl}" class="w-full h-full object-cover" loading="lazy">
                                     <div class="absolute inset-0 bg-gradient-to-t from-dark/80 to-transparent"></div>
                                     <div class="absolute bottom-3 right-3 w-max px-3 h-10 rounded-2xl bg-gold text-dark flex items-center justify-center gap-2 shadow-lg transform rotate-3 group-hover:rotate-0 transition-transform"><span class="text-[9px] font-black uppercase tracking-widest">${btnLabel}</span><i class="fas fa-plus text-xs"></i></div>
-                                </div>` : `
-                                <div class="w-full h-16 bg-charcoal relative flex items-center justify-end px-4">
-                                    <div class="w-max px-3 h-10 rounded-2xl bg-gold text-dark flex items-center justify-center gap-2 shadow-lg"><span class="text-[9px] font-black uppercase tracking-widest">${btnLabel}</span><i class="fas fa-plus text-xs"></i></div>
                                 </div>`;
+                        } else {
+                            // --- QE BRANDED PLACEHOLDER ---
+                            imgHtml = `
+                                <div class="w-full h-40 bg-gradient-to-br from-charcoal to-dark relative flex items-center justify-center overflow-hidden">
+                                    <!-- Background Pattern -->
+                                    <div class="absolute inset-0 opacity-5" style="background-image: radial-gradient(circle at 2px 2px, #C9A66B 1px, transparent 0); background-size: 16px 16px;"></div>
+                                    
+                                    <!-- QE LOGO -->
+                                    <div class="relative group-hover:scale-110 transition-transform duration-500">
+                                        <div class="w-16 h-16 bg-gold/10 rounded-2xl flex items-center justify-center border border-gold/20 backdrop-blur-sm">
+                                            <span class="text-gold font-black text-2xl tracking-tighter">QE</span>
+                                        </div>
+                                        <div class="absolute -bottom-1 -right-1 w-6 h-6 bg-gold rounded-lg flex items-center justify-center text-[10px] text-dark font-black shadow-lg">
+                                            <i class="fas fa-plus"></i>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="absolute bottom-3 right-3 w-max px-3 h-8 rounded-xl bg-gold/20 text-gold border border-gold/30 flex items-center justify-center gap-2 backdrop-blur-md">
+                                        <span class="text-[8px] font-black uppercase tracking-widest">${btnLabel}</span>
+                                    </div>
+                                </div>`;
+                        }
                         
                         html += `
                             <div class="${cardClass}" onclick="${clickAction}">
