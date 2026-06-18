@@ -79,21 +79,74 @@
         <!-- Informative Schedule Section -->
         <section id="schedule" class="grid md:grid-cols-3 gap-8 text-center pb-12 border-b border-gray-100">
             <div class="space-y-3">
-                <div class="text-brand-brown text-xl"><i class="far fa-calendar-check"></i></div>
-                <h3 class="font-serif font-bold text-lg">Order by Friday</h3>
-                <p class="text-xs text-gray-400 font-medium leading-relaxed">Place your order no later than <span class="text-brand-dark font-bold">Friday 6PM</span> to secure your batch.</p>
+                <div class="text-brand-brown text-xl"><i class="fas fa-hospital"></i></div>
+                <h3 class="font-serif font-bold text-lg">Kaiser & Amazon Hubs</h3>
+                <p class="text-xs text-gray-400 font-medium leading-relaxed">Free unit delivery to any Kaiser or Amazon Hub when the location hits <span class="text-brand-dark font-bold">20+ bottles</span>.</p>
             </div>
             <div class="space-y-3 border-x border-gray-100 px-4">
-                <div class="text-brand-brown text-xl"><i class="fas fa-blender"></i></div>
-                <h3 class="font-serif font-bold text-lg">Sunday Brewing</h3>
-                <p class="text-xs text-gray-400 font-medium leading-relaxed">We brew and bottle everything on <span class="text-brand-dark font-bold">Sunday nights</span> for maximum freshness.</p>
+                <div class="text-brand-brown text-xl"><i class="fas fa-sun"></i></div>
+                <h3 class="font-serif font-bold text-lg">Daily Fresh Brew</h3>
+                <p class="text-xs text-gray-400 font-medium leading-relaxed">We brew every night and deliver the next morning at <span class="text-brand-dark font-bold">06:00 AM</span> to catch the shift change.</p>
             </div>
             <div class="space-y-3">
-                <div class="text-brand-brown text-xl"><i class="fas fa-shipping-fast"></i></div>
-                <h3 class="font-serif font-bold text-lg">Monday Delivery</h3>
-                <p class="text-xs text-gray-400 font-medium leading-relaxed">Bottles are dropped at your office every <span class="text-brand-dark font-bold">Monday morning</span>.</p>
+                <div class="text-brand-brown text-xl"><i class="fas fa-truck-loading"></i></div>
+                <h3 class="font-serif font-bold text-lg">Track the Van</h3>
+                <p class="text-xs text-gray-400 font-medium leading-relaxed">Get real-time SMS updates when the Captain Rico van is <span class="text-brand-dark font-bold">5 minutes</span> from your drop point.</p>
             </div>
         </section>
+
+    <!-- ... rest of section 1 ... -->
+
+    <script>
+        const HUB_LOCATIONS = [
+            { id: 'k_ont', name: 'Kaiser Ontario', type: 'Kaiser', city: 'Ontario' },
+            { id: 'k_fon', name: 'Kaiser Fontana', type: 'Kaiser', city: 'Fontana' },
+            { id: 'k_bp', name: 'Kaiser Baldwin Park', type: 'Kaiser', city: 'Baldwin Park' },
+            { id: 'k_riv', name: 'Kaiser Riverside', type: 'Kaiser', city: 'Riverside' },
+            { id: 'k_mv', name: 'Kaiser Moreno Valley', type: 'Kaiser', city: 'Moreno Valley' },
+            { id: 'k_irv', name: 'Kaiser Irvine (Sand Canyon)', type: 'Kaiser', city: 'Irvine' },
+            { id: 'k_ana', name: 'Kaiser Anaheim (Kraemer)', type: 'Kaiser', city: 'Anaheim' },
+            { id: 'k_dow', name: 'Kaiser Downey', type: 'Kaiser', city: 'Downey' },
+            { id: 'k_sun', name: 'Kaiser Sunset (LA)', type: 'Kaiser', city: 'Los Angeles' },
+            { id: 'a_ont2', name: 'Amazon ONT2', type: 'Amazon', city: 'San Bernardino' },
+            { id: 'a_ont6', name: 'Amazon ONT6', type: 'Amazon', city: 'Moreno Valley' },
+            { id: 'a_sna4', name: 'Amazon SNA4', type: 'Amazon', city: 'Rialto' },
+            { id: 'a_lgb8', name: 'Amazon LGB8', type: 'Amazon', city: 'Rialto' },
+            { id: 'a_ont9', name: 'Amazon ONT9', type: 'Amazon', city: 'Redlands' },
+            { id: 'home', name: 'Home Delivery (SoCal Only)', type: 'Other', city: 'Various' }
+        ];
+
+        function populateLocations() {
+            const select = document.getElementById('cust-location');
+            select.innerHTML = '<option value="" disabled selected>-- Select Hub or Home --</option>';
+            
+            HUB_LOCATIONS.forEach(l => {
+                const opt = document.createElement('option');
+                opt.value = l.id;
+                opt.textContent = `${l.name} (${l.city})`;
+                select.appendChild(opt);
+            });
+        }
+
+        function updateCartUI() {
+            // ... (existing cart logic) ...
+            const totalBottles = cart.reduce((sum, item) => sum + item.bottles, 0);
+            const location = document.getElementById('cust-location').value;
+            
+            let deliveryMsg = "";
+            if (location && location !== 'home') {
+                if (totalBottles >= 20) {
+                    deliveryMsg = "✨ Hub Goal Reached: FREE DELIVERY confirmed!";
+                } else {
+                    deliveryMsg = `🔥 ${20 - totalBottles} more bottles needed for FREE delivery to this Hub.`;
+                }
+            } else if (location === 'home') {
+                deliveryMsg = "🏠 Home delivery: $10.00 flat fee applied.";
+            }
+
+            document.getElementById('delivery-status-msg').innerText = deliveryMsg;
+        }
+    </script>
         
         <!-- STEP 1: Pack Selection -->
         <section id="step-1" class="space-y-12">
@@ -261,12 +314,16 @@
                                 <div id="promo-msg" class="hidden text-[8px] font-bold uppercase tracking-widest text-brand-gold ml-1 animate-pulse">
                                     <i class="fas fa-check-circle mr-1"></i> 5% OFF Applied
                                 </div>
+                                <div id="delivery-status-msg" class="text-xs text-center text-brand-gold italic"></div>
                             </div>
 
                             <div class="pt-6 border-t border-white/5 text-center">
                                 <p class="text-[9px] font-black uppercase text-white/20 tracking-[0.3em] mb-2">Total Amount</p>
                                 <p class="text-5xl font-black font-mono text-brand-gold tracking-tighter" id="cart-total-display">$0.00</p>
                                 <div id="discount-display" class="hidden text-[10px] font-bold text-white/40 mt-1 line-through"></div>
+                                <div id="home-delivery-fee-display" class="hidden text-[10px] font-bold text-white/40 mt-1">
+                                    Delivery Fee: <span id="delivery-fee-amount">$10.00</span>
+                                </div>
                             </div>
 
                             <button onclick="checkout()" id="checkout-btn" class="w-full gold-shimmer text-brand-dark font-black py-5 rounded-2xl shadow-2xl hover:scale-[1.02] active:scale-95 transition-all uppercase tracking-[0.2em] text-xs">
@@ -298,6 +355,9 @@
     </div>
 
     <script>
+        // --- GLOBALS ---
+        let allProducts = [];
+        let allLocations = [];
         let selectedProduct = null;
         let bottleSelections = [];
         let currentQty = 1;
@@ -305,6 +365,31 @@
         let currentDiscount = 0;
         let validatedPromo = null;
         let isSubscription = false;
+
+        // --- CONSTANTS ---
+        const HUB_DELIVERY_THRESHOLD = 20;
+        const HOME_DELIVERY_FEE = 10.00; // USD
+
+        const HUB_LOCATIONS_DATA = [
+            { id: 'k_ont', name: 'Kaiser Ontario', type: 'Kaiser', city: 'Ontario', postcode: '91761' },
+            { id: 'k_fon', name: 'Kaiser Fontana', type: 'Kaiser', city: 'Fontana', postcode: '92335' },
+            { id: 'k_bp', name: 'Kaiser Baldwin Park', type: 'Kaiser', city: 'Baldwin Park', postcode: '91706' },
+            { id: 'k_riv', name: 'Kaiser Riverside', type: 'Kaiser', city: 'Riverside', postcode: '92505' },
+            { id: 'k_mv', name: 'Kaiser Moreno Valley', type: 'Kaiser', city: 'Moreno Valley', postcode: '92551' },
+            { id: 'k_irv', name: 'Kaiser Irvine (Sand Canyon)', type: 'Kaiser', city: 'Irvine', postcode: '92618' },
+            { id: 'k_ana', name: 'Kaiser Anaheim (Kraemer)', type: 'Kaiser', city: 'Anaheim', postcode: '92807' },
+            { id: 'k_dow', name: 'Kaiser Downey', type: 'Kaiser', city: 'Downey', postcode: '90242' },
+            { id: 'k_pc', name: 'Kaiser Panorama City', type: 'Kaiser', city: 'Panorama City', postcode: '91402' },
+            { id: 'k_la', name: 'Kaiser Los Angeles / Sunset', type: 'Kaiser', city: 'Los Angeles', postcode: '90027' },
+            { id: 'k_wla', name: 'Kaiser West LA', type: 'Kaiser', city: 'Los Angeles', postcode: '90025' },
+            { id: 'k_sb', name: 'Kaiser South Bay / Harbor', type: 'Kaiser', city: 'Harbor City', postcode: '90509' },
+            { id: 'a_ont2', name: 'Amazon ONT2', type: 'Amazon', city: 'San Bernardino', postcode: '92408' },
+            { id: 'a_ont6', name: 'Amazon ONT6', type: 'Amazon', city: 'Moreno Valley', postcode: '92555' },
+            { id: 'a_sna4', name: 'Amazon SNA4', type: 'Amazon', city: 'Rialto', postcode: '92376' },
+            { id: 'a_lgb8', name: 'Amazon LGB8', type: 'Amazon', city: 'Rialto', postcode: '92376' },
+            { id: 'a_ont9', name: 'Amazon ONT9', type: 'Amazon', city: 'Redlands', postcode: '92374' },
+            { id: 'home', name: 'Home Delivery (SoCal Only)', type: 'Other', city: 'Various', postcode: '' }
+        ];
 
         function setSubscription(val) {
             isSubscription = val;
@@ -615,12 +700,16 @@
 
         function populateLocations() {
             const select = document.getElementById('cust-location');
-            allLocations.sort((a,b) => a.name.localeCompare(b.name)).forEach(l => {
+            select.innerHTML = '<option value="" disabled selected>-- Select Hub or Home --</option>';
+            
+            HUB_LOCATIONS_DATA.forEach(l => {
                 const opt = document.createElement('option');
                 opt.value = l.id;
                 opt.textContent = `${l.name} (${l.city})`;
                 select.appendChild(opt);
             });
+            // Trigger update to show initial delivery status if location is pre-selected or default
+            updateCartUI(); 
         }
 
         async function checkout() {
@@ -629,9 +718,16 @@
             const phone = document.getElementById('cust-phone').value;
             const loc = document.getElementById('cust-location').value;
             const btn = document.getElementById('checkout-btn');
+            const totalBottles = cart.reduce((sum, item) => sum + item.bottles, 0);
 
             if (!name || !email || !phone || !loc) return alert("Please fill in all details.");
             if (cart.length === 0) return;
+
+            // Enforce hub threshold if not home delivery
+            if (loc !== 'home' && totalBottles < HUB_DELIVERY_THRESHOLD) {
+                alert(`This Hub requires ${HUB_DELIVERY_THRESHOLD} bottles for delivery. Please add more items or coordinate with your team!`);
+                return;
+            }
 
             btn.disabled = true;
             btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Redirecting to Stripe...';
@@ -647,7 +743,9 @@
                         location_id: loc, 
                         items: cart, 
                         promo_code: validatedPromo,
-                        is_subscription: isSubscription 
+                        is_subscription: isSubscription,
+                        total_bottles: totalBottles, // Pass total bottles to backend for incentive logic
+                        delivery_fee_applied: (loc === 'home' || (loc !== 'home' && totalBottles < HUB_DELIVERY_THRESHOLD)) ? HOME_DELIVERY_FEE : 0
                     })
                 });
                 const data = await res.json();
@@ -656,7 +754,7 @@
             } catch (e) {
                 alert("Checkout Error: " + e.message);
                 btn.disabled = false;
-                btn.innerHTML = 'Pay with Stripe <i class="fas fa-credit-card ml-2"></i>';
+                btn.innerHTML = 'Confirm & Pay <i class="fas fa-arrow-right ml-2"></i>';
             }
         }
 
@@ -665,7 +763,11 @@
             if (el) window.scrollTo({ top: el.offsetTop - 100, behavior: 'smooth' });
         }
 
-        window.onload = init;
-    </script>
+        // Add event listener for location change to update UI
+        document.addEventListener('DOMContentLoaded', () => {
+            document.getElementById('cust-location').addEventListener('change', updateCartUI);
+            init();
+        });
+
 </body>
 </html>
