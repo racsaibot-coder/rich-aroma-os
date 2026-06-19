@@ -162,8 +162,13 @@
             try {
                 console.log("Loading menu...");
                 const urlParams = new URLSearchParams(window.location.search);
-                const resId = urlParams.get('restaurantId') || 'rich-aroma';
-                const res = await fetch(`/api/menu?restaurantId=${resId}`, { cache: 'no-cache' });
+                let resId = urlParams.get('restaurantId') || 'rich-aroma';
+
+                // Fix Name vs ID mismatch for Fradas
+                if (resId === 'Fradas Bar & Grill') resId = 'fradas-bar--grill-445';
+
+                const v = Date.now();
+                const res = await fetch(`/api/v2-menu?restaurantId=${resId}&v=${v}`, { cache: 'no-cache' });
                 const data = await res.json();
                 if (data && data.items) {
                     menuItems = data.items;
@@ -265,6 +270,26 @@
                                 </div>
                                 <p class="text-[9px] text-white/30 font-bold uppercase tracking-widest text-center">${streak === 6 ? '¡PRÓXIMA BEBIDA GRATIS!' : 'Faltan ' + (6-streak) + ' bebidas para tu premio'}</p>
                                 ${isBootcamp ? `<p class="text-[8px] text-blue-400 font-bold uppercase tracking-tighter text-center">¡Precio Especial Post-Workout Activo! (5am-8am / 6pm-10pm)</p>` : ''}
+                            </div>
+                        </div>
+                    `;
+                } else {
+                    // --- GUEST SIGNUP PROMO ---
+                    dashboardHtml = `
+                        <div class="mb-12 animate-in slide-in-from-top-4 duration-700">
+                            <div class="bg-gradient-to-r from-gold/10 to-gold/5 border border-gold/20 rounded-[2.5rem] p-8 text-center space-y-4 shadow-2xl relative overflow-hidden group">
+                                <div class="absolute -top-10 -right-10 w-40 h-40 bg-gold/5 rounded-full blur-3xl group-hover:bg-gold/10 transition-all"></div>
+                                <div class="w-16 h-16 bg-gold/20 text-gold rounded-[1.5rem] flex items-center justify-center mx-auto mb-2 transform group-hover:rotate-12 transition-transform">
+                                    <i class="fas fa-star text-2xl"></i>
+                                </div>
+                                <div class="space-y-1">
+                                    <h4 class="text-2xl font-display font-black text-white italic tracking-tight uppercase">Únete a la Familia</h4>
+                                    <p class="text-[10px] text-white/40 font-bold uppercase tracking-[0.2em]">Acumula puntos y obtén café gratis</p>
+                                </div>
+                                <div class="flex flex-col gap-2 pt-2">
+                                    <button onclick="window.openRegister()" class="w-full gold-gradient py-4 rounded-2xl font-black text-xs uppercase tracking-widest text-dark shadow-xl active:scale-95 transition-all">Crear mi Cuenta Gratis</button>
+                                    <button onclick="window.openLogin()" class="text-[9px] text-gold/60 font-black uppercase tracking-widest underline decoration-gold/20 underline-offset-4 pt-2">Ya soy miembro / Iniciar Sesión</button>
+                                </div>
                             </div>
                         </div>
                     `;
@@ -650,8 +675,39 @@
             }
         };
 
+                let preUploadBase64 = null;
+        window.handlePreUpload = (input) => {
+            if (!input.files || !input.files[0]) return;
+            const file = input.files[0];
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                preUploadBase64 = e.target.result;
+                const preview = document.getElementById('pre-upload-preview');
+                const img = document.getElementById('pre-img');
+                const btn = document.getElementById('pre-upload-btn');
+                if (preview) preview.classList.remove('hidden');
+                if (img) img.src = preUploadBase64;
+                if (btn) btn.innerHTML = '<i class="fas fa-check-circle mr-2 text-success"></i> Imagen Lista';
+            };
+            reader.readAsDataURL(file);
+        };
+
+        window.copyBank = (bank) => {
+            const info = bank === 'bac' ? "BAC: 756132311 (Oscar Castillo)" : "Banpais: 21001034567 (Oscar Castillo)";
+            navigator.clipboard.writeText(info).then(() => {
+                alert("Copiado: " + info);
+            });
+        };
+
         window.submitFinalOrder = async () => {
             if(cart.length === 0) return;
+            
+            // Check if transfer but no image uploaded yet
+            if (currentSelectedPayment === 'transfer' && !preUploadBase64) {
+                alert("Por favor sube la captura de tu transferencia antes de enviar.");
+                return;
+            }
+
             const btn = document.getElementById('final-btn');
             const name = document.getElementById('check-name').value.trim();
             const phone = document.getElementById('check-phone').value.trim();
@@ -674,12 +730,12 @@
             const subtotal = cart.reduce((sum, item) => sum + item.finalPrice, 0);
             const scheduleVal = document.getElementById('check-schedule').value;
             
-            // Check if cart has a booking item (prioritize its schedule)
             const bookingItem = cart.find(i => i.scheduledFor);
             const finalSchedule = bookingItem ? bookingItem.scheduledFor : (scheduleVal === 'asap' ? null : scheduleVal);
 
             const payload = {
-                items: Object.values(itemsMap), subtotal, tax: 0, discount: 0, total: subtotal, paymentMethod: currentSelectedPayment,
+                items: Object.values(itemsMap), subtotal, tax: 0, discount: 0, total: subtotal, 
+                paymentMethod: currentSelectedPayment,
                 fulfillment: fulfillmentType,
                 restaurantId: resId,
                 guestPhone: phone,
@@ -689,13 +745,25 @@
             if(currentCustomer) payload.customerId = currentCustomer.id;
 
             try {
-                // Pointing to V2 for testing the new features
                 const res = await fetch('/api/orders-v2', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
                 if(!res.ok) throw new Error('Fail');
                 const saved = await res.json();
+                
+                // --- AUTO-UPLOAD RECEIPT IF READY ---
+                if (preUploadBase64) {
+                    try {
+                        await fetch('/api/upload-receipt', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ orderId: saved.id, image: preUploadBase64 })
+                        });
+                    } catch(e) { console.error("Receipt upload fail", e); }
+                }
+
                 cart = []; updateCartUI(); window.closeCheckout();
                 activeOrder = saved;
                 localStorage.setItem('ra_active_order', JSON.stringify(saved));
+                preUploadBase64 = null; // Clear for next time
                 showTracking();
             } catch(e) { alert("Error al enviar. Intenta de nuevo."); btn.innerHTML = "Enviar Pedido Ahora 🚀"; btn.disabled = false; }
         };
@@ -750,45 +818,73 @@
 
             // Render Items in tracking view
             const list = document.getElementById('track-items-list');
-            if (list && activeOrder.items) {
-                const total = parseFloat(activeOrder.total || 0).toFixed(2);
-                const paymentStatus = (activeOrder.status === 'pending' && activeOrder.payment_method !== 'transfer') ? 'PENDIENTE DE PAGO' : activeOrder.status.toUpperCase();
+            if (list) {
+                let items = activeOrder.items;
+                if (typeof items === 'string') {
+                    try { items = JSON.parse(items); } catch(e) { console.error("Parse Error", e); }
+                }
                 
-                list.innerHTML = `
-                    <div class="mb-4 pb-4 border-b border-white/10">
-                        <p class="text-[8px] font-black text-white/30 uppercase tracking-[0.2em] mb-1">Estado de Pago</p>
-                        <p class="text-xs font-black ${activeOrder.status === 'paid' ? 'text-success' : 'text-amber-500'} uppercase">${paymentStatus}</p>
-                    </div>
-                ` + activeOrder.items.map(item => `
-                    <div class="flex justify-between items-center py-2 border-b border-white/5">
-                        <span class="text-white text-xs font-bold">${item.qty}x ${item.name}</span>
-                        <span class="text-gold font-mono text-[10px]">L ${(parseFloat(item.finalPrice || item.price) * item.qty).toFixed(2)}</span>
-                    </div>
-                `).join('') + `
-                    <div class="flex justify-between items-center pt-4">
-                        <span class="text-white/40 text-[10px] font-black uppercase">Total</span>
-                        <span class="text-white text-xl font-black italic">L ${total}</span>
-                    </div>
-                `;
+                if (Array.isArray(items)) {
+                    const total = parseFloat(activeOrder.total || 0).toFixed(2);
+                    const paymentStatus = (activeOrder.status === 'pending' && activeOrder.payment_method !== 'transfer') ? 'PENDIENTE DE PAGO' : activeOrder.status.toUpperCase();
+                    
+                    list.innerHTML = `
+                        <div class="mb-4 pb-4 border-b border-white/10">
+                            <p class="text-[8px] font-black text-white/30 uppercase tracking-[0.2em] mb-1">Estado de Pago</p>
+                            <p class="text-xs font-black ${activeOrder.status === 'paid' ? 'text-success' : 'text-amber-500'} uppercase">${paymentStatus}</p>
+                        </div>
+                    ` + items.map(item => `
+                        <div class="flex justify-between items-center py-2 border-b border-white/5">
+                            <div class="text-left">
+                                <p class="text-white text-xs font-bold">${item.qty}x ${item.name}</p>
+                                ${item.mods && item.mods.length ? `<p class="text-[7px] text-white/40 uppercase font-black">${item.mods.map(m=>m.name).join(', ')}</p>` : ''}
+                            </div>
+                            <span class="text-gold font-mono text-[10px]">L ${(parseFloat(item.finalPrice || item.price || 0) * (item.qty || 1)).toFixed(2)}</span>
+                        </div>
+                    `).join('') + `
+                        <div class="flex justify-between items-center pt-4">
+                            <span class="text-white/40 text-[10px] font-black uppercase">Total</span>
+                            <span class="text-white text-xl font-black italic">L ${total}</span>
+                        </div>
+                    `;
+                } else {
+                    list.innerHTML = `<p class="text-white/20 text-[10px] italic py-4">No se pudieron cargar los detalles del pedido.</p>`;
+                }
             }
 
-            if (window.QRCode) {
-                const qrContainer = document.getElementById('receipt-qr');
-                if (qrContainer) {
+            const qrContainer = document.getElementById('receipt-qr');
+            if (qrContainer) {
+                qrContainer.innerHTML = '<div class="w-[120px] h-[120px] flex items-center justify-center text-dark/20"><i class="fas fa-qrcode fa-spin"></i></div>';
+                
+                // Small timeout to ensure container is fully ready and visible
+                setTimeout(() => {
                     qrContainer.innerHTML = "";
                     qrContainer.onclick = () => {
                         alert(`ID de Orden: ${activeOrder.id}\nMuestra este ID al cajero si no puede escanear el código.`);
                     };
                     qrContainer.style.cursor = "pointer";
-                    new QRCode(qrContainer, {
-                        text: activeOrder.id,
-                        width: 120,
-                        height: 120,
-                        colorDark: "#120C09",
-                        colorLight: "#ffffff",
-                        correctLevel: QRCode.CorrectLevel.H
-                    });
-                }
+                    
+                    if (window.QRCode) {
+                        try {
+                            new QRCode(qrContainer, {
+                                text: activeOrder.id,
+                                width: 120,
+                                height: 120,
+                                colorDark: "#120C09",
+                                colorLight: "#ffffff",
+                                correctLevel: QRCode.CorrectLevel.H
+                            });
+                        } catch (e) {
+                            console.error("QRCode Library Error", e);
+                            const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(activeOrder.id)}`;
+                            qrContainer.innerHTML = `<img src="${qrUrl}" style="width:120px; height:120px;" alt="QR Code">`;
+                        }
+                    } else {
+                        // Fallback to external API if library not loaded
+                        const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(activeOrder.id)}`;
+                        qrContainer.innerHTML = `<img src="${qrUrl}" style="width:120px; height:120px;" alt="QR Code">`;
+                    }
+                }, 100);
             }
 
             updateTrackingUI(activeOrder);
@@ -796,7 +892,8 @@
             // Show Transfer Upload if needed
             const uploadSection = document.getElementById('transfer-upload-section');
             if (uploadSection) {
-                if (activeOrder.payment_method === 'transfer' && !activeOrder.receipt_url) {
+                // Show if it's a transfer and NOT yet verified/paid
+                if (activeOrder.payment_method === 'transfer' && (activeOrder.status === 'pending' || activeOrder.status === 'pending_verification')) {
                     uploadSection.classList.remove('hidden');
                 } else {
                     uploadSection.classList.add('hidden');
@@ -859,6 +956,25 @@
                 const el = document.getElementById(`step-${s.id}`);
                 if(el) el.innerHTML = `<i class="fas ${s.icon}"></i>`;
             });
+
+            if (status === 'cancelled') {
+                title.innerText = "ORDEN CANCELADA";
+                msg.innerText = "Tu pedido ha sido cancelado. Si tienes dudas, contáctanos.";
+                line.style.width = "0%";
+                if(icon) icon.innerHTML = '<i class="fas fa-times-circle text-error"></i>';
+                steps.forEach(s => {
+                    const el = document.getElementById(`step-${s.id}`);
+                    if(el) {
+                        el.classList.add('bg-white/5', 'text-white/20', 'border-white/10');
+                        el.classList.remove('bg-gold', 'text-dark', 'border-gold');
+                    }
+                });
+                if (badge) {
+                    badge.classList.remove('bg-white/5', 'text-white');
+                    badge.classList.add('bg-error/20', 'text-error', 'border-error/50');
+                }
+                return;
+            }
 
             if (['pending', 'paid'].includes(status)) {
                 title.innerText = "¡ORDEN RECIBIDA!";
@@ -924,6 +1040,57 @@
 
         window.closeLogin = () => {
             document.getElementById('login-overlay').classList.add('hidden');
+        };
+
+        window.openRegister = () => {
+            window.closeLogin();
+            document.getElementById('reg-overlay').classList.remove('hidden');
+        };
+
+        window.closeRegister = () => {
+            document.getElementById('reg-overlay').classList.add('hidden');
+            window.openLogin();
+        };
+
+        window.submitRegister = async () => {
+            const name = document.getElementById('reg-name').value.trim();
+            const country = document.getElementById('reg-country').value;
+            const rawPhone = document.getElementById('reg-phone').value.replace(/\D/g, '');
+            const phone = country + rawPhone;
+            const pin = document.getElementById('reg-pin').value;
+
+            if (!name || rawPhone.length < 8 || pin.length < 4) {
+                alert("Por favor completa todos los campos (Nombre, WhatsApp de 8 dígitos y PIN de 4 números)");
+                return;
+            }
+
+            const btn = document.getElementById('reg-submit-btn');
+            btn.innerText = "CREANDO...";
+            btn.disabled = true;
+
+            try {
+                const res = await fetch('/api/auth/register', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name, phone, pin })
+                });
+
+                const data = await res.json();
+
+                if (res.ok) {
+                    alert("¡Bienvenido a la Familia! Tu cuenta ha sido creada.");
+                    localStorage.setItem('ra_customer_phone', phone);
+                    localStorage.setItem('ra_customer_pin', pin);
+                    location.reload();
+                } else {
+                    alert(data.error || "Error al crear cuenta. El número ya podría estar registrado.");
+                }
+            } catch (e) {
+                alert("Error de conexión. Intenta de nuevo.");
+            } finally {
+                btn.innerText = "Crear mi Cuenta Gratis";
+                btn.disabled = false;
+            }
         };
 
         window.typeLoginPin = (num) => {
@@ -1010,15 +1177,8 @@
             const bal = (parseFloat(currentCustomer.cash_balance) || 0) + (parseFloat(currentCustomer.membership_credit) || 0);
             document.getElementById('prof-balance').innerText = `L ${bal.toFixed(2)}`;
             
-            if(currentCustomer.is_vip) document.getElementById('prof-vip-badge').classList.remove('hidden');
-            else document.getElementById('prof-vip-badge').classList.add('hidden');
-
-            const isStaff = Array.isArray(currentCustomer.tags) && currentCustomer.tags.includes('Employee');
-            if(isStaff) {
-                document.getElementById('prof-vip-badge').innerText = "Employee Member";
-                document.getElementById('prof-vip-badge').classList.remove('hidden');
-                document.getElementById('prof-vip-badge').className = "mt-2 inline-flex items-center gap-1.5 bg-cyan-500/20 text-cyan-400 px-3 py-1 rounded-full text-[9px] font-black uppercase border border-cyan-500/30";
-            }
+            // --- TIER VISUALIZATION ---
+            renderTierPath();
 
             if(currentCustomer.is_vip_eligible) document.getElementById('prof-coffee-badge').classList.remove('hidden');
             else document.getElementById('prof-coffee-badge').classList.add('hidden');
@@ -1036,6 +1196,159 @@
             if (window.QRCode) {
                 document.getElementById('prof-qr').innerHTML = "";
                 new QRCode(document.getElementById('prof-qr'), { text: currentCustomer.phone, width: 160, height: 160, colorDark: "#120C09", colorLight: "#ffffff" });
+            }
+        };
+
+        window.closeProfile = () => {
+            document.getElementById('profile-drawer').classList.remove('active');
+            document.getElementById('profile-overlay').style.opacity = "0";
+            setTimeout(() => {
+                document.getElementById('profile-overlay').classList.add('hidden');
+            }, 300);
+        };
+
+        const TIERS = [
+            { id: 'Bronze', name: 'Member', icon: 'fa-shield-alt', color: 'text-orange-400', pct: 10, limit: 'Ilimitado', desc: '10 Cafés/mes + 10% Descuento' },
+            { id: 'Silver', name: 'Frequent', icon: 'fa-medal', color: 'text-gray-300', pct: 15, limit: '100 Cupos', desc: '15 Cafés/mes + 15% Descuento' },
+            { id: 'Gold', name: 'Pro', icon: 'fa-crown', color: 'text-gold', pct: 25, limit: '25 Cupos (0/25)', desc: 'Ritual Diario + 25% Desc. Comida' },
+            { id: 'Diamond', name: 'Elite', icon: 'fa-gem', color: 'text-cyan-400', pct: 50, limit: '10 Cupos (0/10)', desc: 'Ritual Diario + 50% Desc. Comida' }
+        ];
+
+        function renderTierPath() {
+            const tags = Array.isArray(currentCustomer.tags) ? currentCustomer.tags : [];
+            const myTierId = tags.includes('Diamond') ? 'Diamond' : (tags.includes('GoldCard') ? 'Gold' : (tags.includes('SilverCard') ? 'Silver' : (tags.includes('BronzeCard') ? 'Bronze' : 'Basic')));
+            
+            document.getElementById('tier-status-badge').innerText = tags.includes('Founder') ? 'Founding Member' : `${myTierId} Member`;
+
+            TIERS.forEach(t => {
+                const el = document.getElementById(`path-${t.id}`);
+                if (!el) return;
+                
+                const isCurrent = myTierId === t.id;
+                const isPast = TIERS.findIndex(x => x.id === myTierId) > TIERS.findIndex(x => x.id === t.id);
+
+                // Make icons clickable to view info
+                el.onclick = (e) => {
+                    e.stopPropagation();
+                    showTierInfo(t.id);
+                };
+                el.style.cursor = 'pointer';
+
+                if (isCurrent || isPast || tags.includes('Founder')) {
+                    el.className = `w-12 h-12 rounded-2xl bg-gold/10 border-2 border-gold flex items-center justify-center ${t.color} shadow-[0_0_15px_rgba(201,166,107,0.3)] transition-all duration-700 hover:scale-110 active:scale-90`;
+                } else {
+                    el.className = `w-12 h-12 rounded-2xl bg-dark border-2 border-white/5 flex items-center justify-center text-white/10 grayscale transition-all duration-700 hover:border-white/20 hover:scale-110 active:scale-90`;
+                }
+            });
+
+            // Default to showing next tier or current diamond
+            const nextIdx = Math.min(TIERS.length - 1, TIERS.findIndex(t => t.id === myTierId) + 1);
+            showTierInfo(TIERS[nextIdx].id);
+        }
+
+        function showTierInfo(tierId) {
+            const t = TIERS.find(x => x.id === tierId);
+            const detailContainer = document.getElementById('tier-details');
+            const tags = Array.isArray(currentCustomer.tags) ? currentCustomer.tags : [];
+            const myTierId = tags.includes('Diamond') ? 'Diamond' : (tags.includes('GoldCard') ? 'Gold' : (tags.includes('SilverCard') ? 'Silver' : (tags.includes('BronzeCard') ? 'Bronze' : 'Basic')));
+            
+            const isMyTier = myTierId === tierId;
+            const isDiamond = tierId === 'Diamond';
+            const isGold = tierId === 'Gold';
+
+            // Custom benefit lists per tier
+            let benefitsHtml = '';
+            if (isDiamond) {
+                benefitsHtml = `
+                    <li class="flex items-center gap-2"><i class="fas fa-check-circle text-gold text-[10px]"></i> <span><b>Ritual Diario:</b> 1 Café Gratis al día</span></li>
+                    <li class="flex items-center gap-2"><i class="fas fa-check-circle text-gold text-[10px]"></i> <span><b>Elite:</b> 50% Desc. en toda la Comida</span></li>
+                    <li class="flex items-center gap-2"><i class="fas fa-check-circle text-gold text-[10px]"></i> <span><b>Status:</b> Trato Preferencial & Eventos</span></li>
+                `;
+            } else if (isGold) {
+                benefitsHtml = `
+                    <li class="flex items-center gap-2"><i class="fas fa-check-circle text-gold text-[10px]"></i> <span><b>Ritual Diario:</b> 1 Café Gratis al día</span></li>
+                    <li class="flex items-center gap-2"><i class="fas fa-check-circle text-gold text-[10px]"></i> <span><b>Pro:</b> 25% Desc. en toda la Comida</span></li>
+                    <li class="flex items-center gap-2"><i class="fas fa-check-circle text-gold text-[10px]"></i> <span><b>Points:</b> 2x Puntos en toda compra</span></li>
+                `;
+            } else if (tierId === 'Silver') {
+                benefitsHtml = `
+                    <li class="flex items-center gap-2"><i class="fas fa-check-circle text-white/40 text-[10px]"></i> <span><b>Pase:</b> 15 Cafés Gratis por Mes</span></li>
+                    <li class="flex items-center gap-2"><i class="fas fa-check-circle text-white/40 text-[10px]"></i> <span><b>Freq:</b> 15% Descuento en TODO</span></li>
+                `;
+            } else {
+                benefitsHtml = `
+                    <li class="flex items-center gap-2"><i class="fas fa-check-circle text-white/40 text-[10px]"></i> <span><b>Pase:</b> 10 Cafés Gratis por Mes</span></li>
+                    <li class="flex items-center gap-2"><i class="fas fa-check-circle text-white/40 text-[10px]"></i> <span><b>Member:</b> 10% Descuento en TODO</span></li>
+                `;
+            }
+
+            detailContainer.innerHTML = `
+                <div class="space-y-3">
+                    <div class="flex justify-between items-end">
+                        <div>
+                            <p class="text-[8px] font-black text-gold uppercase tracking-[0.2em] mb-1">Nivel ${tierId}</p>
+                            <h4 class="text-2xl font-display font-black text-white italic uppercase tracking-tight leading-none">${t.name}</h4>
+                        </div>
+                        <span class="text-[9px] font-black text-gold bg-gold/5 px-3 py-1 rounded-full border border-gold/10">${t.limit}</span>
+                    </div>
+                    
+                    <ul class="space-y-2 text-[10px] text-white/50 font-medium">
+                        ${benefitsHtml}
+                    </ul>
+                </div>
+                
+                ${isMyTier ? `
+                    <div class="py-4 px-4 bg-gold text-dark rounded-2xl text-center shadow-xl shadow-gold/10">
+                        <p class="text-[10px] font-black uppercase tracking-widest">Tu Nivel Actual</p>
+                    </div>
+                ` : `
+                    <button onclick="window.applyForTier('${tierId}')" class="w-full py-4 rounded-2xl ${isDiamond || isGold ? 'gold-gradient text-dark' : 'bg-white/5 text-white/60 border border-white/10'} font-black text-[11px] uppercase tracking-widest active:scale-95 transition-all shadow-2xl">
+                        ${isDiamond || isGold ? 'Aplicar Invitación' : 'Activar Nivel'}
+                    </button>
+                `}
+            `;
+        }
+
+        window.applyForTier = (tierId) => {
+            if (tierId === 'Diamond' || tierId === 'Gold') {
+                document.getElementById('app-title').innerText = `Aplicar a ${tierId}`;
+                document.getElementById('application-modal').classList.remove('hidden');
+            } else {
+                alert(`Para el nivel ${tierId}, por favor solicita tu upgrade en caja.`);
+            }
+        };
+
+        window.submitApplication = async () => {
+            const job = document.getElementById('app-job').value.trim();
+            const reason = document.getElementById('app-reason').value.trim();
+            const tier = document.getElementById('app-title').innerText.split(' ').pop();
+            
+            if (!job || !reason) return alert("Por favor completa los campos para tu aplicación.");
+
+            const btn = document.querySelector('#application-modal button[onclick*="submitApplication"]');
+            btn.innerText = "ENVIANDO...";
+            btn.disabled = true;
+
+            try {
+                // Save to membership_applications table
+                const { error } = await supabaseClient.from('membership_applications').insert({
+                    customer_id: currentCustomer.id,
+                    tier_requested: tier,
+                    job_title: job,
+                    reason: reason,
+                    status: 'pending'
+                });
+
+                if (error) throw error;
+
+                alert("🚀 ¡Solicitud Enviada! Revisaremos tu perfil y te contactaremos por WhatsApp.");
+                document.getElementById('application-modal').classList.add('hidden');
+            } catch (e) { 
+                console.error(e);
+                alert("Error al enviar solicitud. Por favor intenta más tarde."); 
+            } finally {
+                btn.innerText = "Enviar Solicitud";
+                btn.disabled = false;
             }
         };
 
@@ -1064,6 +1377,34 @@
                 </div>
             `).join('');
         }
+
+        window.updatePIN = async () => {
+            if(!currentCustomer) return;
+            const newPin = prompt("Ingresa tu nuevo PIN de 4 números:");
+            if(!newPin) return;
+            
+            if(newPin.length !== 4 || isNaN(newPin)) {
+                alert("El PIN debe ser de exactamente 4 números.");
+                return;
+            }
+
+            try {
+                const res = await fetch(`/api/store?action=customer_update&id=${currentCustomer.id}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ pin: newPin })
+                });
+
+                if(res.ok) {
+                    localStorage.setItem('ra_customer_pin', newPin);
+                    alert("✅ PIN actualizado con éxito.");
+                } else {
+                    alert("Error al actualizar PIN.");
+                }
+            } catch(e) {
+                alert("Error de conexión.");
+            }
+        };
 
         window.claimReward = async (pts, name) => {
             if(!currentCustomer || (currentCustomer.points || 0) < pts) return;
@@ -1117,18 +1458,60 @@
                     } else localStorage.removeItem('ra_active_order');
                 } catch(e) { localStorage.removeItem('ra_active_order'); }
             }
-            const phone = localStorage.getItem('ra_customer_phone') || localStorage.getItem('ra_phone');
-            if (phone) {
-                fetch(`/api/customer/profile?phone=${encodeURIComponent(phone)}`).then(r => r.json()).then(u => { 
-                    if(u && !u.error) { 
-                        currentCustomer = u; 
-                        document.getElementById('user-pill').classList.remove('hidden'); 
-                        document.getElementById('login-btn').classList.add('hidden'); 
+            // 4. LOAD CUSTOMER SESSION
+            const savedPhone = localStorage.getItem('ra_customer_phone') || localStorage.getItem('ra_phone');
+            console.log("[Auth] Found saved phone:", savedPhone);
+            
+            if (savedPhone) {
+                try {
+                    const profileRes = await fetch(`/api/customer/profile?phone=${encodeURIComponent(savedPhone)}`);
+                    const userData = await profileRes.json();
+                    
+                    if (userData && !userData.error) {
+                        console.log("[Auth] Profile loaded successfully:", userData.name);
+                        currentCustomer = userData;
                         
-                        const isEmployee = Array.isArray(u.tags) && u.tags.includes('Employee');
-                        const firstName = u.name.split(' ')[0];
-                        document.getElementById('user-first-name').innerText = isEmployee ? `[STAFF] ${firstName}` : firstName;
-                    } 
-                });
+                        // Update UI
+                        const userPill = document.getElementById('user-pill');
+                        const loginBtn = document.getElementById('login-btn');
+                        if (userPill) userPill.classList.remove('hidden');
+                        if (loginBtn) loginBtn.classList.add('hidden');
+                        
+                        const firstName = userData.name.split(' ')[0];
+                        const isEmployee = Array.isArray(userData.tags) && userData.tags.includes('Employee');
+                        const nameEl = document.getElementById('user-first-name');
+                        if (nameEl) nameEl.innerText = isEmployee ? `[STAFF] ${firstName}` : firstName;
+                        
+                        // Sync second phone key just in case
+                        localStorage.setItem('ra_customer_phone', savedPhone);
+                    } else {
+                        console.warn("[Auth] Profile fetch error or not found:", userData.error);
+                        // Optional: Clear bad session
+                        // localStorage.removeItem('ra_customer_phone');
+                    }
+                } catch (e) {
+                    console.error("[Auth] profile fetch failed:", e);
+                }
+            } else {
+                console.log("[Auth] No session found (Guest Mode)");
+            }
+
+            // 5. RENDER MENU (With profile context)
+            console.log("Calling renderMenu...");
+            renderMenu();
+
+            // 6. AUTO-OPEN MEMBERSHIP HUB (If requested from Dashboard)
+            const urlParams = new URLSearchParams(window.location.search);
+            if (urlParams.get('view') === 'membership') {
+                console.log("[DeepLink] Membership Hub request detected.");
+                setTimeout(() => {
+                    if (currentCustomer) {
+                        console.log("[DeepLink] Opening Profile for authed user.");
+                        window.openProfile();
+                    } else {
+                        console.log("[DeepLink] No user found, opening login modal.");
+                        window.openLogin();
+                    }
+                }, 800);
             }
         });

@@ -417,6 +417,7 @@
         <div class="glass bg-[#121214] p-10 rounded-[3rem] max-w-md w-full space-y-6 border border-white/10">
             <h3 class="text-2xl font-black uppercase tracking-tighter text-white">Editar Negocio</h3>
             <input type="hidden" id="edit-id">
+            <input type="hidden" id="edit-lead-id">
             <div class="space-y-4">
                 <div>
                     <label class="text-[10px] font-black uppercase tracking-widest text-white/20 mb-2 block">Nombre</label>
@@ -1244,6 +1245,7 @@
         function openEdit(index) {
             const b = activePartners[index];
             document.getElementById('edit-id').value = b.id;
+            document.getElementById('edit-lead-id').value = b.lead_id || '';
             document.getElementById('edit-name').value = b.name;
             document.getElementById('edit-logo').value = b.logo_url || '';
             document.getElementById('edit-phone').value = b.contact_phone || '';
@@ -1275,6 +1277,7 @@
             btn.innerText = "Guardando..."; btn.disabled = true;
 
             const id = document.getElementById('edit-id').value;
+            const lead_id = document.getElementById('edit-lead-id').value;
             const name = document.getElementById('edit-name').value;
             const phone = document.getElementById('edit-phone').value;
             let logo_url = document.getElementById('edit-logo').value;
@@ -1294,7 +1297,7 @@
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${localStorage.getItem('quimieats_admin_pin')}` },
                     body: JSON.stringify({ 
-                        id, name, logo_url, phone,
+                        id, lead_id, name, logo_url, phone,
                         bank_name, account_number, account_holder
                     })
                 });

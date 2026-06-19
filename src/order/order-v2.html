@@ -1601,6 +1601,21 @@
                         ${renderStatusStep('Listo para Entrega', false)}
                     </div>
 
+                    <!-- Order Items Summary -->
+                    <div id="orderItemsSummary" style="width:100%; max-width:320px; margin:0 auto 2rem auto; text-align: left; padding: 1rem 1.5rem; background: rgba(255,255,255,0.03); border-radius: 20px; border: 1px solid rgba(255,255,255,0.05);">
+                        <p style="color:var(--text-muted); font-[900]; font-size:0.7rem; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 0.8rem;">Detalles del Pedido</p>
+                        ${(order.items || []).map(item => `
+                            <div style="display:flex; justify-content:between; align-items: center; margin-bottom: 0.5rem; gap: 1rem;">
+                                <span style="color:white; font-size:0.9rem; font-weight:700; flex: 1;">${item.qty}x ${item.name}</span>
+                                <span style="color:var(--caramel); font-family: monospace; font-size:0.9rem; font-weight:900;">L ${(parseFloat(item.finalPrice || item.price || 0) * (item.qty || 1)).toFixed(2)}</span>
+                            </div>
+                        `).join('')}
+                        <div style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid rgba(255,255,255,0.1); display: flex; justify-content: space-between; align-items: end;">
+                            <span style="color:var(--text-muted); font-size:0.8rem; font-weight:700;">Total</span>
+                            <span style="color:white; font-size:1.4rem; font-weight:900; font-style: italic;">L ${(parseFloat(order.total) || 0).toFixed(2)}</span>
+                        </div>
+                    </div>
+
                     <div id="cancelReasonContainer" style="display:none; margin: 1.5rem auto; padding: 1.2rem; background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.3); border-radius: 20px; color: #ef4444; max-width: 320px; text-align: center;">
                         <p style="font-weight: 900; font-size: 0.8rem; text-transform: uppercase; margin-bottom: 0.4rem; letter-spacing: 1px;">⚠️ Orden Cancelada</p>
                         <p id="cancelReasonText" style="font-weight: 600; font-size: 0.95rem; line-height: 1.4;"></p>

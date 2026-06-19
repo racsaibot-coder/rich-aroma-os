@@ -179,9 +179,23 @@
         async function loadRestaurants() {
             try {
                 const res = await fetch('/api/admin?action=quimieats_active');
-                allRestaurants = await res.json();
+                const data = await res.json();
+
+                // --- ELITE LOGO SHIELD ---
+                const eliteLogos = {
+                   'fradas-bar--grill-445': 'https://zcqubacfcettwawcimsy.supabase.co/storage/v1/object/public/menu-images/uploads/1780064261851_f3fc0c2b-67ad-4797-9151-31a65f1a119e.JPG',
+                   'tonys-pizza': 'https://zcqubacfcettwawcimsy.supabase.co/storage/v1/object/public/menu-images/uploads/1780112315980_tonys_pizza_logo.jpg',
+                   'rich-aroma': 'https://zcqubacfcettwawcimsy.supabase.co/storage/v1/object/public/menu-images/uploads/1780064113444_Copy_of_Copy_of_Menu_2025_-_2_512_x_512_px.png',
+                   'el-meson': 'https://images.unsplash.com/photo-1509440159596-0249088772ff?q=80&w=800&auto=format&fit=crop'
+                };
+                allRestaurants = (data || []).map(r => ({
+                   ...r,
+                   logo_url: eliteLogos[r.id] || r.logo_url
+                }));
+
                 filterRestaurants(null);
             } catch (e) {
+
                 console.error("Failed to load restaurants", e);
                 document.getElementById('restaurant-list').innerHTML = '<div class="p-8 text-center text-red-500">Error al cargar servicios.</div>';
             }
@@ -322,8 +336,24 @@
             const container = document.getElementById('menu-items-container');
             container.innerHTML = '<div class="p-20 text-center text-white/10 italic">Cargando menú...</div>';
             
+            // --- ID TRANSLATION LAYER ---
+            let targetId = resId;
+            const idMap = {
+                'fradas': 'fradas-bar--grill-445',
+                'tony': 'tonys-pizza',
+                'tonny': 'tonys-pizza',
+                'cerca': 'tonys-pizza',
+                'meson': 'el-meson'
+            };
+            
+            Object.keys(idMap).forEach(key => {
+                if (targetId.toLowerCase().includes(key)) targetId = idMap[key];
+            });
+
             try {
-                const res = await fetch(`/api/menu?id=${resId}`);
+                // Point to NEW strictly isolated menu API
+                const v = Date.now();
+                const res = await fetch(`/api/v2-menu?id=${targetId}&v=${v}`);
                 const data = await res.json();
                 
                 if (data.categories && Object.keys(data.categories).length > 0) {

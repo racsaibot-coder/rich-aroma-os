@@ -43,11 +43,12 @@ export default async function handler(req, res) {
         if (action === 'register') {
             const { name, phone, email, secret, type, action: subAction, pin } = req.body; 
             const cleanPhone = phone ? phone.replace(/\D/g, '') : null;
+            const finalPin = pin || secret; // Support both names for robustness
 
             // SPECIAL CASE: Setting PIN for an existing staff-created account
             if (subAction === 'set_ghost_pin') {
                 const { data, error } = await supabase.from('customers')
-                    .update({ pin: pin })
+                    .update({ pin: finalPin })
                     .eq('phone', cleanPhone)
                     .select().single();
                 if (error) throw error;
@@ -72,7 +73,7 @@ export default async function handler(req, res) {
                 email: cleanEmail,
                 points: 0,
                 tier: 'bronze',
-                pin: type === 'phone' ? secret : null,
+                pin: finalPin,
                 password: type === 'email' ? secret : null
             };
 

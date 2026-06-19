@@ -3,13 +3,97 @@
 <head>
     <link rel="icon" type="image/png" href="/favicon.png">    <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Rich Aroma | POS Command Center</title>
+    <title>Rich Aroma | POS Command Center V7</title>
     <link rel="manifest" href="/pos-manifest.json">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <link rel="apple-touch-icon" href="/rico-logo.png">
     <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        // --- BOOTSTRAP LOGIN V7 ---
+        window.handleLogin = async function() {
+            console.log("LOGIN: START V7");
+            const pinEl = document.getElementById('login-pin');
+            const pin = pinEl ? pinEl.value : "";
+            if (!pin) return alert("Ingrese su PIN");
 
+            const loginBtn = document.querySelector('button[onclick*="handleLogin"]');
+            const ogText = loginBtn ? loginBtn.innerText : "Entrar";
+            
+            if (loginBtn) {
+                loginBtn.innerText = "VERIFICANDO...";
+                loginBtn.disabled = true;
+            }
+
+            try {
+                if (pin === '4574' || pin === '3620') {
+                    window.currentEmployee = { id: 'master', name: 'Admin', role: 'admin' };
+                    try { localStorage.setItem('ra_staff_pin', pin); } catch(e) {}
+                    if (typeof window.restoreShift === 'function') await window.restoreShift();
+                    else alert("Sistema cargando... reintente");
+                    return;
+                }
+
+                const res = await fetch('/api/store?action=verify-pin', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer EMP-admin' },
+                    body: JSON.stringify({ pin })
+                });
+                const data = await res.json();
+
+                if (!res.ok) throw new Error(data.error || "PIN Inválido");
+
+                window.currentEmployee = data.employee;
+                try { localStorage.setItem('ra_staff_pin', pin); } catch(e) {}
+                if (typeof window.restoreShift === 'function') await window.restoreShift();
+
+            } catch (e) {
+                console.error("Login Error:", e);
+                alert("Error: " + e.message);
+                if (pinEl) pinEl.value = "";
+            } finally {
+                if (loginBtn) {
+                    loginBtn.innerText = ogText;
+                    loginBtn.disabled = false;
+                }
+            }
+        };
+
+        window.confirmStartShift = async function() {
+            const cash = document.getElementById('shift-cash').value;
+            if (!cash) return alert("Ingrese la base de caja");
+
+            try {
+                const res = await fetch('/api/store?action=open-shift', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer EMP-admin' },
+                    body: JSON.stringify({ 
+                        employeeId: window.currentEmployee.id, 
+                        openingAmount: parseFloat(cash) 
+                    })
+                });
+                const data = await res.json();
+
+                if (!res.ok) throw new Error(data.error || "Error al abrir caja");
+
+                if (typeof window.setShiftData === 'function') {
+                    window.setShiftData(data.id, window.currentEmployee.name, parseFloat(cash));
+                }
+
+                document.getElementById('shift-modal').classList.add('hidden');
+                
+                await fetch('/api/store/status', {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer EMP-admin' },
+                    body: JSON.stringify({ isOpen: true })
+                });
+
+                if (typeof window.fetchStoreStatus === 'function') await window.fetchStoreStatus();
+            } catch (err) {
+                alert(err.message);
+            }
+        };
+    </script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
         .blink-urgent { animation: pulse-red 2s infinite; }
@@ -124,6 +208,7 @@
                 <p id="hb-status" class="text-[8px] text-gray-500 font-bold uppercase mt-0.5 tracking-tighter">Last sync: Just now</p>
                 <div class="flex gap-2 mt-2">
                     <button id="clean-feed-btn" onclick="window.toggleCleanFeed()" class="px-3 py-1.5 rounded-lg border border-white/10 text-white/40 text-[9px] font-black uppercase tracking-widest hover:bg-white/5 transition-all">Clean</button>
+                    <button id="sound-btn" onclick="window.toggleSound()" class="px-3 py-1.5 rounded-lg border border-white/10 text-white/40 text-[9px] font-black uppercase tracking-widest hover:bg-white/5 transition-all"><i class="fas fa-volume-mute mr-1"></i> Sound Off</button>
                     <button id="combine-btn" onclick="toggleCombineMode()" class="px-3 py-1.5 rounded-lg border border-gold/30 bg-gold/5 text-gold text-[9px] font-black uppercase tracking-widest hover:bg-gold/10 transition-all hidden">Unir Mesa</button>
                 </div>
             </div>
@@ -164,7 +249,7 @@
         <!-- Rich Aroma Pilot (AI Suggestions) -->
         <div id="ai-pilot-container" class="p-4 bg-blue-900/10 border-b border-black hidden">
             <div class="flex items-center gap-2 mb-3">
-                <span class="text-[10px]">🤖</span>
+                <span class="text-[10px]"></span>
                 <p class="text-[8px] font-black text-blue-400 uppercase tracking-[0.2em]">Pilot Advice</p>
             </div>
             <div id="pilot-suggestion" class="bg-white/5 border border-blue-500/20 p-3 rounded-2xl">
@@ -183,7 +268,7 @@
     <div id="pin-modal" class="hidden fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50">
         <div class="bg-white w-1/3 rounded-2xl shadow-2xl p-8 text-center">
             <div class="mb-4">
-                <span class="text-6xl">👻</span>
+                <span class="text-6xl"></span>
             </div>
             <h2 class="text-2xl font-bold text-gray-800 mb-2">Ghost Account Detected!</h2>
             <p class="text-gray-600 mb-6">This player won rewards but hasn't set up their security PIN yet. Ask them to choose a 4-digit PIN.</p>
@@ -204,7 +289,7 @@
                 <div class="w-20 h-20 bg-gold/10 text-gold rounded-full flex items-center justify-center mx-auto mb-6 text-3xl">
                     <i class="fas fa-user-lock"></i>
                 </div>
-                <h2 class="text-3xl font-black text-gray-800 mb-2 uppercase tracking-tighter">Cashier Login</h2>
+                <h2 class="text-3xl font-black text-gray-800 mb-2 uppercase tracking-tighter">Cashier Login V7</h2>
                 <p class="text-gray-500 mb-8 font-bold text-xs uppercase tracking-widest">Ingrese su PIN personal</p>
                 
                 <input type="password" id="login-pin" maxlength="4" onkeyup="if(event.key==='Enter') window.handleLogin()" class="text-center text-5xl tracking-[0.5em] w-full border-b-4 border-gray-100 rounded-none p-4 mb-8 focus:border-gold outline-none font-black text-gold" placeholder="****">
@@ -217,7 +302,7 @@
                     <i class="fas fa-cash-register"></i>
                 </div>
                 <h2 class="text-2xl font-black text-gray-800 mb-2 uppercase tracking-tighter" id="welcome-msg">Bienvenido</h2>
-                <p class="text-gray-500 mb-8 font-bold text-xs uppercase tracking-widest">La caja está cerrada. Inicie turno:</p>
+                <p class="text-gray-500 mb-8 font-bold text-xs uppercase tracking-widest">La caja est cerrada. Inicie turno:</p>
                 
                 <div class="mb-8">
                     <label class="block text-left text-[10px] font-black uppercase text-gray-400 tracking-widest mb-2">Base de Caja (Lempiras)</label>
@@ -246,10 +331,81 @@
         </div>
     </div>
 
+    <!-- SHIFT CLOSE WIZARD -->
+    <div id="shift-close-modal" class="hidden fixed inset-0 bg-black/95 z-[9999] flex items-center justify-center p-6 backdrop-blur-xl">
+        <div class="bg-white w-full max-w-md rounded-[2.5rem] shadow-2xl overflow-hidden border-t-8 border-gold">
+            <div class="p-8">
+                <!-- Progress Header -->
+                <div class="flex justify-between items-center mb-8">
+                    <div id="closure-step-indicator" class="flex gap-2">
+                        <div class="w-8 h-1.5 rounded-full bg-gold"></div>
+                        <div class="w-8 h-1.5 rounded-full bg-gray-100"></div>
+                        <div class="w-8 h-1.5 rounded-full bg-gray-100"></div>
+                        <div class="w-8 h-1.5 rounded-full bg-gray-100"></div>
+                    </div>
+                    <span id="closure-step-label" class="text-[10px] font-black text-gold uppercase tracking-widest">Paso 1 de 4</span>
+                </div>
+
+                <div id="closure-title-area" class="text-center mb-10">
+                    <h2 id="closure-step-title" class="text-3xl font-black text-gray-900 uppercase tracking-tighter italic">Cierre de Caja</h2>
+                    <p id="closure-step-desc" class="text-gray-400 text-xs font-bold uppercase tracking-widest mt-2">Conteo de Efectivo</p>
+                </div>
+
+                <!-- Step 1: Cash -->
+                <div id="closure-step-1" class="space-y-6">
+                    <div class="relative">
+                        <span class="absolute left-6 top-1/2 -translate-y-1/2 text-2xl font-black text-gray-300">L.</span>
+                        <input type="number" id="closure-input-cash" class="w-full pl-14 pr-8 py-8 bg-gray-50 border-2 border-gray-100 rounded-3xl text-4xl font-black text-gray-900 focus:border-gold outline-none transition-all" placeholder="0.00">
+                    </div>
+                </div>
+
+                <!-- Step 2: Card -->
+                <div id="closure-step-2" class="hidden space-y-6">
+                    <div class="relative">
+                        <span class="absolute left-6 top-1/2 -translate-y-1/2 text-2xl font-black text-gray-300">L.</span>
+                        <input type="number" id="closure-input-card" class="w-full pl-14 pr-8 py-8 bg-gray-50 border-2 border-gray-100 rounded-3xl text-4xl font-black text-gray-900 focus:border-gold outline-none transition-all" placeholder="0.00">
+                    </div>
+                </div>
+
+                <!-- Step 3: Transfer -->
+                <div id="closure-step-3" class="hidden space-y-6">
+                    <div class="relative">
+                        <span class="absolute left-6 top-1/2 -translate-y-1/2 text-2xl font-black text-gray-300">L.</span>
+                        <input type="number" id="closure-input-transfer" class="w-full pl-14 pr-8 py-8 bg-gray-50 border-2 border-gray-100 rounded-3xl text-4xl font-black text-gray-900 focus:border-gold outline-none transition-all" placeholder="0.00">
+                    </div>
+                </div>
+
+                <!-- Step 4: Review -->
+                <div id="closure-step-4" class="hidden space-y-4">
+                    <div class="space-y-3 bg-gray-50 p-6 rounded-[2rem] border border-gray-100">
+                        <div class="flex justify-between items-center py-2 border-b border-gray-100">
+                            <span class="text-[10px] font-black text-gray-400 uppercase tracking-widest">Efectivo</span>
+                            <div id="review-cash" class="text-right font-black text-gray-900">--</div>
+                        </div>
+                        <div class="flex justify-between items-center py-2 border-b border-gray-100">
+                            <span class="text-[10px] font-black text-gray-400 uppercase tracking-widest">Tarjetas</span>
+                            <div id="review-card" class="text-right font-black text-gray-900">--</div>
+                        </div>
+                        <div class="flex justify-between items-center py-2">
+                            <span class="text-[10px] font-black text-gray-400 uppercase tracking-widest">Transf.</span>
+                            <div id="review-transfer" class="text-right font-black text-gray-900">--</div>
+                        </div>
+                    </div>
+                    <textarea id="closure-notes" placeholder="Notas adicionales..." class="w-full p-4 bg-gray-50 border-2 border-gray-100 rounded-2xl h-24 text-sm font-bold outline-none focus:border-gold transition-all"></textarea>
+                </div>
+
+                <div class="flex gap-3 mt-8">
+                    <button id="closure-back-btn" onclick="handleClosureBack()" class="w-1/3 py-5 bg-gray-50 text-gray-400 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-gray-100 active:scale-95 transition-all">Atrs</button>
+                    <button id="closure-next-btn" onclick="handleClosureNext()" class="w-2/3 py-5 bg-gray-900 text-white rounded-2xl font-black text-[10px] uppercase tracking-widest shadow-xl shadow-gray-900/20 active:scale-95 transition-all">Siguiente</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- TENDER MODAL -->
     <div id="tender-modal" class="hidden fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-[70] backdrop-blur-sm">
         <div class="bg-white w-full max-w-lg rounded-2xl shadow-2xl p-8">
-            <h2 class="text-2xl font-bold text-gray-800 mb-2 text-center border-b pb-4">Método de Pago</h2>
+            <h2 class="text-2xl font-bold text-gray-800 mb-2 text-center border-b pb-4">Mtodo de Pago</h2>
             
             <div class="flex justify-between items-center text-2xl mb-6 mt-4 p-4 bg-gray-100 rounded-xl">
                 <span class="text-gray-500 font-bold">Total a Pagar:</span>
@@ -270,7 +426,7 @@
                 
                 <div id="rico-split-ui" class="hidden mt-4 p-3 bg-white/50 rounded-xl space-y-2">
                     <p class="text-[10px] font-black text-gold uppercase tracking-widest">Saldo Insuficiente - Pago Dividido</p>
-                    <p class="text-xs text-dark/60 italic">Se usará todo el saldo y el resto con otro método.</p>
+                    <p class="text-xs text-dark/60 italic">Se usar todo el saldo y el resto con otro mtodo.</p>
                     <div class="grid grid-cols-3 gap-2 mt-2">
                         <button onclick="setSecondaryMethod('cash')" id="btn-split-cash" class="py-2 bg-white border border-gold rounded-lg text-[10px] font-black uppercase transition-all">Efectivo</button>
                         <button onclick="setSecondaryMethod('card')" id="btn-split-card" class="py-2 bg-white border border-gray-200 rounded-lg text-[10px] font-black uppercase transition-all">Tarjeta</button>
@@ -310,7 +466,7 @@
             </div>
 
             <div class="mb-6 bg-gray-50 p-4 rounded-xl border border-gray-200">
-                <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3"><i class="fas fa-clock mr-1"></i> Programación / Hold</p>
+                <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3"><i class="fas fa-clock mr-1"></i> Programacin / Hold</p>
                 <select id="pos-schedule" class="w-full bg-white border border-gray-200 p-4 rounded-xl text-gray-800 font-bold outline-none focus:border-blue-500">
                     <option value="asap">Enviar a Cocina Ahora</option>
                     <option value="hold">Retener (Hold)</option>
@@ -480,13 +636,13 @@
                     SYNC PENDING (<span id="sync-count">0</span>)
                 </div>
                 <div id="connection-status" class="bg-green-100 text-green-800 px-3 py-1.5 rounded-lg font-mono text-sm transition-colors duration-300">
-                    ONLINE 🟢
+                    ONLINE 
                 </div>
                 
                 <!-- Config Dropdown -->
                 <div class="relative inline-block text-left">
                     <button onclick="document.getElementById('config-menu').classList.toggle('hidden')" class="bg-gray-800 text-white px-3 py-2 rounded-lg font-bold hover:bg-gray-700 transition flex items-center gap-2 text-sm">
-                        <i class="fas fa-cog"></i> Config ▾
+                        <i class="fas fa-cog"></i> Config 
                     </button>
                     <div id="config-menu" class="hidden origin-top-right absolute right-0 mt-2 w-56 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 divide-y divide-gray-100 z-[60]">
                         <div class="py-1">
@@ -506,7 +662,7 @@
                         </div>
                         <div class="py-1">
                             <button onclick="checkDailyInventory(true); document.getElementById('config-menu').classList.add('hidden')" class="text-gray-700 group flex items-center px-4 py-2 text-sm w-full hover:bg-gray-100 font-bold">
-                                <i class="fas fa-clipboard-check mr-3 text-gold"></i> 📦 Inventario
+                                <i class="fas fa-clipboard-check mr-3 text-gold"></i>  Inventario
                             </button>
                         </div>
                         <div class="py-1">
@@ -531,7 +687,7 @@
 
         <!-- Solo Mode Banner (Dynamic) -->
         <div id="solo-banner" class="hidden bg-red-600 text-white p-3 text-center font-bold uppercase tracking-widest shadow-md">
-            ⚠️ SOLO SHIFT ACTIVE: DRINKS ONLY. FOOD ORDERS LOCKED TO PREVENT BOTTLENECKS.
+             SOLO SHIFT ACTIVE: DRINKS ONLY. FOOD ORDERS LOCKED TO PREVENT BOTTLENECKS.
         </div>
 
         <!-- Smart Upsell Banner Removed -->
@@ -569,11 +725,11 @@
                     <span>Secreto</span>
                 </button>
                 <button onclick="filterCategory('retail', this)" class="cat-btn inactive-cat h-14 rounded-2xl font-black shadow-sm transition-all text-[10px] uppercase tracking-widest border-2 flex flex-col items-center justify-center">
-                    <span class="text-lg">⚽️</span>
+                    <span class="text-lg">⚽</span>
                     <span>Deportes</span>
                 </button>
                 <button onclick="filterCategory('all', this)" class="cat-btn inactive-cat h-14 rounded-2xl font-black shadow-sm transition-all text-[10px] uppercase tracking-widest border-2 flex flex-col items-center justify-center">
-                    <span class="text-lg">✨</span>
+                    <span class="text-lg">📋</span>
                     <span>TODO</span>
                 </button>
                 <button onclick="openCustomItemModal()" class="bg-purple-50 text-purple-700 h-14 rounded-2xl font-black shadow-sm transition-all text-[10px] uppercase tracking-widest border-2 border-purple-100 hover:bg-purple-100 flex flex-col items-center justify-center">
@@ -629,14 +785,14 @@
         <!-- Cart Items -->
         <div class="flex-1 overflow-y-auto p-2" id="cart-items">
             <!-- Cart items go here -->
-            <div class="text-center text-gray-400 mt-10">El carrito está vacío</div>
+            <div class="text-center text-gray-400 mt-10">El carrito est vaco</div>
         </div>
 
         <!-- Fulfillment Type -->
         <div class="px-4 py-2 border-t border-gray-200 bg-white shrink-0">
             <div class="grid grid-cols-2 gap-2">
                 <button onclick="setFulfillment('dinein')" id="btn-fulfill-dinein" class="py-2 rounded-lg font-bold text-xs uppercase tracking-tight border-2 transition-all border-blue-600 bg-blue-50 text-blue-700 flex items-center justify-center gap-1 shadow-sm">
-                    <i class="fas fa-utensils"></i> Aquí
+                    <i class="fas fa-utensils"></i> Aqu
                 </button>
                 <button onclick="setFulfillment('pickup')" id="btn-fulfill-pickup" class="py-2 rounded-lg font-bold text-xs uppercase tracking-tight border-2 transition-all border-gray-100 text-gray-400 flex items-center justify-center gap-1 hover:bg-gray-50">
                     <i class="fas fa-walking"></i> Llevar
@@ -701,27 +857,60 @@
     </div>
 
 <script>
+    // --- SHARED GLOBALS (For Head Functions) ---
+    window.setShiftData = function(id, cashier, cash) {
+        currentShiftId = id;
+        currentCashier = cashier;
+        startingCash = cash;
+        try {
+            localStorage.setItem('pos_active_shift', JSON.stringify({
+                shiftId: id,
+                cashier: cashier,
+                startingCash: cash,
+                startTime: new Date().toISOString()
+            }));
+        } catch(e) {}
+    };
+    window.restoreShift = restoreShift;
+    window.fetchStoreStatus = fetchStoreStatus;
+
+    window.onerror = function(msg, url, line, col, error) {
+        alert("JS ERROR: " + msg + "\nLine: " + line + "\nError: " + error);
+        return false;
+    };
+
+    // --- STORAGE HELPERS (Defined First) ---
+    function safeSetItem(key, value) {
+        try { localStorage.setItem(key, value); } catch (e) { console.warn(`[Storage] Failed to save ${key}`, e); }
+    }
+    function safeGetItem(key, defaultValue = null) {
+        try { return localStorage.getItem(key) || defaultValue; } catch (e) { return defaultValue; }
+    }
+    function safeRemoveItem(key) {
+        try { localStorage.removeItem(key); } catch (e) { console.warn(`[Storage] Failed to remove ${key}`, e); }
+    }
+
     // ==========================================
-    // ☕️ RICH AROMA POS v2.0 - CORE SCRIPT
+    //  RICH AROMA POS v2.0 - CORE SCRIPT
     // ==========================================
 
     // --- OFFLINE SYNC ENGINE ---
     const SYNC_KEY = 'pos_sync_queue';
     
     function addToSyncQueue(order) {
-        console.log("📥 Adding order to offline queue...");
-        const queue = JSON.parse(localStorage.getItem(SYNC_KEY) || '[]');
+        console.log(" Adding order to offline queue...");
+        const queue = JSON.parse(safeGetItem(SYNC_KEY) || '[]');
         queue.push({
             id: 'sync_' + Date.now(),
             data: order,
             timestamp: new Date().toISOString()
         });
-        localStorage.setItem(SYNC_KEY, JSON.stringify(queue));
+        safeSetItem(SYNC_KEY, JSON.stringify(queue));
         updateSyncUI();
     }
 
     function updateSyncUI() {
-        const queue = JSON.parse(localStorage.getItem(SYNC_KEY) || '[]');
+        const queue = JSON.parse(safeGetItem(SYNC_KEY) || '[]');
         const indicator = document.getElementById('sync-indicator');
         const count = document.getElementById('sync-count');
         
@@ -736,10 +925,10 @@
     }
 
     async function processSyncQueue() {
-        const queue = JSON.parse(localStorage.getItem(SYNC_KEY) || '[]');
+        const queue = JSON.parse(safeGetItem(SYNC_KEY) || '[]');
         if (queue.length === 0) return;
 
-        console.log(`🔄 Attempting to sync ${queue.length} orders...`);
+        console.log(` Attempting to sync ${queue.length} orders...`);
         const remaining = [];
         
         for (const item of queue) {
@@ -751,7 +940,7 @@
                 });
                 
                 if (res.ok) {
-                    console.log(`✅ Synced order ${item.id}`);
+                    console.log(` Synced order ${item.id}`);
                 } else {
                     remaining.push(item);
                 }
@@ -760,7 +949,7 @@
             }
         }
         
-        localStorage.setItem(SYNC_KEY, JSON.stringify(remaining));
+        safeSetItem(SYNC_KEY, JSON.stringify(remaining));
         updateSyncUI();
     }
 
@@ -774,6 +963,98 @@
     let modOptions = [];
     let itemModGroups = [];
     let cart = [];
+    
+    let isCombineMode = false;
+    let selectedOrderIds = [];
+    
+    // AI Pilot Brain
+    let currentPilotAction = null;
+
+    function updateAIPilot(total, count, progress) {
+        const text = document.getElementById('pilot-text');
+        const btn = document.getElementById('pilot-action-btn');
+        if (!text || !btn) return;
+
+        const hour = new Date().getHours();
+
+        if (hour < 11) { // Morning
+            if (total < 1000) {
+                text.innerText = "Sales are L. 500 below morning pace. Suggest 'Breakfast Special' to walk-ins.";
+                currentPilotAction = { type: 'promo', deal: 'Breakfast Combo L. 120' };
+                btn.innerText = "Blast Promo";
+                btn.classList.remove('hidden');
+            } else {
+                text.innerText = "Strong start! Morning traffic is high. Keep the speed up.";
+                btn.classList.add('hidden');
+            }
+        } else if (hour >= 11 && hour < 14) { // Lunch
+            if (total < 4000) {
+                text.innerText = "Lunch rush is slow. Activate 'Surge Deal' (2x1 Bakery) for the next 60m?";
+                currentPilotAction = { type: 'deal', deal: 'Bakery BOGO' };
+                btn.innerText = "Activate Surge";
+                btn.classList.remove('hidden');
+            } else {
+                text.innerText = "Great lunch volume. Pivot staff to upselling Frappes.";
+                btn.classList.add('hidden');
+            }
+        } else if (hour >= 14 && hour < 17) { // Afternoon
+            if (total < 7500) {
+                text.innerText = "Afternoon lull detected. Pace is L. 1,200 behind goal. Suggest 3 VIP recalls?";
+                currentPilotAction = { type: 'recall', deal: 'VIP Reminders' };
+                btn.innerText = "Notify VIPs";
+                btn.classList.remove('hidden');
+            } else {
+                text.innerText = "On track for L. 10,000. Focus on Average Order Value.";
+                btn.classList.add('hidden');
+            }
+        } else { // Evening
+            if (total < 9000) {
+                text.innerText = "Closing soon. L. 1,000 gap remaining. Flash sale on remaining Bakery?";
+                currentPilotAction = { type: 'flash', deal: '50% Bakery Closeout' };
+                btn.innerText = "Go Live";
+                btn.classList.remove('hidden');
+            } else {
+                text.innerText = "Final push! L. 10,000 is within reach.";
+                btn.classList.add('hidden');
+            }
+        }
+    }
+
+    async function activatePilotMove() {
+        if (!currentPilotAction) return;
+        const confirm = window.confirm(` Pilot wants to activate: ${currentPilotAction.deal}. Proceed?`);
+        if (!confirm) return;
+        
+        let surgeType = 'generic';
+        if (currentPilotAction.type === 'deal') surgeType = '2x1_bakery';
+        if (currentPilotAction.type === 'flash') surgeType = 'bakery_closeout';
+
+        try {
+            const res = await fetch('/api/surge/activate', {
+                method: 'POST',
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'Authorization': 'Bearer EMP-admin'
+                },
+                body: JSON.stringify({ 
+                    type: surgeType, 
+                    durationMinutes: 60,
+                    description: currentPilotAction.deal
+                })
+            });
+
+            if (res.ok) {
+                alert(` Pilot move activated: ${currentPilotAction.deal}. Tracking impact now...`);
+                document.getElementById('pilot-action-btn').classList.add('hidden');
+                document.getElementById('pilot-text').innerText = `Move Active: ${currentPilotAction.deal}`;
+            } else {
+                alert(" Error activating pilot move");
+            }
+        } catch (e) {
+            console.error(e);
+            alert(" Connection error");
+        }
+    }
     
     let currentCashier = null;
     let currentShiftId = null;
@@ -862,12 +1143,15 @@
     let liveOrders = [];
     let pendingVerifications = [];
     let kitchenPollInterval = null;
+    let currentResId = 'rich-aroma';
 
-    // --- ERROR CATCHING ---
-    window.onerror = function(msg, url, line) {
-        console.error(`[POS Error] ${msg} at ${line}`);
-        return false;
-    };
+    function getWhatsAppLink(rawPhone) {
+        if (!rawPhone) return "";
+        const clean = rawPhone.toString().replace(/\D/g, '');
+        // If it's exactly 8 digits, assume Honduras (+504)
+        if (clean.length === 8) return "504" + clean;
+        return clean;
+    }
 
     window.toggleHeartbeat = function() {
         const sidebar = document.getElementById('heartbeat-sidebar');
@@ -889,21 +1173,21 @@
 
     window.notifyChef = function(orderNum) {
         const hubUrl = `https://quimieats.com/hub?restaurantId=${currentResId}`;
-        const msg = `📦 Despacho: Nuevo Pedido #${orderNum} listo para procesar. Ver Terminal: ${hubUrl}`;
+        const msg = ` Despacho: Nuevo Pedido #${orderNum} listo para procesar. Ver Terminal: ${hubUrl}`;
         // Shop number/Staff number
         const staffPhone = "50497814474";
         window.open(`https://wa.me/${staffPhone}?text=${encodeURIComponent(msg)}`, '_blank');
     };
 
     window.notifyDriver = function(orderId, orderNum) {
-        const msg = `📦 REPARTIDOR: Nuevo pedido listo para entrega (#${orderNum}). Reclámalo aquí para ver dirección: https://www.richaromacoffee.com/claim?id=${orderId}`;
+        const msg = ` REPARTIDOR: Nuevo pedido listo para entrega (#${orderNum}). Reclmalo aqu para ver direccin: https://www.richaromacoffee.com/claim?id=${orderId}`;
         // Open without specific number to allow sharing to a group or specific driver
         window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, '_blank');
     };
 
     window.savePin = async function() {
         const pin = document.getElementById('new-pin').value;
-        if (pin.length < 4) return alert("PIN debe ser de 4 dígitos");
+        if (pin.length < 4) return alert("PIN debe ser de 4 dgitos");
         console.log("Saving new PIN...");
         // Placeholder for real logic if needed
         document.getElementById('pin-modal').classList.add('hidden');
@@ -911,15 +1195,18 @@
 
     // --- INITIALIZATION ---
     window.onload = function() {
-        console.log("🚀 POS v2.0 Initializing...");
+        console.log(" POS v2.0 Initializing...");
         const grid = document.getElementById('menu-grid');
-        if (grid) grid.innerHTML = '<div class="col-span-4 text-center py-20 text-gray-400 italic"><i class="fas fa-spinner fa-spin mr-2"></i> Cargando Menú...</div>';
+        if (grid) grid.innerHTML = '<div class="col-span-4 text-center py-20 text-gray-400 italic"><i class="fas fa-spinner fa-spin mr-2"></i> Cargando Men...</div>';
         
         // Use internal async block to keep onload compatible
         (async () => {
             try {
                 // 1. Initial UI Setup
+                // Show ALL orders temporarily on load to avoid confusion
+                isCleanFeed = false; 
                 updateCleanFeedUI();
+                updateSoundUI();
                 renderCart();
 
                 // 2. Fetch Menu
@@ -931,30 +1218,50 @@
                     filterCategory('all'); 
                 }
 
-                // 4. SSO AUTO-LOGIN
-                const savedPin = localStorage.getItem('ra_staff_pin');
+                // 4. AUTH & SHIFT RESTORATION (Deterministic Sequence)
+                const savedPin = safeGetItem('ra_staff_pin');
                 if (savedPin && !window.currentEmployee) {
-                    console.log("🚀 SSO: Attempting auto-login...");
-                    document.getElementById('login-pin').value = savedPin;
-                    try {
-                        await handleLogin();
-                    } catch(e) {
-                        localStorage.removeItem('ra_staff_pin');
+                    console.log("🚀 [Boot] SSO: Attempting auto-login...");
+                    const pinInp = document.getElementById('login-pin');
+                    if (pinInp) pinInp.value = savedPin;
+                    
+                    // We call handleLogin directly and WAIT for it
+                    if (typeof window.handleLogin === 'function') {
+                        try {
+                            await window.handleLogin();
+                            console.log("✅ [Boot] SSO Success");
+                        } catch(e) {
+                            console.error("❌ [Boot] SSO Failed", e);
+                            safeRemoveItem('ra_staff_pin');
+                            await restoreShift(); // Fallback to manual login/restore
+                        }
+                    } else {
+                        await restoreShift();
                     }
+                } else {
+                    await restoreShift();
                 }
 
-                // 5. Restore Shift
-                await restoreShift();
-
-                // 6. Background Tasks
+                // 5. Background Tasks (Start after auth/shift is settled)
+                console.log("🚀 [Boot] Starting background heartbeat...");
                 fetchLiveOrders();
                 fetchStoreStatus();
                 fetchPendingVerifications();
 
                 // 7. Start Polling
-                setInterval(fetchLiveOrders, 10000);
+                setInterval(fetchLiveOrders, 3000); // Faster Heartbeat (3s)
                 setInterval(fetchPendingVerifications, 10000);
                 setInterval(fetchStoreStatus, 30000);
+                
+                // Re-enable clean feed after 30 seconds to hide finished orders
+                setTimeout(() => {
+                    const savedPref = safeGetItem('pos_clean_feed') === 'true';
+                    if (savedPref) {
+                        isCleanFeed = true;
+                        updateCleanFeedUI();
+                        renderLiveFeed();
+                    }
+                }, 30000);
 
                 // 8. Auto-focus login
                 if (!document.getElementById('shift-modal').classList.contains('hidden')) {
@@ -993,16 +1300,16 @@
                 modGroups = data.modGroups || [];
                 modOptions = data.modOptions || [];
                 itemModGroups = data.itemModGroups || [];
-                console.log(`✅ Loaded ${menu.length} items.`);
+                console.log(` Loaded ${menu.length} items.`);
             }
         } catch (e) {
-            console.error("❌ Menu fetch failed", e);
+            console.error(" Menu fetch failed", e);
             // Fallback Menu
             menu = [
                 { id: 'hot_latte', name: 'Latte Fallback', price: 55, category: 'coffee', image: null, available: true },
                 { id: 'combo_1', name: 'Combo 1 Fallback', price: 150, category: 'combos', image: null, available: true }
             ];
-            console.log("⚠️ Using fallback menu");
+            console.log(" Using fallback menu");
         }
     }
 
@@ -1013,25 +1320,27 @@
 
         try {
             const token = 'EMP-admin';
-            const res = await fetch('/api/cash/current-shift', { headers: { 'Authorization': `Bearer ${token}` } });
+            const res = await fetch('/api/store?action=current_shift', { headers: { 'Authorization': `Bearer ${token}` } });
             if (res.ok) {
                 const data = await res.json();
                 if (data && data.shift && data.shift.status === 'open') {
                     // SERVER SAYS SHIFT IS OPEN - Use this data
+                    console.log("🚀 [Restore] Server has an OPEN shift:", data.shift.id);
                     currentShiftId = data.shift.id;
                     startingCash = data.shift.opening_amount;
-                    window.activeDBShift = data.shift; // Store for login join logic
+                    window.activeDBShift = data.shift;
                     
-                    // Check local session or current window session for cashier
+                    // If we are logged in, just JOIN it
                     if (window.currentEmployee) {
                         currentCashier = window.currentEmployee.name;
                         modal.classList.add('hidden');
-                        localStorage.setItem('pos_active_shift', JSON.stringify({ shiftId: currentShiftId, cashier: currentCashier }));
-                        console.log("✅ Shift joined via active employee session:", currentCashier);
+                        console.log("✅ [Restore] Auto-joined server shift as:", currentCashier);
+                        safeSetItem('pos_active_shift', JSON.stringify({ shiftId: currentShiftId, cashier: currentCashier }));
                         return;
                     }
 
-                    const saved = localStorage.getItem('pos_active_shift');
+                    // If not logged in but we have a saved session for this shift
+                    const saved = safeGetItem('pos_active_shift');
                     if (saved) {
                         try {
                             const s = JSON.parse(saved);
@@ -1039,13 +1348,14 @@
                                 currentCashier = s.cashier;
                                 window.currentEmployee = { name: s.cashier };
                                 modal.classList.add('hidden');
-                                console.log("✅ Shift restored and validated with server:", currentCashier);
+                                console.log("✅ [Restore] Restored session for shift:", currentShiftId);
                                 return;
                             }
                         } catch(e) {}
                     }
                     
-                    // If server says open but we don't have a valid cashier, show login
+                    // If server says open but we don't know WHO is using it, show login
+                    console.log("⚠️ [Restore] Shift is open but user unknown. Showing login.");
                     modal.classList.remove('hidden');
                     loginStage.classList.remove('hidden');
                     openStage.classList.add('hidden');
@@ -1055,7 +1365,7 @@
         } catch (e) { console.error("Shift verification failed:", e); }
 
         // NO ACTIVE SHIFT ON SERVER
-        localStorage.removeItem('pos_active_shift');
+        safeRemoveItem('pos_active_shift');
         currentShiftId = null;
 
         if (window.currentEmployee) {
@@ -1073,7 +1383,7 @@
     }
 
     function restoreCart() {
-        const saved = localStorage.getItem('pos_cart_state');
+        const saved = safeGetItem('pos_cart_state');
         if (saved) {
             try {
                 const data = JSON.parse(saved);
@@ -1085,15 +1395,53 @@
     }
 
     function saveCartState() {
-        localStorage.setItem('pos_cart_state', JSON.stringify({ cart, customerId: currentCustomerId }));
+        safeSetItem('pos_cart_state', JSON.stringify({ cart, customerId: currentCustomerId }));
     }
 
-    let isCleanFeed = localStorage.getItem('pos_clean_feed') === 'true' || false;
-    if (localStorage.getItem('pos_clean_feed') === null) isCleanFeed = false;
+    let isCleanFeed = safeGetItem('pos_clean_feed') === 'true' || false;
+    if (safeGetItem('pos_clean_feed') === null) isCleanFeed = false;
+
+    // --- AUDIO NOTIFICATIONS ---
+    let previousOrderCount = 0;
+    let isFirstLoad = true;
+    
+    // New, more robust notification sound
+    const chime = new Audio('https://cdn.pixabay.com/audio/2022/03/15/audio_7313361e27.mp3'); 
+    let soundEnabled = safeGetItem('pos_sound_enabled', 'false') === 'true';
+
+    window.toggleSound = function() {
+        soundEnabled = !soundEnabled;
+        safeSetItem('pos_sound_enabled', soundEnabled);
+        
+        if (soundEnabled) {
+            console.log("🔊 Sound Enabled - Testing audio...");
+            chime.play().then(() => {
+                // Success! Audio unlocked
+            }).catch(e => {
+                console.warn("Audio unlock failed. User interaction might be needed.", e);
+            });
+        }
+        updateSoundUI();
+    };
+
+    function updateSoundUI() {
+        const btn = document.getElementById('sound-btn');
+        if (!btn) return;
+        if (soundEnabled) {
+            btn.innerHTML = '<i class="fas fa-volume-up mr-1"></i> SOUND ON';
+            btn.className = "px-3 py-1.5 rounded-lg bg-green-500 text-white text-[9px] font-black uppercase tracking-widest shadow-lg shadow-green-500/20";
+        } else {
+            btn.innerHTML = '<i class="fas fa-volume-mute mr-1"></i> SOUND OFF';
+            btn.className = "px-3 py-1.5 rounded-lg border border-white/10 text-white/40 text-[9px] font-black uppercase tracking-widest hover:bg-white/5";
+        }
+    }
+
+    // Call UI update on load
+    setTimeout(updateSoundUI, 500);
 
     window.toggleCleanFeed = function() {
         isCleanFeed = !isCleanFeed;
-        localStorage.setItem('pos_clean_feed', isCleanFeed);
+        safeSetItem('pos_clean_feed', isCleanFeed);
         updateCleanFeedUI();
         fetchLiveOrders();
     };
@@ -1114,7 +1462,7 @@
         try {
             updateCleanFeedUI(); // Sync UI
             const v = Date.now();
-            const res = await fetch(`/api/orders?v=${v}`, {
+            const res = await fetch(`/api/orders?restaurantId=rich-aroma&v=${v}`, {
                 headers: { 
                     'Authorization': 'Bearer EMP-admin',
                     'Cache-Control': 'no-cache',
@@ -1125,42 +1473,52 @@
             const rawOrders = data.orders || [];
 
             // --- DATA SANITIZATION ---
-            // Remove heavy base64 images from the local liveOrders array to keep browser fast
-            const sanitizedOrders = rawOrders.map(o => ({
-                ...o,
-                items: (o.items || []).map(i => {
-                    const cleanItem = { ...i };
-                    if (cleanItem.image && cleanItem.image.length > 500) {
-                        delete cleanItem.image; // Drop large base64
-                    }
-                    return cleanItem;
-                })
-            }));
+            const sanitizedOrders = rawOrders.map(o => {
+                let items = o.items || [];
+                if (typeof items === 'string') {
+                    try { items = JSON.parse(items); } catch(e) { items = []; }
+                }
+                return {
+                    ...o,
+                    items: Array.isArray(items) ? items : []
+                };
+            });
             
+            // --- ROBUST BUSINESS DAY FILTER (Midnight HN = 06:00 UTC) ---
             const now = new Date();
+            const startOfTodayUTC = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), 6, 0, 0));
+            
+            if (now.getUTCHours() < 6) {
+                startOfTodayUTC.setUTCDate(startOfTodayUTC.getUTCDate() - 1);
+            }
+
             liveOrders = sanitizedOrders.filter(o => {
                 if (!o.created_at) return false;
                 const orderDate = new Date(o.created_at);
-                
-                // 1. Filter by Time (Last 20 hours)
-                const hoursOld = (now - orderDate) / (1000 * 60 * 60);
-                if (hoursOld > 20) return false;
-
-                // 2. Filter by Status
-                const showFinished = !isCleanFeed;
-                if (!showFinished && ['completed', 'cancelled'].includes(o.status)) return false;
-
-                return ['pending', 'paid', 'preparing', 'ready', 'drinks_ready', 'food_ready', 'pending_verification', 'completed', 'cancelled'].includes(o.status);
-                
+                return orderDate >= startOfTodayUTC;
             }).sort((a,b) => new Date(b.created_at) - new Date(a.created_at));
 
             renderLiveFeed();
-            if (statusEl) statusEl.innerText = 'Sync v1.5: ' + new Date().toLocaleTimeString();
+            if (statusEl) statusEl.innerText = 'HN Sync: ' + new Date().toLocaleTimeString();
+
+            // --- AUDIO ALERTS ---
+            if (!isFirstLoad) {
+                const currentActiveCount = rawOrders.filter(o => ['pending', 'paid', 'preparing', 'pending_verification'].includes(o.status)).length;
+                if (currentActiveCount > previousOrderCount && soundEnabled) {
+                    console.log("🔔 Order Arrived! Playing sound...");
+                    chime.play().catch(e => console.warn('Audio playback failed', e));
+                }
+                previousOrderCount = currentActiveCount;
+            } else {
+                previousOrderCount = rawOrders.filter(o => ['pending', 'paid', 'preparing', 'pending_verification'].includes(o.status)).length;
+                isFirstLoad = false;
+            }
         } catch(e) { 
-            console.error("CRITICAL: Heartbeat Sync Failed", e);
-            if (statusEl) statusEl.innerText = "Sync Error: " + e.message;
+            console.error("Heartbeat Failed", e);
         }
     }
+
+
 
     function isDrink(item) {
         if (!item) return false;
@@ -1173,7 +1531,7 @@
                name.includes('frappe') || name.includes('macchiato') || name.includes('jugo') || 
                name.includes('licuado') || name.includes('granita') || name.includes('smoothie') || 
                name.includes('caliente') || name.includes('helada') || name.includes('americano') ||
-               name.includes('chocolate') || name.includes('cafe') || name.includes('café') ||
+               name.includes('chocolate') || name.includes('cafe') || name.includes('caf') ||
                name.includes('combo');
     }
 
@@ -1187,23 +1545,57 @@
                name.includes('burger') || name.includes('hamburguesa') || name.includes('combo');
     }
 
-    function renderLiveFeed() {
+     function renderLiveFeed() {
         const container = document.getElementById('live-order-feed');
         const combineBtn = document.getElementById('combine-btn');
-        document.getElementById('live-order-count').innerText = liveOrders.length;
 
-        // Show combine button if there are mobile orders
-        const hasMobileOrders = liveOrders.some(o => o.notes && o.notes.includes('Mobile Order'));
-        if (combineBtn) combineBtn.classList.toggle('hidden', !hasMobileOrders && !isCombineMode);
+        // --- CALCULATE TRUE TOTALS (NET AFTER DISCOUNTS) ---
+        let totalSales = 0;
+        const processedOrders = liveOrders.map(o => {
+            let finalT = parseFloat(o.total) || 0;
+            let finalD = parseFloat(o.discount) || 0;
+            let finalS = parseFloat(o.subtotal) || finalT;
+
+            // DYNAMIC CORRECTION: If DB total is gross but notes have discount meta
+            if (o.notes && o.notes.includes('[DISC_META:')) {
+                try {
+                    const match = o.notes.match(/\[DISC_META:\s*({[\s\S]*?})\]/);
+                    if (match) {
+                        const meta = JSON.parse(match[1]);
+                        const sub = finalS;
+                        
+                        let calcD = 0;
+                        if (meta.a !== undefined) {
+                            calcD = parseFloat(meta.a);
+                        } else {
+                            const discP = parseFloat(meta.p) || 0;
+                            // Fallback for older orders without 'a' field:
+                            // If it was a rule-based discount, simple % might be wrong, but better than gross
+                            calcD = sub * (discP/100);
+                        }
+                        
+                        const calcT = Math.round((sub - calcD) / 5) * 5;
+                        const finalCalcD = sub - calcT;
+
+                        // Force the net total if a discount was intended
+                        if (finalT > calcT || (finalD === 0 && finalCalcD > 0)) {
+                            console.log(`[Heartbeat] Correcting Order #${o.order_number}: Gross L.${finalT} -> Net L.${calcT}`);
+                            finalT = calcT;
+                            finalD = finalCalcD;
+                        }
+                    }
+                } catch(e) { console.warn("Correction error", e); }
+            }
+
+            if (!['cancelled', 'void'].includes(o.status)) {
+                totalSales += finalT;
+            }
+
+            return { ...o, finalDisplayTotal: finalT, finalDisplayDiscount: finalD, finalDisplaySubtotal: finalS };
+        });
 
         // Health Dashboard Update
         const DAILY_GOAL = 10000;
-        // Only count orders that belong to the current active shift
-        const todayOrders = liveOrders.filter(o => o.shift_id === currentShiftId);
-        // INCLUSION: Count everything that was paid or completed
-        const activeOrdersForSales = todayOrders.filter(o => !['cancelled'].includes(o.status));
-        const totalSales = activeOrdersForSales.reduce((s,o) => s + (parseFloat(o.total) || 0), 0);
-        
         const salesEl = document.getElementById('health-sales');
         const countEl = document.getElementById('health-count');
         const waitEl = document.getElementById('health-wait');
@@ -1215,7 +1607,6 @@
         if (goalBar) goalBar.style.width = `${progress}%`;
         if (goalPercentEl) {
             goalPercentEl.innerText = `${Math.round(progress)}% of Goal`;
-            // Color based on progress
             if (progress < 30) goalPercentEl.className = "text-[10px] font-black text-red-500 tracking-tighter";
             else if (progress < 70) goalPercentEl.className = "text-[10px] font-black text-amber-500 tracking-tighter";
             else goalPercentEl.className = "text-[10px] font-black text-green-500 tracking-tighter";
@@ -1223,196 +1614,204 @@
 
         if (salesEl) {
             salesEl.innerText = `L. ${totalSales.toLocaleString(undefined, {minimumFractionDigits:2})}`;
-            // Sales text color indicator
             if (progress >= 100) salesEl.className = "text-xl font-black text-green-500 leading-none";
             else salesEl.className = "text-xl font-black text-white leading-none";
         }
-        if (countEl) countEl.innerText = todayOrders.length;
-
-        // --- AI PILOT ADVICE ---
+        if (countEl) countEl.innerText = liveOrders.length;
+        
+        const todayOrders = liveOrders; 
         updateAIPilot(totalSales, todayOrders.length, progress);
 
-        const completed = todayOrders.filter(o => o.status === 'completed' && o.completed_at);
-        if (completed.length > 0 && waitEl) {
-            const avg = completed.reduce((s,o) => s + (new Date(o.completed_at) - new Date(o.created_at)), 0) / completed.length / 60000;
-            waitEl.innerText = `${Math.round(avg)} min`;
-        } else if (waitEl) {
-            waitEl.innerText = '---';
-        }
-        if (liveOrders.length === 0) {
-            container.innerHTML = '<div class="text-center py-10 text-gray-600 text-xs italic">No active orders</div>';
+        // Display Orders (FILTERED FOR UI)
+        const displayOrders = processedOrders.filter(o => {
+            if (isCleanFeed && ['completed', 'cancelled'].includes(o.status)) return false;
+            return true;
+        });
+
+        document.getElementById('live-order-count').innerText = displayOrders.length;
+
+        const hasMobileOrders = displayOrders.some(o => o.notes && o.notes.includes('Mobile Order'));
+        if (combineBtn) combineBtn.classList.toggle('hidden', !hasMobileOrders && !isCombineMode);
+
+        if (displayOrders.length === 0) {
+            container.innerHTML = '<div class="text-center py-20 text-white/20 font-black">No hay Órdenes activas</div>';
             return;
         }
 
         let html = '';
-        liveOrders.forEach(o => {
-            const isMobile = (o.notes && (o.notes.includes('Mobile Order') || o.notes.includes('Mobile:'))) || o.fulfillment_type === 'delivery';
-            const isCash = o.payment_method === 'cash';
-            const isUnpaidCashMobile = isMobile && isCash && ['pending', 'preparing', 'ready', 'drinks_ready', 'food_ready'].includes(o.status);
-            const isReady = o.status === 'ready';
-            
-            // Station detection
-            const needsDrinks = (o.items || []).some(i => {
-                const name = (i.name || '').toLowerCase();
-                const id = (i.id || '').toLowerCase();
-                if (!name && !id) return false;
-                return id.startsWith('hot_') || id.startsWith('cold_') || id.startsWith('frappe_') || name.includes('latte') || name.includes('brew') || name.includes('capp') || name.includes('combo');
-            });
-            const needsFood = (o.items || []).some(i => {
-                const name = (i.name || '').toLowerCase();
-                const id = (i.id || '').toLowerCase();
-                if (!name && !id) return false;
-                return id.startsWith('food_') || name.includes('baleada') || name.includes('toast') || name.includes('combo') || name.includes('crepa');
-            });
+        displayOrders.forEach(o => {
+            try {
+                const isMobile = (o.notes && (o.notes.includes('Mobile Order') || o.notes.includes('Mobile:'))) || o.fulfillment_type === 'delivery';
+                const isCash = o.payment_method === 'cash';
+                const isUnpaidCashMobile = isMobile && isCash && ['pending', 'preparing', 'ready', 'drinks_ready', 'food_ready'].includes(o.status);
+                const isReady = o.status === 'ready';
 
-            const drinkDone = ['ready', 'drinks_ready', 'completed'].includes(o.status);
-            const foodDone = ['ready', 'food_ready', 'completed'].includes(o.status);
-            
-            let statusColor = "bg-gray-700 text-gray-300";
-            let statusLabel = o.status;
-            let borderClass = "border-white/5";
-            
-            if (o.status === 'pending') {
-                statusColor = "bg-amber-500/20 text-amber-500 border border-amber-500/50";
-                statusLabel = "ESPERANDO";
-            }
-            if (o.status === 'paid') {
-                statusColor = "bg-blue-500/20 text-blue-400 border border-blue-500/50";
-                statusLabel = "PAGADO";
-            }
-            if (o.status === 'preparing') {
-                statusColor = "bg-orange-500/20 text-orange-400 border border-orange-500/50";
-                statusLabel = "PREPARANDO";
-            }
-            if (o.status === 'drinks_ready') {
-                statusColor = "bg-purple-500/20 text-purple-400 border border-purple-500/50";
-                statusLabel = "BARISTA LISTO";
-            }
-            if (o.status === 'food_ready') {
-                statusColor = "bg-purple-500/20 text-purple-400 border border-purple-500/50";
-                statusLabel = "COCINA LISTA";
-            }
-            if (o.status === 'ready') {
-                statusColor = "bg-green-500 text-white font-black";
-                statusLabel = "LISTO ✅";
-                borderClass = "border-green-500 ring-2 ring-green-500/20";
-            }
+                // WhatsApp Integration
+                let telMatch = o.notes ? (o.notes.match(/\[PHONE:\s*([^\]]+)\]/) || o.notes.match(/\[TEL:\s*([^\]]+)\]/)) : null;
+                let phone = telMatch ? telMatch[1].trim() : (o.customers?.phone || o.guest_phone || '');
+                let waButton = '';
 
-            // Extract Table/Group info for highlighting
-            let tableInfo = "";
-            if (o.notes && o.notes.includes('[MESA:')) {
-                const match = o.notes.match(/\[MESA:\s*([^\]]+)\]/);
-                if (match) tableInfo = match[1].trim();
-            }
+                if (phone && phone.length > 4 && isMobile) {
+                    const waLink = `https://wa.me/${getWhatsAppLink(phone)}`;
+                    waButton = `
+                        <a href="${waLink}" target="_blank" class="bg-green-600/20 text-green-500 p-2 rounded-lg hover:bg-green-600 hover:text-white transition-all ml-1" title="WhatsApp Customer">
+                            <i class="fab fa-whatsapp text-[10px]"></i>
+                        </a>
+                    `;
+                }
+                
+                // Station detection
+                const itemsList = Array.isArray(o.items) ? o.items : [];
+                const needsDrinks = itemsList.some(i => isDrink(i));
+                const needsFood = itemsList.some(i => isFood(i));
 
-            if (tableInfo && !['completed', 'cancelled'].includes(o.status)) {
-                borderClass = "border-gold/50 shadow-gold/10 ring-1 ring-gold/20";
-            }
+                const drinkDone = ['ready', 'drinks_ready', 'completed'].includes(o.status);
+                const foodDone = ['ready', 'food_ready', 'completed'].includes(o.status);
+                
+                let statusColor = "bg-gray-700 text-gray-300";
+                let statusLabel = o.status;
+                let borderClass = "border-white/5";
+                
+                if (o.status === 'pending') {
+                    statusColor = "bg-amber-500/20 text-amber-500 border border-amber-500/50";
+                    statusLabel = "ESPERANDO";
+                }
+                if (o.status === 'paid') {
+                    statusColor = "bg-blue-500/20 text-blue-400 border border-blue-500/50";
+                    statusLabel = "PAGADO";
+                }
+                if (o.status === 'preparing') {
+                    statusColor = "bg-orange-500/20 text-orange-400 border border-orange-500/50";
+                    statusLabel = "PREPARANDO";
+                }
+                if (o.status === 'drinks_ready') {
+                    statusColor = "bg-purple-500/20 text-purple-400 border border-purple-500/50";
+                    statusLabel = "BARISTA LISTO";
+                }
+                if (o.status === 'food_ready') {
+                    statusColor = "bg-purple-500/20 text-purple-400 border border-purple-500/50";
+                    statusLabel = "COCINA LISTA";
+                }
+                if (o.status === 'ready') {
+                    statusColor = "bg-green-500 text-white font-black";
+                    statusLabel = "LISTO ";
+                    borderClass = "border-green-500 ring-2 ring-green-500/20";
+                }
 
-            // Highlighting for Combine Mode
-            const isSelected = selectedOrderIds.includes(o.id);
-            if (isCombineMode && isMobile) {
-                borderClass = isSelected ? "border-gold ring-4 ring-gold/30 bg-gold/5" : "border-white/20 opacity-60";
-            }
+                // Table info
+                let tableInfo = "";
+                if (o.notes && o.notes.includes('[MESA:')) {
+                    const match = o.notes.match(/\[MESA:\s*([^\]]+)\]/);
+                    if (match) tableInfo = match[1].trim();
+                }
 
-            // ACTION BUTTONS
-            let actionsHtml = '';
-            if (o.status !== 'cancelled' && !isCombineMode) {
-                actionsHtml = `
-                    <div class="flex gap-2 ml-auto">
-                        <button onclick="window.viewOrder('${o.id}')" class="bg-white/10 text-white/60 p-2 rounded-lg hover:bg-white/20 transition-all" title="Ver Detalles"><i class="fas fa-eye text-[10px]"></i></button>
-                        <button onclick="recallOrder('${o.id}')" class="bg-amber-500 text-white px-2 py-1 rounded text-[8px] font-black uppercase tracking-widest hover:bg-amber-600 transition-all">Recuperar</button>
-                    </div>
-                `;
-            } else if (isCombineMode && isMobile) {
-                actionsHtml = `
-                    <div class="ml-auto">
-                        <input type="checkbox" ${isSelected ? 'checked' : ''} onchange="selectOrderForCombine('${o.id}')" class="w-6 h-6 rounded-lg accent-gold">
-                    </div>
-                `;
-            }
+                if (tableInfo && !['completed', 'cancelled'].includes(o.status)) {
+                    borderClass = "border-gold/50 shadow-gold/10 ring-1 ring-gold/20";
+                }
 
-            let name = "Walk-in";
-            if (o.customers && o.customers.name) {
-                name = o.customers.name;
-            } else if (o.notes) {
-                const nameMatch = o.notes.match(/\[CLIENTE:\s*([^\]]+)\]/) || 
-                                 o.notes.match(/\[GUEST:\s*([^|\]]+)/) ||
-                                 o.notes.match(/Mobile:\s*([^\(]+)/);
-                if (nameMatch) name = nameMatch[1].trim();
-            }
+                // Highlighting for Combine Mode
+                const isSelected = selectedOrderIds.includes(o.id);
+                if (isCombineMode && isMobile) {
+                    borderClass = isSelected ? "border-gold ring-4 ring-gold/30 bg-gold/5" : "border-white/20 opacity-60";
+                }
 
-            html += `
-                <div class="p-4 rounded-2xl bg-gray-800/50 border ${borderClass} shadow-xl mb-3 group hover:bg-gray-800 transition-all ${isReady ? 'animate-pulse' : ''}">
-                    <div class="flex justify-between items-start mb-2">
-                        <div class="flex items-center gap-2">
-                            <span class="text-[11px] font-black text-white/20">#${o.order_number?.toString().padStart(2, '0') || '--'}</span>
-                            <span class="text-[9px] px-2 py-1 rounded-lg font-black uppercase ${statusColor} tracking-widest">${statusLabel}</span>
+                // ACTION BUTTONS
+                let actionsHtml = '';
+                if (o.status !== 'cancelled' && !isCombineMode) {
+                    actionsHtml = `
+                        <div class="flex gap-2 ml-auto">
+                            ${waButton}
+                            <button onclick="window.viewOrder('${o.id}')" class="bg-white/10 text-white/60 p-2 rounded-lg hover:bg-white/20 transition-all" title="Ver Detalles"><i class="fas fa-eye text-[10px]"></i></button>
+                            <button onclick="recallOrder('${o.id}')" class="bg-amber-500 text-white px-2 py-1 rounded text-[8px] font-black uppercase tracking-widest hover:bg-amber-600 transition-all">Recuperar</button>
                         </div>
-                        ${actionsHtml}
-                    </div>
-                    
-                    <div class="flex items-center justify-between mb-2">
-                        <div class="flex items-center gap-2 overflow-hidden">
-                            ${isMobile ? '<i class="fas fa-mobile-alt text-blue-400 text-[10px]"></i>' : '<i class="fas fa-walking text-gray-500 text-[10px]"></i>'}
-                            <div class="flex flex-col overflow-hidden">
-                                <div class="font-black text-white text-sm truncate">${name}</div>
-                                ${tableInfo ? `<div class="text-[10px] font-black text-gold uppercase tracking-widest">MESA: ${tableInfo}</div>` : ''}
+                    `;
+                } else if (isCombineMode && isMobile) {
+                    actionsHtml = `
+                        <div class="ml-auto">
+                            <input type="checkbox" ${isSelected ? 'checked' : ''} onchange="selectOrderForCombine('${o.id}')" class="w-6 h-6 rounded-lg accent-gold">
+                        </div>
+                    `;
+                }
+
+                let customerName = "Walk-in";
+                if (o.customers && o.customers.name) {
+                    customerName = o.customers.name;
+                } else if (o.notes) {
+                    const nameMatch = o.notes.match(/\[CLIENTE:\s*([^\]]+)\]/) || 
+                                     o.notes.match(/\[GUEST:\s*([^|\]]+)/) ||
+                                     o.notes.match(/Mobile:\s*([^\(]+)/);
+                    if (nameMatch) customerName = nameMatch[1].trim();
+                }
+
+                html += `
+                    <div class="p-4 rounded-2xl bg-gray-800/50 border ${borderClass} shadow-xl mb-3 group hover:bg-gray-800 transition-all ${isReady ? 'animate-pulse' : ''}">
+                        <div class="flex justify-between items-start mb-2">
+                            <div class="flex items-center gap-2">
+                                <span class="text-[11px] font-black text-white/20">#${o.order_number?.toString().padStart(2, '0') || '--'}</span>
+                                <span class="text-[9px] px-2 py-1 rounded-lg font-black uppercase ${statusColor} tracking-widest">${statusLabel}</span>
+                            </div>
+                            ${actionsHtml}
+                        </div>
+                        
+                        <div class="flex items-center justify-between mb-2">
+                            <div class="flex items-center gap-2 overflow-hidden">
+                                ${isMobile ? '<i class="fas fa-mobile-alt text-blue-400 text-[10px]"></i>' : '<i class="fas fa-walking text-gray-500 text-[10px]"></i>'}
+                                <div class="flex flex-col overflow-hidden">
+                                    <div class="font-black text-white text-sm truncate">${customerName}</div>
+                                    ${tableInfo ? `<div class="text-[10px] font-black text-gold uppercase tracking-widest">MESA: ${tableInfo}</div>` : ''}
+                                </div>
+                            </div>
+                            <div class="flex gap-2 shrink-0 ml-2">
+                                ${needsDrinks ? `<div class="w-6 h-6 rounded-full flex items-center justify-center text-[10px] ${drinkDone ? 'bg-green-500 text-dark' : 'bg-white/10 text-white/40'}" title="Barista"><i class="fas fa-coffee"></i></div>` : ''}
+                                ${needsFood ? `<div class="w-6 h-6 rounded-full flex items-center justify-center text-[10px] ${foodDone ? 'bg-green-500 text-dark' : 'bg-white/10 text-white/40'}" title="Cocina"><i class="fas fa-utensils"></i></div>` : ''}
                             </div>
                         </div>
-                        <div class="flex gap-2 shrink-0 ml-2">
-                            ${needsDrinks ? `<div class="w-6 h-6 rounded-full flex items-center justify-center text-[10px] ${drinkDone ? 'bg-green-500 text-dark' : 'bg-white/10 text-white/40'}" title="Barista"><i class="fas fa-coffee"></i></div>` : ''}
-                            ${needsFood ? `<div class="w-6 h-6 rounded-full flex items-center justify-center text-[10px] ${foodDone ? 'bg-green-500 text-dark' : 'bg-white/10 text-white/40'}" title="Cocina"><i class="fas fa-utensils"></i></div>` : ''}
+
+                        <div class="flex justify-between items-end border-t border-white/5 pt-2">
+                            <div>
+                                <p class="text-[8px] font-black text-white/20 uppercase tracking-[0.2em] mb-0.5">Mtodo de Pago</p>
+                                <p class="text-[10px] font-bold text-gray-400 uppercase">${o.payment_method === 'rico_balance' ? 'Rico Cash' : (o.payment_method === 'cash' ? 'Pagar en Caja' : o.payment_method)}</p>
+                            </div>
+                            <div class="text-right">
+                                ${ (o.finalDisplayDiscount > 0) ? `<p class="text-[8px] font-black text-red-400 uppercase line-through opacity-50">L ${(o.finalDisplaySubtotal).toFixed(2)}</p>` : '' }
+                                <p class="text-[10px] font-black text-blue-400 font-mono italic">L ${ (o.finalDisplayTotal).toFixed(2) }</p>
+                                ${ (o.finalDisplayDiscount > 0) ? `<p class="text-[7px] font-black text-green-500 uppercase tracking-tighter mt-0.5">DESC: -L ${(o.finalDisplayDiscount).toFixed(2)}</p>` : '' }
+                            </div>
+                        </div>
+
+                        <div class="flex gap-2 mt-3">
+                            ${(isUnpaidCashMobile && !isCombineMode) ? `
+                                <button onclick="recallOrder('${o.id}')" class="flex-1 py-2.5 bg-blue-600 text-white text-[10px] font-black uppercase rounded-xl hover:bg-blue-500 transition-all shadow-lg shadow-blue-600/20">
+                                    <i class="fas fa-cash-register mr-1"></i> COBRAR Y CONFIRMAR
+                                </button>
+                            ` : ''}
+                            
+                            ${((isReady || o.status === 'paid') && !isCombineMode) ? `
+                                <button onclick="deliverOrder('${o.id}')" class="flex-1 py-2.5 bg-green-500 text-dark font-black text-[10px] uppercase rounded-xl shadow-lg hover:bg-green-400 transition-all ring-2 ring-white/20">
+                                    <i class="fas fa-check-circle mr-1"></i> ENTREGAR
+                                </button>
+                            ` : ''}
+                            
+                            ${(!['ready', 'completed', 'cancelled'].includes(o.status) && !isCombineMode) ? `
+                                <button onclick="rejectOrder('${o.id}', '${o.order_number}', '${o.customers?.phone || ''}', '${o.customers?.name || ''}')" class="px-3 bg-red-900/20 text-red-500/60 rounded-xl border border-red-900/30 hover:bg-red-500 hover:text-white transition-all">
+                                    <i class="fas fa-times text-[10px]"></i>
+                                </button>
+                            ` : ''}
                         </div>
                     </div>
-
-                    <div class="flex justify-between items-end border-t border-white/5 pt-2">
-                        <div>
-                            <p class="text-[8px] font-black text-white/20 uppercase tracking-[0.2em] mb-0.5">Método de Pago</p>
-                            <p class="text-[10px] font-bold text-gray-400 uppercase">${o.payment_method === 'rico_balance' ? 'Rico Cash' : (o.payment_method === 'cash' ? 'Pagar en Caja' : o.payment_method)}</p>
-                        </div>
-                        <div class="text-right">
-                            <p class="text-[10px] font-black text-blue-400 font-mono italic">L ${ (parseFloat(o.total) || 0).toFixed(2) }</p>
-                        </div>
-                    </div>
-
-                    <div class="flex gap-2 mt-3">
-                        ${(isUnpaidCashMobile && !isCombineMode) ? `
-                            <button onclick="recallOrder('${o.id}')" class="flex-1 py-2.5 bg-blue-600 text-white text-[10px] font-black uppercase rounded-xl hover:bg-blue-500 transition-all shadow-lg shadow-blue-600/20">
-                                <i class="fas fa-cash-register mr-1"></i> COBRAR Y CONFIRMAR
-                            </button>
-                        ` : ''}
-                        
-                        ${((isReady || o.status === 'paid') && !isCombineMode) ? `
-                            <button onclick="deliverOrder('${o.id}')" class="flex-1 py-2.5 bg-green-500 text-dark font-black text-[10px] uppercase rounded-xl shadow-lg hover:bg-green-400 transition-all ring-2 ring-white/20">
-                                <i class="fas fa-check-circle mr-1"></i> ENTREGAR
-                            </button>
-                        ` : ''}
-                        
-                        ${(!['ready', 'completed', 'cancelled'].includes(o.status) && !isCombineMode) ? `
-                            <button onclick="rejectOrder('${o.id}', '${o.order_number}', '${o.customers?.phone || ''}', '${o.customers?.name || ''}')" class="px-3 bg-red-900/20 text-red-500/60 rounded-xl border border-red-900/30 hover:bg-red-500 hover:text-white transition-all">
-                                <i class="fas fa-times text-[10px]"></i>
-                            </button>
-                        ` : ''}
-
-                        ${(isCombineMode && isMobile) ? `
-                             <button onclick="selectOrderForCombine('${o.id}')" class="flex-1 py-3 ${isSelected ? 'bg-gold text-dark' : 'bg-white/10 text-white/40'} font-black text-[10px] uppercase rounded-xl transition-all">
-                                ${isSelected ? 'SELECCIONADO' : 'UNIR A MESA'}
-                             </button>
-                        ` : ''}
-                    </div>
-                </div>
-            `;
+                `;
+            } catch(renderErr) {
+                console.error("Order Render Error:", renderErr, o);
+            }
         });
         container.innerHTML = html;
-    }
-
+     }
     window.viewOrder = async function(id) {
         let order = liveOrders.find(o => o.id === id);
 
         // If not in live feed, try to fetch directly from server
         if (!order) {
-            console.log("🔍 Order not in local feed, fetching from server...");
+            console.log(" Order not in local feed, fetching from server...");
             try {
                 const res = await fetch(`/api/orders/${id}`, {
                     headers: { 'Authorization': 'Bearer EMP-admin' }
@@ -1436,15 +1835,8 @@
         document.getElementById('view-order-customer').innerText = name;
 
         let telMatch = order.notes ? (order.notes.match(/\[PHONE:\s*([^\]]+)\]/) || order.notes.match(/\[TEL:\s*([^\]]+)\]/)) : null;
-        let phone = telMatch ? telMatch[1].trim() : (order.customers?.phone || '');
+        let phone = telMatch ? telMatch[1].trim() : (order.customers?.phone || order.guest_phone || '');
         
-        function getWhatsAppLink(rawPhone) {
-            const clean = rawPhone.replace(/\D/g, '');
-            // If it's exactly 8 digits, assume Honduras (+504)
-            if (clean.length === 8) return "504" + clean;
-            return clean;
-        }
-
         if (phone && phone.length > 4) {
             const waLink = `https://wa.me/${getWhatsAppLink(phone)}`;
             document.getElementById('view-order-customer').innerHTML = `${name} <a href="${waLink}" target="_blank" class="ml-2 inline-flex items-center justify-center w-8 h-8 rounded-full bg-green-500/20 text-green-500 text-[10px] hover:bg-green-500 hover:text-white transition-all"><i class="fab fa-whatsapp"></i></a>`;
@@ -1471,13 +1863,13 @@
             whatsappButtons = `
                 <div class="mt-4 grid grid-cols-1 gap-2">
                     <!-- General Confirmation/Preparing -->
-                    <a href="${waBase}?text=${encodeURIComponent(`¡Hola! Tu orden #${orderNum} ha sido recibida y ya estamos trabajando en ella. ☕✨`)}" target="_blank" class="w-full inline-flex items-center justify-center gap-2 bg-blue-500/10 text-blue-400 px-4 py-3 rounded-xl text-[9px] font-black uppercase tracking-widest border border-blue-500/10 active:scale-95 transition-all">
+                    <a href="${waBase}?text=${encodeURIComponent(`Hola! Tu orden #${orderNum} ha sido recibida y ya estamos trabajando en ella. `)}" target="_blank" class="w-full inline-flex items-center justify-center gap-2 bg-blue-500/10 text-blue-400 px-4 py-3 rounded-xl text-[9px] font-black uppercase tracking-widest border border-blue-500/10 active:scale-95 transition-all">
                         <i class="fas fa-coffee"></i> Notificar: Preparando
                     </a>
                     
                     <!-- Ready for Pickup/Delivery -->
-                    <a href="${waBase}?text=${encodeURIComponent(`¡Buenas noticias! Tu orden #${orderNum} está lista. ${(order.notes||'').includes('delivery') ? 'El repartidor va en camino.' : 'Ya puedes pasar por ella a la barra.'} ¡Te esperamos! 🥐✨`)}" target="_blank" class="w-full inline-flex items-center justify-center gap-2 bg-green-500/10 text-green-500 px-4 py-3 rounded-xl text-[9px] font-black uppercase tracking-widest border border-green-500/10 active:scale-95 transition-all">
-                        <i class="fas fa-check-circle"></i> Notificar Cliente: ¡LISTA!
+                    <a href="${waBase}?text=${encodeURIComponent(`Buenas noticias! Tu orden #${orderNum} est lista. ${(order.notes||'').includes('delivery') ? 'El repartidor va en camino.' : 'Ya puedes pasar por ella a la barra.'} Te esperamos! `)}" target="_blank" class="w-full inline-flex items-center justify-center gap-2 bg-green-500/10 text-green-500 px-4 py-3 rounded-xl text-[9px] font-black uppercase tracking-widest border border-green-500/10 active:scale-95 transition-all">
+                        <i class="fas fa-check-circle"></i> Notificar Cliente: LISTA!
                     </a>
 
                     <div class="grid grid-cols-2 gap-2 mt-2">
@@ -1544,9 +1936,9 @@
             const isDelivery = (order.notes || '').toLowerCase().includes('delivery') || order.fulfillment_type === 'delivery';
             
             if (isDelivery && order.status !== 'shipped') {
-                html += `<button onclick="window.closeViewOrder(); updateOrderStatus('${order.id}', 'shipped')" class="bg-blue-600 text-white px-6 py-3 rounded-2xl font-black text-[10px] uppercase tracking-widest shadow-lg shadow-blue-600/20 active:scale-95 transition-all flex-1">En Camino 🛵</button>`;
+                html += `<button onclick="window.closeViewOrder(); updateOrderStatus('${order.id}', 'shipped')" class="bg-blue-600 text-white px-6 py-3 rounded-2xl font-black text-[10px] uppercase tracking-widest shadow-lg shadow-blue-600/20 active:scale-95 transition-all flex-1">En Camino </button>`;
             } else {
-                html += `<button onclick="window.closeViewOrder(); updateOrderStatus('${order.id}', 'completed')" class="bg-green-600 text-white px-6 py-3 rounded-2xl font-black text-[10px] uppercase tracking-widest shadow-lg shadow-green-600/20 active:scale-95 transition-all flex-1">Entregado / Recogido ✅</button>`;
+                html += `<button onclick="window.closeViewOrder(); updateOrderStatus('${order.id}', 'completed')" class="bg-green-600 text-white px-6 py-3 rounded-2xl font-black text-[10px] uppercase tracking-widest shadow-lg shadow-green-600/20 active:scale-95 transition-all flex-1">Entregado / Recogido </button>`;
             }
 
             html += `<button onclick="window.closeViewOrder(); recallOrder('${order.id}')" class="bg-amber-500 text-white px-6 py-3 rounded-2xl font-black text-[10px] uppercase tracking-widest shadow-lg shadow-amber-500/20 active:scale-95 transition-all flex-1">Editar / Cobrar</button>`;
@@ -1572,7 +1964,7 @@
             });
             if (res.ok) {
                 await fetchLiveOrders();
-                console.log(`✅ Order ${id} updated to ${status}`);
+                console.log(` Order ${id} updated to ${status}`);
             }
         } catch(e) { console.error("Error updating order status", e); }
     };
@@ -1618,7 +2010,7 @@
                     const notify = await showUIModal({
                         title: 'Notificar Cliente',
                         message: 'Orden rechazada. ¿Deseas notificar al cliente vía WhatsApp?',
-                        confirmText: 'Si, Notificar',
+                        confirmText: 'Sí, Notificar',
                         cancelText: 'No'
                     });
                     if(notify) {
@@ -1808,7 +2200,7 @@
                 return itemCat.includes('pastry') || itemCat.includes('reposteria');
             }
             if (search === 'sides') {
-                return itemCat.includes('side') || itemCat.includes('acompañamiento');
+                return itemCat.includes('side') || itemCat.includes('acompaamiento');
             }
             if (search === 'combos') {
                 return itemId.startsWith('combo_') || itemName.includes('combo');
@@ -2026,7 +2418,7 @@
             unitPrice: priceWithMods, // Price + Mods
             mods,
             note,
-            finalPrice: priceWithMods * currentQuantity, // Line Total
+            finalPrice: priceWithMods, // UNIT PRICE (Standardized)
             is_addon: currentOrderId ? true : false
         };
         cart.push(item);
@@ -2038,35 +2430,29 @@
     // --- CART & CHECKOUT ---
     function calculateTotalWithRule() {
         const EVENT_MIN_CONSUMPTION = 2600;
-        let subtotal = cart.reduce((sum, item) => sum + (parseFloat(item.finalPrice || 0)), 0);
+        let subtotal = cart.reduce((sum, item) => sum + (parseFloat(item.finalPrice || 0) * item.qty), 0);
+        
+        // Track net price per cart index for visual feedback
+        const itemNetPrices = cart.map(item => parseFloat(item.finalPrice || 0));
 
         // --- TERRACE EVENT LOGIC ---
-        // Find if there's an event rental item
         const eventIdx = cart.findIndex(i => i.id === 'event_terrace_rental');
         if (eventIdx !== -1) {
-            // Calculate subtotal EXCLUDING the event fee itself
-            const consumption = cart.reduce((sum, item, idx) => {
-                if (idx === eventIdx) return sum;
-                return sum + (parseFloat(item.finalPrice || 0));
-            }, 0);
-
+            const consumption = cart.reduce((sum, item, idx) => (idx === eventIdx ? sum : sum + (parseFloat(item.finalPrice || 0) * item.qty)), 0);
             if (consumption >= EVENT_MIN_CONSUMPTION) {
-                // Minimum reached! Set event price to 0
                 if (cart[eventIdx].finalPrice !== 0) {
                     cart[eventIdx].finalPrice = 0;
                     cart[eventIdx].price = 0;
                     cart[eventIdx].note = "[CONSUMO MÍNIMO ALCANZADO]";
-                    // We must recalculate subtotal after this change
-                    subtotal = cart.reduce((sum, item) => sum + (parseFloat(item.finalPrice || 0)), 0);
+                    subtotal = cart.reduce((sum, item) => sum + (parseFloat(item.finalPrice || 0) * item.qty), 0);
                 }
-            } else {
-                // Minimum not reached, restore original price
-                if (cart[eventIdx].finalPrice === 0) {
-                    cart[eventIdx].finalPrice = 2600;
-                    cart[eventIdx].price = 2600;
-                    cart[eventIdx].note = "[REQUERIDO: CONSUMO < L.2600]";
-                    subtotal = cart.reduce((sum, item) => sum + (parseFloat(item.finalPrice || 0)), 0);
-                }
+                itemNetPrices[eventIdx] = 0;
+            } else if (cart[eventIdx].finalPrice === 0) {
+                cart[eventIdx].finalPrice = 2600;
+                cart[eventIdx].price = 2600;
+                cart[eventIdx].note = "[REQUERIDO: CONSUMO < L.2600]";
+                subtotal = cart.reduce((sum, item) => sum + (parseFloat(item.finalPrice || 0) * item.qty), 0);
+                itemNetPrices[eventIdx] = 2600;
             }
         }
 
@@ -2075,15 +2461,12 @@
         let applyRule = false;
         let selectedItemIds = [];
 
-        // --- STATUS ENGINE DETECTION ---
         const tags = window.loadedCustomer && Array.isArray(window.loadedCustomer.tags) ? window.loadedCustomer.tags : [];
         const isBlackCard = tags.includes('BlackCard') || tags.includes('Diamond');
         const isGoldCard = tags.includes('GoldCard');
         const isFamilia = tags.includes('Familia');
         const isEmployee = tags.includes('Employee');
         const isVipEligible = window.loadedCustomer && window.loadedCustomer.is_vip_eligible;
-        
-        console.log(`[Pricing] Status: BC=${isBlackCard}, GC=${isGoldCard}, FAM=${isFamilia}, EMP=${isEmployee}, EligibleRitual=${isVipEligible}`);
         
         let freeDrinkUsed = false;
         let discountedCount = 0;
@@ -2096,78 +2479,73 @@
             selectedItemIds = manualDiscount.selectedItemIds || [];
         }
 
-        let discountAmt = 0;
+        let totalDiscountAmt = 0;
 
-        // --- PROCESS DISCOUNTS ---
         if (discountPct > 0) {
-            // --- MANUAL DISCOUNT LOGIC ---
             if (applyRule) {
-                // Rule-based (e.g. 👵 Tercera Edad)
                 if (selectedItemIds.length > 0) {
                     selectedItemIds.forEach(idx => {
                         const item = cart[idx];
-                        // FIX: Account for quantity in manual discount
-                        if (item) discountAmt += (parseFloat(item.price) * item.qty * (discountPct / 100));
+                        if (item) {
+                            const d = (parseFloat(item.price) * (discountPct / 100));
+                            totalDiscountAmt += (d * item.qty);
+                            itemNetPrices[idx] -= d;
+                        }
                     });
                 } else {
-                    // Auto-select most expensive 1 food + 1 drink (Legacy style)
                     let foodDiscounted = false;
                     let drinkDiscounted = false;
-                    const sorted = [...cart].sort((a,b) => parseFloat(b.price) - parseFloat(a.price));
-                    sorted.forEach(item => {
+                    const indices = cart.map((_, i) => i).sort((a,b) => parseFloat(cart[b].price) - parseFloat(cart[a].price));
+                    indices.forEach(idx => {
+                        const item = cart[idx];
                         if (item.id === 'event_terrace_rental') return;
                         if (isFood(item) && !foodDiscounted) {
-                            discountAmt += (parseFloat(item.price) * (discountPct / 100)); // Still 1x for legacy rules
+                            const d = (parseFloat(item.price) * (discountPct / 100));
+                            totalDiscountAmt += d;
+                            itemNetPrices[idx] -= (d / item.qty); // Legacy rule was 1x unit
                             foodDiscounted = true;
                         } else if (isDrink(item) && !drinkDiscounted) {
-                            discountAmt += (parseFloat(item.price) * (discountPct / 100)); // Still 1x
+                            const d = (parseFloat(item.price) * (discountPct / 100));
+                            totalDiscountAmt += d;
+                            itemNetPrices[idx] -= (d / item.qty);
                             drinkDiscounted = true;
                         }
                     });
                 }
             } else {
-                // Flat Discount (e.g. 20% OFF total)
-                const discountableSubtotal = cart.reduce((sum, item) => {
-                    if (item.id === 'event_terrace_rental') return sum;
-                    return sum + (parseFloat(item.finalPrice || 0));
-                }, 0);
-                discountAmt = discountableSubtotal * (discountPct / 100);
+                const discountableIndices = cart.map((_, i) => i).filter(i => cart[i].id !== 'event_terrace_rental');
+                discountableIndices.forEach(idx => {
+                    const d = parseFloat(cart[idx].finalPrice || 0) * (discountPct / 100);
+                    totalDiscountAmt += (d * cart[idx].qty);
+                    itemNetPrices[idx] -= d;
+                });
             }
         } else if (window.loadedCustomer) {
-            // --- STATUS ENGINE AUTO-LOGIC ---
-            // Sort cart by price descending to discount most expensive items first
             const sortedIndices = cart.map((_, i) => i).sort((a, b) => parseFloat(cart[b].price) - parseFloat(cart[a].price));
-            
             sortedIndices.forEach(idx => {
                 const item = cart[idx];
                 const itemId = (item.id || '').toLowerCase();
                 const itemCat = (item.category || '').toLowerCase();
-                
-                // Exclusions: Retail, Sports, and high-cost items
-                const isExclusion = itemId.includes('dubai_chocolate') || itemCat.includes('retail') || itemCat.includes('deporte') || itemCat.includes('deportes');
+                const isExclusion = itemId.includes('dubai_chocolate') || itemCat.includes('retail') || itemCat.includes('deporte');
                 const isHouseMade = item.is_house_made || !isExclusion;
-
                 if (isExclusion) return;
 
-                // 1. Check for Free Daily Ritual (Standard Coffee)
                 const isStandardCoffee = itemId.includes('americano') || itemId.includes('latte') || itemId.includes('cappuccino') || (itemId.includes('iced_coffee') && !itemId.includes('frappe'));
-                
                 let unitsHandled = 0;
+                let itemDisc = 0;
 
                 if (isVipEligible && !freeDrinkUsed && isStandardCoffee) {
-                    discountAmt += parseFloat(item.price);
+                    itemDisc += parseFloat(item.price);
                     freeDrinkUsed = true;
                     unitsHandled = 1;
-                    discountName = "RITUAL DIARIO (FREE)";
+                    if (!discountName) discountName = "RITUAL DIARIO (FREE)";
                 } 
                 
-                // 2. Check for Power Power (Diamond, Gold, Employee, Familia)
                 if (isBlackCard || isEmployee) {
                     const remainingSpots = MAX_STATUS_DISCOUNTS - discountedCount;
                     const unitsToFifty = Math.min(item.qty - unitsHandled, Math.max(0, remainingSpots));
-                    
                     if (unitsToFifty > 0) {
-                        discountAmt += (parseFloat(item.price) * 0.5 * unitsToFifty);
+                        itemDisc += (parseFloat(item.price) * 0.5 * unitsToFifty);
                         discountedCount += unitsToFifty;
                         unitsHandled += unitsToFifty;
                         if (!discountName || discountName === "DESCUENTO") discountName = isBlackCard ? "DIAMOND 50%" : "STAFF 50%";
@@ -2176,35 +2554,40 @@
                     const remainingSpots = MAX_STATUS_DISCOUNTS - discountedCount;
                     const unitsToThirty = Math.min(item.qty - unitsHandled, Math.max(0, remainingSpots));
                     if (unitsToThirty > 0) {
-                        discountAmt += (parseFloat(item.price) * 0.3 * unitsToThirty);
+                        itemDisc += (parseFloat(item.price) * 0.3 * unitsToThirty);
                         discountedCount += unitsToThirty;
                         unitsHandled += unitsToThirty;
                         if (!discountName || discountName === "DESCUENTO") discountName = "GOLD 30%";
                     }
                 } else if (isFamilia) {
-                    // RULE: Familia is 20% OFF Uncapped (Gifted status)
-                    discountAmt += (parseFloat(item.price) * 0.20 * item.qty);
+                    itemDisc += (parseFloat(item.price) * 0.20 * item.qty);
                     unitsHandled = item.qty;
                     if (!discountName || discountName === "DESCUENTO") discountName = "FAMILIA (20% OFF)";
                 }
 
-                // 3. Status Engine Fallback (15% OFF)
-                // BlackCard/Gold/Employee get 15% on remaining units of this item (Status protection)
-                // Regular VIP also gets 15% on everything house-made
                 const remainingUnits = item.qty - unitsHandled;
                 if (remainingUnits > 0 && (window.loadedCustomer.is_vip || isBlackCard || isGoldCard || isEmployee) && isHouseMade) {
-                    discountAmt += (parseFloat(item.price) * 0.15 * remainingUnits);
+                    itemDisc += (parseFloat(item.price) * 0.15 * remainingUnits);
                     if (!discountName || discountName === "DESCUENTO") discountName = "STATUS (15% OFF)";
                 }
+                
+                totalDiscountAmt += itemDisc;
+                itemNetPrices[idx] = (parseFloat(item.finalPrice || 0) * item.qty - itemDisc) / item.qty;
             });
         }
 
-        const rawTotal = subtotal - discountAmt;
-        const roundedTotal = Math.round(rawTotal / 5) * 5;
+        // --- FINAL ROUNDING ENGINE (Nearest 5 increments) ---
+        itemNetPrices.forEach((p, i) => {
+            itemNetPrices[i] = Math.round(p / 5) * 5;
+        });
+
+        // Derive total from the sum of rounded items to ensure the UI math always adds up
+        const roundedTotal = itemNetPrices.reduce((sum, p, i) => sum + (p * cart[i].qty), 0);
         const finalDiscount = subtotal - roundedTotal;
 
-        return { subtotal, total: roundedTotal, discount: finalDiscount, name: discountName || "DESCUENTO", pct: discountPct, applyRule, selectedItemIds };
+        return { subtotal, total: roundedTotal, discount: finalDiscount, name: discountName || "DESCUENTO", pct: discountPct, applyRule, selectedItemIds, itemNetPrices };
     }
+
     function renderCart() {
         const container = document.getElementById('cart-items');
         if (cart.length === 0) {
@@ -2215,20 +2598,26 @@
             return;
         }
 
+        const calc = calculateTotalWithRule();
+
         container.innerHTML = cart.map((item, index) => {
             const fulfill = item.fulfillment || 'dinein';
+            const netPrice = calc.itemNetPrices[index];
+            const hasDiscount = netPrice < parseFloat(item.finalPrice || 0);
+
             return `
             <div class="mb-3 bg-white p-4 rounded-3xl border border-gray-100 shadow-sm space-y-3 relative group animate-in slide-in-from-right-2 duration-200">
                 <div class="flex justify-between items-start">
                     <div class="flex-1">
                         <div class="font-black text-[13px] text-gray-800 uppercase tracking-tighter leading-none mb-1">${item.name}</div>
                         <div class="text-[9px] text-gray-400 font-bold uppercase leading-relaxed">
-                            ${(item.mods || []).map(m => m.name).join(' • ')}
+                            ${(item.mods || []).map(m => m.name).join('  ')}
                             ${item.note ? `<br><span class="text-blue-500 font-black italic">Note: ${item.note}</span>` : ''}
                         </div>
                     </div>
                     <div class="text-right ml-2 flex flex-col items-end">
-                        <div class="font-mono text-xs font-black text-gray-900">L. ${(parseFloat(item.finalPrice || 0)).toFixed(0)}</div>
+                        ${hasDiscount ? `<div class="text-[8px] font-black text-red-400 line-through opacity-50">L. ${parseFloat(item.finalPrice).toFixed(0)}</div>` : ''}
+                        <div class="font-mono text-xs font-black ${hasDiscount ? 'text-blue-600' : 'text-gray-900'}">L. ${netPrice.toFixed(0)}</div>
                     </div>
                 </div>
 
@@ -2251,7 +2640,6 @@
             `;
         }).join('');
 
-        const calc = calculateTotalWithRule();
         document.getElementById('cart-subtotal').innerText = `L. ${calc.subtotal.toFixed(2)}`;
 
         const discDisplay = document.getElementById('discount-display');
@@ -2262,14 +2650,13 @@
             document.getElementById('discount-amt').innerText = `-L. ${calc.discount.toFixed(2)}`;
             discDisplay.classList.remove('hidden');
             
-            // Clear and update hint
             hintContainer.innerHTML = '';
             const hint = document.createElement('p');
             hint.className = "text-[8px] text-green-700/60 font-black uppercase tracking-widest";
             if (calc.selectedItemIds && calc.selectedItemIds.length > 0) {
                 hint.innerText = "* Items Seleccionados";
             } else {
-                hint.innerText = "* Status Benefit (Máx 2 items)";
+                hint.innerText = "* Status Benefit";
             }
             hintContainer.appendChild(hint);
         } else {
@@ -2320,7 +2707,7 @@
     };
 
     window.prepareManualDiscount = (name, pct, applyRule = false) => {
-        if (cart.length === 0) return alert("Agrega artículos al carrito primero");
+        if (cart.length === 0) return alert("Agrega artculos al carrito primero");
         
         pendingDiscount = { name, pct, applyRule, selectedItemIds: [] };
         
@@ -2401,7 +2788,7 @@
     };
 
     window.applyManualDiscount = function(name, pct, applyRule = false, selectedItemIds = []) {
-        if (pct === '' || isNaN(pct)) return alert("Porcentaje inválido");
+        if (pct === '' || isNaN(pct)) return alert("Porcentaje invlido");
         manualDiscount = { name, pct: parseFloat(pct), applyRule, selectedItemIds };
         window.closeDiscountModal();
         renderCart();
@@ -2560,28 +2947,16 @@ function openTenderModal() {
 
         // --- AUTO-FIX SHIFT ID ---
         if (!currentShiftId) {
-            console.log("⚠️ Shift ID missing. Attempting emergency re-sync...");
+            console.log(" Shift ID missing. Attempting emergency re-sync...");
             await restoreShift();
-            if (!currentShiftId) return alert("❌ ERROR DE TURNO: No hay un turno abierto detectado. Por favor abre caja o logueate de nuevo.");
+            if (!currentShiftId) return alert("⚠️ ERROR DE TURNO: No hay un turno abierto detectado. Por favor abre caja o logueate de nuevo.");
         }
 
-        const subtotal = cart.reduce((sum, item) => sum + (item.finalPrice * item.qty), 0);
-        
-        let discount = 0;
-        let discountName = null;
-        if (manualDiscount) {
-            discount = subtotal * (manualDiscount.pct / 100);
-            discountName = manualDiscount.name;
-        } else if (window.loadedCustomer) {
-            const types = { 'senior': 25, 'hero': 20, 'employee': 20 };
-            const pct = types[window.loadedCustomer.customer_type] || 0;
-            if (pct > 0) {
-                discount = subtotal * (pct / 100);
-                discountName = window.loadedCustomer.customer_type;
-            }
-        }
-
-        const total = subtotal - discount;
+        const calc = calculateTotalWithRule();
+        const subtotal = calc.subtotal;
+        const discount = calc.discount;
+        const discountName = calc.name;
+        const total = calc.total;
 
         const isModified = currentOrderId && recalledItemsJson !== JSON.stringify(cart);
         let newStatus = 'pending';
@@ -2601,7 +2976,7 @@ function openTenderModal() {
             status: newStatus,
             notes: (document.getElementById('guest-name-input').value.trim() ? `[CLIENTE: ${document.getElementById('guest-name-input').value.trim()}]` : '') + 
                    (discountName ? ` [DISCOUNT: ${discountName}]` : '') +
-                   (manualDiscount ? ` [DISC_META:${JSON.stringify({ n: manualDiscount.name, p: manualDiscount.pct, r: manualDiscount.applyRule, i: manualDiscount.selectedItemIds })}]` : '')
+                   (manualDiscount ? ` [DISC_META:${JSON.stringify({ n: manualDiscount.name, p: manualDiscount.pct, r: manualDiscount.applyRule, i: manualDiscount.selectedItemIds, a: discount })}]` : '')
         };
         try {
             const url = currentOrderId ? `/api/orders/${currentOrderId}?v=${Date.now()}` : `/api/orders?v=${Date.now()}`;
@@ -2617,7 +2992,7 @@ function openTenderModal() {
             });
 
             if (res.ok) {
-                alert("✅ ORDEN ENVIADA A COCINA (TAB ABIERTA)");
+                alert(" ORDEN ENVIADA A COCINA (TAB ABIERTA)");
                 clearOrderState(true);
                 fetchLiveOrders();
             } else {
@@ -2626,12 +3001,12 @@ function openTenderModal() {
             }
         } catch(e) { 
             console.error("Network Error:", e);
-            alert("Error de Conexión: " + e.message); 
+            alert("Error de Conexin: " + e.message); 
         }
     }
 
     window.clearOrderState = function(force = false) {
-        if (!force && cart.length > 0 && !confirm("¿Vaciar carrito y comenzar nueva orden?")) return;
+        if (!force && cart.length > 0 && !confirm("Vaciar carrito y comenzar nueva orden?")) return;
         
         cart = [];
         currentOrderId = null;
@@ -2663,7 +3038,7 @@ function openTenderModal() {
         
         // If not in live feed, try to fetch directly from server (e.g. if POS hasn't polled yet)
         if (!order) {
-            console.log("🔍 Order not in local feed, fetching from server...");
+            console.log(" Order not in local feed, fetching from server...");
             try {
                 const res = await fetch(`/api/orders/${id}`, {
                     headers: { 'Authorization': 'Bearer EMP-admin' }
@@ -2674,12 +3049,12 @@ function openTenderModal() {
             } catch (e) { console.error("Recall Fetch Error", e); }
         }
 
-        if (!order) return alert("❌ No se encontró la orden. Intenta de nuevo en unos segundos.");
+        if (!order) return alert(" No se encontr la orden. Intenta de nuevo en unos segundos.");
         
         if (cart.length > 0) {
             const clear = await showUIModal({
                 title: 'Recuperar Orden',
-                message: '¿Deseas vaciar el carrito actual para recuperar esta orden?',
+                message: 'Deseas vaciar el carrito actual para recuperar esta orden?',
                 confirmText: 'Si, Vaciar',
                 cancelText: 'No'
             });
@@ -2701,7 +3076,7 @@ function openTenderModal() {
 
         // AUTO-LOAD CUSTOMER
         if (order.customer_id) {
-            console.log("👤 Order has customer. Loading profile...");
+            console.log(" Order has customer. Loading profile...");
             try {
                 const res = await fetch(`/api/store?action=customer_profile&id=${order.customer_id}`, {
                     headers: { 'Authorization': 'Bearer EMP-admin' }
@@ -2717,7 +3092,7 @@ function openTenderModal() {
         // Restore Discount state from metadata if present
         if (order.notes && order.notes.includes('[DISC_META:')) {
             try {
-                const metaMatch = order.notes.match(/\[DISC_META:\s*({[^\]]+})\]/);
+                const metaMatch = order.notes.match(/\[DISC_META:\s*({[\s\S]*?})\]/);
                 if (metaMatch) {
                     const d = JSON.parse(metaMatch[1]);
                     manualDiscount = { name: d.n, pct: d.p, applyRule: d.r, selectedItemIds: d.i };
@@ -2743,7 +3118,7 @@ function openTenderModal() {
         // Change Charge Button Label
         document.getElementById('main-charge-btn').innerText = "UPDATE & CHARGE";
         
-        alert("✅ Orden Recuperada - Puedes agregar más o cobrar.");
+        alert(" Orden Recuperada - Puedes agregar ms o cobrar.");
     }
 
     let isProcessingCharge = false;
@@ -2752,9 +3127,9 @@ function openTenderModal() {
         
         // --- AUTO-FIX SHIFT ID ---
         if (!currentShiftId) {
-            console.log("⚠️ Shift ID missing in checkout. Attempting emergency re-sync...");
+            console.log(" Shift ID missing in checkout. Attempting emergency re-sync...");
             await restoreShift();
-            if (!currentShiftId) return alert("❌ ERROR DE TURNO: No se puede cobrar sin un turno abierto. Refresca la página.");
+            if (!currentShiftId) return alert(" ERROR DE TURNO: No se puede cobrar sin un turno abierto. Refresca la pgina.");
         }
 
         const calc = calculateTotalWithRule();
@@ -2830,7 +3205,7 @@ function openTenderModal() {
             isPos: true,
             notes: (document.getElementById('guest-name-input').value.trim() ? `[CLIENTE: ${document.getElementById('guest-name-input').value.trim()}]` : '') + 
                    (discountName ? ` [DISCOUNT: ${discountName}]` : '') +
-                   (manualDiscount ? ` [DISC_META:${JSON.stringify({ n: manualDiscount.name, p: manualDiscount.pct, r: manualDiscount.applyRule, i: manualDiscount.selectedItemIds })}]` : '')
+                   (manualDiscount ? ` [DISC_META:${JSON.stringify({ n: manualDiscount.name, p: manualDiscount.pct, r: manualDiscount.applyRule, i: manualDiscount.selectedItemIds, a: discount })}]` : '')
         };
 
         const confirmBtn = document.getElementById('confirm-tender-btn');
@@ -2843,9 +3218,9 @@ function openTenderModal() {
             data: payload,
             timestamp: new Date().toISOString()
         };
-        const queue = JSON.parse(localStorage.getItem(SYNC_KEY) || '[]');
+        const queue = JSON.parse(safeGetItem(SYNC_KEY) || '[]');
         queue.push(syncItem);
-        localStorage.setItem(SYNC_KEY, JSON.stringify(queue));
+        safeSetItem(SYNC_KEY, JSON.stringify(queue));
         updateSyncUI();
 
         try {
@@ -2864,23 +3239,23 @@ function openTenderModal() {
 
             if (res.ok) {
                 // Success! Remove from sync queue
-                const finalQueue = JSON.parse(localStorage.getItem(SYNC_KEY) || '[]');
+                const finalQueue = JSON.parse(safeGetItem(SYNC_KEY) || '[]');
                 const filtered = finalQueue.filter(q => q.id !== syncItem.id);
-                localStorage.setItem(SYNC_KEY, JSON.stringify(filtered));
+                safeSetItem(SYNC_KEY, JSON.stringify(filtered));
                 updateSyncUI();
 
-                alert("✅ Venta Completada");
+                alert(" Venta Completada");
                 clearOrderState(true);
                 document.getElementById('tender-modal').classList.add('hidden');
                 fetchLiveOrders();
             } else {
                 const err = await res.json();
-                alert(`⚠️ Error Servidor: ${err.error || "No se pudo procesar pago"}. La orden quedó guardada en el dispositivo y se sincronizará luego.`);
+                alert(` Error Servidor: ${err.error || "No se pudo procesar pago"}. La orden qued guardada en el dispositivo y se sincronizar luego.`);
                 clearOrderState(true);
                 document.getElementById('tender-modal').classList.add('hidden');
             }
         } catch(e) { 
-            alert("📡 SIN INTERNET: La orden se guardó en el teléfono y se enviará automáticamente al volver la conexión.");
+            alert(" SIN INTERNET: La orden se guardó en el teléfono y se enviará automáticamente al volver la conexión.");
             clearOrderState(true);
             document.getElementById('tender-modal').classList.add('hidden');
         } finally {
@@ -2904,7 +3279,7 @@ function openTenderModal() {
             lookupCustomer();
         }).catch(err => {
             console.error("Scanner Error:", err);
-            alert("No se pudo iniciar la cámara.");
+            alert("No se pudo iniciar la cmara.");
             stopQRScanner();
         });
     }
@@ -2931,29 +3306,53 @@ function openTenderModal() {
 
         const isVipEligible = data.is_vip_eligible === true;
         const isBootcamp = Array.isArray(data.tags) && data.tags.includes('Bootcamp');
+        const tags = data.tags || [];
+        const isEmployee = tags.includes('Employee');
+        const dailyLimit = parseFloat(data.daily_allowance) || 0;
+        let allowanceHtml = '';
+        
+        if (isEmployee && dailyLimit > 0) {
+            const today = new Date().toISOString().split('T')[0];
+            const used = data.last_allowance_date === today ? (parseFloat(data.allowance_used_today) || 0) : 0;
+            const remaining = Math.max(0, dailyLimit - used);
+            const pct = Math.min(100, (used / dailyLimit) * 100);
+            
+            allowanceHtml = `
+                <div class="mt-3 p-3 bg-blue-600 rounded-2xl text-white shadow-lg shadow-blue-600/20">
+                    <div class="flex justify-between items-center mb-1.5">
+                        <p class="text-[8px] font-black uppercase tracking-[0.2em]">🍱 Daily Allowance</p>
+                        <p class="text-[10px] font-black">L. ${remaining.toFixed(0)} / ${dailyLimit.toFixed(0)}</p>
+                    </div>
+                    <div class="w-full h-1.5 bg-black/20 rounded-full overflow-hidden">
+                        <div class="h-full bg-white transition-all duration-1000" style="width: ${pct}%"></div>
+                    </div>
+                </div>
+            `;
+        }
 
         profile.innerHTML = `
             <div class="bg-blue-50 p-4 rounded-3xl border border-blue-100 shadow-xl space-y-3 relative overflow-hidden">
                 ${isVipEligible ? `
                 <div class="bg-amber-500 text-white text-[8px] font-black uppercase py-1 px-3 absolute top-0 right-0 rounded-bl-xl animate-pulse">
-                    <i class="fas fa-coffee mr-1"></i> FREE COFFEE AVAILABLE
+                    <i class="fas fa-coffee mr-1"></i> FREE COFFEE
                 </div>
                 ` : (isBootcamp ? `
                 <div class="bg-blue-600 text-white text-[8px] font-black uppercase py-1 px-3 absolute top-0 right-0 rounded-bl-xl">
-                    <i class="fas fa-dumbbell mr-1"></i> BOOTCAMP ATHLETE
+                    <i class="fas fa-dumbbell mr-1"></i> BOOTCAMP
                 </div>
                 ` : '')}
 
                 <div class="flex justify-between items-start pt-1">
                     <div class="overflow-hidden mr-2">
-                        <div class="font-black text-blue-900 truncate text-sm uppercase tracking-tighter">👑 ${data.name || 'Cliente'}</div>
+                        <div class="font-black text-blue-900 truncate text-sm uppercase tracking-tighter"> ${data.name || 'Cliente'}</div>
                         <div class="flex gap-2 mt-1">
-                            <div class="text-[9px] font-black text-blue-600 bg-blue-100/50 px-2 py-0.5 rounded-full uppercase">L. ${(parseFloat(data.rico_balance) || 0).toFixed(0)} Rico Cash</div>
+                            <div class="text-[9px] font-black text-blue-600 bg-blue-100/50 px-2 py-0.5 rounded-full uppercase">L. ${(parseFloat(data.rico_balance) || 0).toFixed(0)} Cash</div>
                             <div class="text-[9px] font-black text-amber-600 bg-amber-100/50 px-2 py-0.5 rounded-full uppercase">${data.points || 0} pts</div>
                         </div>
                     </div>
                     <button onclick="clearCustomer()" class="w-8 h-8 rounded-xl bg-white/50 text-blue-900/20 flex items-center justify-center hover:text-red-500 transition-all border border-blue-100 shadow-sm"><i class="fas fa-times text-xs"></i></button>
                 </div>
+                ${allowanceHtml}
             </div>
         `;
         profile.classList.remove('hidden');
@@ -2969,7 +3368,7 @@ function openTenderModal() {
 
         // --- SMART DETECT: ORDER ID ---
         if (query.startsWith('ORD-')) {
-            console.log("📄 Order ID detected. Viewing order details...");
+            console.log(" Order ID detected. Viewing order details...");
             await viewOrder(query);
             input.value = ""; // Clear for next scan
             return;
@@ -2981,7 +3380,7 @@ function openTenderModal() {
 
         // --- SMART DETECT: CUSTOMER ID (from Member QR) ---
         if (query.startsWith('CUST-') || query.startsWith('C0') || isShortId) {
-             console.log("👤 Customer/Member ID detected. Fetching profile...");
+             console.log(" Customer/Member ID detected. Fetching profile...");
              try {
                 const searchId = isShortId ? cleanDigits : query;
                 const res = await fetch(`/api/store?action=customer_profile&id=${searchId}`, {
@@ -3041,8 +3440,11 @@ function openTenderModal() {
                 loadCustomerProfile(data);
                 input.value = "";
             }
-        } catch(e) {}
+        } catch(e) {
+            console.error("Lookup Error:", e);
+        }
     }
+    window.lookupCustomer = lookupCustomer;
 
     function clearCustomer() {
         currentCustomerId = null;
@@ -3064,104 +3466,10 @@ function openTenderModal() {
         lookupCustomer();
     }
 
-    // --- SHIFT & STATUS ---
-    window.handleLogin = async function() {
-        const pin = document.getElementById('login-pin').value;
-        if (!pin) return alert("Ingrese su PIN");
-
-        console.log("🔑 handleLogin triggered for PIN:", pin);
-        const loginBtn = document.querySelector('button[onclick="window.handleLogin()"]');
-        if (loginBtn) {
-            loginBtn.innerText = "ENTRANDO...";
-            loginBtn.disabled = true;
-        }
-
-        try {
-            // Local Bypass for Master PIN (Zero Lag)
-            if (pin === '4574') {
-                window.currentEmployee = { id: 'master_admin', name: 'Oscar (Admin)', role: 'admin' };
-                localStorage.setItem('ra_staff_pin', pin);
-                await restoreShift(); // This will handle showing the next stage or hiding the modal
-                return;
-            }
-
-            const res = await fetch('/api/cash/verify-pin', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer EMP-admin' },
-                body: JSON.stringify({ pin })
-            });
-            const data = await res.json();
-
-            if (!res.ok) throw new Error(data.error || "PIN Inválido");
-
-            // Successful Login
-            window.currentEmployee = data.employee;
-            console.log("👤 Cashier Logged In:", window.currentEmployee.name);
-            localStorage.setItem('ra_staff_pin', pin);
-
-            await restoreShift();
-
-        } catch (err) {
-            console.error("Login Error:", err);
-            alert(err.message);
-            if (loginBtn) {
-                loginBtn.innerText = "Entrar";
-                loginBtn.disabled = false;
-            }
-        }
-    };
-
-    window.confirmStartShift = async function() {
-        console.log("🚀 confirmStartShift triggered");
-        const cash = document.getElementById('shift-cash').value;
-        if (!cash) return alert("Ingrese la base de caja");
-
-        try {
-            const res = await fetch('/api/cash/open-shift', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer EMP-admin' },
-                body: JSON.stringify({ 
-                    employeeId: window.currentEmployee.id, 
-                    openingAmount: parseFloat(cash) 
-                })
-            });
-            const data = await res.json();
-
-            if (!res.ok) throw new Error(data.error || "Error al abrir caja");
-
-            // Success
-            currentShiftId = data.id;
-            currentCashier = window.currentEmployee.name;
-            startingCash = parseFloat(cash);
-            
-            // Save local fallback
-            localStorage.setItem('pos_active_shift', JSON.stringify({
-                shiftId: data.id,
-                cashier: currentCashier,
-                startingCash: startingCash,
-                startTime: new Date().toISOString()
-            }));
-
-            document.getElementById('shift-modal').classList.add('hidden');
-            
-            // Auto-open store when shift opens
-            await fetch('/api/store/status', {
-                method: 'PATCH',
-                headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer EMP-admin' },
-                body: JSON.stringify({ isOpen: true })
-            });
-
-            await fetchStoreStatus();
-            console.log("✅ Shift Opened successfully.");
-        } catch (err) {
-            alert(err.message);
-        }
-    }
-
     // --- RICO CASH RECARGA ---
     async function submitRecarga(method) {
         const amount = parseFloat(document.getElementById('recarga-amount').value);
-        if (!amount || amount <= 0) return alert("Ingrese un monto válido");
+        if (!amount || amount <= 0) return alert("Ingrese un monto vlido");
         if (!window.loadedCustomer) return alert("Seleccione un cliente primero");
 
         try {
@@ -3178,7 +3486,7 @@ function openTenderModal() {
             if (res.ok) {
                 // 2. Log Cash Transaction (CRITICAL for Shift Closing)
                 if (method === 'cash') {
-                    await fetch('/api/cash/transaction', {
+                    await fetch('/api/store?action=transaction', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer EMP-admin' },
                         body: JSON.stringify({
@@ -3190,14 +3498,14 @@ function openTenderModal() {
                     });
                 }
 
-                alert(`✅ Recarga de L. ${amount} exitosa (${method.toUpperCase()})`);
+                alert(` Recarga de L. ${amount} exitosa (${method.toUpperCase()})`);
                 document.getElementById('recarga-modal').classList.add('hidden');
                 document.getElementById('recarga-amount').value = '';
                 lookupCustomer(); // Refresh profile
             } else {
                 alert("Error al recargar saldo");
             }
-        } catch (e) { console.error(e); alert("Error de conexión"); }
+        } catch (e) { console.error(e); alert("Error de conexin"); }
     }
 
     // --- DAILY INVENTORY CHECKLIST LOGIC ---
@@ -3206,7 +3514,7 @@ function openTenderModal() {
     async function checkDailyInventory(force = false) {
         // Only trigger if not already done today in this browser (unless forced)
         const today = new Date().toISOString().split('T')[0];
-        if (!force && localStorage.getItem('pos_inventory_checked_date') === today) return;
+        if (!force && safeGetItem('pos_inventory_checked_date') === today) return;
 
         try {
             const res = await fetch('/api/admin?action=inventory', {
@@ -3235,7 +3543,7 @@ function openTenderModal() {
         if (coreItems.length === 0) {
             // Fallback for safety
             const fallbackItems = dailyInventoryData.filter(i => 
-                ['leche', 'milk', 'café', 'coffee', 'pan', 'dough', 'baleada', 'frijol', 'frijoles'].some(key => i.name.toLowerCase().includes(key))
+                ['leche', 'milk', 'caf', 'coffee', 'pan', 'dough', 'baleada', 'frijol', 'frijoles'].some(key => i.name.toLowerCase().includes(key))
             );
             if (fallbackItems.length === 0) {
                 container.innerHTML = '<p class="text-center text-gray-400 py-10">No items assigned for your role.</p>';
@@ -3274,7 +3582,7 @@ function openTenderModal() {
 
         let updates = [];
         let itemsToUpdate = coreItems.length > 0 ? coreItems : dailyInventoryData.filter(i => 
-            ['leche', 'milk', 'café', 'coffee', 'pan', 'dough', 'baleada', 'frijol', 'frijoles'].some(key => i.name.toLowerCase().includes(key))
+            ['leche', 'milk', 'caf', 'coffee', 'pan', 'dough', 'baleada', 'frijol', 'frijoles'].some(key => i.name.toLowerCase().includes(key))
         );
 
         for (const item of itemsToUpdate) {
@@ -3296,9 +3604,9 @@ function openTenderModal() {
                     body: JSON.stringify(update)
                 });
             }
-            localStorage.setItem('pos_inventory_checked_date', new Date().toISOString().split('T')[0]);
+            safeSetItem('pos_inventory_checked_date', new Date().toISOString().split('T')[0]);
             document.getElementById('inventory-check-modal').classList.add('hidden');
-            alert("✅ Inventario actualizado.");
+            alert(" Inventario actualizado.");
         } catch (e) {
             alert("Error al actualizar");
             btn.disabled = false; btn.innerText = "Finalizar Conteo";
@@ -3309,7 +3617,7 @@ function openTenderModal() {
     const closureData = { cash: 0, card: 0, transfer: 0, notes: '' };
 
     async function endShift() {
-        if (!currentShiftId) return alert("No hay una sesión activa para cerrar.");
+        if (!currentShiftId) return alert("No hay una sesin activa para cerrar.");
         
         // Reset Wizard
         closureCurrentStep = 1;
@@ -3350,29 +3658,51 @@ function openTenderModal() {
         // Update Progress Bar & Indicator
         const progress = (closureCurrentStep / 4) * 100;
         const progressBar = document.getElementById('closure-progress-bar');
-        const stepIndicator = document.getElementById('closure-step-indicator');
+        const stepLabel = document.getElementById('closure-step-label');
+        const stepTitle = document.getElementById('closure-step-title');
+        const stepDesc = document.getElementById('closure-step-desc');
+
         if (progressBar) progressBar.style.width = `${progress}%`;
-        if (stepIndicator) stepIndicator.innerText = `Paso ${closureCurrentStep} de 4`;
+        if (stepLabel) stepLabel.innerText = `Paso ${closureCurrentStep} de 4`;
+
+        // Update Titles based on Step
+        if (stepTitle && stepDesc) {
+            if (closureCurrentStep === 1) {
+                stepTitle.innerText = "Cierre de Caja";
+                stepDesc.innerText = "Conteo de Efectivo";
+            } else if (closureCurrentStep === 2) {
+                stepTitle.innerText = "Transacciones POS";
+                stepDesc.innerText = "Total en Tarjetas (Vouchers)";
+            } else if (closureCurrentStep === 3) {
+                stepTitle.innerText = "Transferencias";
+                stepDesc.innerText = "Total en Bancos (BAC/Banpais)";
+            } else if (closureCurrentStep === 4) {
+                stepTitle.innerText = "Revisin Final";
+                stepDesc.innerText = "Verifica los totales del da";
+            }
+        }
         
         // Update Buttons
         const nextBtn = document.getElementById('closure-next-btn');
         const backBtn = document.getElementById('closure-back-btn');
         
-        // Reset classes to ensure visibility
-        nextBtn.classList.remove('bg-dark', 'bg-success', 'bg-blue-600', 'bg-green-500');
+        if (nextBtn) {
+            // Reset classes to ensure visibility
+            nextBtn.classList.remove('bg-dark', 'bg-success', 'bg-blue-600', 'bg-green-500');
 
-        if (closureCurrentStep === 1) {
-            backBtn.innerText = 'Cancelar';
-            nextBtn.innerText = 'Siguiente';
-            nextBtn.classList.add('bg-blue-600');
-        } else if (closureCurrentStep === 4) {
-            backBtn.innerText = 'Atrás';
-            nextBtn.innerText = 'Finalizar Cierre';
-            nextBtn.classList.add('bg-green-500');
-        } else {
-            backBtn.innerText = 'Atrás';
-            nextBtn.innerText = 'Siguiente';
-            nextBtn.classList.add('bg-blue-600');
+            if (closureCurrentStep === 1) {
+                if (backBtn) backBtn.innerText = 'Cancelar';
+                nextBtn.innerText = 'Siguiente';
+                nextBtn.classList.add('bg-blue-600');
+            } else if (closureCurrentStep === 4) {
+                if (backBtn) backBtn.innerText = 'Atrs';
+                nextBtn.innerText = 'Finalizar Cierre';
+                nextBtn.classList.add('bg-green-500');
+            } else {
+                if (backBtn) backBtn.innerText = 'Atrs';
+                nextBtn.innerText = 'Siguiente';
+                nextBtn.classList.add('bg-blue-600');
+            }
         }
 
         // Focus input
@@ -3411,36 +3741,58 @@ function openTenderModal() {
                 const rTransfer = document.getElementById('review-transfer');
                 const nextBtn = document.getElementById('closure-next-btn');
 
-                if (rCash) rCash.innerHTML = `<span class="text-gray-400">Calculando...</span>`;
+                if (rCash) rCash.innerHTML = `<span class="text-blue-500 animate-pulse">Calculando...</span>`;
+                if (rCard) rCard.innerHTML = `<span class="text-blue-500 animate-pulse">Calculando...</span>`;
+                if (rTransfer) rTransfer.innerHTML = `<span class="text-blue-500 animate-pulse">Calculando...</span>`;
                 nextBtn.disabled = true;
 
                 try {
-                    const pin = localStorage.getItem('ra_staff_pin') || 'EMP-admin';
-                    const res = await fetch(`/api/cash/preview-closure?shiftId=${currentShiftId}`, {
+                    console.log("[Closure] Fetching preview for shift:", currentShiftId);
+                    const pin = safeGetItem('ra_staff_pin') || 'EMP-admin';
+                    const res = await fetch(`/api/store?action=close-shift-preview&shiftId=${currentShiftId}`, {
                         headers: { 'Authorization': `Bearer ${pin}` }
                     });
+                    
+                    if (!res.ok) throw new Error("Error al obtener datos del servidor");
+                    
                     const stats = await res.json();
+                    if (stats.error) throw new Error(stats.error);
+                    
+                    // Match the backend data structure
+                    const expectedCash = (stats.sales?.cash || 0) + (startingCash || 0) - (stats.transactions || 0);
 
                     if (rCash) {
-                        const diff = closureData.cash - stats.expected_cash;
+                        const diff = closureData.cash - expectedCash;
                         const diffText = diff === 0 ? '' : (diff > 0 ? `<span class="text-green-500 ml-2">(+L. ${diff.toFixed(2)})</span>` : `<span class="text-red-500 ml-2">(-L. ${Math.abs(diff).toFixed(2)})</span>`);
-                        rCash.innerHTML = `<div>L. ${closureData.cash.toFixed(2)}</div> <div class="text-[10px] font-bold text-gray-400">Sistema: L. ${stats.expected_cash.toFixed(2)} ${diffText}</div>`;
+                        rCash.innerHTML = `<div>L. ${closureData.cash.toFixed(2)}</div> <div class="text-[10px] font-bold text-gray-400">Sistema: L. ${expectedCash.toFixed(2)} ${diffText}</div>`;
                     }
                     if (rCard) {
-                        const diff = closureData.card - stats.sales.card;
-                        const diffText = diff === 0 ? '' : (diff > 0 ? `<span class="text-green-500 ml-2">(+)</span>` : `<span class="text-red-500 ml-2">(-)</span>`);
-                        rCard.innerHTML = `<div>L. ${closureData.card.toFixed(2)}</div> <div class="text-[10px] font-bold text-gray-400">Sistema: L. ${stats.sales.card.toFixed(2)} ${diffText}</div>`;
+                        const systemCard = stats.sales?.card || 0;
+                        const diff = closureData.card - systemCard;
+                        const diffColor = diff === 0 ? 'text-gray-400' : (diff > 0 ? 'text-green-500' : 'text-red-500');
+                        rCard.innerHTML = `<div>L. ${closureData.card.toFixed(2)}</div> <div class="text-[10px] font-bold ${diffColor}">Sistema: L. ${systemCard.toFixed(2)}</div>`;
                     }
                     if (rTransfer) {
-                        const diff = closureData.transfer - stats.sales.transfer;
-                        const diffText = diff === 0 ? '' : (diff > 0 ? `<span class="text-green-500 ml-2">(+)</span>` : `<span class="text-red-500 ml-2">(-)</span>`);
-                        rTransfer.innerHTML = `<div>L. ${closureData.transfer.toFixed(2)}</div> <div class="text-[10px] font-bold text-gray-400">Sistema: L. ${stats.sales.transfer.toFixed(2)} ${diffText}</div>`;
+                        const systemTrans = stats.sales?.transfer || 0;
+                        const diff = closureData.transfer - systemTrans;
+                        const diffColor = diff === 0 ? 'text-gray-400' : (diff > 0 ? 'text-green-500' : 'text-red-500');
+                        rTransfer.innerHTML = `<div>L. ${closureData.transfer.toFixed(2)}</div> <div class="text-[10px] font-bold ${diffColor}">Sistema: L. ${systemTrans.toFixed(2)}</div>`;
                     }
+                    
+                    // Success! Move to step 4
+                    closureCurrentStep++;
+                    updateClosureWizardUI();
+
                 } catch(e) {
                     console.error("Preview failed", e);
+                    alert("Error al calcular reporte: " + e.message);
+                    if (rCash) rCash.innerHTML = `<span class="text-red-500">Error</span>`;
+                    if (rCard) rCard.innerHTML = `<span class="text-red-500">Error</span>`;
+                    if (rTransfer) rTransfer.innerHTML = `<span class="text-red-500">Error</span>`;
                 } finally {
                     nextBtn.disabled = false;
                 }
+                return; // Exit here as Step 4 move is handled inside try or kept at 3 on error
             }
             closureCurrentStep++;
             updateClosureWizardUI();
@@ -3451,8 +3803,8 @@ function openTenderModal() {
             nextBtn.innerText = 'PROCESANDO...';
 
             try {
-                const pin = localStorage.getItem('ra_staff_pin') || 'EMP-admin';
-                const res = await fetch('/api/cash/close-shift', {
+                const pin = safeGetItem('ra_staff_pin') || 'EMP-admin';
+                const res = await fetch('/api/store?action=close-shift', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${pin}` },
                     body: JSON.stringify({
@@ -3469,9 +3821,9 @@ function openTenderModal() {
                 document.getElementById('shift-close-modal').classList.add('hidden');
                 
                 const isFinalDay = await showUIModal({
-                    title: 'Fin del Día',
-                    message: '¿Es este el CIERRE FINAL de la jornada? (Esto cerrará la tienda en línea)',
-                    confirmText: 'Si, Final de Día',
+                    title: 'Fin del Da',
+                    message: 'Es este el CIERRE FINAL de la jornada? (Esto cerrar la tienda en lnea)',
+                    confirmText: 'Si, Final de Da',
                     cancelText: 'No, Cambio de Turno'
                 });
                 
@@ -3484,7 +3836,7 @@ function openTenderModal() {
                 }
 
                 // Clear Local Session
-                localStorage.removeItem('pos_active_shift');
+                safeRemoveItem('pos_active_shift');
                 currentShiftId = null;
                 currentCashier = null;
                 window.currentEmployee = null;
@@ -3530,10 +3882,10 @@ function openTenderModal() {
             const banner = document.getElementById('connection-status');
             if (banner) {
                 if (!data.isOpen) {
-                    banner.innerText = "TIENDA CERRADA 🔴";
+                    banner.innerText = "TIENDA CERRADA ";
                     banner.className = "bg-red-100 text-red-800 px-3 py-1.5 rounded-lg font-mono text-sm transition-all";
                 } else {
-                    banner.innerText = "TIENDA ABIERTA 🟢";
+                    banner.innerText = "TIENDA ABIERTA ";
                     banner.className = "bg-green-100 text-green-800 px-3 py-1.5 rounded-lg font-mono text-sm transition-all";
                 }
             }
@@ -3541,11 +3893,11 @@ function openTenderModal() {
             // --- SHIFT PULSE CHECK ---
             // Verify if our current shift is still open on the server
             if (currentShiftId) {
-                const shiftRes = await fetch('/api/cash/current-shift', { headers: { 'Authorization': 'Bearer EMP-admin' } });
+                const shiftRes = await fetch('/api/store?action=current_shift', { headers: { 'Authorization': 'Bearer EMP-admin' } });
                 const shiftData = await shiftRes.json();
                 if (!shiftData.shift || shiftData.shift.id !== currentShiftId || shiftData.shift.status !== 'open') {
-                    console.warn("⚠️ Shift closed from another terminal. Logging out...");
-                    localStorage.removeItem('pos_active_shift');
+                    console.warn(" Shift closed from another terminal. Logging out...");
+                    safeRemoveItem('pos_active_shift');
                     location.reload(); // Force full reset
                 }
             }
@@ -3605,16 +3957,19 @@ function openTenderModal() {
         });
 
         const btn = document.getElementById('verifyPaymentAlert');
-        btn.classList.toggle('hidden', pendingVerifications.length === 0);
-        document.getElementById('verifyCount').innerText = pendingVerifications.length;
+        const countEl = document.getElementById('verifyCount');
+        if (btn) btn.classList.toggle('hidden', pendingVerifications.length === 0);
+        if (countEl) countEl.innerText = pendingVerifications.length;
     }
 
     function openVerifyModal() {
-        document.getElementById('verifyModal').classList.remove('hidden');
+        const modal = document.getElementById('verifyModal');
+        if (modal) modal.classList.remove('hidden');
         renderVerifyModal();
     }
     function closeVerifyModal() {
-        document.getElementById('verifyModal').classList.add('hidden');
+        const modal = document.getElementById('verifyModal');
+        if (modal) modal.classList.add('hidden');
     }
     function renderVerifyModal() {
         const container = document.getElementById('verifyContent');
@@ -3631,7 +3986,7 @@ function openTenderModal() {
 
         container.innerHTML = `
             <div class="text-center space-y-4">
-                <h4 class="text-2xl font-bold">${isCash ? 'Cobro en Efectivo' : (isMembership ? '👑 Membresía VIP' : 'Verificar Pago')}</h4>
+                <h4 class="text-2xl font-bold">${isCash ? 'Cobro en Efectivo' : (isMembership ? ' Membresa VIP' : 'Verificar Pago')}</h4>
                 <div class="bg-gray-50 p-4 rounded-2xl">
                     <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest">Monto a Cobrar / Acreditar</p>
                     <p class="text-4xl font-black text-blue-600">L. ${o.total}</p>
@@ -3646,7 +4001,7 @@ function openTenderModal() {
                             <div class="bg-blue-50 py-2 text-[9px] font-black text-blue-600 uppercase">Ver Comprobante <i class="fas fa-external-link-alt ml-1"></i></div>
                         </a>
                     </div>
-                ` : (isCash ? '' : `<div class="bg-amber-50 text-amber-700 p-4 rounded-xl italic text-sm border border-amber-100">Verifica la transferencia en tu banca móvil...</div>`)}
+                ` : (isCash ? '' : `<div class="bg-amber-50 text-amber-700 p-4 rounded-xl italic text-sm border border-amber-100">Verifica la transferencia en tu banca mvil...</div>`)}
 
                 <div class="flex gap-4 pt-4">
                     <button onclick="approveTransfer('${o.id}')" class="flex-1 bg-green-600 text-white font-bold py-4 rounded-xl shadow-lg hover:bg-green-700 transition-all flex flex-col items-center justify-center">
@@ -3663,11 +4018,11 @@ function openTenderModal() {
     }
 
     window.addVIPToCart = function() {
-        if (!currentCustomerId) return alert("Primero identifica al cliente (por número o QR)");
+        if (!currentCustomerId) return alert("Primero identifica al cliente (por nmero o QR)");
 
         const vipItem = {
             id: 'vip_membership',
-            name: 'Membresía VIP (Mensual)',
+            name: 'Membresa VIP (Mensual)',
             price: 1500,
             finalPrice: 1500,
             qty: 1,
@@ -3678,7 +4033,7 @@ function openTenderModal() {
         cart.push(vipItem);
         renderCart();
         saveCartState();
-        alert("💎 Membresía VIP agregada al carrito.");
+        alert(" Membresa VIP agregada al carrito.");
     }
 
     window.addEventToCart = function() {
@@ -3699,25 +4054,22 @@ function openTenderModal() {
         cart.push(eventItem);
         renderCart();
         saveCartState();
-        alert("🏟️ Evento Terraza agregado. El sistema ajustará el precio automáticamente según el consumo.");
-    }
-
+        alert("✨ Evento Terraza agregado. El sistema ajustará el precio automáticamente según el consumo.");
+    };
     // --- COMBINE MESA LOGIC ---
-    let isCombineMode = false;
-    let selectedOrderIds = [];
 
     window.toggleCombineMode = function() {
         isCombineMode = !isCombineMode;
         selectedOrderIds = [];
         const btn = document.getElementById('combine-btn');
-        btn.innerText = isCombineMode ? 'CANCELAR UNIÓN' : 'UNIR MESA';
+        btn.innerText = isCombineMode ? 'CANCELAR UNIN' : 'UNIR MESA';
         btn.classList.toggle('bg-red-500', isCombineMode);
         btn.classList.toggle('text-white', isCombineMode);
         btn.classList.toggle('border-red-600', isCombineMode);
         
         renderLiveFeed(); // Refresh UI to show checkboxes
         if (!isCombineMode && cart.length > 0) {
-             if (confirm("¿Limpiar carrito actual?")) {
+             if (confirm("Limpiar carrito actual?")) {
                  cart = [];
                  saveCartState();
                  renderCart();
@@ -3735,11 +4087,11 @@ function openTenderModal() {
         // Update the combine button text with count
         const btn = document.getElementById('combine-btn');
         if (selectedOrderIds.length > 0) {
-            btn.innerText = `UNIR ${selectedOrderIds.length} ÓRDENES`;
+            btn.innerText = `UNIR ${selectedOrderIds.length} RDENES`;
             btn.classList.replace('bg-red-500', 'bg-blue-600');
             btn.onclick = window.executeCombine;
         } else {
-            btn.innerText = 'CANCELAR UNIÓN';
+            btn.innerText = 'CANCELAR UNIN';
             btn.classList.replace('bg-blue-600', 'bg-red-500');
             btn.onclick = window.toggleCombineMode;
         }
@@ -3838,7 +4190,7 @@ function openTenderModal() {
                 <!-- Cash Reconciliation -->
                 <div class="space-y-4">
                     <div class="flex justify-between items-end border-b border-gray-100 pb-2">
-                        <span class="text-[10px] font-black text-gray-400 uppercase tracking-widest">Conciliación Efectivo</span>
+                        <span class="text-[10px] font-black text-gray-400 uppercase tracking-widest">Conciliacin Efectivo</span>
                         <span class="text-xs font-bold text-gray-500 italic">Base: L. ${opening.toFixed(0)}</span>
                     </div>
                     <div class="space-y-2">
@@ -3932,295 +4284,7 @@ function openTenderModal() {
         closeCustomModal();
     }
 
-    let currentPilotAction = null;
-    function updateAIPilot(total, count, progress) {
-        const container = document.getElementById('ai-pilot-container');
-        const text = document.getElementById('pilot-text');
-        const btn = document.getElementById('pilot-action-btn');
-        if (!container) return;
-
-        container.classList.remove('hidden');
-        
-        const now = new Date();
-        const hour = now.getHours();
-
-        // 1. Threshold Logic
-        if (progress >= 100) {
-            text.innerText = "Goal reached! 🚀 Target L. 10,000 smashed. Every sale from here is pure growth.";
-            btn.classList.add('hidden');
-            return;
-        }
-
-        // 2. Pace Scenarios
-        if (hour < 11) { // Morning
-            if (total < 1000) {
-                text.innerText = "Sales are L. 500 below morning pace. Suggest 'Breakfast Special' to walk-ins.";
-                currentPilotAction = { type: 'promo', deal: 'Breakfast Combo L. 120' };
-                btn.innerText = "Blast Promo";
-                btn.classList.remove('hidden');
-            } else {
-                text.innerText = "Strong start! Morning traffic is high. Keep the speed up.";
-                btn.classList.add('hidden');
-            }
-        } else if (hour >= 11 && hour < 14) { // Lunch
-            if (total < 4000) {
-                text.innerText = "Lunch rush is slow. Activate 'Surge Deal' (2x1 Bakery) for the next 60m?";
-                currentPilotAction = { type: 'deal', deal: 'Bakery BOGO' };
-                btn.innerText = "Activate Surge";
-                btn.classList.remove('hidden');
-            } else {
-                text.innerText = "Great lunch volume. Pivot staff to upselling Frappes.";
-                btn.classList.add('hidden');
-            }
-        } else if (hour >= 14 && hour < 17) { // Afternoon
-            if (total < 7500) {
-                text.innerText = "Afternoon lull detected. Pace is L. 1,200 behind goal. Suggest 3 VIP recalls?";
-                currentPilotAction = { type: 'recall', deal: 'VIP Reminders' };
-                btn.innerText = "Notify VIPs";
-                btn.classList.remove('hidden');
-            } else {
-                text.innerText = "On track for L. 10,000. Focus on Average Order Value.";
-                btn.classList.add('hidden');
-            }
-        } else { // Evening
-            if (total < 9000) {
-                text.innerText = "Closing soon. L. 1,000 gap remaining. Flash sale on remaining Bakery?";
-                currentPilotAction = { type: 'flash', deal: '50% Bakery Closeout' };
-                btn.innerText = "Go Live";
-                btn.classList.remove('hidden');
-            } else {
-                text.innerText = "Final push! L. 10,000 is within reach.";
-                btn.classList.add('hidden');
-            }
-        }
-    }
-
-    async function activatePilotMove() {
-        if (!currentPilotAction) return;
-        const confirm = window.confirm(`🤖 Pilot wants to activate: ${currentPilotAction.deal}. Proceed?`);
-        if (!confirm) return;
-        
-        let surgeType = 'generic';
-        if (currentPilotAction.type === 'deal') surgeType = '2x1_bakery';
-        if (currentPilotAction.type === 'flash') surgeType = 'bakery_closeout';
-
-        try {
-            const res = await fetch('/api/surge/activate', {
-                method: 'POST',
-                headers: { 
-                    'Content-Type': 'application/json',
-                    'Authorization': 'Bearer EMP-admin'
-                },
-                body: JSON.stringify({ 
-                    type: surgeType, 
-                    durationMinutes: 60,
-                    description: currentPilotAction.deal
-                })
-            });
-
-            if (res.ok) {
-                alert(`🚀 Pilot move activated: ${currentPilotAction.deal}. Tracking impact now...`);
-                document.getElementById('pilot-action-btn').classList.add('hidden');
-                document.getElementById('pilot-text').innerText = `Move Active: ${currentPilotAction.deal}`;
-            } else {
-                alert("❌ Error activating pilot move");
-            }
-        } catch (e) {
-            console.error(e);
-            alert("❌ Connection error");
-        }
-    }
-
 </script>
-
-<!-- CUSTOM ITEM MODAL -->
-<div id="custom-modal" class="hidden fixed inset-0 bg-black bg-opacity-75 z-[300] flex items-center justify-center p-4">
-    <div class="bg-white rounded-3xl p-8 max-w-sm w-full shadow-2xl">
-        <h3 class="text-2xl font-black mb-6 uppercase tracking-tighter">Custom Item / Producto Manual</h3>
-        <div class="space-y-4">
-            <div>
-                <label class="block text-[10px] font-black text-gray-400 mb-1">NAME / NOMBRE</label>
-                <input type="text" id="custom-name" placeholder="Ej. Donación, Evento..." class="w-full border-2 border-gray-100 rounded-xl p-4 outline-none focus:border-blue-500 font-bold">
-            </div>
-            <div>
-                <label class="block text-[10px] font-black text-gray-400 mb-1">PRICE / PRECIO (Lps)</label>
-                <input type="number" id="custom-price" placeholder="0.00" class="w-full border-2 border-gray-100 rounded-xl p-4 outline-none focus:border-blue-500 font-black text-2xl">
-            </div>
-        </div>
-        <div class="flex gap-3 mt-8">
-            <button onclick="closeCustomModal()" class="w-1/2 py-4 rounded-xl font-bold text-gray-400 hover:bg-gray-50 transition">Cancel</button>
-            <button onclick="addCustomItem()" class="w-1/2 py-4 rounded-xl font-black bg-blue-600 text-white shadow-lg shadow-blue-600/20 active:scale-95 transition-all">Add to Cart</button>
-        </div>
-    </div>
-</div>
-
-<!-- Payment Verification Alert & Modal -->
-<button id="verifyPaymentAlert" class="hidden fixed bottom-4 right-4 z-50 bg-red-600 text-white font-bold text-xl py-4 px-6 rounded-full shadow-2xl animate-bounce hover:bg-red-700 transition" onclick="openVerifyModal()">
-  🚨 ¡Verificar Pago! <span id="verifyCount" class="bg-white text-red-600 text-sm px-2 py-1 rounded-full ml-2">1</span>
-</button>
-
-<div id="verifyModal" class="hidden fixed inset-0 bg-black bg-opacity-75 z-50 flex items-center justify-center p-4">
-  <div class="bg-white rounded-lg p-6 max-w-lg w-full max-h-[90vh] overflow-y-auto">
-    <div class="flex justify-between items-center mb-4">
-      <h3 class="text-2xl font-bold">Verificar Pago</h3>
-      <button onclick="closeVerifyModal()" class="text-gray-500 hover:text-gray-700 text-2xl">&times;</button>
-    </div>
-    <div id="verifyContent" class="space-y-4 text-center">
-      <!-- Dynamic content -->
-    </div>
-  </div>
-</div>
-
-    <!-- SHIFT REPORT (Z-REPORT) MODAL -->
-    <div id="shiftReportModal" class="hidden fixed inset-0 bg-black/90 backdrop-blur-md z-[2000] flex items-center justify-center p-4">
-        <div class="bg-white w-full max-w-md rounded-[2.5rem] overflow-hidden shadow-2xl flex flex-col animate-bounce-in">
-            <div class="bg-dark p-8 text-center shrink-0">
-                <div class="w-16 h-16 bg-gold/10 text-gold rounded-full flex items-center justify-center text-2xl mx-auto mb-4 border border-gold/20"><i class="fas fa-file-invoice-dollar"></i></div>
-                <h3 class="text-xl font-black text-white uppercase tracking-widest">Resumen de Cierre</h3>
-                <p id="report-date" class="text-white/40 text-[10px] font-bold uppercase tracking-[0.3em] mt-1">---</p>
-            </div>
-
-            <div id="shift-report-content" class="p-8 space-y-6 overflow-y-auto max-h-[60vh] hide-scrollbar">
-                <!-- Content Injected via JS -->
-            </div>
-
-            <div class="p-8 bg-gray-50 border-t border-gray-100 flex gap-3 shrink-0">
-                <button onclick="window.print()" class="w-12 h-12 bg-white border border-gray-200 text-gray-400 rounded-xl flex items-center justify-center active:scale-90 transition-all"><i class="fas fa-print"></i></button>
-                <button onclick="window.location.href='/os'" class="flex-1 py-4 bg-[#120C09] text-white font-black rounded-xl shadow-xl uppercase tracking-widest text-xs active:scale-95 transition-all">Finalizar y Salir</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- DAILY INVENTORY CHECKLIST MODAL -->
-    <div id="inventory-check-modal" class="hidden fixed inset-0 bg-dark/95 backdrop-blur-md flex items-center justify-center z-[200] p-6">
-        <div class="bg-white rounded-[2.5rem] w-full max-w-lg shadow-2xl flex flex-col max-h-[85vh] overflow-hidden border-t-8 border-gold">
-            <div class="p-8 border-b border-gray-100 flex justify-between items-center bg-gray-50">
-                <div>
-                    <h2 class="text-2xl font-black text-dark uppercase tracking-tight">Conteo de Inventario</h2>
-                    <p class="text-[10px] text-gray-400 font-bold uppercase tracking-widest mt-1">Verificación obligatoria del día</p>
-                </div>
-                <div class="w-12 h-12 bg-gold/10 text-gold rounded-2xl flex items-center justify-center text-xl">
-                    <i class="fas fa-clipboard-check"></i>
-                </div>
-            </div>
-            
-            <div class="flex-1 overflow-y-auto p-8 space-y-6" id="inventory-checklist-container">
-                <!-- Injected via JS -->
-                <div class="text-center py-10 text-gray-400 italic">Cargando lista de ingredientes...</div>
-            </div>
-
-            <div class="p-8 bg-gray-50 border-t border-gray-100">
-                <button onclick="submitInventoryCheck()" id="inventory-submit-btn" class="w-full py-5 bg-dark text-white font-black rounded-2xl shadow-xl active:scale-95 transition-all uppercase tracking-widest text-sm">
-                    Finalizar Conteo
-                </button>
-            </div>
-        </div>
-    </div>
-
-    <!-- SHIFT CLOSURE WIZARD MODAL -->
-    <div id="shift-close-modal" class="hidden fixed inset-0 bg-black/80 backdrop-blur-md z-[1000] flex items-center justify-center p-4">
-        <div class="bg-white w-full max-w-lg rounded-[2.5rem] overflow-hidden shadow-2xl flex flex-col max-h-[90vh]">
-            <!-- Header with Progress -->
-            <div class="bg-dark p-6 text-white shrink-0">
-                <div class="flex justify-between items-center mb-4">
-                    <h3 class="text-xl font-black uppercase tracking-tight">Cierre de Caja</h3>
-                    <span id="closure-step-indicator" class="bg-gold text-dark text-[10px] font-black px-3 py-1 rounded-full uppercase tracking-widest">Paso 1 de 4</span>
-                </div>
-                <!-- Progress Bar -->
-                <div class="w-full h-1.5 bg-white/10 rounded-full overflow-hidden">
-                    <div id="closure-progress-bar" class="h-full bg-gold transition-all duration-500" style="width: 25%"></div>
-                </div>
-            </div>
-
-            <!-- Content Area (Scrollable) -->
-            <div class="p-8 space-y-8 overflow-y-auto flex-1">
-                <!-- Step 1: Cash -->
-                <div id="closure-step-1" class="space-y-6">
-                    <div class="text-center space-y-2">
-                        <div class="w-16 h-16 bg-gold/10 text-gold rounded-full flex items-center justify-center text-2xl mx-auto"><i class="fas fa-money-bill-wave"></i></div>
-                        <h4 class="text-xl font-black text-dark uppercase tracking-tight">Efectivo en Caja</h4>
-                        <p class="text-gray-500 text-sm">Cuenta todo el dinero físico en la gaveta, incluyendo la base de apertura.</p>
-                    </div>
-                    <div class="relative">
-                        <span class="absolute left-6 top-1/2 -translate-y-1/2 text-2xl font-black text-gray-300">L.</span>
-                        <input type="text" id="closure-input-cash" inputmode="decimal" class="w-full bg-gray-50 border-2 border-gray-100 rounded-3xl p-6 pl-14 text-center text-4xl font-black focus:border-gold outline-none transition-all" placeholder="0.00">
-                    </div>
-                </div>
-
-                <!-- Step 2: Card -->
-                <div id="closure-step-2" class="hidden space-y-6">
-                    <div class="text-center space-y-2">
-                        <div class="w-16 h-16 bg-blue-500/10 text-blue-600 rounded-full flex items-center justify-center text-2xl mx-auto"><i class="fas fa-credit-card"></i></div>
-                        <h4 class="text-xl font-black text-dark uppercase tracking-tight">Ventas en Tarjeta</h4>
-                        <p class="text-gray-500 text-sm">Ingresa el total que muestra el reporte de tu POS (Baucher).</p>
-                    </div>
-                    <div class="relative">
-                        <span class="absolute left-6 top-1/2 -translate-y-1/2 text-2xl font-black text-gray-300">L.</span>
-                        <input type="text" id="closure-input-card" inputmode="decimal" class="w-full bg-gray-50 border-2 border-gray-100 rounded-3xl p-6 pl-14 text-center text-4xl font-black focus:border-blue-500 outline-none transition-all" placeholder="0.00">
-                    </div>
-                </div>
-
-                <!-- Step 3: Transfer -->
-                <div id="closure-step-3" class="hidden space-y-6">
-                    <div class="text-center space-y-2">
-                        <div class="w-16 h-16 bg-purple-500/10 text-purple-600 rounded-full flex items-center justify-center text-2xl mx-auto"><i class="fas fa-university"></i></div>
-                        <h4 class="text-xl font-black text-dark uppercase tracking-tight">Transferencias</h4>
-                        <p class="text-gray-500 text-sm">Suma todas las transferencias recibidas en Banca Móvil.</p>
-                    </div>
-                    <div class="relative">
-                        <span class="absolute left-6 top-1/2 -translate-y-1/2 text-2xl font-black text-gray-300">L.</span>
-                        <input type="text" id="closure-input-transfer" inputmode="decimal" class="w-full bg-gray-50 border-2 border-gray-100 rounded-3xl p-6 pl-14 text-center text-4xl font-black focus:border-purple-500 outline-none transition-all" placeholder="0.00">
-                    </div>
-                </div>
-
-                <!-- Step 4: Final Review -->
-                <div id="closure-step-4" class="hidden space-y-6">
-                    <div class="text-center space-y-1">
-                        <h4 class="text-xl font-black text-dark uppercase tracking-tight">Confirmar Cierre</h4>
-                        <p class="text-gray-400 text-[10px] font-black uppercase tracking-widest">Revisa los montos ingresados</p>
-                    </div>
-                    <div class="space-y-2">
-                        <div class="flex justify-between items-center p-4 bg-gray-50 rounded-2xl border border-gray-100">
-                            <span class="text-gray-500 font-bold text-sm uppercase">Efectivo</span>
-                            <div id="review-cash" class="font-black text-dark text-right leading-tight">L. 0.00</div>
-                        </div>
-                        <div class="flex justify-between items-center p-4 bg-gray-50 rounded-2xl border border-gray-100">
-                            <span class="text-gray-500 font-bold text-sm uppercase">Tarjetas</span>
-                            <div id="review-card" class="font-black text-dark text-right leading-tight">L. 0.00</div>
-                        </div>
-                        <div class="flex justify-between items-center p-4 bg-gray-50 rounded-2xl border border-gray-100">
-                            <span class="text-gray-500 font-bold text-sm uppercase">Transf.</span>
-                            <div id="review-transfer" class="font-black text-dark text-right leading-tight">L. 0.00</div>
-                        </div>                    </div>
-                    <textarea id="closure-notes" placeholder="Notas adicionales (opcional)..." class="w-full bg-gray-50 border-2 border-gray-100 rounded-2xl p-4 text-sm outline-none focus:border-gold min-h-[80px]"></textarea>
-                </div>
-            </div>
-
-            <!-- Footer Buttons -->
-            <div class="p-6 bg-gray-50 shrink-0 grid grid-cols-2 gap-4 border-t border-gray-100">
-                <button id="closure-back-btn" class="py-4 bg-white border border-gray-200 text-gray-400 font-black rounded-3xl uppercase tracking-widest text-[10px] active:scale-95 transition-all">Atrás</button>
-                <button id="closure-next-btn" class="py-4 bg-blue-600 text-white font-black rounded-3xl uppercase tracking-widest text-[10px] shadow-xl active:scale-95 transition-all">Siguiente</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- UI MODAL (SYSTEM PROMPT/CONFIRM REPLACEMENT) -->
-    <div id="ui-modal" class="hidden fixed inset-0 bg-black/70 backdrop-blur-sm z-[500] flex items-center justify-center p-6">
-        <div class="bg-white w-full max-w-sm rounded-[2rem] border-t-8 border-gold p-8 space-y-6 shadow-2xl">
-            <div class="text-center space-y-2">
-                <h3 id="ui-modal-title" class="text-2xl font-black text-dark uppercase tracking-tight">---</h3>
-                <p id="ui-modal-msg" class="text-gray-500 font-medium text-sm leading-relaxed">---</p>
-            </div>
-            <div id="ui-modal-input-container" class="hidden">
-                <input type="text" id="ui-modal-input" class="w-full bg-gray-50 border-2 border-gray-200 rounded-2xl p-4 text-center text-2xl font-black focus:border-gold outline-none transition-all" placeholder="0.00">
-            </div>
-            <div class="grid grid-cols-2 gap-3 pt-2">
-                <button id="ui-modal-cancel" class="py-4 bg-gray-100 text-gray-600 font-black rounded-2xl active:scale-95 transition-all text-[10px] uppercase tracking-widest">Cancelar</button>
-                <button id="ui-modal-confirm" class="py-4 bg-[#120C09] text-white font-black rounded-2xl shadow-xl active:scale-95 transition-all uppercase tracking-widest text-[10px] text-center border border-black">Confirmar</button>
-            </div>
-        </div>
-    </div>
-
     <!-- DISCOUNT MODAL -->
     <div id="discount-modal" class="hidden fixed inset-0 bg-black/70 backdrop-blur-sm z-[500] flex items-center justify-center p-6">
         <div class="bg-white w-full max-w-sm rounded-[2rem] border-t-8 border-blue-600 p-8 space-y-6 shadow-2xl">
@@ -4283,8 +4347,6 @@ function openTenderModal() {
             </div>
         </div>
     </div>
-        </div>
-    </div>
 
     <!-- ORDER VIEW MODAL -->
     <div id="view-order-modal" class="hidden fixed inset-0 bg-black/90 z-[700] backdrop-blur-md flex items-center justify-center p-6">
@@ -4311,17 +4373,33 @@ function openTenderModal() {
         </div>
     </div>
 
+    <!-- UI MODAL (SYSTEM PROMPT/CONFIRM REPLACEMENT) -->
+    <div id="ui-modal" class="hidden fixed inset-0 bg-black/70 backdrop-blur-sm z-[500] flex items-center justify-center p-6">
+        <div class="bg-white w-full max-w-sm rounded-[2rem] border-t-8 border-gold p-8 space-y-6 shadow-2xl">
+            <div class="text-center space-y-2">
+                <h3 id="ui-modal-title" class="text-2xl font-black text-dark uppercase tracking-tight">---</h3>
+                <p id="ui-modal-msg" class="text-gray-500 font-medium text-sm leading-relaxed">---</p>
+            </div>
+            <div id="ui-modal-input-container" class="hidden">
+                <input type="text" id="ui-modal-input" class="w-full bg-gray-50 border-2 border-gray-200 rounded-2xl p-4 text-center text-2xl font-black focus:border-gold outline-none transition-all" placeholder="0.00">
+            </div>
+            <div class="grid grid-cols-1 gap-3">
+                <button id="ui-modal-confirm" class="w-full py-4 bg-blue-600 text-white font-black rounded-2xl shadow-xl shadow-blue-600/20 active:scale-95 transition-all uppercase tracking-widest text-sm">Aceptar</button>
+                <button id="ui-modal-cancel" class="w-full py-4 bg-gray-100 text-gray-500 font-bold rounded-2xl active:scale-95 transition-all text-sm uppercase">Cancelar</button>
+            </div>
+        </div>
+    </div>
+
     <!-- QR SCANNER MODAL -->
     <div id="qr-modal" class="hidden fixed inset-0 bg-black/95 z-[600] flex flex-col items-center justify-center p-6">
         <div class="w-full max-w-sm space-y-6">
             <div class="text-center">
                 <h3 class="text-white text-xl font-black uppercase tracking-widest">Escanear Miembro</h3>
-                <p class="text-white/40 text-xs mt-1">Apunta la cámara al código QR del cliente</p>
+                <p class="text-white/40 text-xs mt-1">Apunta la cmara al cdigo QR del cliente</p>
             </div>
             <div id="qr-reader" class="rounded-[2rem] overflow-hidden border-4 border-white/10 bg-dark shadow-2xl"></div>
             <button onclick="stopQRScanner()" class="w-full py-5 bg-white/5 border border-white/10 rounded-2xl text-white font-black text-sm uppercase tracking-widest active:scale-95 transition-all">Cancelar</button>
         </div>
     </div>
-
-    </body>
-    </html>
+</body>
+</html>

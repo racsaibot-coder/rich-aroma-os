@@ -228,13 +228,13 @@
                 
                 // Play chime if new order arrives (in pending/paid status)
                 if (!isFirstLoad) {
-                    const currentActive = newOrders.filter(o => o.status === 'pending' || o.status === 'paid' || o.status === 'preparing').length;
+                    const currentActive = newOrders.filter(o => o.status === 'pending' || o.status === 'paid' || o.status === 'preparing' || o.status === 'pending_verification').length;
                     if (currentActive > previousOrderCount) {
                         chime.play().catch(e => console.log('Audio autoplay blocked by browser', e));
                     }
                     previousOrderCount = currentActive;
                 } else {
-                    previousOrderCount = newOrders.filter(o => o.status === 'pending' || o.status === 'paid' || o.status === 'preparing').length;
+                    previousOrderCount = newOrders.filter(o => o.status === 'pending' || o.status === 'paid' || o.status === 'preparing' || o.status === 'pending_verification').length;
                     isFirstLoad = false;
                 }
 
@@ -337,14 +337,21 @@
         let lastRenderData = "";
 
         function renderKDS() {
+            const now = new Date();
             const activeOrders = orders.filter(o => {
                 if (o.status === 'completed') return false;
                 if (o.status === 'cancelled') return false;
-                
+
+                // Show only orders from the last 24 hours to avoid clutter
+                const orderDate = new Date(o.created_at);
+                if ((now - orderDate) / (1000 * 60 * 60) > 24) return false;
+
                 // Approve logic: Hide pending transfer orders until approved/paid
                 // But allow 'cash' pending orders because they are "Send to Kitchen" from POS
                 if (o.status === 'pending' && o.payment_method === 'transfer') return false;
-                if (o.status === 'pending_verification') return false;
+
+                // SHOW pending_verification so kitchen can start preparing while admin verifies receipt
+                // if (o.status === 'pending_verification') return false;
 
                 // Don't show membership-only orders on KDS
                 const hasOnlyMembership = (o.items || []).every(i => i.id === 'vip_membership');
@@ -354,7 +361,6 @@
                 if (currentMode === 'food' && o.status === 'food_ready') return false;
                 return true;
             });
-
             // Fingerprint to avoid redraw if data is identical
             const currentFingerprint = JSON.stringify(activeOrders.map(o => ({id: o.id, status: o.status}))) + currentMode;
             if (currentFingerprint === lastRenderData) return;
@@ -427,6 +433,7 @@
                                 <h3 class="font-bold text-lg text-white truncate">${getDisplayName(order)}</h3>
                                 <div class="flex flex-wrap gap-1.5 mt-1">
                                     <span class="text-[9px] bg-white/10 px-2 py-0.5 rounded text-white/70 font-bold uppercase tracking-wider">${order.fulfillment_type === 'delivery' ? '🚗 Delivery' : order.fulfillment_type === 'pickup' ? '🛍️ Pickup' : '🍽️ Dine-in'}</span>
+                                    ${order.status === 'pending_verification' ? '<span class="text-[9px] bg-blue-500/20 px-2 py-0.5 rounded text-blue-400 font-bold uppercase tracking-wider border border-blue-500/50">POR VERIFICAR 🧾</span>' : ''}
                                     ${order.payment_method === 'split_cash' ? '<span class="text-[9px] bg-red-500/20 px-2 py-0.5 rounded text-red-400 font-bold uppercase tracking-wider border border-red-500/50">COBRAR</span>' : ''}
                                     ${order.payment_method === 'rico_balance' ? '<span class="text-[9px] bg-gold/20 px-2 py-0.5 rounded text-gold font-bold uppercase tracking-wider border border-gold/50">RICO CASH</span>' : ''}
                                 </div>

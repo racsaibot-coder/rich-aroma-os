@@ -54,16 +54,28 @@
         }
         .vip-card-inner.flipped { 
             transform: rotateY(180deg); 
-        }
+        /* TIER STYLES */
+        .card-Diamond { background: linear-gradient(135deg, #00d2ff 0%, #3a7bd5 100%); color: white; border: 2px solid rgba(255,255,255,0.3); }
+        .card-Gold { background: linear-gradient(135deg, #C9A66B 0%, #8E6E3E 100%); color: #120C09; border: 2px solid rgba(255,255,255,0.2); }
+        .card-Silver { background: linear-gradient(135deg, #bdc3c7 0%, #2c3e50 100%); color: white; }
+        .card-Bronze { background: linear-gradient(135deg, #e67e22 0%, #d35400 100%); color: white; }
+        .card-Founder { background: linear-gradient(135deg, #120C09 0%, #000000 100%); color: #C9A66B; border: 2px solid #C9A66B; }
+        .card-Familia { background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); color: #120C09; }
+        .card-Basic { background: #1E1610; color: white/60; }
+
+        .glow-Diamond { box-shadow: 0 0 30px rgba(0, 210, 255, 0.4); }
+        .glow-Gold { box-shadow: 0 0 30px rgba(201, 166, 107, 0.4); }
+
         .vip-card-front, .vip-card-back { 
             position: absolute; 
             width: 100%; 
             height: 100%; 
             -webkit-backface-visibility: hidden; 
             backface-visibility: hidden; 
-            border-radius: 24px; 
-            display: flex; 
-            flex-direction: column; 
+            border-radius: 2rem; 
+            display: flex;
+            flex-direction: column;
+        }
             overflow: hidden; 
             box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
             transform: translateZ(2px); /* Lift off the plane */
@@ -135,50 +147,51 @@
                                 <input type="file" id="member-photo-input" accept="image/*" class="hidden" onchange="uploadMemberPhoto(this)">
                             </div>
                             <div class="text-right">
-                                <span class="font-black italic tracking-widest text-[10px] block opacity-60">VIP MEMBER</span>
+                                <span class="font-black italic tracking-widest text-[10px] block opacity-60" id="tier-label-card">VIP MEMBER</span>
                                 <span class="font-mono text-[10px] font-bold" id="vip-card-id">#---</span>
                             </div>
                         </div>
 
                         <!-- Center: Balances -->
-                        <div class="grid grid-cols-2 gap-4 my-auto">
-                            <div class="bg-dark/5 rounded-2xl p-3 border border-dark/5">
+                        <div class="grid grid-cols-2 gap-4 my-auto relative z-10">
+                            <div class="bg-black/10 rounded-2xl p-3 border border-white/10">
                                 <p class="text-[8px] font-black uppercase tracking-widest opacity-60">Rico Cash</p>
                                 <p class="text-lg font-black font-mono" id="vip-card-cash">L 0.00</p>
                             </div>
-                            <div class="bg-dark/5 rounded-2xl p-3 border border-dark/5">
+                            <div class="bg-black/10 rounded-2xl p-3 border border-white/10">
                                 <p class="text-[8px] font-black uppercase tracking-widest opacity-60">Rico Points</p>
                                 <p class="text-lg font-black font-mono" id="vip-card-points">0</p>
                             </div>
                         </div>
 
                         <!-- Bottom: Name and Streak -->
-                        <div class="mt-auto pt-4 flex justify-between items-end">
+                        <div class="mt-auto pt-4 flex justify-between items-end relative z-10">
                             <div class="flex-1 overflow-hidden pr-4">
-                                <p class="text-[8px] font-black uppercase tracking-widest opacity-60 mb-0.5">Titular</p>
+                                <p class="text-[8px] font-black uppercase tracking-widest opacity-60 mb-0.5 text-current">Titular</p>
                                 <h3 class="text-lg font-bold font-display truncate leading-none" id="vip-card-name">---</h3>
                             </div>
                             <div class="text-right shrink-0">
-                                <p class="text-[8px] font-black uppercase tracking-widest opacity-60 mb-0.5" id="streak-label">Punch Card</p>
+                                <p class="text-[8px] font-black uppercase tracking-widest opacity-60 mb-0.5 text-current">Punch Card</p>
                                 <div class="flex items-center gap-1 justify-end">
-                                    <i class="fas fa-mug-hot text-gold animate-pulse text-xs"></i>
+                                    <i class="fas fa-mug-hot text-current animate-pulse text-xs opacity-60"></i>
                                     <span class="font-black text-sm" id="vip-card-streak">0/6</span>
                                 </div>
                             </div>
                         </div>
                     </div>
                     <!-- Back: QR Code for POS -->
-                    <div class="vip-card-back p-6 shadow-2xl border-4 border-gold">
-                        <p class="text-xs font-black uppercase tracking-widest mb-3 text-gold">Escanea en Barra</p>
-                        <div id="qrcode" class="bg-white p-2 rounded-xl mb-3">
+                    <div class="vip-card-back p-6 shadow-2xl border-4 border-gold bg-white text-dark flex flex-col items-center justify-center">
+                        <p class="text-[10px] font-black uppercase tracking-[0.3em] mb-4 text-dark/40">Mi ID de Miembro</p>
+                        <div id="qrcode" class="bg-white p-2 rounded-2xl mb-4 border-4 border-gold/10">
                             <!-- QR will be generated here -->
-                            <img id="qr-img" class="w-32 h-32 mx-auto" src="" alt="QR Code">
+                            <img id="qr-img" class="w-40 h-40 mx-auto" src="" alt="QR Code">
                         </div>
-                        <p class="text-[10px] font-bold text-gray-400">Toca para volver</p>
+                        <p class="text-[9px] font-black uppercase tracking-widest text-gold animate-pulse">Escanea en Barra</p>
+                        <p class="text-[8px] font-bold text-dark/20 mt-2">Para Puntos y Rico Cash</p>
                     </div>
                 </div>
             </div>
-            <p class="text-center text-gold/50 text-[10px] font-bold mt-3 uppercase tracking-widest animate-pulse">
+            <p class="text-center text-white/20 text-[10px] font-bold mt-3 uppercase tracking-widest animate-pulse">
                 <i class="fas fa-sync-alt mr-1"></i> Toca para ver QR de beneficios
             </p>
         </div>
@@ -189,20 +202,21 @@
             <p class="text-white/60 text-xs font-bold uppercase tracking-widest mb-1">Rico Cash Disponible</p>
             <h3 class="text-4xl font-bold font-mono text-gold mb-2" id="user-balance">L 0.00</h3>
             <div id="vip-badge" class="hidden inline-block bg-gold/20 border border-gold/50 text-gold px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider mt-2">
-                🌟 Miembro VIP
+                🌟 Member
             </div>
         </div>
 
         <!-- VIP Upgrade Offer -->
-        <div id="vip-offer" class="gold-gradient rounded-3xl p-6 text-dark shadow-2xl relative overflow-hidden transform hover:scale-[1.02] transition-transform cursor-pointer" onclick="openReloadModal(1500, true)">
+        <div id="vip-offer" class="gold-gradient rounded-3xl p-6 text-dark shadow-2xl relative overflow-hidden transform hover:scale-[1.02] transition-transform cursor-pointer" onclick="window.location.href='/order?view=membership'">
             <div class="absolute -right-4 -top-4 text-7xl opacity-20"><i class="fas fa-crown"></i></div>
-            <h3 class="font-bold text-xl mb-2 font-display">Membresía VIP</h3>
-            <p class="text-sm font-semibold opacity-90 mb-4">L. 1,500 / mes</p>
-            <ul class="text-sm space-y-2 font-medium mb-4">
-                <li><i class="fas fa-check-circle mr-2"></i> 1 Café americano o negro GRATIS al día.</li>
-                <li><i class="fas fa-check-circle mr-2"></i> L. 500 en Rico Cash al instante.</li>
+            <h3 class="font-bold text-xl mb-2 font-display uppercase tracking-tight italic">Legacy Membership</h3>
+            <p class="text-xs font-black opacity-60 mb-4 tracking-widest">ÚNETE A LA ELITE</p>
+            <ul class="text-[10px] space-y-2 font-black uppercase tracking-wide mb-4">
+                <li><i class="fas fa-star mr-2"></i> Beneficios Exclusivos</li>
+                <li><i class="fas fa-coffee mr-2"></i> Ritual Diario de Café</li>
+                <li><i class="fas fa-percent mr-2"></i> Hasta 50% de Descuento</li>
             </ul>
-            <button class="w-full bg-dark text-gold font-bold py-3 rounded-xl shadow-lg">Convertirme en VIP</button>
+            <button class="w-full bg-dark text-gold font-black py-4 rounded-xl shadow-lg uppercase text-[10px] tracking-widest">Ver Niveles Disponibles</button>
         </div>
 
         <!-- Reload Wallet -->
@@ -440,34 +454,51 @@
             document.getElementById('user-balance').innerText = `L ${totalCash.toFixed(2)}`;
             document.getElementById('rewards-points').innerText = currentCustomer.points || 0;
 
-            // Defensive VIP check
-            const tags = currentCustomer.tags || [];
-            const isVip = currentCustomer.is_vip === true || 
-                          (Array.isArray(tags) && tags.includes('VIP')) || 
-                          (typeof tags === 'string' && tags.includes('VIP'));
+            // --- TIER DETECTION ---
+            const tags = Array.isArray(currentCustomer.tags) ? currentCustomer.tags : [];
+            let tier = 'Basic';
+            let tierLabel = 'Classic Member';
+            
+            if (tags.includes('Founder')) { tier = 'Founder'; tierLabel = 'Founding Member'; }
+            else if (tags.includes('Diamond')) { tier = 'Diamond'; tierLabel = 'Elite Member'; }
+            else if (tags.includes('GoldCard')) { tier = 'Gold'; tierLabel = 'Pro Member'; }
+            else if (tags.includes('SilverCard')) { tier = 'Silver'; tierLabel = 'Frequent Member'; }
+            else if (tags.includes('BronzeCard')) { tier = 'Bronze'; tierLabel = 'Legacy Member'; }
+            else if (tags.includes('Familia')) { tier = 'Familia'; tierLabel = 'Miembro Familia'; }
+            else if (tags.includes('Employee')) { tier = 'Diamond'; tierLabel = 'Staff Member'; }
 
-            if (isVip) {
+            const hasTier = tier !== 'Basic';
+
+            if (hasTier) {
                 document.getElementById('vip-badge').classList.remove('hidden');
+                document.getElementById('vip-badge').innerText = `🌟 ${tierLabel}`;
                 document.getElementById('vip-offer').classList.add('hidden');
                 
-                // Show Golden Card
+                // Update Card UI
+                const cardFront = document.querySelector('.vip-card-front');
+                const cardInner = document.getElementById('vip-card-inner');
+                const labelEl = document.getElementById('tier-label-card');
+                
+                cardFront.className = `vip-card-front p-6 shadow-2xl relative card-${tier}`;
+                cardInner.classList.add(`glow-${tier}`);
+                if (labelEl) labelEl.innerText = tierLabel.toUpperCase();
+
+                // Show Card
                 document.getElementById('vip-card-section').classList.remove('hidden');
                 document.getElementById('vip-card-name').innerText = currentCustomer.name;
                 document.getElementById('vip-card-id').innerText = `#${currentCustomer.id || '---'}`;
                 document.getElementById('vip-card-cash').innerText = `L ${totalCash.toFixed(2)}`;
                 document.getElementById('vip-card-points').innerText = currentCustomer.points || 0;
                 
-                // Drink Streak (Punch Card) Logic: 6 drinks, 7th free
+                // Drink Streak
                 const rawStreak = currentCustomer.drink_streak || 0;
                 const progress = rawStreak % 7;
                 if (progress === 6) {
                     document.getElementById('vip-card-streak').innerText = "¡GRATIS!";
                     document.getElementById('vip-card-streak').classList.add('text-green-600');
-                    document.getElementById('streak-label').innerText = "PRÓXIMO";
                 } else {
                     document.getElementById('vip-card-streak').innerText = `${progress}/6`;
                     document.getElementById('vip-card-streak').classList.remove('text-green-600');
-                    document.getElementById('streak-label').innerText = "PUNCH CARD";
                 }
 
                 // Photo Logic
@@ -480,9 +511,7 @@
                     photoEl.classList.add('grayscale', 'brightness-125');
                 }
                 
-                // Generate QR (Phone number is used for lookup in POS)
-                const qrData = currentCustomer.phone;
-                document.getElementById('qr-img').src = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(qrData)}`;
+                document.getElementById('qr-img').src = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(currentCustomer.phone)}`;
             } else {
                 document.getElementById('vip-badge').classList.add('hidden');
                 document.getElementById('vip-offer').classList.remove('hidden');
@@ -506,14 +535,14 @@
             }
 
             if (!confirm(`¿Canjear ${cost} puntos por esta recompensa?`)) return;
+try {
+    const res = await fetch('/api/staff?action=claim_reward', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ customerId: currentCustomer.id, points, rewardName: `Exchange: L ${cash}` })
+    });
 
-            try {
-                const res = await fetch('/api/store?action=redeem_points', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        customerId: currentCustomer.id,
-                        prizeId: prizeId,
+    if (res.ok) {
                         cost: cost
                     })
                 });

@@ -101,14 +101,14 @@ async function createOrder(orderRequest, supabase = defaultSupabase) {
         // VIP Engine
         let finalOrderData = {
             items: itemsWithMeta,
-            subtotal: itemsWithMeta.reduce((sum, i) => sum + (parseFloat(i.price) * (i.qty || 1)), 0),
-            total: itemsWithMeta.reduce((sum, i) => sum + (parseFloat(i.price) * (i.qty || 1)), 0) - surgeDiscount,
-            discount: surgeDiscount,
+            subtotal: orderRequest.subtotal || itemsWithMeta.reduce((sum, i) => sum + (parseFloat(i.price) * (i.qty || 1)), 0),
+            total: orderRequest.total || (itemsWithMeta.reduce((sum, i) => sum + (parseFloat(i.price) * (i.qty || 1)), 0) - surgeDiscount),
+            discount: orderRequest.discount || surgeDiscount,
             tier: 'Basic'
         };
 
         let freeDrinkClaimed = false;
-        if (customer) {
+        if (customer && !orderRequest.discount) { // Only auto-apply VIP if NO manual discount from POS
             const tags = Array.isArray(customer.tags) ? customer.tags : [];
             const isVip = customer.is_vip || tags.includes('VIP') || tags.includes('BlackCard') || tags.includes('Diamond') || tags.includes('GoldCard') || tags.includes('Familia') || tags.includes('Employee');
             
@@ -129,8 +129,11 @@ async function createOrder(orderRequest, supabase = defaultSupabase) {
 
                 const vipCalc = applyVipBenefits(itemsWithMeta, customer);
                 finalOrderData.items = vipCalc.items;
-                finalOrderData.total = vipCalc.total - surgeDiscount;
-                finalOrderData.discount += vipCalc.items.reduce((sum, i) => sum + (i.appliedDiscount || 0), 0);
+                // If POS sent a total, keep it, otherwise use VIP calc
+                if (!orderRequest.total) {
+                    finalOrderData.total = vipCalc.total - surgeDiscount;
+                    finalOrderData.discount += vipCalc.items.reduce((sum, i) => sum + (i.appliedDiscount || 0), 0);
+                }
                 finalOrderData.tier = vipCalc.tier;
                 
                 if (vipCalc.freeDrinkClaimed) {
@@ -139,8 +142,10 @@ async function createOrder(orderRequest, supabase = defaultSupabase) {
             } else if (tags.includes('Bootcamp')) {
                 const bootCalc = applyBootcampBenefits(itemsWithMeta, customer);
                 finalOrderData.items = bootCalc.items;
-                finalOrderData.total = bootCalc.total - surgeDiscount;
-                finalOrderData.discount += bootCalc.items.reduce((sum, i) => sum + (i.appliedDiscount || 0), 0);
+                if (!orderRequest.total) {
+                    finalOrderData.total = bootCalc.total - surgeDiscount;
+                    finalOrderData.discount += bootCalc.items.reduce((sum, i) => sum + (i.appliedDiscount || 0), 0);
+                }
                 finalOrderData.tier = 'Bootcamp';
             }
         }

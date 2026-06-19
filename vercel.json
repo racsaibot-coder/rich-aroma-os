@@ -39,6 +39,10 @@
       "dest": "/public/socios.html"
     },
     {
+      "src": "/partner-os",
+      "dest": "/public/partner-os.html"
+    },
+    {
       "src": "/partner",
       "dest": "/public/partner.html"
     },
@@ -144,7 +148,7 @@
     },
     {
       "src": "/api/cash/(.*)",
-      "dest": "/api/index.js"
+      "dest": "/api/store.js?action=$1"
     },
     {
       "src": "/api/store",
@@ -189,6 +193,10 @@
     {
       "src": "/api/menu",
       "dest": "/api/store.js?action=menu"
+    },
+    {
+      "src": "/api/v2-menu",
+      "dest": "/api/v2-menu.js"
     },
     {
       "src": "/api/orders/(.*)/assign",
@@ -281,6 +289,10 @@
     {
       "src": "/pos-v2",
       "dest": "/public/pos-v2.html"
+    },
+    {
+      "src": "/members",
+      "dest": "/public/members.html"
     },
     {
       "src": "/order",

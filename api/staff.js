@@ -75,8 +75,10 @@ module.exports = async function handler(req, res) {
                 .lte('timestamp', endDate)
                 .order('timestamp', { ascending: true });
 
-            const { data: emp } = await supabase.from('employees').select('hourly_rate').eq('id', employeeId).single();
+            const { data: emp } = await supabase.from('employees').select('hourly_rate, pay_type, monthly_salary, name').eq('id', employeeId).single();
             const hourlyRate = parseFloat(emp?.hourly_rate || 0);
+
+            console.log(`[TimeclockSummary] Employee: ${emp?.name}, PayType: ${emp?.pay_type}, Monthly: ${emp?.monthly_salary}`);
 
             let totalMilliseconds = 0;
             let currentIn = null;
@@ -104,9 +106,22 @@ module.exports = async function handler(req, res) {
             });
 
             const totalHours = totalMilliseconds / (1000 * 60 * 60);
+            let estimatedPay = (totalHours * hourlyRate).toFixed(2);
+            
+            const pType = (emp?.pay_type || '').toLowerCase().trim();
+            const isSalaried = pType === 'salary' || pType === 'salario';
+            
+            if (isSalaried && emp?.monthly_salary) {
+                const salary = parseFloat(emp.monthly_salary) || 0;
+                estimatedPay = (salary / 4).toFixed(2);
+                console.log(`[TimeclockSummary] Salary Match! Final Pay: ${estimatedPay}`);
+            } else {
+                console.log(`[TimeclockSummary] Hourly Mode. Final Pay: ${estimatedPay}`);
+            }
+
             return res.json({
                 totalHours: totalHours.toFixed(2),
-                estimatedPay: (totalHours * hourlyRate).toFixed(2),
+                estimatedPay: estimatedPay,
                 hourlyRate: hourlyRate,
                 dailyHistory: dailyHistory
             });
@@ -284,7 +299,7 @@ module.exports = async function handler(req, res) {
 
             if (action === 'admin_payroll_summary') {
                 const { startDate, endDate } = req.query;
-                const { data: emps } = await supabase.from('employees').select('id, name, hourly_rate').eq('active', true);
+                const { data: emps } = await supabase.from('employees').select('id, name, hourly_rate, pay_type, monthly_salary').eq('active', true);
                 const { data: allEntries } = await supabase.from('time_entries').select('*').gte('timestamp', startDate).lte('timestamp', endDate);
 
                 const report = emps.map(emp => {
@@ -299,11 +314,23 @@ module.exports = async function handler(req, res) {
                         else if (e.type === 'break_end' && curBrk && curIn) { ms -= (new Date(e.timestamp) - curBrk); curBrk = null; }
                     });
                     const hrs = ms / (1000 * 60 * 60);
+                    
+                    let pay = (hrs * parseFloat(emp.hourly_rate || 0)).toFixed(0);
+                    
+                    // Handle Salary (Always pay full weekly salary regardless of hours)
+                    const pType = (emp.pay_type || '').toLowerCase().trim();
+                    const isSalaried = pType === 'salary' || pType === 'salario';
+                    
+                    if (isSalaried && emp.monthly_salary) {
+                        const salary = parseFloat(emp.monthly_salary) || 0;
+                        pay = (salary / 4).toFixed(0);
+                    }
+
                     return {
                         id: emp.id,
                         name: emp.name,
                         hours: hrs.toFixed(1),
-                        pay: (hrs * parseFloat(emp.hourly_rate || 0)).toFixed(0)
+                        pay: pay
                     };
                 });
                 return res.json(report);
@@ -417,7 +444,7 @@ module.exports = async function handler(req, res) {
                 const [rOrders, rEntries, rEmps, rCurrentWEntries, rLastWEntries] = await Promise.all([
                     supabase.from('orders').select('*').gte('created_at', startDay).lte('created_at', endDay).not('status', 'eq', 'cancelled'),
                     supabase.from('time_entries').select('*, employees(name)').gte('timestamp', startDay).lte('timestamp', endDay),
-                    supabase.from('employees').select('*').eq('active', true),
+                    supabase.from('employees').select('id, name, hourly_rate, role, pay_type, monthly_salary').eq('active', true),
                     supabase.from('time_entries').select('*, employees(name)').gte('timestamp', currentWeekStart).lte('timestamp', endDay),
                     supabase.from('time_entries').select('*, employees(name)').gte('timestamp', lastWeekStart).lt('timestamp', lastWeekEnd)
                 ]);
@@ -428,26 +455,8 @@ module.exports = async function handler(req, res) {
                 const currentWeekEntries = rCurrentWEntries.data || [];
                 const lastWeekEntries = rLastWEntries.data || [];
 
-                // Helper to calc sales breakdown
-                const calcBreakdown = (orderList) => {
-                    const stats = { total: 0, cash: 0, card: 0, rico: 0, transfer: 0, count: orderList.length };
-                    orderList.forEach(o => {
-                        const t = parseFloat(o.total) || 0;
-                        const rp = parseFloat(o.rico_amount_paid) || 0;
-                        stats.total += t;
-                        stats.rico += rp;
-                        const method = o.secondary_payment_method || o.payment_method;
-                        if (method === 'cash') stats.cash += (t - rp);
-                        else if (method === 'card') stats.card += (t - rp);
-                        else if (method === 'transfer') stats.transfer += (t - rp);
-                    });
-                    return stats;
-                };
-
-                const sales = calcBreakdown(orders);
-
                 // Helper to calc earnings
-                const calcEarnings = (empEntries, hourlyRate, includeLive = false) => {
+                const calcEarnings = (empEntries, hourlyRate, includeLive = false, emp = null, periodType = 'week') => {
                     let ms = 0; let curIn = null;
                     empEntries.sort((a,b) => new Date(a.timestamp) - new Date(b.timestamp)).forEach(e => {
                         if (e.type === 'in') curIn = new Date(e.timestamp);
@@ -455,7 +464,24 @@ module.exports = async function handler(req, res) {
                     });
                     if (includeLive && curIn) ms += (new Date() - curIn);
                     const hrs = ms / (1000 * 60 * 60);
-                    return { hours: hrs.toFixed(1), earnings: (hrs * hourlyRate).toFixed(0) };
+
+                    let earnings = (hrs * hourlyRate).toFixed(0);
+                    const pType = (emp?.pay_type || '').toLowerCase().trim();
+                    const isSalaried = pType === 'salary' || pType === 'salario';
+                    
+                    if (emp && isSalaried && emp.monthly_salary) {
+                        const salary = parseFloat(emp.monthly_salary) || 0;
+                        const weekly = salary / 4;
+                        if (periodType === 'day') {
+                            // Estimated daily portion for reporting
+                            earnings = (weekly / 6).toFixed(0);
+                        } else {
+                            // Full week
+                            earnings = weekly.toFixed(0);
+                        }
+                    }
+
+                    return { hours: hrs.toFixed(1), earnings: earnings };
                 };
 
                 // Labor Detail (Daily + Weekly)
@@ -465,9 +491,10 @@ module.exports = async function handler(req, res) {
                     const empLastW = lastWeekEntries.filter(e => e.employee_id === emp.id);
                     
                     const rate = parseFloat(emp.hourly_rate || 0);
-                    const daily = calcEarnings(empToday, rate, true);
-                    const currW = calcEarnings(empCurrW, rate, true);
-                    const lastW = calcEarnings(empLastW, rate, false);
+                    
+                    const daily = calcEarnings(empToday, rate, true, emp, 'day');
+                    const currW = calcEarnings(empCurrW, rate, true, emp, 'week');
+                    const lastW = calcEarnings(empLastW, rate, false, emp, 'week');
 
                     const { data: schedule } = await supabase.from('shift_assignments')
                         .select('start_time, end_time, notes')

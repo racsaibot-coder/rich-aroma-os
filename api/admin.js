@@ -5,10 +5,8 @@ module.exports = async function handler(req, res) {
     try {
         let { action, id } = req.query;
         
-        // Better extraction for REST-style paths
         if (!action) {
             const urlParts = req.url.split('?')[0].split('/');
-            // Expecting /api/admin/action or /api/admin/action/id
             const adminIdx = urlParts.indexOf('admin');
             if (adminIdx !== -1 && urlParts[adminIdx + 1]) {
                 action = urlParts[adminIdx + 1];
@@ -18,1086 +16,141 @@ module.exports = async function handler(req, res) {
 
         if (!action) action = 'none';
         
-        console.log(`[Admin API] ${req.method} ${req.url} Action: ${action}, ID: ${id}`);
-        
         res.setHeader('Access-Control-Allow-Origin', '*');
         res.setHeader('Access-Control-Allow-Methods', 'GET,POST,PATCH,PUT,DELETE,OPTIONS');
         res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
 
         if (req.method === 'OPTIONS') return res.status(200).end();
 
-        if (action && action.includes('/')) {
-            const parts = action.split('/');
-            action = parts[0];
-            if (!id) id = parts[1];
-        }
-
-    // RBAC HELPER: Verify Admin
-    const verifyAdmin = async (token) => {
-        if (!token) return false;
-        // Strip Bearer prefix and any surrounding whitespace
-        const pin = token.replace(/^Bearer\s+/i, '').trim();
-        
-        // 4574 is Oscar's Master Admin PIN
-        if (pin === '4574' || pin === '3620' || pin === 'EMP-admin') return true; 
-        
-        try {
-            const { data } = await supabase.from('employees').select('role').eq('pin', pin).single();
-            return data?.role?.toLowerCase().trim() === 'admin';
-        } catch (e) {
-            return false;
-        }
-    };
-
-    // STAFF LOGIN
-    if (action === 'staff_login' && req.method === 'POST') {
-        const { pin } = req.body;
-        
-        // Special Case: Oscar Master PIN
-        if (pin === '4574') {
-            return res.json({ 
-                success: true, 
-                employee: { id: 'master_admin', name: 'Oscar (Admin)', role: 'admin', is_admin: true } 
-            });
-        }
-
-        const { data, error } = await supabase.from('employees').select('*').eq('pin', pin).eq('active', true).single();
-        if (error || !data) return res.status(401).json({ error: "Invalid PIN or inactive account" });
-        return res.json({ success: true, employee: data });
-    }
-
-    // AUTH CHECK FOR SENSITIVE ACTIONS
-    const authHeader = req.headers.authorization;
-    const isAdmin = await verifyAdmin(authHeader);
-    console.log(`[Admin API] Action: ${action}, Auth: ${authHeader ? 'Present' : 'Missing'}, isAdmin: ${isAdmin}`);
-
-    // SECURE ADMIN ENDPOINTS
-
-    // MENU MANAGER (GET ALL, PATCH, POST)
-    if (action === 'menu' && req.method === 'GET') {
-        const resId = req.query.restaurantId || 'rich-aroma';
-        console.log(`[Menu API] Fetching menu for: ${resId}`);
-
-        const [rItems, rModGroups, rModOptions, rItemModGroups] = await Promise.all([
-            supabase.from('menu_items').select('*').eq('restaurant_id', resId).order('category', { ascending: true }),
-            supabase.from('modifier_groups').select('*').eq('restaurant_id', resId),
-            supabase.from('modifier_options').select('*'), // Options are group-linked, no need to filter by resId here as they'll be filtered by group in UI
-            supabase.from('item_modifier_groups').select('*')
-        ]);
-
-        return res.json({
-            items: rItems.data || [],
-            modGroups: rModGroups.data || [],
-            modOptions: rModOptions.data || [],
-            itemModGroups: rItemModGroups.data || []
-        });
-    }
-    if (action === 'menu' && req.method === 'POST') {
-        if (!isAdmin) return res.status(403).json({ error: "Admin access required" });
-        const { name, category, price, available, image_url, modifier_groups, description, restaurant_id } = req.body;
-        const id = (category || 'item').toLowerCase() + '_' + name.toLowerCase().replace(/[^a-z0-9]/g, '_');
-        const { data, error } = await supabase.from('menu_items')
-            .insert({ 
-                id, 
-                name, 
-                category, 
-                price, 
-                available, 
-                image_url, 
-                name_es: description,
-                modifier_groups: modifier_groups || [],
-                restaurant_id: restaurant_id || 'rich-aroma'
-            })
-            .select().single();
-        if (error) return res.status(500).json({ error: error.message });
-        return res.json(data);
-    }
-
-    if (action === 'menu_import' && req.method === 'POST') {
-        if (!isAdmin) return res.status(403).json({ error: "Admin access required" });
-        const { items } = req.body; // Array of items
-        const { data, error } = await supabase.from('menu_items').upsert(items).select();
-        if (error) return res.status(500).json({ error: error.message });
-        return res.json({ success: true, count: data.length });
-    }
-
-    if (action === 'menu_update' && (req.method === 'PATCH' || req.method === 'PUT')) {
-        const { id, price, available, image_url, name, category, modifier_groups, base_recipe, description, recipe_steps } = req.body;
-        
-        const updateData = {};
-        if (price !== undefined) updateData.price = price;
-        if (available !== undefined) updateData.available = available;
-        if (image_url !== undefined) updateData.image_url = image_url;
-        if (name !== undefined) updateData.name = name;
-        if (category !== undefined) updateData.category = category;
-        if (base_recipe !== undefined) updateData.base_recipe = base_recipe;
-        if (recipe_steps !== undefined) updateData.recipe_steps = recipe_steps;
-        
-        // Map description to name_es column since description doesn't exist in DB
-        if (description !== undefined) updateData.name_es = description;
-        
-        const itemId = req.query.id || id || req.body.id;
-        if (!itemId) return res.status(400).json({ error: "Item ID required" });
-
-        console.log(`[Admin API] Updating item ${itemId}`, updateData);
-
-        const { data, error } = await supabase.from('menu_items')
-            .update(updateData)
-            .eq('id', itemId)
-            .select().single();
-            
-        if (error) return res.status(500).json({ error: error.message });
-        
-        if (modifier_groups && isAdmin) { // Only admin can change mod groups
-            await supabase.from('item_modifier_groups').delete().eq('item_id', itemId);
-            if (modifier_groups.length > 0) {
-                const inserts = modifier_groups.map(groupId => ({
-                    item_id: itemId,
-                    group_id: groupId,
-                    display_order: 1
-                }));
-                await supabase.from('item_modifier_groups').insert(inserts);
-            }
-        }
-        return res.json(data);
-    }
-
-    if (action === 'menu_modifiers_update' && req.method === 'POST') {
-        if (!isAdmin) return res.status(403).json({ error: "Admin access required" });
-        const { group_ids, restaurant_id } = req.body;
-        const itemId = req.query.id;
-        if (!itemId) return res.status(400).json({ error: "Item ID required" });
-
-        // Verify item belongs to restaurant if provided
-        if (restaurant_id) {
-            const { data: item } = await supabase.from('menu_items').select('restaurant_id').eq('id', itemId).single();
-            if (item && item.restaurant_id !== restaurant_id) return res.status(403).json({ error: "Item does not belong to this restaurant" });
-        }
-
-        await supabase.from('item_modifier_groups').delete().eq('item_id', itemId);
-        if (group_ids && group_ids.length > 0) {
-            const inserts = group_ids.map(gid => ({ item_id: itemId, group_id: gid }));
-            const { error } = await supabase.from('item_modifier_groups').insert(inserts);
-            if (error) return res.status(500).json({ error: error.message });
-        }
-        return res.json({ success: true });
-    }
-
-    if (action === 'menu_update' && req.method === 'DELETE') {
-        if (!isAdmin) return res.status(403).json({ error: "Admin access required" });
-        const itemId = req.query.id;
-        const resId = req.query.restaurantId;
-        
-        let query = supabase.from('menu_items').delete().eq('id', itemId);
-        if (resId) query = query.eq('restaurant_id', resId);
-
-        const { error } = await query;
-        if (error) return res.status(500).json({ error: error.message });
-        return res.json({ success: true });
-    }
-
-    if (action === 'upload_image' && req.method === 'POST') {
-        if (!isAdmin) return res.status(403).json({ error: "Admin access required" });
-        const { imageBase64, fileName } = req.body;
-        if (!imageBase64) return res.status(400).json({ error: "Missing image data" });
-
-        const buffer = Buffer.from(imageBase64.split(',')[1], 'base64');
-        // Sanitize filename: remove non-alphanumeric except dots/dashes, replace spaces with underscores
-        const safeFileName = (fileName || 'image.png').replace(/\s+/g, '_').replace(/[^a-z0-9\._-]/gi, '');
-        const path = `uploads/${Date.now()}_${safeFileName}`;
-
-        const contentType = imageBase64.split(';')[0].split(':')[1] || 'image/png';
-
-        const { data, error } = await supabase.storage
-            .from('menu-images')
-            .upload(path, buffer, {
-                contentType,
-                upsert: true
-            });
-
-        if (error) {
-            console.error(`[Admin API] Supabase Upload Error for ${path}:`, error);
-            return res.status(500).json({ error: error.message });
-        }
-
-        const { data: { publicUrl } } = supabase.storage
-            .from('menu-images')
-            .getPublicUrl(path);
-
-        return res.json({ url: publicUrl });
-    }
-
-    // MODIFIER MANAGER
-    
-    if (action === 'menu_item_modifiers' && req.method === 'GET') {
-        const { id } = req.query;
-        const { data, error } = await supabase.from('item_modifier_groups').select('group_id').eq('item_id', id);
-        if (error) return res.status(500).json({ error: error.message });
-        return res.json({ itemModGroups: data || [] });
-    }
-
-    if (action === 'menu_item_modifiers' && req.method === 'POST') {
-        if (!isAdmin) return res.status(403).json({ error: "Admin access required" });
-        const { id } = req.query;
-        const { group_ids } = req.body;
-        
-        await supabase.from('item_modifier_groups').delete().eq('item_id', id);
-        
-        if (group_ids && group_ids.length > 0) {
-            const inserts = group_ids.map(gid => ({ item_id: id, group_id: gid }));
-            const { error } = await supabase.from('item_modifier_groups').insert(inserts);
-            if (error) return res.status(500).json({ error: error.message });
-        }
-        
-        return res.json({ success: true });
-    }
-
-    if (action === 'modifiers' && req.method === 'GET') {
-        const resId = req.query.restaurantId || 'rich-aroma';
-        const { data: modGroups } = await supabase.from('modifier_groups').select('*').eq('restaurant_id', resId);
-        const { data: modOptions } = await supabase.from('modifier_options').select('*'); // Options are group-linked, so we can fetch all or filter by group
-        return res.json({ modGroups, modOptions });
-    }
-
-    if (action === 'modifier_option_update' && req.method === 'PATCH') {
-        const optionId = req.query.id || req.body.id;
-        if (!optionId) return res.status(400).json({ error: "Missing modifier option ID" });
-
-        const { name, price_adjustment, is_default } = req.body;
-        const updates = {};
-        if (name !== undefined) updates.name = name;
-        if (price_adjustment !== undefined) updates.price_adjustment = price_adjustment;
-        if (is_default !== undefined) updates.is_default = is_default;
-
-        const { data, error } = await supabase.from('modifier_options')
-            .update(updates)
-            .eq('id', optionId)
-            .select().single();
-            
-        if (error) {
-            console.error("Update Error:", error);
-            return res.status(500).json({ error: error.message });
-        }
-        return res.json(data);
-    }
-    
-    if (action === 'modifiers_group_create' && req.method === 'POST') {
-        if (!isAdmin) return res.status(403).json({ error: "Admin access required" });
-        const { name, max_selections, required, restaurant_id } = req.body;
-        const { data, error } = await supabase.from('modifier_groups').insert({ 
-            name, 
-            max_selections, 
-            required, 
-            restaurant_id: restaurant_id || 'rich-aroma' 
-        }).select().single();
-        if (error) return res.status(500).json({ error: error.message });
-        return res.json(data);
-    }
-
-    if (action === 'modifiers_option_create' && req.method === 'POST') {
-        if (!isAdmin) return res.status(403).json({ error: "Admin access required" });
-        const { group_id, name, price_adjustment, is_default } = req.body;
-        const { data, error } = await supabase.from('modifier_options').insert({ 
-            group_id, 
-            name, 
-            price_adjustment, 
-            is_default
-        }).select().single();
-        if (error) return res.status(500).json({ error: error.message });
-        return res.json(data);
-    }
-    
-    if (action === 'modifier_group_delete' && req.method === 'DELETE') {
-        if (!isAdmin) return res.status(403).json({ error: "Admin access required" });
-        const { id } = req.query;
-        // This will cascade delete options because of ON DELETE CASCADE
-        const { error } = await supabase.from('modifier_groups').delete().eq('id', id);
-        if (error) return res.status(500).json({ error: error.message });
-        return res.json({ success: true });
-    }
-
-    if (action === 'modifier_option_delete' && req.method === 'DELETE') {
-        if (!isAdmin) return res.status(403).json({ error: "Admin access required" });
-        const { id } = req.query;
-        const { error } = await supabase.from('modifier_options').delete().eq('id', id);
-        if (error) return res.status(500).json({ error: error.message });
-        return res.json({ success: true });
-    }
-
-    if (action === 'kpi' && req.method === 'GET') {
-        if (!isAdmin) return res.status(403).json({ error: "Admin access required" });
-        // Fetch today's orders
-        const today = new Date();
-        today.setHours(0,0,0,0);
-        
-        const { data: orders, error } = await supabase.from('orders')
-            .select('total, status, items, created_at')
-            .gte('created_at', today.toISOString());
-            
-        if (error) return res.status(500).json({ error: error.message });
-
-        const completedOrders = orders.filter(o => o.status === 'completed' || o.status === 'paid');
-        const revenue = completedOrders.reduce((sum, o) => sum + (o.total || 0), 0);
-        const orderCount = completedOrders.length;
-        
-        // Items sold count
-        let itemsSold = 0;
-        completedOrders.forEach(o => {
-            if(o.items) {
-                o.items.forEach(i => itemsSold += (i.qty || 1));
-            }
-        });
-
-        return res.json({
-            todayRevenue: revenue,
-            todayOrders: orderCount,
-            todayItemsSold: itemsSold,
-            orders: completedOrders.slice(0, 20) // recent 20 for feed
-        });
-    }
-
-    // TIMECLOCK
-    if (action === 'timeclock' && req.method === 'POST') {
-        const { pin, type } = req.body; // type = 'in' or 'out'
-        
-        // Find employee by PIN
-        const { data: emp, error: empErr } = await supabase.from('employees').select('id, name').eq('pin', pin).single();
-        if (empErr || !emp) return res.status(401).json({ error: 'Invalid PIN' });
-
-        const { data, error } = await supabase.from('time_entries').insert({
-            employee_id: emp.id,
-            type: type,
-            timestamp: new Date().toISOString()
-        }).select().single();
-
-        if (error) return res.status(500).json({ error: error.message });
-        return res.json({ success: true, employee: emp.name, type });
-    }
-
-    if (action === 'timeclock_status' && req.method === 'GET') {
-        // Get latest punch for all employees today
-        const today = new Date();
-        today.setHours(0,0,0,0);
-        const { data, error } = await supabase.from('time_entries')
-            .select('employee_id, type, timestamp, employees(name)')
-            .gte('timestamp', today.toISOString())
-            .order('timestamp', { ascending: false });
-            
-        if (error) return res.status(500).json({ error: error.message });
-        
-        // Group by employee to find current status
-        const statusMap = {};
-        if (data) {
-            data.forEach(entry => {
-                if (!statusMap[entry.employee_id]) {
-                    statusMap[entry.employee_id] = {
-                        name: entry.employees?.name,
-                        status: entry.type === 'in' ? 'Clocked In' : 'Clocked Out',
-                        time: entry.timestamp
-                    };
-                }
-            });
-        }
-        
-        return res.json({ active: Object.values(statusMap) });
-    }
-    if (action === 'founders' && req.method === 'GET') {
-        const { data: founders } = await supabase.from('founders').select('*').order('created_at', { ascending: false });
-        const confirmed = (founders || []).filter(f => f.status === 'confirmed');
-        const pending = (founders || []).filter(f => f.status === 'pending');
-        return res.json({ sold: confirmed.length, revenue: confirmed.length * 1500, pending, confirmed });
-    }
-
-    // ADD FOUNDER
-    if (action === 'founders' && req.method === 'POST') {
-        if (!isAdmin) return res.status(403).json({ error: "Admin access required" });
-        const { name, phone, ref, status } = req.body;
-        const { count } = await supabase.from('founders').select('*', { count: 'exact', head: true });
-        const ticket = 'RA-F' + ((count || 0) + 1).toString().padStart(3, '0');
-        const { data, error } = await supabase.from('founders').insert({
-            name, phone: phone.replace(/\D/g, ''), ticket, ref_notes: ref || 'CASH', status: status || 'pending', amount: 1500
-        }).select().single();
-        if (error) return res.status(500).json({ error: error.message });
-        return res.json({ success: true, entry: data });
-    }
-
-    // DELETE FOUNDER
-    if (action === 'founders' && req.method === 'DELETE' && id) {
-        if (!isAdmin) return res.status(403).json({ error: "Admin access required" });
-        const { error } = await supabase.from('founders').delete().eq('id', id);
-        if (error) return res.status(500).json({ error: error.message });
-        return res.json({ success: true });
-    }
-
-    // VERIFY FOUNDER
-    if (action === 'verify-founder' && req.method === 'POST') {
-        if (!isAdmin) return res.status(403).json({ error: "Admin access required" });
-        const { id } = req.body;
-        const { data: founder } = await supabase.from('founders').update({ status: 'confirmed', confirmed_at: new Date().toISOString() }).eq('id', id).select().single();
-        
-        // Upgrade Customer
-        const cleanPhone = founder.phone.replace(/\D/g, '');
-        const { data: existing } = await supabase.from('customers').select('id').eq('phone', cleanPhone).single();
-        if (existing) {
-            await supabase.from('customers').update({ is_vip: true, tier: 'gold', notes: `FOUNDER: ${founder.ticket}` }).eq('id', existing.id);
-        } else {
-            const { data: maxId } = await supabase.from('customers').select('id').order('id', { ascending: false }).limit(1);
-            const nextNum = maxId?.length ? parseInt(maxId[0].id.slice(1)) + 1 : 1;
-            const newId = `C${String(nextNum).padStart(3, '0')}`;
-            await supabase.from('customers').insert({ id: newId, name: founder.name, phone: cleanPhone, tier: 'gold', is_vip: true, points: 500, notes: `FOUNDER: ${founder.ticket}` });
-        }
-        return res.json({ success: true, founder });
-    }
-
-    
-    // EMPLOYEES
-    if (action === 'employees' && req.method === 'GET') {
-        if (!isAdmin) return res.status(403).json({ error: "Admin access required" });
-        const { data } = await supabase.from('employees').select('*').order('name');
-        return res.json({ employees: data || [] });
-    }
-
-    if (action === 'employees' && req.method === 'POST') {
-        console.log(`[Admin API] Attempting to create employee: ${req.body.name}, isAdmin: ${isAdmin}`);
-        if (!isAdmin) {
-            console.warn(`[Admin API] Unauthorized employee creation attempt by: ${authHeader}`);
-            return res.status(403).json({ error: "Admin access required" });
-        }
-        const emp = {
-            id: 'emp_' + Date.now() + Math.random().toString(36).substr(2, 5),
-            name: req.body.name,
-            role: req.body.role || 'barista',
-            pin: req.body.pin,
-            pay_type: req.body.pay_type || 'hourly',
-            hourly_rate: req.body.hourly_rate || 0,
-            monthly_salary: req.body.monthly_salary || null,
-            color: req.body.color || '#D4A574',
-            active: req.body.active !== false,
-            restaurant_id: req.body.restaurant_id || 'rich-aroma'
+        const verifyAdmin = async (token) => {
+            if (!token) return false;
+            const pin = token.replace(/^Bearer\s+/i, '').trim();
+            if (pin === '4574' || pin === '3620' || pin === 'EMP-admin') return true; 
+            try {
+                const { data } = await supabase.from('employees').select('role').eq('pin', pin).single();
+                return data?.role?.toLowerCase().trim() === 'admin';
+            } catch (e) { return false; }
         };
-        console.log(`[Admin API] Inserting into Supabase:`, emp);
-        const { data: newEmp, error } = await supabase.from('employees').insert(emp).select().single();
-        if (error) {
-            console.error(`[Admin API] Supabase Insert Error:`, error);
-            return res.status(500).json({ error: error.message });
+
+        const authHeader = req.headers.authorization;
+        const isAdmin = await verifyAdmin(authHeader);
+
+        // --- AUTH: STAFF LOGIN ---
+        if (action === 'staff_login' && req.method === 'POST') {
+            const { pin } = req.body;
+            if (pin === '4574') return res.json({ success: true, employee: { id: 'master_admin', name: 'Oscar (Admin)', role: 'admin' } });
+            const { data, error } = await supabase.from('employees').select('*').eq('pin', pin).eq('active', true).single();
+            if (error || !data) return res.status(401).json({ error: "Invalid PIN" });
+            return res.json({ success: true, employee: data });
         }
 
-        // --- STATUS ENGINE: Auto-link to Customer Profile ---
-        if (req.body.phone) {
-            const cleanPhone = req.body.phone.replace(/\D/g, '');
-            if (cleanPhone.length >= 8) {
-                try {
-                    const { data: existingCust } = await supabase.from('customers').select('tags').eq('phone', cleanPhone).maybeSingle();
-                    let tags = Array.isArray(existingCust?.tags) ? existingCust.tags : [];
-                    if (!tags.includes('Employee')) tags.push('Employee');
-                    
-                    await supabase.from('customers').upsert({
-                        phone: cleanPhone,
-                        name: req.body.name, // Keep original name, maybe add [STAFF] prefix if you want
-                        pin: req.body.pin,   // Sync PIN for /order login
-                        tags: tags,
-                        is_vip: true,        // Staff are always VIP
-                        tier: 'gold'
-                    }, { onConflict: 'phone' });
-                    console.log(`[Admin API] Synced employee ${req.body.name} to customer profile ${cleanPhone}`);
-                } catch (e) { console.error("[Admin API] Customer sync failed:", e); }
-            }
-        }
-
-        console.log(`[Admin API] Employee created successfully: ${newEmp.id}`);
-        return res.json(newEmp);
-    }
-
-    if ((action === 'employees' || action === 'employee_update') && (req.method === 'PUT' || req.method === 'PATCH')) {
-        if (!isAdmin) return res.status(403).json({ error: "Admin access required" });
-        const { name, role, pin, hourly_rate, monthly_salary, pay_type, color, active } = req.body;
-        
-        const updates = {};
-        if (name) updates.name = name;
-        if (role) updates.role = role;
-        if (pin) updates.pin = pin;
-        if (hourly_rate !== undefined) updates.hourly_rate = hourly_rate;
-        if (monthly_salary !== undefined) updates.monthly_salary = monthly_salary;
-        if (pay_type) updates.pay_type = pay_type;
-        if (color) updates.color = color;
-        if (active !== undefined) updates.active = active;
-
-        const { data, error } = await supabase.from('employees')
-            .update(updates)
-            .eq('id', id || req.query.id)
-            .select().single();
-        if (error) return res.status(404).json({ error: 'Employee not found' });
-        return res.json(data);
-    }
-
-    if (action === 'employees' && req.method === 'DELETE') {
-        if (!isAdmin) return res.status(403).json({ error: "Admin access required" });
-        const targetId = id || req.query.id;
-        if (!targetId) return res.status(400).json({ error: "Employee ID required" });
-        
-        // 1. Delete all related data to avoid Foreign Key constraints
-        await Promise.all([
-            supabase.from('time_entries').delete().eq('employee_id', targetId),
-            supabase.from('timeclock').delete().eq('employee_id', targetId),
-            supabase.from('employee_availability').delete().eq('employee_id', targetId),
-            supabase.from('shift_assignments').delete().eq('employee_id', targetId),
-            supabase.from('employee_schedules').delete().eq('employee_id', targetId),
-            supabase.from('time_off_requests').delete().eq('employee_id', targetId)
-        ]);
-
-        // 2. Finally delete the employee record
-        const { error } = await supabase.from('employees').delete().eq('id', targetId);
-        
-        if (error) return res.status(500).json({ error: error.message });
-        return res.json({ success: true });
-    }
-
-    if (action === 'delete_restaurant' && req.method === 'DELETE') {
-        // ... (existing single delete)
-        if (!isAdmin) return res.status(403).json({ error: "Admin access required" });
-        const targetId = id || req.query.id;
-        if (!targetId) return res.status(400).json({ error: "Restaurant ID required" });
-
-        await Promise.all([
-            supabase.from('quimieats_ledger').delete().eq('restaurant_id', targetId),
-            supabase.from('orders').delete().eq('restaurant_id', targetId),
-            supabase.from('menu_items').delete().eq('restaurant_id', targetId),
-            supabase.from('restaurants').delete().eq('id', targetId),
-            // Also try to remove from leads if name matches the ID slug
-            supabase.from('quimieats_leads').delete().ilike('restaurant_name', targetId.replace(/-/g, '%'))
-        ]);
-        return res.json({ success: true });
-    }
-
-    if (action === 'bulk_delete_restaurants' && req.method === 'POST') {
-        if (!isAdmin) return res.status(403).json({ error: "Admin access required" });
-        const { ids } = req.body;
-        if (!Array.isArray(ids) || ids.length === 0) return res.status(400).json({ error: "IDs required" });
-
-        console.log(`[Admin API] BULK DELETE for ${ids.length} items`);
-
-        // Perform deletions in smaller chunks (5 at a time) to avoid timeouts
-        const chunkSize = 5;
-        for (let i = 0; i < ids.length; i += chunkSize) {
-            const chunk = ids.slice(i, i + chunkSize);
-            console.log(`[Admin API] Deleting chunk: ${chunk.join(', ')}`);
-            
-            await Promise.all(chunk.flatMap(targetId => [
-                supabase.from('quimieats_ledger').delete().eq('restaurant_id', targetId),
-                supabase.from('orders').delete().eq('restaurant_id', targetId),
-                supabase.from('menu_items').delete().eq('restaurant_id', targetId),
-                supabase.from('restaurants').delete().eq('id', targetId),
-                supabase.from('quimieats_leads').delete().ilike('restaurant_name', targetId.replace(/-/g, '%'))
-            ]));
-        }
-
-        return res.json({ success: true, deleted_count: ids.length });
-    }
-    if (action === 'cleanup_duplicates' && req.method === 'POST') {
-        if (!isAdmin) return res.status(403).json({ error: "Admin access required" });
-        
-        const { data: all } = await supabase.from('restaurants').select('id, name, created_at').order('created_at', { ascending: false });
-        const kept = new Set();
-        const toDelete = [];
-        const testIds = [];
-
-        (all || []).forEach(r => {
-            if (kept.has(r.name) || r.name.startsWith('ECON') || r.name.includes('Test')) {
-                toDelete.push(r.id);
-            } else {
-                kept.add(r.name);
-            }
-        });
-
-        if (toDelete.length > 0) {
-            // Delete related data first to avoid foreign key issues
-            await supabase.from('quimieats_ledger').delete().in('restaurant_id', toDelete);
-            await supabase.from('orders').delete().in('restaurant_id', toDelete);
-            await supabase.from('menu_items').delete().in('restaurant_id', toDelete);
-            
-            const { error } = await supabase.from('restaurants').delete().in('id', toDelete);
-            if (error) return res.status(500).json({ error: error.message });
-        }
-
-        return res.json({ success: true, deleted: toDelete.length, kept: kept.size });
-    }
-
-    if (action === 'bulk_menu_import' && req.method === 'POST') {
-        if (!isAdmin) return res.status(403).json({ error: "Admin access required" });
-        const { items } = req.body;
-        if (!Array.isArray(items) || items.length === 0) return res.status(400).json({ error: "No items provided" });
-
-        const targetResId = items[0].restaurant_id;
-
-        // --- STEP 1: ENSURE RESTAURANT EXISTS (Foreign Key Shield) ---
-        const { data: resExists } = await supabase.from('restaurants').select('id').eq('id', targetResId).maybeSingle();
-        
-        if (!resExists) {
-            console.log(`[Admin API] Activating restaurant ${targetResId} on-the-fly...`);
-            // Find name from our whitelist or lead data
-            const resMap = {
-                'fradas-bar--grill-445': 'Fradas Bar & Grill',
-                'rich-aroma': 'Rich Aroma Coffee Shop',
-                'tonys-pizza': "Tonny's Pizza",
-                'el-meson': 'El Mesón Del Pan'
-            };
-            
-            await supabase.from('restaurants').upsert({
-                id: targetResId,
-                name: resMap[targetResId] || targetResId,
-                status: 'active'
-            });
-        }
-
-        // --- STEP 2: PREPARE AND INSERT ITEMS ---
-        const preparedItems = items.map(item => ({
-            ...item,
-            id: 'item_' + Date.now() + Math.random().toString(36).substr(2, 5),
-            name_es: item.name,
-            is_house_made: true
-        }));
-
-        const { data, error } = await supabase.from('menu_items').insert(preparedItems);
-        if (error) {
-            console.error("[Admin API] Bulk Import Error:", error);
-            return res.status(500).json({ error: error.message });
-        }
-        return res.json({ success: true, count: preparedItems.length });
-    }
-
-    // LEADS
-    if (action === 'leads' && req.method === 'GET') {
-        if (!isAdmin) return res.status(403).json({ error: "Admin access required" });
-        const { data: customers } = await supabase.from('customers').select('*').order('created_at', { ascending: false });
-        
-        let submissions = [];
-        try {
-            const fs = require('fs');
-            const p = require('path');
-            const dbPath = p.join(process.cwd(), 'data', 'coloring-submissions.json');
-            if (fs.existsSync(dbPath)) {
-                submissions = JSON.parse(fs.readFileSync(dbPath, 'utf8')).submissions;
-            }
-        } catch (e) {}
-        
-        const leads = (customers || []).map(c => {
-            const sub = submissions.find(s => s.phone === c.phone);
-            return {
-                id: c.id,
-                name: c.name,
-                phone: c.phone,
-                kidName: sub?.kidName || null,
-                image: sub?.image || null,
-                tags: c.tags,
-                created_at: c.created_at || (sub?.submittedAt)
-            };
-        });
-        
-        return res.json(leads);
-    }
-
-    if (action === 'leads' && req.method === 'DELETE') {
-        if (!isAdmin) return res.status(403).json({ error: "Admin access required" });
-        const leadId = req.query.id;
-        if (!leadId) return res.status(400).json({ error: "Lead ID required" });
-
-        const { error } = await supabase.from('customers').delete().eq('id', leadId);
-        if (error) return res.status(500).json({ error: error.message });
-        
-        return res.json({ success: true });
-    }
-
-    // QUIMIEATS LEADS
-    if (action === 'quimieats_leads' && req.method === 'GET') {
-        if (!isAdmin) return res.status(403).json({ error: "Admin access required" });
-        const { data, error } = await supabase.from('quimieats_leads').select('*').order('created_at', { ascending: false });
-        if (error) return res.status(500).json({ error: error.message });
-        return res.json(data || []);
-    }
-
-    if (action === 'quimieats_active' && req.method === 'GET') {
-        res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
-        res.setHeader('Pragma', 'no-cache');
-        res.setHeader('Expires', '0');
-
-        try {
-            // 1. Fetch EVERYTHING from both tables to find our Elite 4
-            const [rRes, rLeads] = await Promise.all([
-                supabase.from('restaurants').select('*'),
-                supabase.from('quimieats_leads').select('*')
+        // --- MENU MANAGER ---
+        if (action === 'menu' && req.method === 'GET') {
+            const resId = req.query.restaurantId || req.query.id;
+            if (!resId) return res.json({ items: [], categories: [] });
+            const [rItems, rModGroups, rModOptions] = await Promise.all([
+                supabase.from('menu_items').select('*').eq('restaurant_id', resId).order('name'),
+                supabase.from('modifier_groups').select('*').eq('restaurant_id', resId),
+                supabase.from('modifier_options').select('*')
             ]);
+            return res.json({ items: rItems.data || [], modGroups: rModGroups.data || [], modOptions: rModOptions.data || [] });
+        }
 
-            const allData = [...(rRes.data || []), ...(rLeads.data || [])];
+        // --- IMAGE UPLOAD ---
+        if (action === 'upload_image' && req.method === 'POST') {
+            if (!isAdmin) return res.status(403).json({ error: "Unauthorized" });
+            const { imageBase64, fileName } = req.body;
+            if (!imageBase64) return res.status(400).json({ error: "Missing image data" });
+
+            const buffer = Buffer.from(imageBase64.split(',')[1], 'base64');
+            const path = `uploads/${Date.now()}_${(fileName || 'img.png').replace(/\s+/g, '_')}`;
+            const { error } = await supabase.storage.from('menu-images').upload(path, buffer, { contentType: 'image/png', upsert: true });
             
-            // 2. Define the Elite 4 Search Rules
-            const eliteRules = [
-                { match: 'Fradas', id: 'fradas-bar--grill-445', name: 'Fradas Bar & Grill', cat: 'restaurante' },
-                { match: 'Aroma', id: 'rich-aroma', name: 'Rich Aroma Coffee Shop', cat: 'café' },
-                { match: 'Tony', id: 'tonys-pizza', name: "Tonny's Pizza", cat: 'restaurante' },
-                { match: 'Mes', id: 'el-meson', name: 'El Mesón Del Pan', cat: 'pastry' }
-            ];
-
-            const finalElite = [];
-            const seenIds = new Set();
-
-            eliteRules.forEach(rule => {
-                // Find the first record that matches this rule
-                const record = allData.find(d => 
-                    (d.name && d.name.includes(rule.match)) || 
-                    (d.restaurant_name && d.restaurant_name.includes(rule.match))
-                );
-
-                if (record && !seenIds.has(rule.id)) {
-                    finalElite.push({
-                        id: rule.id,
-                        name: rule.name,
-                        logo_url: record.logo_url || '',
-                        contact_phone: record.phone || record.contact_phone || '',
-                        category: rule.cat,
-                        status: 'active'
-                    });
-                    seenIds.add(rule.id);
-                }
-            });
-
-            return res.json(finalElite);
-        } catch (e) {
-            console.error("[Admin API] Elite 4 Fetch Fail:", e);
-            return res.status(500).json({ error: e.message });
+            if (error) return res.status(500).json({ error: error.message });
+            const { data: { publicUrl } } = supabase.storage.from('menu-images').getPublicUrl(path);
+            return res.json({ success: true, url: publicUrl });
         }
-    }
 
-    if (action === 'approve_quimieats_lead' && req.method === 'POST') {
-        if (!isAdmin) return res.status(403).json({ error: "Admin access required" });
-        const { leadId } = req.body;
-        
-        // 1. Get lead data
-        const { data: lead } = await supabase.from('quimieats_leads').select('*').eq('id', leadId).single();
-        if (!lead) return res.status(404).json({ error: "Lead not found" });
+        // --- QUIMIEATS PARTNERS ---
+        if (action === 'quimieats_active' && req.method === 'GET') {
+            try {
+                const [rRes, rLeads] = await Promise.all([
+                    supabase.from('restaurants').select('*'),
+                    supabase.from('quimieats_leads').select('*')
+                ]);
+                const allData = [...(rRes.data || []), ...(rLeads.data || [])];
+                
+                const eliteRules = [
+                    { match: 'Fradas', id: 'fradas-bar--grill-445', name: 'Fradas Bar & Grill' },
+                    { match: 'Aroma', id: 'rich-aroma', name: 'Rich Aroma' },
+                    { match: 'Cerca', id: 'tonys-pizza', name: "Tony's Pizza Mas Cerca de ti" },
+                    { match: 'Mes', id: 'el-meson', name: 'El Mesón Del Pan' }
+                ];
 
-        // 2. Generate a clean ID (e.g. "Burger Station" -> "burger-station")
-        const resId = lead.restaurant_name.toLowerCase().trim().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+                const final = []; const seen = new Set();
+                eliteRules.forEach(rule => {
+                    const rec = allData.find(d => (d.name || d.restaurant_name || '').includes(rule.match));
+                    if (rec && !seen.has(rule.id)) {
+                        final.push({ 
+                            id: rule.id, 
+                            lead_id: rec.id || null,
+                            name: rule.name, 
+                            logo_url: rec.logo_url || '', 
+                            contact_phone: rec.phone || rec.contact_phone || '', 
+                            category: rec.category || 'restaurante' 
+                        });
+                        seen.add(rule.id);
+                    }
+                });
+                return res.json(final);
+            } catch (e) {
+                return res.status(500).json({ error: e.message });
+            }
+        }
 
-        // 3. Create the restaurant
-        const { data: restaurant, error: resErr } = await supabase.from('restaurants').insert({
-            id: resId,
-            name: lead.restaurant_name,
-            logo_url: lead.logo_url,
-            contact_phone: lead.phone,
-            category: lead.category || 'restaurante',
-            status: 'active'
-        }).select().single();
+        if (action === 'quick_add_restaurant' && req.method === 'POST') {
+            if (!isAdmin) return res.status(403).json({ error: "Unauthorized" });
+            const { name, phone, logo_url, category } = req.body;
+            const { data, error } = await supabase.from('quimieats_leads').insert({
+                restaurant_name: name, phone, logo_url, category, status: 'partner'
+            }).select().single();
+            if (error) return res.status(500).json({ error: error.message });
+            return res.json({ success: true, data });
+        }
 
-        if (resErr) return res.status(500).json({ error: "Res creation fail: " + resErr.message });
-
-        // 4. Update lead status
-        await supabase.from('quimieats_leads').update({ status: 'partner' }).eq('id', leadId);
-
-        return res.json({ success: true, restaurant });
-    }
-
-    if (action === 'update_restaurant_logo' && req.method === 'POST') {
-        if (!isAdmin) return res.status(403).json({ error: "Admin access required" });
-        const { restaurantId, logoUrl, restaurantName } = req.body;
-        
-        // 1. Try to update in restaurants table
-        const { data: resData, error: resErr } = await supabase
-            .from('restaurants')
-            .update({ logo_url: logoUrl })
-            .eq('id', restaurantId)
-            .select()
-            .single();
-
-        // 2. If it fails or doesn't exist, update the lead
-        if (resErr || !resData) {
-            console.log(`[Admin] Restaurant ${restaurantId} not in main table, updating leads instead.`);
-            const { error: leadErr } = await supabase
-                .from('quimieats_leads')
-                .update({ logo_url: logoUrl })
-                .eq('restaurant_name', restaurantName || restaurantId);
+        if (action === 'update_restaurant_details' || action === 'update_restaurant_logo') {
+            if (!isAdmin) return res.status(403).json({ error: "Unauthorized" });
+            let { id: resId, lead_id, name, logoUrl, logo_url, phone, category } = req.body;
             
-            if (leadErr) return res.status(500).json({ error: leadErr.message });
-            return res.json({ success: true, updated: 'lead' });
+            const finalLogo = logoUrl || logo_url;
+            const finalName = name;
+
+            // 1. Update Leads (Primary)
+            let query = supabase.from('quimieats_leads').update({ logo_url: finalLogo, phone, category });
+            if (lead_id) query = query.eq('id', lead_id);
+            else if (finalName) query = query.ilike('restaurant_name', `%${finalName.includes('Cerca') ? 'Cerca' : finalName}%`);
+
+            await query;
+
+            // 2. Update/Upsert main table
+            if (resId) {
+                try {
+                    await supabase.from('restaurants').upsert({ id: resId, name: finalName, logo_url: finalLogo, contact_phone: phone, category, status: 'active' });
+                } catch(e) {}
+            }
+
+            return res.json({ success: true });
         }
 
-        // 3. Sync lead if restaurant was found
-        await supabase.from('quimieats_leads').update({ logo_url: logoUrl }).eq('restaurant_name', resData.name);
-
-        return res.json({ success: true, restaurant: resData });
-    }
-
-    if (action === 'update_restaurant_details' && req.method === 'POST') {
-        if (!isAdmin) return res.status(403).json({ error: "Admin access required" });
-        const { id, name, logo_url, phone, oldName, category } = req.body;
-        
-        // 1. Update main table
-        const { data: resData, error: resErr } = await supabase
-            .from('restaurants')
-            .update({ name, logo_url, contact_phone: phone, category })
-            .eq('id', id)
-            .select()
-            .single();
-
-        // 2. Update Leads table to keep synced
-        await supabase
-            .from('quimieats_leads')
-            .update({ restaurant_name: name, logo_url, phone, category })
-            .eq('restaurant_name', oldName || name);
-
-        if (resErr) return res.status(500).json({ error: resErr.message });
-        return res.json({ success: true, restaurant: resData });
-    }
-
-    if (action === 'quick_add_restaurant' && req.method === 'POST') {
-        if (!isAdmin) return res.status(403).json({ error: "Admin access required" });
-        const { name, logo_url, phone, category } = req.body;
-
-        if (!name || !phone) return res.status(400).json({ error: "Missing name or phone" });
-
-        const resId = name.toLowerCase().trim().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
-
-        // 1. Create the restaurant directly
-        const { data, error } = await supabase.from('restaurants').upsert({
-            id: resId,
-            name: name,
-            logo_url: logo_url,
-            contact_phone: phone,
-            category: category || 'restaurante',
-            status: 'active'
-        }).select().single();
-
-        if (error) return res.status(500).json({ error: error.message });
-
-        // 2. Also create a dummy lead record for tracking
-        await supabase.from('quimieats_leads').insert({
-            restaurant_name: name,
-            contact_name: "Admin Quick Add",
-            phone: phone,
-            category: category || 'restaurante',
-            status: 'partner',
-            logo_url: logo_url
-        });
-
-        return res.json({ success: true, restaurant: data });
-    }
-
-    // UGC / CREATOR SUBMISSIONS
-    if (action === 'ugc_submissions' && req.method === 'GET') {
-        if (!isAdmin) return res.status(403).json({ error: "Admin access required" });
-        const { data, error } = await supabase.from('creator_submissions').select('*').order('submitted_at', { ascending: false });
-        if (error) return res.status(500).json({ error: error.message });
-        return res.json(data || []);
-    }
-
-    if (action === 'approve_ugc' && req.method === 'POST') {
-        if (!isAdmin) return res.status(403).json({ error: "Admin access required" });
-        const { submissionId, points = 50 } = req.body;
-        
-        // 1. Get submission
-        const { data: sub } = await supabase.from('creator_submissions').select('*').eq('id', submissionId).single();
-        if (!sub) return res.status(404).json({ error: "Submission not found" });
-
-        // 2. Award points to customer
-        const { data: customer } = await supabase.from('customers').select('id, points').eq('phone', sub.phone).single();
-        if (customer) {
-            await supabase.from('customers').update({ 
-                points: (customer.points || 0) + points 
-            }).eq('id', customer.id);
-            
-            // Log balance history (if points are considered currency/value)
-            await supabase.from('balance_history').insert({
-                customer_id: customer.id,
-                type: 'load',
-                amount: points, // In this system points/rico cash are often used interchangeably
-                order_id: sub.id
-            });
+        // --- EMPLOYEES ---
+        if (action === 'employees' && req.method === 'GET') {
+            const { data } = await supabase.from('employees').select('*').order('name');
+            return res.json({ employees: data || [] });
         }
 
-        // 3. Update status
-        const { data, error } = await supabase.from('creator_submissions').update({ 
-            status: 'approved',
-            reviewed_at: new Date().toISOString(),
-            points_awarded: points
-        }).eq('id', submissionId).select().single();
-
-        if (error) return res.status(500).json({ error: error.message });
-        return res.json({ success: true, data });
-    }
-
-    if (action === 'shift_history' && req.method === 'GET') {
-        if (!isAdmin) return res.status(403).json({ error: "Admin access required" });
-        const { data, error } = await supabase
-            .from('cash_shifts')
-            .select('*, employees(name)')
-            .eq('status', 'closed')
-            .order('closed_at', { ascending: false })
-            .limit(10);
-        if (error) return res.status(500).json({ error: error.message });
-        return res.json(data || []);
-    }
-
-    if (action === 'inventory' && req.method === 'GET') {
-        const { data, error } = await supabase.from('inventory').select('*').order('name');
-        if (error) return res.status(500).json({ error: error.message });
-        return res.json(data);
-    }
-
-    if (action === 'inventory_update' && req.method === 'POST') {
-        if (!isAdmin) return res.status(403).json({ error: "Admin access required" });
-        
-        // Support both body and query for ID
-        const finalId = req.body.id || id || req.query.id || (req.body.name ? req.body.name.toLowerCase().trim().replace(/[^a-z0-9]/g, '_') : null);
-        const { current_stock, min_stock, unit, name } = req.body;
-        
-        if (!name) return res.status(400).json({ error: "Name is required" });
-        if (!finalId) return res.status(400).json({ error: "ID required or name cannot be converted to ID" });
-
-        console.log(`[Admin API] Inventory Update: ${name} (ID: ${finalId})`);
-        
-        const upsertData = { 
-            id: finalId, 
-            name, 
-            unit: unit || 'unit',
-            current_stock: parseFloat(current_stock) || 0, 
-            min_stock: parseFloat(min_stock) || 0
-        };
-
-        const { data, error } = await supabase.from('inventory').upsert(upsertData).select().single();
-        
-        if (error) {
-            console.error("[Admin API] Inventory Update Error:", error);
-            return res.status(500).json({ error: error.message });
-        }
-        return res.json(data);
-    }
-
-    if (action === 'inventory_delete' && req.method === 'DELETE') {
-        if (!isAdmin) return res.status(403).json({ error: "Admin access required" });
-        const { id } = req.query;
-        if (!id) return res.status(400).json({ error: "ID required" });
-        
-        const { error } = await supabase.from('inventory').delete().eq('id', id);
-        if (error) return res.status(500).json({ error: error.message });
-        return res.json({ success: true });
-    }
-
-    if (action === 'menu_item_ingredients' && req.method === 'GET') {
-        const { id } = req.query;
-        const { data, error } = await supabase.from('menu_item_ingredients').select('*, inventory(name, unit)').eq('menu_item_id', id);
-        if (error) return res.status(500).json({ error: error.message });
-        return res.json(data);
-    }
-
-    if (action === 'menu_item_ingredient_add' && req.method === 'POST') {
-        if (!isAdmin) return res.status(403).json({ error: "Admin access required" });
-        const { menu_item_id, inventory_item_id, quantity, unit } = req.body;
-        const { data, error } = await supabase.from('menu_item_ingredients').upsert({ menu_item_id, inventory_item_id, quantity, unit }).select().single();
-        if (error) return res.status(500).json({ error: error.message });
-        return res.json(data);
-    }
-
-    if (action === 'menu_item_ingredient_delete' && req.method === 'DELETE') {
-        if (!isAdmin) return res.status(403).json({ error: "Admin access required" });
-        const { id } = req.query;
-        const { error } = await supabase.from('menu_item_ingredients').delete().eq('id', id);
-        if (error) return res.status(500).json({ error: error.message });
-        return res.json({ success: true });
-    }
-
-    // EXPENSES MANAGEMENT
-    if (action === 'expenses' && req.method === 'GET') {
-        const { data, error } = await supabase.from('expenses').select('*').order('date', { ascending: false });
-        if (error) return res.status(500).json({ error: error.message });
-        return res.json(data || []);
-    }
-
-    if (action === 'expenses' && req.method === 'POST') {
-        if (!isAdmin) return res.status(403).json({ error: "Admin access required" });
-        const { description, amount, category, date } = req.body;
-        const { data, error } = await supabase.from('expenses').insert({
-            description,
-            amount: parseFloat(amount) || 0,
-            category: category || 'other',
-            date: date || new Date().toISOString().split('T')[0]
-        }).select().single();
-        if (error) return res.status(500).json({ error: error.message });
-        return res.json(data);
-    }
-
-    if (action === 'expenses' && req.method === 'DELETE') {
-        if (!isAdmin) return res.status(403).json({ error: "Admin access required" });
-        const { id } = req.query;
-        const { error } = await supabase.from('expenses').delete().eq('id', id);
-        if (error) return res.status(500).json({ error: error.message });
-        return res.json({ success: true });
-    }
-
-    // MODIFIER INGREDIENTS
-    if (action === 'modifier_ingredients' && req.method === 'GET') {
-        const { id } = req.query;
-        const { data, error } = await supabase.from('modifier_ingredients').select('*, inventory(name, unit)').eq('modifier_id', id);
-        if (error) return res.status(500).json({ error: error.message });
-        return res.json(data);
-    }
-
-    if (action === 'modifier_ingredient_add' && req.method === 'POST') {
-        if (!isAdmin) return res.status(403).json({ error: "Admin access required" });
-        const { modifier_id, inventory_item_id, quantity, unit } = req.body;
-        const { data, error } = await supabase.from('modifier_ingredients').upsert({ modifier_id, inventory_item_id, quantity, unit }).select().single();
-        if (error) return res.status(500).json({ error: error.message });
-        return res.json(data);
-    }
-
-    if (action === 'modifier_ingredient_delete' && req.method === 'DELETE') {
-        if (!isAdmin) return res.status(403).json({ error: "Admin access required" });
-        const { id } = req.query;
-        const { error } = await supabase.from('modifier_ingredients').delete().eq('id', id);
-        if (error) return res.status(500).json({ error: error.message });
-        return res.json({ success: true });
-    }
-
-    // STAFF MANAGEMENT
-    if (action === 'staff_availability' && req.method === 'GET') {
-        const { data, error } = await supabase.from('employee_availability').select('*, employees(name)');
-        if (error) return res.status(500).json({ error: error.message });
-        return res.json(data);
-    }
-
-    if (action === 'staff_schedule_set' && req.method === 'POST') {
-        if (!isAdmin) return res.status(403).json({ error: "Admin access required" });
-        const { schedules } = req.body; // [{ employee_id, day_of_week, start_time, end_time }]
-        
-        // Delete all old schedules and insert new ones
-        await supabase.from('employee_schedules').delete().neq('id', '00000000-0000-0000-0000-000000000000');
-        const { data, error } = await supabase.from('employee_schedules').insert(schedules).select();
-        
-        if (error) return res.status(500).json({ error: error.message });
-        return res.json(data);
-    }
-
-    if (action === 'staff_schedules' && req.method === 'GET') {
-        const { data, error } = await supabase.from('employee_schedules').select('*, employees(name)');
-        if (error) return res.status(500).json({ error: error.message });
-        return res.json(data);
-    }
-
-    if (action === 'time_off_requests' && req.method === 'GET') {
-        const { data, error } = await supabase.from('time_off_requests').select('*, employees(name)').order('created_at', { ascending: false });
-        if (error) return res.status(500).json({ error: error.message });
-        return res.json(data);
-    }
-
-    if (action === 'time_off_request_approve' && req.method === 'PATCH') {
-        if (!isAdmin) return res.status(403).json({ error: "Admin access required" });
-        const { id, status } = req.body; // status = 'approved' or 'rejected'
-        const { data, error } = await supabase.from('time_off_requests').update({ status }).eq('id', id).select().single();
-        if (error) return res.status(500).json({ error: error.message });
-        return res.json(data);
-    }
-
-    res.status(404).json({ error: 'Action not found' });
+        return res.status(404).json({ error: `Action '${action}' not found` });
     } catch (e) {
-        console.error("[Admin API] GLOBAL ERROR:", e);
-        res.status(500).json({ error: "Internal Server Error", details: e.message });
+        console.error("Global Admin Error:", e);
+        res.status(500).json({ error: e.message });
     }
-}
+};
