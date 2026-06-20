@@ -25,9 +25,55 @@ module.exports = async (req, res) => {
 
         // 2. GET LOCATIONS
         if (req.method === 'GET' && action === 'locations') {
-            const { data, error } = await supabase.from('cali_locations').select('*').eq('active', true).order('name');
-            if (error) throw error;
-            return res.json(data || []);
+            const { data: locations, error: locErr } = await supabase
+                .from('cali_locations')
+                .select('*')
+                .eq('active', true)
+                .order('name');
+            
+            if (locErr) throw locErr;
+
+            // Get last Monday at 00:00:00 local time (ordering cycle start)
+            const now = new Date();
+            const day = now.getDay();
+            const diff = now.getDate() - day + (day === 0 ? -6 : 1);
+            const lastMonday = new Date(now.setDate(diff));
+            lastMonday.setHours(0, 0, 0, 0);
+
+            // Fetch paid/confirmed orders in the current cycle
+            const { data: orders, error: ordersErr } = await supabase
+                .from('cali_orders')
+                .select('location_id, selections')
+                .in('status', ['paid', 'confirmed'])
+                .gte('created_at', lastMonday.toISOString());
+
+            let currentBottlesMap = {};
+            if (!ordersErr && orders) {
+                for (const order of orders) {
+                    let bottlesCount = 0;
+                    const cart = order.selections?.cart || [];
+                    for (const item of cart) {
+                        if (typeof item.bottles === 'number') {
+                            bottlesCount += item.bottles;
+                        } else {
+                            const qty = parseInt(item.qty || 1);
+                            const selectionsCount = Array.isArray(item.selections) ? item.selections.length : 1;
+                            bottlesCount += selectionsCount * qty;
+                        }
+                    }
+                    const locId = order.location_id;
+                    if (locId) {
+                        currentBottlesMap[locId] = (currentBottlesMap[locId] || 0) + bottlesCount;
+                    }
+                }
+            }
+
+            const locationsWithCounts = (locations || []).map(loc => ({
+                ...loc,
+                current_bottles: currentBottlesMap[loc.id] || 0
+            }));
+
+            return res.json(locationsWithCounts);
         }
 
         // 3. VALIDATE PROMO CODE

@@ -86,7 +86,7 @@ module.exports = async function handler(req, res) {
             .insert({
                 customer_name: name || 'Guest',
                 customer_phone: phone || '',
-                location_id: location_id,
+                location_id: location_id === 'home' ? null : location_id,
                 total: totalAmount,
                 selections: { 
                     cart: items, 

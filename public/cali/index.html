@@ -97,56 +97,6 @@
 
     <!-- ... rest of section 1 ... -->
 
-    <script>
-        const HUB_LOCATIONS = [
-            { id: 'k_ont', name: 'Kaiser Ontario', type: 'Kaiser', city: 'Ontario' },
-            { id: 'k_fon', name: 'Kaiser Fontana', type: 'Kaiser', city: 'Fontana' },
-            { id: 'k_bp', name: 'Kaiser Baldwin Park', type: 'Kaiser', city: 'Baldwin Park' },
-            { id: 'k_riv', name: 'Kaiser Riverside', type: 'Kaiser', city: 'Riverside' },
-            { id: 'k_mv', name: 'Kaiser Moreno Valley', type: 'Kaiser', city: 'Moreno Valley' },
-            { id: 'k_irv', name: 'Kaiser Irvine (Sand Canyon)', type: 'Kaiser', city: 'Irvine' },
-            { id: 'k_ana', name: 'Kaiser Anaheim (Kraemer)', type: 'Kaiser', city: 'Anaheim' },
-            { id: 'k_dow', name: 'Kaiser Downey', type: 'Kaiser', city: 'Downey' },
-            { id: 'k_sun', name: 'Kaiser Sunset (LA)', type: 'Kaiser', city: 'Los Angeles' },
-            { id: 'a_ont2', name: 'Amazon ONT2', type: 'Amazon', city: 'San Bernardino' },
-            { id: 'a_ont6', name: 'Amazon ONT6', type: 'Amazon', city: 'Moreno Valley' },
-            { id: 'a_sna4', name: 'Amazon SNA4', type: 'Amazon', city: 'Rialto' },
-            { id: 'a_lgb8', name: 'Amazon LGB8', type: 'Amazon', city: 'Rialto' },
-            { id: 'a_ont9', name: 'Amazon ONT9', type: 'Amazon', city: 'Redlands' },
-            { id: 'home', name: 'Home Delivery (SoCal Only)', type: 'Other', city: 'Various' }
-        ];
-
-        function populateLocations() {
-            const select = document.getElementById('cust-location');
-            select.innerHTML = '<option value="" disabled selected>-- Select Hub or Home --</option>';
-            
-            HUB_LOCATIONS.forEach(l => {
-                const opt = document.createElement('option');
-                opt.value = l.id;
-                opt.textContent = `${l.name} (${l.city})`;
-                select.appendChild(opt);
-            });
-        }
-
-        function updateCartUI() {
-            // ... (existing cart logic) ...
-            const totalBottles = cart.reduce((sum, item) => sum + item.bottles, 0);
-            const location = document.getElementById('cust-location').value;
-            
-            let deliveryMsg = "";
-            if (location && location !== 'home') {
-                if (totalBottles >= 20) {
-                    deliveryMsg = "✨ Hub Goal Reached: FREE DELIVERY confirmed!";
-                } else {
-                    deliveryMsg = `🔥 ${20 - totalBottles} more bottles needed for FREE delivery to this Hub.`;
-                }
-            } else if (location === 'home') {
-                deliveryMsg = "🏠 Home delivery: $10.00 flat fee applied.";
-            }
-
-            document.getElementById('delivery-status-msg').innerText = deliveryMsg;
-        }
-    </script>
         
         <!-- STEP 1: Pack Selection -->
         <section id="step-1" class="space-y-12">
@@ -291,6 +241,25 @@
                                         <option value="" disabled selected class="text-gray-800">-- Select Drop --</option>
                                     </select>
                                     <i class="fas fa-chevron-down absolute right-5 top-1/2 -translate-y-1/2 text-white/20 pointer-events-none"></i>
+                                </div>
+                                <div id="hub-tracker-card" class="hidden mt-4 bg-white/5 border border-white/10 rounded-2xl p-5 space-y-4 transition-all duration-500 transform scale-95 opacity-0">
+                                    <div class="flex justify-between items-start">
+                                        <div>
+                                            <h4 id="hub-tracker-title" class="text-xs font-bold text-white tracking-wide">Fontana Kaiser Hub</h4>
+                                            <p id="hub-tracker-subtitle" class="text-[9px] text-white/50 tracking-wider uppercase mt-0.5">Community Goal Progress</p>
+                                        </div>
+                                        <span id="hub-tracker-status-badge" class="text-[8px] font-black uppercase tracking-widest px-2.5 py-1 rounded-full bg-brand-gold/10 text-brand-gold border border-brand-gold/20">Active</span>
+                                    </div>
+                                    <div class="space-y-2">
+                                        <div class="flex justify-between text-[10px] font-mono">
+                                            <span class="text-white/40">Aggregated Weekly Bottles</span>
+                                            <span id="hub-tracker-progress-text" class="text-brand-gold font-bold">0 / 20</span>
+                                        </div>
+                                        <div class="w-full h-3 bg-white/5 rounded-full overflow-hidden border border-white/5 relative">
+                                            <div id="hub-tracker-progress-fill" class="h-full rounded-full transition-all duration-1000 ease-out gold-shimmer" style="width: 0%;"></div>
+                                        </div>
+                                    </div>
+                                    <p id="hub-tracker-msg" class="text-[10px] text-white/60 leading-relaxed italic"></p>
                                 </div>
                             </div>
 
@@ -683,6 +652,80 @@
             } else {
                 document.getElementById('discount-display').classList.add('hidden');
             }
+
+            // --- Home Delivery & Hub Tracker Calculations ---
+            const locationVal = document.getElementById('cust-location').value;
+            const feeDisplay = document.getElementById('home-delivery-fee-display');
+            const hubCard = document.getElementById('hub-tracker-card');
+            const personalBottles = cart.reduce((sum, item) => sum + item.bottles, 0);
+
+            if (locationVal === 'home') {
+                finalTotal += HOME_DELIVERY_FEE;
+                feeDisplay.classList.remove('hidden');
+                document.getElementById('delivery-status-msg').innerText = "🏠 Home delivery: $10.00 flat fee applied.";
+                hideHubTracker();
+            } else {
+                feeDisplay.classList.add('hidden');
+                document.getElementById('delivery-status-msg').innerText = "";
+                
+                if (locationVal && locationVal !== '') {
+                    const selectedLoc = allLocations.find(l => l.id === locationVal);
+                    if (selectedLoc) {
+                        const currentHubBottles = selectedLoc.current_bottles || 0;
+                        const totalCombined = currentHubBottles + personalBottles;
+                        const target = HUB_DELIVERY_THRESHOLD;
+                        const percent = Math.min((totalCombined / target) * 100, 100);
+                        
+                        document.getElementById('hub-tracker-title').innerText = `${selectedLoc.name} (${selectedLoc.city})`;
+                        document.getElementById('hub-tracker-progress-text').innerText = `${totalCombined} / ${target}`;
+                        
+                        const fill = document.getElementById('hub-tracker-progress-fill');
+                        fill.style.width = `${percent}%`;
+                        
+                        const badge = document.getElementById('hub-tracker-status-badge');
+                        const msg = document.getElementById('hub-tracker-msg');
+                        
+                        if (totalCombined >= target) {
+                            badge.className = "text-[8px] font-black uppercase tracking-widest px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20";
+                            badge.innerText = "UNLOCKED";
+                            
+                            if (currentHubBottles >= target) {
+                                msg.innerHTML = `🎉 Hub goal reached by community! <strong>FREE DELIVERY</strong> unlocked for this drop location!`;
+                            } else {
+                                msg.innerHTML = `🎉 Your order pushes this Hub to ${totalCombined} bottles! <strong>FREE DELIVERY</strong> unlocked for everyone at this Hub!`;
+                            }
+                        } else {
+                            badge.className = "text-[8px] font-black uppercase tracking-widest px-2.5 py-1 rounded-full bg-brand-gold/10 text-brand-gold border border-brand-gold/20";
+                            badge.innerText = "ACTIVE";
+                            
+                            const remaining = target - totalCombined;
+                            msg.innerHTML = `🔥 This Hub has <strong>${currentHubBottles}</strong> bottles ordered. Your cart adds <strong>${personalBottles}</strong>, bringing the total to <strong>${totalCombined}</strong>. Need <strong>${remaining}</strong> more to unlock FREE delivery!`;
+                        }
+                        
+                        // Show tracker card with transition
+                        hubCard.classList.remove('hidden');
+                        setTimeout(() => {
+                            hubCard.classList.remove('scale-95', 'opacity-0');
+                            hubCard.classList.add('scale-100', 'opacity-100');
+                        }, 50);
+                    } else {
+                        hideHubTracker();
+                    }
+                } else {
+                    hideHubTracker();
+                }
+            }
+
+            function hideHubTracker() {
+                if (hubCard) {
+                    hubCard.classList.remove('scale-100', 'opacity-100');
+                    hubCard.classList.add('scale-95', 'opacity-0');
+                    setTimeout(() => {
+                        hubCard.classList.add('hidden');
+                    }, 300);
+                }
+            }
+
             document.getElementById('cart-total-display').innerText = `$${finalTotal.toFixed(2)}`;
         }
 
@@ -702,12 +745,20 @@
             const select = document.getElementById('cust-location');
             select.innerHTML = '<option value="" disabled selected>-- Select Hub or Home --</option>';
             
-            HUB_LOCATIONS_DATA.forEach(l => {
+            // Populate dynamic locations from Supabase
+            allLocations.forEach(l => {
                 const opt = document.createElement('option');
                 opt.value = l.id;
                 opt.textContent = `${l.name} (${l.city})`;
                 select.appendChild(opt);
             });
+
+            // Add Home Delivery
+            const homeOpt = document.createElement('option');
+            homeOpt.value = 'home';
+            homeOpt.textContent = 'Home Delivery (SoCal Only)';
+            select.appendChild(homeOpt);
+
             // Trigger update to show initial delivery status if location is pre-selected or default
             updateCartUI(); 
         }
