@@ -238,6 +238,36 @@ module.exports = async (req, res) => {
             return res.json(data || []);
         }
 
+        // 6b. CREATE MANUAL ORDER
+        if (req.method === 'POST' && action === 'create_manual_order') {
+            if (!isAdmin) return res.status(401).json({ error: 'Unauthorized' });
+            const { customer_name, customer_phone, location_id, total, status, selections, notes } = req.body;
+            
+            const { data, error } = await supabase.from('cali_orders').insert({
+                customer_name,
+                customer_phone,
+                location_id,
+                total,
+                status: status || 'confirmed',
+                selections: selections || {},
+                notes: notes || '[MANUAL ORDER]'
+            }).select().single();
+
+            if (error) throw error;
+            return res.json(data);
+        }
+
+        // 6c. CHECK ORDER STATUS
+        if (req.method === 'GET' && action === 'check_order_status') {
+            if (!isAdmin) return res.status(401).json({ error: 'Unauthorized' });
+            const orderId = req.query.order_id;
+            if (!orderId) return res.status(400).json({ error: 'order_id parameter is required' });
+
+            const { data: order, error } = await supabase.from('cali_orders').select('status, total, notes').eq('id', orderId).single();
+            if (error) throw error;
+            return res.json(order);
+        }
+
         // 7. UPDATE ORDER
         if (req.method === 'PATCH' && action === 'update_order' && id) {
             const updates = req.body;

@@ -40,8 +40,15 @@ module.exports = async (req, res) => {
     try {
         // --- 1. STORE STATUS ---
         if (action === 'store_status' || action === 'status') {
-            if (req.method === 'PATCH') return res.json({ success: true, isOpen: req.body?.isOpen });
-            return res.json({ isOpen: true, activeShift: { id: 'shift_today' } });
+            if (req.method === 'PATCH') {
+                const newStatus = req.body?.isOpen ? 'active' : 'closed';
+                const { data, error } = await supabase.from('restaurants').update({ status: newStatus }).eq('id', finalResId).select().single();
+                if (error) throw error;
+                return res.json({ success: true, isOpen: data.status === 'active' });
+            }
+            const { data: resData } = await supabase.from('restaurants').select('status').eq('id', finalResId).maybeSingle();
+            const isOpen = resData ? resData.status === 'active' : true;
+            return res.json({ isOpen, activeShift: { id: 'shift_today' } });
         }
 
         // --- 2. ORDERS (GET & UPDATE) ---

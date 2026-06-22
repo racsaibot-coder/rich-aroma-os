@@ -112,7 +112,10 @@ module.exports = async function handler(req, res) {
 
         // 4. Create Stripe Session
         if (!process.env.STRIPE_SECRET_KEY) {
-            return res.status(200).json({ url: `${baseUrl}/cali?success=true&order=${order.id}` });
+            return res.status(200).json({ 
+                url: `${baseUrl}/cali?success=true&order=${order.id}`, 
+                order_id: order.id 
+            });
         }
 
         const sessionPayload = {
@@ -135,7 +138,11 @@ module.exports = async function handler(req, res) {
 
         const session = await stripe.checkout.sessions.create(sessionPayload);
 
-        res.status(200).json({ url: session.url });
+        res.status(200).json({ 
+            url: session.url, 
+            order_id: order.id, 
+            session_id: session.id 
+        });
 
     } catch (error) {
         console.error('Checkout error:', error);

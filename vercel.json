@@ -335,6 +335,10 @@
       "dest": "/public/cali/admin.html"
     },
     {
+      "src": "/cali/pos",
+      "dest": "/public/cali/pos.html"
+    },
+    {
       "src": "/api/cali/(.*)",
       "dest": "/api/cali.js?action=$1"
     },
@@ -353,6 +357,10 @@
     {
       "src": "/api/checkout",
       "dest": "/api/checkout.js"
+    },
+    {
+      "src": "/api/whatsapp-webhook",
+      "dest": "/api/whatsapp-webhook.js"
     },
     {
       "src": "/team",

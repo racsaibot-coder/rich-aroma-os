@@ -71,8 +71,29 @@ app.get('/api/menu', async (req, res) => {
 const storeHandler = require('./api/store.js');
 app.all('/api/store', async (req, res) => { try { await storeHandler(req, res); } catch(e) { res.status(500).json({error: e.message}); } });
 
+const whatsappHandler = require('./api/whatsapp-webhook.js');
+app.all('/api/whatsapp-webhook', async (req, res) => { try { await whatsappHandler(req, res); } catch(e) { res.status(500).json({error: e.message}); } });
+
+const caliHandler = require('./api/cali.js');
+app.all('/api/cali', async (req, res) => { 
+    try { 
+        // Emulate Vercel's req.query action binding from subroutes if needed
+        if (req.params[0]) {
+            req.query.action = req.params[0];
+        }
+        await caliHandler(req, res); 
+    } catch(e) { 
+        res.status(500).json({error: e.message}); 
+    } 
+});
+
+const checkoutHandler = require('./api/checkout.js');
+app.all('/api/checkout', async (req, res) => { try { await checkoutHandler(req, res); } catch(e) { res.status(500).json({error: e.message}); } });
+
 // Static files
 app.use(express.static(path.join(__dirname, 'public')));
 app.get('/pos-v2', (req, res) => res.sendFile(path.join(__dirname, 'public/pos-v2.html')));
+app.get('/cali/admin', (req, res) => res.sendFile(path.join(__dirname, 'public/cali/admin.html')));
+app.get('/cali/pos', (req, res) => res.sendFile(path.join(__dirname, 'public/cali/pos.html')));
 
 module.exports = app;
