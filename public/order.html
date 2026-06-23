@@ -207,8 +207,8 @@
 
             <!-- Stats Grid -->
             <div class="grid grid-cols-2 gap-3">
-                <div class="glass p-6 rounded-[2rem] space-y-1">
-                    <p class="text-[9px] font-black text-white/30 uppercase tracking-[0.2em]">Rico Points</p>
+                <div class="glass p-6 rounded-[2rem] space-y-1 hover:border-gold/30 active:scale-95 transition-all cursor-pointer" onclick="window.openPointsHistory()">
+                    <p class="text-[9px] font-black text-white/30 uppercase tracking-[0.2em] flex items-center justify-between">Rico Points <i class="fas fa-chevron-right text-[8px] text-white/20"></i></p>
                     <p id="prof-points" class="text-2xl font-black text-white">0</p>
                 </div>
                 <div class="glass p-6 rounded-[2rem] space-y-1 border-2 border-gold/10" onclick="window.rechargeBalance()">
@@ -409,13 +409,56 @@
                 </div>
                 <div class="space-y-2">
                     <p class="text-[9px] font-black text-gold uppercase tracking-[0.3em] ml-2">Crea un PIN (4 números)</p>
-                    <input type="password" id="reg-pin" inputmode="numeric" maxlength="4" placeholder="****" class="w-full bg-white/5 border border-white/10 p-5 rounded-[1.5rem] text-white text-center text-3xl tracking-[0.5em] outline-none focus:border-gold font-black">
+                    
+                    <!-- PIN Display Dots -->
+                    <div class="flex justify-center gap-3 py-2">
+                        <div id="rpin-1" class="w-4 h-4 rounded-full border-2 border-white/20"></div>
+                        <div id="rpin-2" class="w-4 h-4 rounded-full border-2 border-white/20"></div>
+                        <div id="rpin-3" class="w-4 h-4 rounded-full border-2 border-white/20"></div>
+                        <div id="rpin-4" class="w-4 h-4 rounded-full border-2 border-white/20"></div>
+                    </div>
+
+                    <div class="grid grid-cols-3 gap-2">
+                        <button onclick="typeRegisterPin('1')" class="h-12 rounded-2xl bg-white/5 text-white font-black text-lg active:bg-gold active:text-dark transition-all">1</button>
+                        <button onclick="typeRegisterPin('2')" class="h-12 rounded-2xl bg-white/5 text-white font-black text-lg active:bg-gold active:text-dark transition-all">2</button>
+                        <button onclick="typeRegisterPin('3')" class="h-12 rounded-2xl bg-white/5 text-white font-black text-lg active:bg-gold active:text-dark transition-all">3</button>
+                        <button onclick="typeRegisterPin('4')" class="h-12 rounded-2xl bg-white/5 text-white font-black text-lg active:bg-gold active:text-dark transition-all">4</button>
+                        <button onclick="typeRegisterPin('5')" class="h-12 rounded-2xl bg-white/5 text-white font-black text-lg active:bg-gold active:text-dark transition-all">5</button>
+                        <button onclick="typeRegisterPin('6')" class="h-12 rounded-2xl bg-white/5 text-white font-black text-lg active:bg-gold active:text-dark transition-all">6</button>
+                        <button onclick="typeRegisterPin('7')" class="h-12 rounded-2xl bg-white/5 text-white font-black text-lg active:bg-gold active:text-dark transition-all">7</button>
+                        <button onclick="typeRegisterPin('8')" class="h-12 rounded-2xl bg-white/5 text-white font-black text-lg active:bg-gold active:text-dark transition-all">8</button>
+                        <button onclick="typeRegisterPin('9')" class="h-12 rounded-2xl bg-white/5 text-white font-black text-lg active:bg-gold active:text-dark transition-all">9</button>
+                        <button onclick="clearRegisterPin()" class="h-12 rounded-2xl bg-white/5 text-white/20 font-black text-sm active:bg-red-500/20 flex items-center justify-center"><i class="fas fa-backspace"></i></button>
+                        <button onclick="typeRegisterPin('0')" class="h-12 rounded-2xl bg-white/5 text-white font-black text-lg active:bg-gold active:text-dark transition-all">0</button>
+                        <button id="reg-submit-btn" onclick="submitRegister()" class="h-12 rounded-2xl bg-gold/20 text-gold font-black text-[10px] uppercase tracking-widest active:scale-95 transition-all">OK</button>
+                    </div>
                 </div>
             </div>
 
-            <div class="space-y-4">
-                <button id="reg-submit-btn" onclick="window.submitRegister()" class="w-full gold-gradient py-5 rounded-[2rem] font-black text-sm uppercase tracking-widest text-dark shadow-2xl active:scale-95 transition-all">Crear mi Cuenta Gratis</button>
-                <button onclick="window.closeRegister()" class="text-white/20 text-[10px] font-black uppercase tracking-widest">Ya tengo cuenta / Atrás</button>
+            <div class="space-y-4 pt-4">
+                <button onclick="window.closeRegister()" class="text-white/20 text-[10px] font-black uppercase tracking-widest hover:text-white transition-colors">Ya tengo cuenta / Atrás</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- POINTS HISTORY MODAL -->
+    <div id="points-history-modal" class="hidden fixed inset-0 bg-black/95 z-[3001] backdrop-blur-xl flex items-center justify-center p-6 animate-in fade-in duration-300">
+        <div class="w-full max-w-sm space-y-6 flex flex-col h-[75vh]">
+            <div class="space-y-2 text-center shrink-0">
+                <div class="w-16 h-16 bg-gold/10 rounded-[1.5rem] flex items-center justify-center mx-auto border border-gold/20 mb-2">
+                    <i class="fas fa-history text-2xl text-gold"></i>
+                </div>
+                <h2 class="text-2xl font-display font-black text-white tracking-tight italic">Historial de Puntos</h2>
+                <p class="text-white/40 text-[9px] font-black uppercase tracking-widest">Tus transacciones y puntos acumulados</p>
+            </div>
+
+            <!-- Scrollable Ledger List -->
+            <div id="points-ledger-list" class="flex-1 overflow-y-auto space-y-4 p-2 pr-4 border border-white/5 bg-white/[0.01] rounded-[2rem] hide-scrollbar">
+                <!-- Points list injected here -->
+            </div>
+
+            <div class="space-y-4 text-center shrink-0">
+                <button onclick="window.closePointsHistory()" class="w-full gold-gradient py-4 rounded-[2rem] font-black text-xs uppercase tracking-widest text-dark shadow-2xl active:scale-95 transition-all">Cerrar Historial</button>
             </div>
         </div>
     </div>

@@ -384,6 +384,7 @@
                         // --- STATUS ENGINE: Price Preview ---
                         const tags = Array.isArray(currentCustomer?.tags) ? currentCustomer.tags : [];
                         const hasFiftyPower = tags.includes('Employee') || tags.includes('BlackCard');
+                        const isVipUser = currentCustomer?.is_vip || tags.includes('VIP') || tags.includes('Diamond') || tags.includes('GoldCard');
                         const isExclusion = item.id.includes('dubai_chocolate') || (item.category || '').toLowerCase().includes('retail');
                         
                         let displayPrice = parseFloat(item.price) || 0;
@@ -395,7 +396,16 @@
                                 <div class="flex flex-col">
                                     <span class="text-white/20 text-[9px] font-bold line-through tracking-tighter italic leading-none mb-1">Público: L ${displayPrice.toFixed(0)}</span>
                                     <span class="text-cyan-400 font-mono font-black text-lg leading-none">L ${discounted.toFixed(0)}</span>
-                                    <span class="text-[7px] text-cyan-400/50 font-black uppercase tracking-widest mt-1">Status 50% OFF</span>
+                                    <span class="text-[7px] text-cyan-400/50 font-black uppercase tracking-widest mt-1">Precio Staff (50% OFF)</span>
+                                </div>
+                            `;
+                        } else if (isVipUser && !isExclusion && !isBooking) {
+                            const discounted = displayPrice * 0.9;
+                            priceHtml = `
+                                <div class="flex flex-col">
+                                    <span class="text-white/20 text-[9px] font-bold line-through tracking-tighter italic leading-none mb-1">Público: L ${displayPrice.toFixed(0)}</span>
+                                    <span class="text-gold font-mono font-black text-base leading-none">L ${discounted.toFixed(0)}</span>
+                                    <span class="text-[7px] text-gold/60 font-black uppercase tracking-widest mt-1">Precio VIP (10% OFF)</span>
                                 </div>
                             `;
                         }
@@ -1071,6 +1081,8 @@
         }
 
         let loginPin = "";
+        let registerPin = "";
+
         window.openLogin = () => {
             document.getElementById('login-overlay').classList.remove('hidden');
             loginPin = "";
@@ -1084,6 +1096,8 @@
         window.openRegister = () => {
             window.closeLogin();
             document.getElementById('reg-overlay').classList.remove('hidden');
+            registerPin = "";
+            updateRegisterPinDisplay();
         };
 
         window.closeRegister = () => {
@@ -1091,12 +1105,45 @@
             window.openLogin();
         };
 
+        window.typeRegisterPin = (num) => {
+            const name = document.getElementById('reg-name').value.trim();
+            const rawPhone = document.getElementById('reg-phone').value.replace(/\D/g, '');
+            if (!name || rawPhone.length < 8) {
+                alert("Por favor ingresa tu Nombre y número de WhatsApp antes de ingresar el PIN.");
+                clearRegisterPin();
+                return;
+            }
+
+            if (registerPin.length < 4) {
+                registerPin += num;
+                updateRegisterPinDisplay();
+                if (registerPin.length === 4) {
+                    setTimeout(submitRegister, 300);
+                }
+            }
+        };
+
+        window.clearRegisterPin = () => {
+            registerPin = "";
+            updateRegisterPinDisplay();
+        };
+
+        function updateRegisterPinDisplay() {
+            for (let i = 1; i <= 4; i++) {
+                const dot = document.getElementById(`rpin-${i}`);
+                if (dot) {
+                    dot.classList.toggle('bg-white', i <= registerPin.length);
+                    dot.classList.toggle('border-white/20', i > registerPin.length);
+                }
+            }
+        }
+
         window.submitRegister = async () => {
             const name = document.getElementById('reg-name').value.trim();
             const country = document.getElementById('reg-country').value;
             const rawPhone = document.getElementById('reg-phone').value.replace(/\D/g, '');
             const phone = country + rawPhone;
-            const pin = document.getElementById('reg-pin').value;
+            const pin = registerPin;
 
             if (!name || rawPhone.length < 8 || pin.length < 4) {
                 alert("Por favor completa todos los campos (Nombre, WhatsApp de 8 dígitos y PIN de 4 números)");
@@ -1123,11 +1170,13 @@
                     location.reload();
                 } else {
                     alert(data.error || "Error al crear cuenta. El número ya podría estar registrado.");
+                    clearRegisterPin();
                 }
             } catch (e) {
                 alert("Error de conexión. Intenta de nuevo.");
+                clearRegisterPin();
             } finally {
-                btn.innerText = "Crear mi Cuenta Gratis";
+                btn.innerText = "OK";
                 btn.disabled = false;
             }
         };
@@ -1244,6 +1293,70 @@
             setTimeout(() => {
                 document.getElementById('profile-overlay').classList.add('hidden');
             }, 300);
+        };
+
+        window.openPointsHistory = async () => {
+            if(!currentCustomer) return window.openLogin();
+            window.closeProfile();
+            
+            const modal = document.getElementById('points-history-modal');
+            const listContainer = document.getElementById('points-ledger-list');
+            
+            modal.classList.remove('hidden');
+            listContainer.innerHTML = '<div class="py-12 text-center text-white/20 italic">Cargando transacciones...</div>';
+            
+            try {
+                const res = await fetch(`/api/store?action=orders&customerId=${currentCustomer.id}&v=${Date.now()}`);
+                const data = await res.json();
+                const orders = (data.orders || []).filter(o => o.status === 'completed' || o.status === 'delivered');
+                
+                if (orders.length === 0) {
+                    listContainer.innerHTML = `
+                        <div class="py-12 text-center space-y-2">
+                            <p class="text-white/20 italic text-xs">Aún no tienes transacciones completadas</p>
+                            <p class="text-[9px] text-gold/40 uppercase tracking-widest font-black">¡Empieza a ordenar para ganar puntos!</p>
+                        </div>
+                    `;
+                    return;
+                }
+                
+                listContainer.innerHTML = orders.map(o => {
+                    const dateStr = new Date(o.created_at).toLocaleDateString('es-HN', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+                    const amount = parseFloat(o.total) || 0;
+                    let pointsBase = Math.floor(amount / 10);
+                    let multiplier = (o.payment_method === 'rico_balance' || o.payment_method === 'rico_cash') ? 2 : 1;
+                    
+                    const isCustomerVip = currentCustomer.is_vip || (Array.isArray(currentCustomer.tags) && (currentCustomer.tags.includes('VIP') || currentCustomer.tags.includes('Diamond') || currentCustomer.tags.includes('GoldCard')));
+                    if (isCustomerVip) {
+                        multiplier *= 2;
+                    }
+                    
+                    const pointsEarned = pointsBase * multiplier;
+                    const itemsDesc = (o.items || []).map(i => `${i.qty || 1}x ${i.name}`).join(', ');
+                    
+                    return `
+                        <div class="glass p-4 rounded-2xl flex justify-between items-center border border-white/5 hover:border-gold/10 transition-colors">
+                            <div class="space-y-1">
+                                <div class="text-[10px] font-black uppercase text-gold/60 tracking-wider">${o.restaurant_id === 'rich-aroma' ? 'Rich Aroma' : o.restaurant_id}</div>
+                                <div class="text-xs font-bold text-white/80 truncate max-w-[200px]">${itemsDesc || 'Orden General'}</div>
+                                <div class="text-[8px] text-white/30 font-mono">${dateStr}</div>
+                            </div>
+                            <div class="text-right shrink-0">
+                                <p class="text-xs font-black text-green-400 font-mono">+${pointsEarned} pts</p>
+                                <p class="text-[8px] text-white/30 font-mono">L ${amount.toFixed(0)}</p>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+            } catch (e) {
+                console.error("Failed to load points history ledger", e);
+                listContainer.innerHTML = '<div class="py-12 text-center text-red-500/50 italic text-xs">Error al cargar historial</div>';
+            }
+        };
+
+        window.closePointsHistory = () => {
+            document.getElementById('points-history-modal').classList.add('hidden');
+            window.openProfile();
         };
 
         const TIERS = [

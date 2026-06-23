@@ -81,7 +81,13 @@ module.exports = async (req, res) => {
                     if (error) throw error;
                     return res.json(data);
                 }
-                const { data, error } = await query.eq('restaurant_id', finalResId).order('created_at', { ascending: false }).limit(50);
+                const cId = req.query.customerId;
+                if (cId) {
+                    query = query.eq('customer_id', cId);
+                } else {
+                    query = query.eq('restaurant_id', finalResId);
+                }
+                const { data, error } = await query.order('created_at', { ascending: false }).limit(50);
                 if (error) throw error;
                 return res.json({ orders: data || [] });
             } else if (req.method === 'POST') {

@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <link rel="icon" type="image/png" href="/favicon.png">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Member Directory | Admin | Rich Aroma</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        gold: '#C9A66B',
+                        dark: '#120C09',
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { background-color: #120C09; color: white; }
+        .glass { background: rgba(255, 255, 255, 0.03); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.05); }
+        .hide-scrollbar::-webkit-scrollbar { display: none; }
+    </style>
+</head>
+<body class="min-h-screen p-6 lg:p-12">
+    <!-- ADMIN LOGIN OVERLAY -->
+    <div id="admin-login" class="fixed inset-0 bg-dark z-[1000] flex flex-col items-center justify-center p-6 text-center">
+        <div class="max-w-xs w-full space-y-8 animate-in fade-in zoom-in-95 duration-500">
+            <div class="w-24 h-24 bg-gold/10 rounded-[2rem] flex items-center justify-center mx-auto mb-6 shadow-2xl border border-gold/20">
+                <i class="fas fa-user-shield text-4xl text-gold"></i>
+            </div>
+            <div>
+                <h2 class="text-3xl font-black text-white tracking-tight uppercase">Admin Access</h2>
+                <p class="text-white/40 text-[10px] font-black uppercase tracking-[0.3em] mt-2">Member Management</p>
+            </div>
+            <input type="password" id="adminPin" maxlength="4" placeholder="****" 
+                class="w-full bg-white/5 border border-white/10 p-5 rounded-[1.5rem] text-white text-center text-4xl tracking-[0.5em] outline-none focus:border-gold font-black">
+            <button onclick="verifyAccess()" class="w-full gold-gradient py-5 rounded-[2rem] font-black text-sm uppercase tracking-widest text-dark shadow-2xl active:scale-95 transition-all">Verificar PIN</button>
+        </div>
+    </div>
+
+    <!-- MAIN CONTENT (Hidden until authed) -->
+    <div id="main-content" class="hidden max-w-6xl mx-auto space-y-10">
+        <!-- Header -->
+        <div class="flex flex-col md:flex-row justify-between items-center gap-6">
+            <div class="flex items-center gap-4">
+                <div class="w-12 h-12 bg-gold/10 rounded-2xl flex items-center justify-center text-gold border border-gold/20">
+                    <i class="fas fa-users text-xl"></i>
+                </div>
+                <div>
+                    <h1 class="text-3xl font-black uppercase tracking-tight">Directorio de Miembros</h1>
+                    <p class="text-white/40 text-[10px] font-black uppercase tracking-[0.3em]" id="stats-label">Cargando miembros...</p>
+                </div>
+            </div>
+            <div class="flex items-center gap-3">
+                <div class="relative">
+                    <i class="fas fa-search absolute left-4 top-1/2 -translate-y-1/2 text-white/20"></i>
+                    <input type="text" id="memberSearch" placeholder="Buscar por nombre o teléfono..." 
+                        oninput="filterMembers()"
+                        class="bg-white/5 border border-white/10 rounded-2xl py-3 pl-12 pr-6 outline-none focus:border-gold transition-all w-64 text-sm font-bold text-white">
+                </div>
+                <button onclick="window.location.reload()" class="w-12 h-12 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center hover:bg-white/10 transition-all text-white">
+                    <i class="fas fa-sync-alt"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- Member Grid -->
+        <div id="member-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 pb-20">
+            <!-- Members injected here -->
+        </div>
+    </div>
+
+    <script>
+        let allMembers = [];
+        let authedPin = "";
+
+        // Auto-focus and Enter support
+        window.onload = () => {
+            const input = document.getElementById('adminPin');
+            if (input) {
+                input.focus();
+                input.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter') verifyAccess();
+                });
+            }
+        };
+
+        function verifyAccess() {
+            const pin = document.getElementById('adminPin').value;
+            if (pin === '4574' || pin === '3620') {
+                authedPin = pin;
+                document.getElementById('admin-login').classList.add('hidden');
+                document.getElementById('main-content').classList.remove('hidden');
+                loadMembers();
+            } else {
+                alert("PIN de Administrador Incorrecto");
+                document.getElementById('adminPin').value = "";
+            }
+        }
+
+        async function loadMembers() {
+            try {
+                const res = await fetch('/api/store?action=customer_list', {
+                    headers: { 'Authorization': `Bearer ${authedPin}` }
+                });
+                const data = await res.json();
+                if (data.error) throw new Error(data.error);
+                allMembers = data;
+                document.getElementById('stats-label').innerText = `${allMembers.length} MIEMBROS REGISTRADOS`;
+                renderMembers(allMembers);
+            } catch (e) {
+                console.error(e);
+            }
+        }
+
+        function renderMembers(members) {
+            const container = document.getElementById('member-grid');
+            if (members.length === 0) {
+                container.innerHTML = '<div class="col-span-full py-20 text-center text-white/20 italic">No se encontraron miembros</div>';
+                return;
+            }
+
+            container.innerHTML = members.map(m => {
+                const date = new Date(m.created_at).toLocaleDateString('es-HN', { day: '2-digit', month: 'short', year: 'numeric' });
+                const tags = Array.isArray(m.tags) ? m.tags : [];
+                const isEmployee = tags.includes('Employee');
+                const isVip = m.is_vip || tags.includes('BlackCard') || tags.includes('Diamond') || tags.includes('GoldCard');
+                
+                let badgeHtml = '';
+                if (isEmployee) badgeHtml += `<span class="bg-cyan-500/20 text-cyan-400 text-[7px] font-black px-2 py-0.5 rounded-full border border-cyan-500/20 uppercase tracking-widest mr-1">Staff</span>`;
+                if (isVip) badgeHtml += `<span class="bg-gold/20 text-gold text-[7px] font-black px-2 py-0.5 rounded-full border border-gold/20 uppercase tracking-widest mr-1">VIP</span>`;
+
+                return `
+                <div class="glass p-6 rounded-[2.5rem] hover:border-gold/30 transition-all group flex flex-col justify-between relative">
+                    <div class="absolute top-6 right-6 flex gap-2 opacity-0 group-hover:opacity-100 transition-all">
+                        <button onclick="resetPin('${m.id}', '${m.name}')" class="w-8 h-8 rounded-full bg-gold/10 text-gold flex items-center justify-center hover:bg-gold hover:text-dark transition-all" title="Reset PIN">
+                            <i class="fas fa-key text-[10px]"></i>
+                        </button>
+                        <button onclick="deleteMember('${m.id}', '${m.name}')" class="w-8 h-8 rounded-full bg-red-500/10 text-red-500 flex items-center justify-center hover:bg-red-500 hover:text-white transition-all" title="Eliminar">
+                            <i class="fas fa-trash-alt text-[10px]"></i>
+                        </button>
+                    </div>
+                    
+                    <div class="space-y-4">
+                        <div class="flex justify-between items-start">
+                            <div class="w-12 h-12 bg-white/5 rounded-2xl flex items-center justify-center text-white/20 font-black text-xl border border-white/5 group-hover:bg-gold/10 group-hover:text-gold transition-all uppercase">
+                                ${m.name.charAt(0)}
+                            </div>
+                            <div class="text-right pr-10">
+                                <p class="text-white font-black text-sm uppercase tracking-tight">${m.name}</p>
+                                <p class="text-white/40 text-[9px] font-mono tracking-widest">${m.phone}</p>
+                            </div>
+                        </div>
+                        <div class="flex flex-wrap gap-1">
+                            ${badgeHtml || '<span class="text-[7px] text-white/10 font-black uppercase">Classic Member</span>'}
+                        </div>
+                        
+                        <div class="flex items-center justify-between pt-2 border-t border-white/5">
+                            <span class="text-[8px] font-black text-white/30 uppercase tracking-widest">Rango</span>
+                            <select onchange="updateMemberTier('${m.id}', this.value)" class="bg-[#1a120e] border border-white/10 rounded-xl px-2 py-1.5 text-[9px] font-black uppercase text-white/70 focus:outline-none focus:border-gold">
+                                <option value="classic" ${!isEmployee && !isVip ? 'selected' : ''}>Classic</option>
+                                <option value="staff" ${isEmployee ? 'selected' : ''}>Staff (Employee)</option>
+                                <option value="vip_black" ${tags.includes('BlackCard') ? 'selected' : ''}>VIP (BlackCard)</option>
+                                <option value="vip_diamond" ${tags.includes('Diamond') ? 'selected' : ''}>VIP (Diamond)</option>
+                                <option value="vip_gold" ${tags.includes('GoldCard') ? 'selected' : ''}>VIP (Gold)</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="mt-6 pt-4 border-t border-white/5 flex justify-between items-end">
+                        <div>
+                            <p class="text-[7px] font-black text-white/20 uppercase tracking-[0.2em] mb-1">Puntos</p>
+                            <p class="text-xl font-black text-white font-mono">${m.points || 0}</p>
+                        </div>
+                        <div class="text-right">
+                            <p class="text-[7px] font-black text-white/20 uppercase tracking-[0.2em] mb-1">Desde</p>
+                            <p class="text-[9px] font-bold text-white/60">${date}</p>
+                        </div>
+                    </div>
+                </div>
+                `;
+            }).join('');
+        }
+
+        async function deleteMember(id, name) {
+            const confirmed = confirm(`¿Estás seguro de eliminar a "${name}"?\nEsta acción borrará sus puntos y cuenta permanentemente.`);
+            if (!confirmed) return;
+
+            try {
+                const res = await fetch(`/api/store?action=customer_delete&id=${id}`, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': `Bearer ${authedPin}` }
+                });
+                
+                if (res.ok) {
+                    alert("Miembro eliminado exitosamente");
+                    loadMembers(); // Refresh list
+                } else {
+                    const err = await res.json();
+                    alert("Error al eliminar: " + err.error);
+                }
+            } catch (e) {
+                alert("Error de conexión");
+            }
+        }
+
+        async function resetPin(id, name) {
+            const newPin = prompt(`Ingrese el nuevo PIN de 4 dígitos para "${name}":`);
+            if (!newPin) return;
+            if (newPin.length !== 4 || isNaN(newPin)) {
+                return alert("El PIN debe ser de exactamente 4 números.");
+            }
+
+            try {
+                const res = await fetch(`/api/store?action=customer_update&id=${id}`, {
+                    method: 'POST',
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${authedPin}` 
+                    },
+                    body: JSON.stringify({ pin: newPin })
+                });
+
+                if (res.ok) {
+                    alert(`✅ PIN de ${name} actualizado con éxito.`);
+                } else {
+                    const err = await res.json();
+                    alert("Error al actualizar: " + err.error);
+                }
+            } catch (e) {
+                alert("Error de conexión");
+            }
+        }
+
+        async function updateMemberTier(id, tier) {
+            let tags = [];
+            let is_vip = false;
+            
+            if (tier === 'staff') {
+                tags = ['Employee'];
+            } else if (tier === 'vip_black') {
+                tags = ['BlackCard', 'VIP'];
+                is_vip = true;
+            } else if (tier === 'vip_diamond') {
+                tags = ['Diamond', 'VIP'];
+                is_vip = true;
+            } else if (tier === 'vip_gold') {
+                tags = ['GoldCard', 'VIP'];
+                is_vip = true;
+            }
+            
+            try {
+                const res = await fetch(`/api/store?action=customer_update&id=${id}`, {
+                    method: 'POST',
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${authedPin}` 
+                    },
+                    body: JSON.stringify({ tags, is_vip })
+                });
+                
+                if (res.ok) {
+                    loadMembers();
+                } else {
+                    const err = await res.json();
+                    alert("Error al actualizar rango: " + err.error);
+                }
+            } catch (e) {
+                alert("Error de conexión al actualizar rango");
+            }
+        }
+
+        function filterMembers() {
+            const query = document.getElementById('memberSearch').value.toLowerCase();
+            const filtered = allMembers.filter(m => 
+                m.name.toLowerCase().includes(query) || 
+                m.phone.includes(query) || 
+                (m.id && m.id.toLowerCase().includes(query))
+            );
+            renderMembers(filtered);
+        }
+    </script>
+</body>
+</html>
