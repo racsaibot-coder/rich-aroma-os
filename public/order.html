@@ -108,11 +108,11 @@
     <!-- HEADER -->
     <header class="sticky top-0 z-[100] bg-dark/95 backdrop-blur-md border-b border-white/5 px-6 py-4 flex justify-between items-center shadow-xl">
         <div class="flex items-center gap-3">
-            <img src="/rico-logo.png" class="w-10 h-10 rounded-full border border-gold/20 object-cover" alt="RA">
+            <img id="header-logo" src="/rico-logo.png" class="w-10 h-10 rounded-full border border-gold/20 object-cover" alt="RA">
             <div>
                 <div class="flex items-center gap-2">
-                    <h1 class="font-display text-lg text-gold font-bold tracking-tight uppercase leading-none">Rich Aroma</h1>
-                    <span class="text-[7px] bg-gold/10 text-gold/40 px-1.5 py-0.5 rounded-full border border-gold/10">v3.3.5</span>
+                    <h1 id="header-name" class="font-display text-lg text-gold font-bold tracking-tight uppercase leading-none">Rich Aroma</h1>
+                    <span id="header-version" class="text-[7px] bg-gold/10 text-gold/40 px-1.5 py-0.5 rounded-full border border-gold/10">v3.3.5</span>
                 </div>
                 <div class="flex items-center gap-2 mt-1">
                     <p id="store-status-text" class="text-[9px] text-white/30 tracking-[0.2em] uppercase">Cargando...</p>
@@ -762,9 +762,9 @@
                 <button onclick="showTracking()" class="w-full py-4 bg-white/5 border border-white/10 rounded-2xl text-[10px] font-black text-white uppercase tracking-widest active:scale-95 transition-all">
                     <i class="fas fa-sync-alt mr-2"></i> Actualizar Estado
                 </button>
-                <button onclick="location.href='/order'" class="w-full py-5 bg-gold text-dark rounded-[2rem] font-black text-xs uppercase tracking-widest shadow-xl active:scale-95 transition-all">Pide Algo Más</button>
+                <button onclick="location.href = window.location.hostname.includes('quimieats.com') ? '/' : '/order'" class="w-full py-5 bg-gold text-dark rounded-[2rem] font-black text-xs uppercase tracking-widest shadow-xl active:scale-95 transition-all">Pide Algo Más</button>
                 <button onclick="localStorage.clear(); sessionStorage.clear(); location.reload(true);" class="text-[8px] text-white/10 font-bold uppercase tracking-[0.3em] hover:text-white/40 pt-4">Forzar Actualización</button>
-                <p class="text-[9px] text-white/20 uppercase font-bold tracking-widest">Rich Aroma OS v3.4</p>
+                <p id="footer-os-tag" class="text-[9px] text-white/20 uppercase font-bold tracking-widest">Rich Aroma OS v3.4</p>
             </div>
         </div>
     </div>

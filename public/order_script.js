@@ -21,6 +21,7 @@
 
         let cart = [];
         let currentCustomer = null;
+        let globalRestaurantName = "Rich Aroma";
         let menuItems = [];
         let modGroups = [];
         let modOptions = [];
@@ -166,6 +167,40 @@
 
                 // Fix Name vs ID mismatch for Fradas
                 if (resId === 'Fradas Bar & Grill') resId = 'fradas-bar--grill-445';
+
+                // Fetch dynamic branding details
+                let restaurantLogo = "/rico-logo.png";
+                try {
+                    const resDetails = await fetch('/api/admin?action=quimieats_active');
+                    const activeResList = await resDetails.json();
+                    const currentRes = activeResList.find(r => r.id === resId);
+                    if (currentRes) {
+                        globalRestaurantName = currentRes.name;
+                        restaurantLogo = currentRes.logo_url || "/rico-logo.png";
+                    } else if (resId !== 'rich-aroma') {
+                        globalRestaurantName = resId.replace(/-/g, ' ').toUpperCase();
+                    }
+                } catch (e) {
+                    console.error("Failed to load restaurant details for branding", e);
+                }
+
+                // Apply branding
+                document.title = `${globalRestaurantName} | QuimiEats`;
+                const logoEl = document.getElementById('header-logo');
+                if (logoEl) logoEl.src = restaurantLogo;
+                const nameEl = document.getElementById('header-name');
+                if (nameEl) nameEl.innerText = globalRestaurantName;
+                
+                // If not Rich Aroma, hide loyalty/login UI elements
+                if (resId !== 'rich-aroma') {
+                    document.getElementById('login-btn')?.classList.add('hidden');
+                    document.getElementById('user-pill')?.classList.add('hidden');
+                    document.getElementById('header-version')?.classList.add('hidden');
+                }
+                const osTag = document.getElementById('footer-os-tag');
+                if (osTag) {
+                    osTag.innerText = resId === 'rich-aroma' ? "Rich Aroma OS v3.4" : "QuimiEats OS v3.4";
+                }
 
                 const v = Date.now();
                 const res = await fetch(`/api/v2-menu?restaurantId=${resId}&v=${v}`, { cache: 'no-cache' });
@@ -984,13 +1019,17 @@
                 updateStepUI(1);
             } else if (status.includes('preparing')) {
                 title.innerText = "PREPARANDO...";
-                msg.innerText = "Nuestros baristas están preparando tu orden con amor.";
+                msg.innerText = globalRestaurantName === 'Rich Aroma' 
+                    ? "Nuestros baristas están preparando tu orden con amor." 
+                    : "El equipo está preparando tu orden con amor.";
                 line.style.width = "50%";
                 if(icon) icon.innerHTML = '<i class="fas fa-fire-alt text-gold"></i>';
                 updateStepUI(2);
             } else if (['ready', 'drinks_ready', 'food_ready'].includes(status)) {
                 title.innerText = "¡ORDEN LISTA!";
-                msg.innerText = fulfill === 'delivery' ? "Tu pedido está listo y esperando al repartidor." : "¡Ya puedes pasar por tu pedido a la barra!";
+                msg.innerText = fulfill === 'delivery' 
+                    ? "Tu pedido está listo y esperando al repartidor." 
+                    : (globalRestaurantName === 'Rich Aroma' ? "¡Ya puedes pasar por tu pedido a la barra!" : "¡Ya puedes pasar por tu pedido!");
                 line.style.width = fulfill === 'delivery' ? "75%" : "100%";
                 if(icon) icon.innerHTML = '<i class="fas fa-mug-hot text-gold"></i>';
                 updateStepUI(3);
@@ -1002,7 +1041,7 @@
                 updateStepUI(4);
             } else if (status === 'completed' || status === 'delivered') {
                 title.innerText = "¡ENTREGADA!";
-                msg.innerText = "¡Gracias por elegir Rich Aroma! Esperamos que lo disfrutes.";
+                msg.innerText = `¡Gracias por elegir ${globalRestaurantName}! Esperamos que lo disfrutes.`;
                 line.style.width = "100%";
                 if(icon) icon.innerHTML = '<i class="fas fa-heart text-gold"></i>';
                 updateStepUI(fulfill === 'delivery' ? 4 : 3);
@@ -1427,19 +1466,30 @@
 
         window.addEventListener('DOMContentLoaded', async () => {
             console.log("DOMContentLoaded started");
-            try {
-                console.log("Checking store status...");
-                const res = await fetch('/api/store/status');
-                const data = await res.json();
-                console.log("Store status:", data.isOpen);
-                if (!data.isOpen) { 
-                    console.log("Store closed, showing overlay");
-                    document.getElementById('closed-overlay')?.classList.remove('hidden'); 
-                    // Don't return, allow menu to load in background
-                } else {
-                    document.getElementById('store-status-text').innerText = "Abierto Ahora";
-                }
-            } catch (e) { console.error("Store status error:", e); }
+            
+            const urlParams = new URLSearchParams(window.location.search);
+            let resId = urlParams.get('restaurantId') || 'rich-aroma';
+            if (resId === 'Fradas Bar & Grill') resId = 'fradas-bar--grill-445';
+
+            if (resId === 'rich-aroma') {
+                try {
+                    console.log("Checking store status...");
+                    const res = await fetch('/api/store/status');
+                    const data = await res.json();
+                    console.log("Store status:", data.isOpen);
+                    if (!data.isOpen) { 
+                        console.log("Store closed, showing overlay");
+                        document.getElementById('closed-overlay')?.classList.remove('hidden'); 
+                    } else {
+                        document.getElementById('store-status-text').innerText = "Abierto Ahora";
+                    }
+                } catch (e) { console.error("Store status error:", e); }
+            } else {
+                const statusText = document.getElementById('store-status-text');
+                if (statusText) statusText.innerText = "Abierto";
+                const subtext = statusText?.nextElementSibling;
+                if (subtext) subtext.classList.add('hidden');
+            }
             
             console.log("Calling loadMenu...");
             loadMenu();
@@ -1458,42 +1508,42 @@
                     } else localStorage.removeItem('ra_active_order');
                 } catch(e) { localStorage.removeItem('ra_active_order'); }
             }
-            // 4. LOAD CUSTOMER SESSION
-            const savedPhone = localStorage.getItem('ra_customer_phone') || localStorage.getItem('ra_phone');
-            console.log("[Auth] Found saved phone:", savedPhone);
-            
-            if (savedPhone) {
-                try {
-                    const profileRes = await fetch(`/api/customer/profile?phone=${encodeURIComponent(savedPhone)}`);
-                    const userData = await profileRes.json();
-                    
-                    if (userData && !userData.error) {
-                        console.log("[Auth] Profile loaded successfully:", userData.name);
-                        currentCustomer = userData;
+            // 4. LOAD CUSTOMER SESSION (Rich Aroma Only)
+            if (resId === 'rich-aroma') {
+                const savedPhone = localStorage.getItem('ra_customer_phone') || localStorage.getItem('ra_phone');
+                console.log("[Auth] Found saved phone:", savedPhone);
+                
+                if (savedPhone) {
+                    try {
+                        const profileRes = await fetch(`/api/customer/profile?phone=${encodeURIComponent(savedPhone)}`);
+                        const userData = await profileRes.json();
                         
-                        // Update UI
-                        const userPill = document.getElementById('user-pill');
-                        const loginBtn = document.getElementById('login-btn');
-                        if (userPill) userPill.classList.remove('hidden');
-                        if (loginBtn) loginBtn.classList.add('hidden');
-                        
-                        const firstName = userData.name.split(' ')[0];
-                        const isEmployee = Array.isArray(userData.tags) && userData.tags.includes('Employee');
-                        const nameEl = document.getElementById('user-first-name');
-                        if (nameEl) nameEl.innerText = isEmployee ? `[STAFF] ${firstName}` : firstName;
-                        
-                        // Sync second phone key just in case
-                        localStorage.setItem('ra_customer_phone', savedPhone);
-                    } else {
-                        console.warn("[Auth] Profile fetch error or not found:", userData.error);
-                        // Optional: Clear bad session
-                        // localStorage.removeItem('ra_customer_phone');
+                        if (userData && !userData.error) {
+                            console.log("[Auth] Profile loaded successfully:", userData.name);
+                            currentCustomer = userData;
+                            
+                            // Update UI
+                            const userPill = document.getElementById('user-pill');
+                            const loginBtn = document.getElementById('login-btn');
+                            if (userPill) userPill.classList.remove('hidden');
+                            if (loginBtn) loginBtn.classList.add('hidden');
+                            
+                            const firstName = userData.name.split(' ')[0];
+                            const isEmployee = Array.isArray(userData.tags) && userData.tags.includes('Employee');
+                            const nameEl = document.getElementById('user-first-name');
+                            if (nameEl) nameEl.innerText = isEmployee ? `[STAFF] ${firstName}` : firstName;
+                            
+                            // Sync second phone key just in case
+                            localStorage.setItem('ra_customer_phone', savedPhone);
+                        } else {
+                            console.warn("[Auth] Profile fetch error or not found:", userData.error);
+                        }
+                    } catch (e) {
+                        console.error("[Auth] profile fetch failed:", e);
                     }
-                } catch (e) {
-                    console.error("[Auth] profile fetch failed:", e);
+                } else {
+                    console.log("[Auth] No session found (Guest Mode)");
                 }
-            } else {
-                console.log("[Auth] No session found (Guest Mode)");
             }
 
             // 5. RENDER MENU (With profile context)

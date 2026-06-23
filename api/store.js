@@ -486,6 +486,72 @@ module.exports = async (req, res) => {
             return res.json({ items: filteredItems, categories, modGroups: rModGroups.data || [], modOptions: rModOptions.data || [], itemModGroups: rItemModGroups.data || [], taxRate: 0 });
         }
 
+        // --- 6. PARTNER DASHBOARD ---
+        if (action === 'partner_login') {
+            const { restaurantId, pin } = req.body || {};
+            if (!restaurantId || !pin) return res.status(400).json({ error: "Missing parameters" });
+
+            const targetResId = restaurantId.toLowerCase().replace(/[^a-z0-9-]/g, '');
+            const { data: resData, error } = await supabase.from('restaurants').select('*').eq('id', targetResId).maybeSingle();
+            
+            if (error || !resData) {
+                return res.status(401).json({ error: "Restaurante no encontrado" });
+            }
+
+            const expectedPin = resData.settings?.pin || '4574';
+            if (pin !== expectedPin) {
+                return res.status(401).json({ error: "PIN incorrecto" });
+            }
+
+            return res.json({ success: true, partner: { id: resData.id, name: resData.name, phone: resData.contact_phone } });
+        }
+
+        if (action === 'partner_orders') {
+            const resId = req.query.restaurantId;
+            if (!resId) return res.status(400).json({ error: "restaurantId is required" });
+
+            const { data, error } = await supabase.from('orders')
+                .select('*, customers(name, phone)')
+                .eq('restaurant_id', resId)
+                .order('created_at', { ascending: false })
+                .limit(50);
+
+            if (error) throw error;
+            return res.json({ orders: data || [] });
+        }
+
+        if (action === 'partner_update_order') {
+            const { orderId, status } = req.body || {};
+            if (!orderId || !status) return res.status(400).json({ error: "Missing parameters" });
+
+            const { data, error } = await supabase.from('orders')
+                .update({ status })
+                .eq('id', orderId)
+                .select()
+                .single();
+
+            if (error) throw error;
+            return res.json({ success: true, order: data });
+        }
+
+        if (action === 'partner_update_item') {
+            const { itemId, price, available } = req.body || {};
+            if (!itemId) return res.status(400).json({ error: "itemId is required" });
+
+            const updates = {};
+            if (price !== undefined) updates.price = parseFloat(price);
+            if (available !== undefined) updates.available = !!available;
+
+            const { data, error } = await supabase.from('menu_items')
+                .update(updates)
+                .eq('id', itemId)
+                .select()
+                .single();
+
+            if (error) throw error;
+            return res.json({ success: true, item: data });
+        }
+
         return res.status(404).json({ error: `Action '${action}' not found`, debug: { url: req.url, action, id } });
 
     } catch (e) {

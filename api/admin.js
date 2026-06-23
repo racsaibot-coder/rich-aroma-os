@@ -142,6 +142,17 @@ module.exports = async function handler(req, res) {
             return res.json({ success: true });
         }
 
+        // --- GLOBAL ORDERS OVERSIGHT ---
+        if (action === 'global_orders' && req.method === 'GET') {
+            if (!isAdmin) return res.status(403).json({ error: "Unauthorized" });
+            const { data, error } = await supabase.from('orders')
+                .select('*, customers(name, phone)')
+                .order('created_at', { ascending: false })
+                .limit(100);
+            if (error) throw error;
+            return res.json({ orders: data || [] });
+        }
+
         // --- EMPLOYEES ---
         if (action === 'employees' && req.method === 'GET') {
             const { data } = await supabase.from('employees').select('*').order('name');
