@@ -14,7 +14,7 @@
                     }
                 }
             }
-        }
+        };
         const supabaseUrl = 'https://zcqubacfcettwawcimsy.supabase.co';
         const supabaseKey = 'sb_publishable_hRVyru_6sektmVGQyJFfwQ_4b2-7MKq';
         const supabaseClient = window.supabase.createClient(supabaseUrl, supabaseKey);

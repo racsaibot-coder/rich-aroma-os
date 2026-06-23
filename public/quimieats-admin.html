@@ -564,7 +564,7 @@
                 if (data.success) {
                     staffUser = data.employee;
                     localStorage.setItem('quimieats_admin_pin', currentPin);
-                    showUI();
+                    await showUI();
                 } else {
                     alert(data.error || "PIN Incorrecto.");
                     resetPin();
@@ -625,9 +625,12 @@
             }
         }
 
-        function showUI() {
+        async function showUI() {
             document.getElementById('login-modal').classList.add('hidden');
             document.getElementById('admin-content').classList.remove('hidden');
+            
+            // Pre-load data to ensure selectors are populated
+            await loadData();
             
             // Check URL Params
             const params = new URLSearchParams(window.location.search);
@@ -1189,7 +1192,7 @@
 
         function renderLeads(data) {
             const tbody = document.getElementById('leads-table');
-            tbody.innerHTML = (data || []).map(l => `
+            tbody.innerHTML = (Array.isArray(data) ? data : []).map(l => `
                 <tr class="hover:bg-white/[0.02] transition-colors">
                     <td class="p-8 text-xs text-white/20">${new Date(l.created_at).toLocaleDateString()}</td>
                     <td class="p-8 font-black uppercase tracking-tight text-sm text-white/80">${l.restaurant_name}</td>
