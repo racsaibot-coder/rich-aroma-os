@@ -1664,7 +1664,6 @@
             renderMenu();
 
             // 6. AUTO-OPEN MEMBERSHIP HUB (If requested from Dashboard)
-            const urlParams = new URLSearchParams(window.location.search);
             if (urlParams.get('view') === 'membership') {
                 console.log("[DeepLink] Membership Hub request detected.");
                 setTimeout(() => {
