@@ -43,6 +43,9 @@
 </head>
 <body class="antialiased font-sans pb-32">
 
+    <!-- Toast Notifications Container -->
+    <div id="toast-container" class="fixed top-6 left-1/2 -translate-x-1/2 z-50 pointer-events-none space-y-3 max-w-sm w-full px-4"></div>
+
     <!-- Header -->
     <nav class="sticky top-0 z-50 glass-panel border-b border-gray-100">
         <div class="max-w-7xl mx-auto px-6 h-20 flex justify-between items-center">
@@ -243,6 +246,11 @@
                                     <i class="fas fa-chevron-down absolute right-5 top-1/2 -translate-y-1/2 text-white/20 pointer-events-none"></i>
                                 </div>
                                 <input type="text" id="cust-notes" placeholder="Apt # / Desk # / Floor Details" class="hidden w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-3 text-white text-sm focus:border-brand-gold outline-none transition-colors">
+                                <div id="catering-details-box" class="hidden space-y-3">
+                                    <label class="block text-[8px] font-black uppercase text-brand-gold tracking-widest ml-1 mt-2">Catering Event Schedule</label>
+                                    <input type="datetime-local" id="cust-event-date" class="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-3 text-white text-sm focus:border-brand-gold outline-none transition-colors">
+                                    <textarea id="cust-event-setup" placeholder="Setup details: Ice buckets, display stands, or setup needs?" class="w-full h-24 bg-white/5 border border-white/10 rounded-2xl px-5 py-3 text-white text-sm focus:border-brand-gold outline-none transition-colors no-scrollbar resize-none"></textarea>
+                                </div>
                                 <div id="hub-tracker-card" class="hidden mt-4 bg-white/5 border border-white/10 rounded-2xl p-5 space-y-4 transition-all duration-500 transform scale-95 opacity-0">
                                     <div class="flex justify-between items-start">
                                         <div>
@@ -402,7 +410,7 @@
                     document.getElementById('promo-msg').innerText = `✨ Applied: ${data.discount_percent}% OFF (${data.seller_name})`;
                     updateCartUI();
                 } else {
-                    alert("Invalid or inactive promo code.");
+                    showToast("Invalid or inactive promo code.");
                     currentDiscount = 0;
                     validatedPromo = null;
                     document.getElementById('promo-msg').classList.add('hidden');
@@ -462,7 +470,7 @@
                 return;
             }
 
-            grid.innerHTML = sorted.map(p => {
+            let cardsHtml = sorted.map(p => {
                 const savings = p.bottles_per_pack === 3 ? 'SAVE 5%' : p.bottles_per_pack === 5 ? 'SAVE 10%' : '';
                 const icon = p.bottles_per_pack === 1 ? 'fa-mug-hot' : 'fas fa-box-open';
                 
@@ -485,12 +493,45 @@
                     </div>
                 </div>`;
             }).join('');
+
+            // Append Catering Card
+            cardsHtml += `
+                <div class="bg-brand-dark rounded-[3rem] p-10 border border-brand-gold/15 shadow-sm hover:shadow-2xl hover:-translate-y-2 flex flex-col group relative overflow-hidden cursor-pointer text-white" onclick="openStep2('catering_event_pack')">
+                    <div class="absolute top-6 right-6 bg-brand-gold text-brand-dark text-[10px] font-black px-3 py-1 rounded-full uppercase tracking-widest font-mono">BEST VALUE</div>
+                    <div class="w-20 h-20 bg-brand-cream rounded-3xl flex items-center justify-center mb-8 shadow-inner overflow-hidden text-brand-brown">
+                        <i class="fas fa-handshake text-3xl"></i>
+                    </div>
+                    <h3 class="text-3xl font-serif font-bold mb-2">Event Catering</h3>
+                    <p class="text-white/60 text-[10px] font-black uppercase tracking-widest mb-10">Catering, Meetings & Parties</p>
+                    
+                    <div class="mt-auto pt-8 border-t border-white/10 flex justify-between items-center">
+                        <div class="flex items-baseline gap-1">
+                            <span class="text-xs opacity-60 mr-1 font-bold">from</span>
+                            <span class="text-3xl font-black font-mono tracking-tighter text-brand-gold">$3.20</span>
+                            <span class="text-[9px] opacity-60 font-bold ml-1">/ bottle</span>
+                        </div>
+                        <div class="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center text-brand-gold group-hover:bg-brand-gold group-hover:text-brand-dark transition-all">
+                            <i class="fas fa-arrow-right"></i>
+                        </div>
+                    </div>
+                </div>`;
+
+            grid.innerHTML = cardsHtml;
         }
 
         let allocatedFlavors = {};
 
         function openStep2(id) {
-            selectedProduct = allProducts.find(p => p.id === id);
+            if (id === 'catering_event_pack') {
+                selectedProduct = {
+                    id: 'catering_event_pack',
+                    name: 'Event Catering Pack',
+                    price: 115.00,
+                    bottles_per_pack: 25
+                };
+            } else {
+                selectedProduct = allProducts.find(p => p.id === id);
+            }
             document.getElementById('conf-pack-name').innerText = selectedProduct.name;
             document.getElementById('conf-pack-desc').innerText = `${selectedProduct.bottles_per_pack} x Premium Cold Brew Lattes`;
             
@@ -549,6 +590,28 @@
                 if (currentQty <= 0) return;
                 allocatedFlavors[flavor].qty = currentQty - 1;
             } else {
+                // Enforce max 5 flavors for Catering Event Pack
+                if (selectedProduct.id === 'catering_event_pack') {
+                    const activeFlavors = Object.keys(allocatedFlavors).filter(f => allocatedFlavors[f].qty > 0);
+                    if (!activeFlavors.includes(flavor)) {
+                        if (activeFlavors.length >= 5) {
+                            const swappableFlavors = activeFlavors.filter(f => allocatedFlavors[f].qty === 1);
+                            if (swappableFlavors.length > 0) {
+                                const targetToDecrement = swappableFlavors[0];
+                                allocatedFlavors[targetToDecrement].qty = 0;
+                                allocatedFlavors[flavor].qty = 1;
+                                syncSelections();
+                                renderBottleConfigs();
+                                updateItemTotal();
+                                return;
+                            } else {
+                                showToast("Event catering orders are limited to a maximum of 5 flavors. Reduce a flavor to 0 first to choose another one.");
+                                return;
+                            }
+                        }
+                    }
+                }
+
                 if (currentTotal >= targetTotal) {
                     // Auto-decrement another allocated flavor to make room
                     const otherFlavors = Object.keys(allocatedFlavors).filter(f => f !== flavor && allocatedFlavors[f].qty > 0);
@@ -577,6 +640,36 @@
             updateItemTotal();
         }
 
+        function changeCateringTier(size) {
+            const pricing = {
+                25: 115.00,
+                50: 220.00,
+                75: 315.00,
+                100: 400.00,
+                150: 570.00,
+                200: 720.00,
+                250: 875.00,
+                500: 1600.00
+            };
+            
+            selectedProduct.bottles_per_pack = size;
+            selectedProduct.price = pricing[size];
+            
+            // Re-initialize allocation map to prefill Vanilla Latte with new size
+            const flavorOptions = ['Caramel Latte', 'French Vanilla', 'Oreo Supreme', 'Vanilla Latte', 'Dirty Chai', 'Classic Black'];
+            flavorOptions.forEach(f => {
+                allocatedFlavors[f] = {
+                    qty: f === 'Vanilla Latte' ? size : 0,
+                    milk: 'Regular',
+                    espresso: 'Standard'
+                };
+            });
+            
+            syncSelections();
+            renderBottleConfigs();
+            updateItemTotal();
+        }
+
         function renderBottleConfigs() {
             const container = document.getElementById('bottle-config-container');
             const targetTotal = selectedProduct.bottles_per_pack;
@@ -586,7 +679,29 @@
             const progressPercent = (currentTotal / targetTotal) * 100;
             const progressColor = currentTotal === targetTotal ? 'bg-emerald-500' : 'bg-brand-gold';
             
-            let html = `
+            let html = "";
+
+            if (selectedProduct.id === 'catering_event_pack') {
+                const tiers = [25, 50, 75, 100, 150, 200, 250, 500];
+                html += `
+                    <div class="bg-brand-dark text-white rounded-[2rem] p-6 mb-6 border border-brand-gold/15 shadow-lg space-y-4">
+                        <label class="block text-[8px] font-black uppercase text-brand-gold tracking-widest">Select Event Size (Bottles)</label>
+                        <div class="grid grid-cols-4 gap-2">
+                            ${tiers.map(t => {
+                                const isActive = targetTotal === t;
+                                return `
+                                    <button onclick="changeCateringTier(${t})" class="py-3 rounded-2xl border text-center transition-all flex flex-col items-center justify-center ${isActive ? 'border-brand-gold bg-brand-gold/15 text-brand-gold font-bold' : 'border-white/10 bg-white/5 text-white/60 hover:border-brand-gold/50'}">
+                                        <span class="text-sm font-black font-mono">${t}</span>
+                                        <span class="text-[7px] opacity-60">Bottles</span>
+                                    </button>
+                                `;
+                            }).join('')}
+                        </div>
+                    </div>
+                `;
+            }
+
+            html += `
                 <div class="bg-gray-50 border border-gray-100 rounded-[2rem] p-6 space-y-4 mb-6 shadow-sm">
                     <div class="flex justify-between items-center text-xs font-black uppercase tracking-widest text-gray-500">
                         <span>Allocation Progress</span>
@@ -800,8 +915,17 @@
             const hubCard = document.getElementById('hub-tracker-card');
             const personalBottles = cart.reduce((sum, item) => sum + item.bottles, 0);
             const notesInput = document.getElementById('cust-notes');
+            const cateringBox = document.getElementById('catering-details-box');
 
             if (notesInput) notesInput.classList.add('hidden');
+            if (cateringBox) {
+                const hasCatering = cart.some(item => item.product_id === 'catering_event_pack');
+                if (hasCatering) {
+                    cateringBox.classList.remove('hidden');
+                } else {
+                    cateringBox.classList.add('hidden');
+                }
+            }
 
             if (locationVal === 'home') {
                 finalTotal += HOME_DELIVERY_FEE;
@@ -948,7 +1072,10 @@
             const btn = document.getElementById('checkout-btn');
             const totalBottles = cart.reduce((sum, item) => sum + item.bottles, 0);
 
-            if (!name || !email || !phone || !loc) return alert("Please fill in all details.");
+            if (!name || !email || !phone || !loc) {
+                showToast("Please fill in all details.");
+                return;
+            }
             if (cart.length === 0) return;
 
             const selectedLoc = allLocations.find(l => l.id === loc);
@@ -959,9 +1086,9 @@
             // Enforce hub threshold if not home delivery and not Ivy
             if (loc !== 'home' && !isIvy && totalBottles < target) {
                 if (isMicroHub) {
-                    alert(`This location requires a minimum of ${target} bottles collectively for delivery. Please coordinate with neighbors/coworkers or add more items!`);
+                    showToast(`This location requires a minimum of ${target} bottles collectively for delivery. Please coordinate with neighbors/coworkers or add more items!`);
                 } else {
-                    alert(`This Hub requires ${target} bottles for delivery. Please add more items or coordinate with your team!`);
+                    showToast(`This Hub requires ${target} bottles for delivery. Please add more items or coordinate with your team!`);
                 }
                 return;
             }
@@ -969,8 +1096,20 @@
             // Enforce notes for micro-hubs
             if (isMicroHub && !notesVal.trim()) {
                 const placeholder = isIvy ? "Ivy 1/2 + Apt #" : "Desk / Floor Details";
-                alert(`Please enter your delivery details (${placeholder}) in the input field.`);
+                showToast(`Please enter your delivery details (${placeholder}) in the input field.`);
                 return;
+            }
+
+            let finalNotes = notesVal;
+            const hasCatering = cart.some(item => item.product_id === 'catering_event_pack');
+            if (hasCatering) {
+                const eventDate = document.getElementById('cust-event-date').value;
+                const eventSetup = document.getElementById('cust-event-setup').value;
+                if (!eventDate) {
+                    showToast("Please select a date and time for your event catering delivery.");
+                    return;
+                }
+                finalNotes = `[EVENT CATERING] Date/Time: ${eventDate} | Setup Needs: ${eventSetup || 'None'} | Notes: ${notesVal}`;
             }
 
             btn.disabled = true;
@@ -986,7 +1125,7 @@
                         phone, 
                         location_id: loc, 
                         items: cart, 
-                        notes: notesVal,
+                        notes: finalNotes,
                         promo_code: validatedPromo,
                         is_subscription: isSubscription,
                         total_bottles: totalBottles, // Pass total bottles to backend for incentive logic
@@ -997,10 +1136,40 @@
                 if (data.url) window.location.href = data.url;
                 else throw new Error(data.error);
             } catch (e) {
-                alert("Checkout Error: " + e.message);
+                showToast("Checkout Error: " + e.message);
                 btn.disabled = false;
                 btn.innerHTML = 'Confirm & Pay <i class="fas fa-arrow-right ml-2"></i>';
             }
+        }
+
+        function showToast(msg, type = 'error') {
+            const container = document.getElementById('toast-container');
+            if (!container) return;
+            
+            const toast = document.createElement('div');
+            toast.className = "w-full pointer-events-auto bg-brand-dark/95 backdrop-blur-md border border-brand-gold/30 rounded-2xl p-4 text-xs font-bold text-white shadow-2xl flex items-center gap-3 transition-all duration-500 transform translate-y-[-20px] opacity-0";
+            
+            const icon = type === 'success' ? 'fa-check-circle text-emerald-400' : 'fa-exclamation-circle text-brand-gold';
+            toast.innerHTML = `
+                <i class="fas ${icon} text-sm shrink-0"></i>
+                <span class="flex-1">${msg}</span>
+                <button class="text-white/40 hover:text-white transition-colors" onclick="this.parentElement.remove()"><i class="fas fa-times"></i></button>
+            `;
+            
+            container.appendChild(toast);
+            
+            // Animate in
+            setTimeout(() => {
+                toast.classList.remove('translate-y-[-20px]', 'opacity-0');
+                toast.classList.add('translate-y-0', 'opacity-100');
+            }, 50);
+            
+            // Auto-remove after 4 seconds
+            setTimeout(() => {
+                toast.classList.remove('translate-y-0', 'opacity-100');
+                toast.classList.add('translate-y-[-20px]', 'opacity-0');
+                setTimeout(() => { toast.remove(); }, 500);
+            }, 4000);
         }
 
         function scrollToElement(id) {

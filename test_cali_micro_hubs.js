@@ -160,6 +160,55 @@ function startServer() {
         }
         console.log('✅ Success! Espresso strength levels are visible and customizable.');
 
+        // Close modal
+        console.log('Testing Catering & Events configurator...');
+        await page.evaluate(() => {
+            document.getElementById('step-2').classList.add('hidden');
+        });
+
+        // Open the catering pack modal
+        await page.evaluate(() => {
+            openStep2('catering_event_pack');
+        });
+        await new Promise(r => setTimeout(r, 1000));
+
+        // Verify that the catering selector is visible
+        const cateringTierButtons = await page.evaluate(() => {
+            const label = Array.from(document.querySelectorAll('label')).find(l => l.innerText.includes('EVENT SIZE'));
+            if (!label) return [];
+            const container = label.nextElementSibling;
+            if (!container) return [];
+            return Array.from(container.querySelectorAll('button')).map(b => b.innerText.replace(/\n/g, ' '));
+        });
+        console.log('Rendered Catering Tiers:', cateringTierButtons);
+        if (cateringTierButtons.length !== 8) {
+            throw new Error(`Expected 8 catering tiers, got ${cateringTierButtons.length}`);
+        }
+        console.log('✅ Success! Catering size tiers (25 to 500) are fully loaded.');
+
+        // Verify the 5-flavor selection limit
+        const flavorConstraintPassed = await page.evaluate(() => {
+            // Allocate 2 bottles to 4 other flavors to reach the 5 active flavor limit
+            adjustAllocation('Caramel Latte', 1);
+            adjustAllocation('Caramel Latte', 1);
+            adjustAllocation('French Vanilla', 1);
+            adjustAllocation('French Vanilla', 1);
+            adjustAllocation('Oreo Supreme', 1);
+            adjustAllocation('Oreo Supreme', 1);
+            adjustAllocation('Dirty Chai', 1);
+            adjustAllocation('Dirty Chai', 1);
+            
+            // Try to allocate to the 6th flavor (Classic Black)
+            adjustAllocation('Classic Black', 1);
+            
+            return allocatedFlavors['Classic Black'].qty === 0;
+        });
+
+        if (!flavorConstraintPassed) {
+            throw new Error('Flavor constraint failed: Classic Black was allowed to be added as a 6th flavor!');
+        }
+        console.log('✅ Success! Strictly enforced a maximum of 5 active flavors.');
+
         console.log('✅ Automated test successfully completed without errors!');
     } catch (e) {
         console.error('❌ Test failed:', e);
