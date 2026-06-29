@@ -493,7 +493,7 @@
             document.getElementById('conf-pack-desc').innerText = `${selectedProduct.bottles_per_pack} x Premium Cold Brew Lattes`;
             
             // Determine default flavor based on product name
-            const flavorOptions = ['Caramel Latte', 'French Vanilla', 'Oreo Supreme', 'Vanilla Latte', 'Dirty Chai'];
+            const flavorOptions = ['Caramel Latte', 'French Vanilla', 'Oreo Supreme', 'Vanilla Latte', 'Dirty Chai', 'Classic Black'];
             let defaultFlavor = 'Vanilla Latte';
             if (flavorOptions.includes(selectedProduct.name)) {
                 defaultFlavor = selectedProduct.name;
@@ -532,7 +532,7 @@
                         <div class="space-y-3">
                             <label class="block text-[8px] font-black uppercase text-gray-300 tracking-[0.2em] ml-1">Flavor Choice</label>
                             <div class="grid grid-cols-2 gap-2">
-                                ${['Caramel Latte', 'French Vanilla', 'Oreo Supreme', 'Vanilla Latte', 'Dirty Chai'].map(f => `
+                                ${['Caramel Latte', 'French Vanilla', 'Oreo Supreme', 'Vanilla Latte', 'Dirty Chai', 'Classic Black'].map(f => `
                                     <button onclick="selectBottleFlavor(${idx}, '${f}')" class="p-4 rounded-2xl border-2 text-[10px] font-bold text-left transition-all ${sel.flavor === f ? 'border-brand-gold bg-brand-gold/5 text-brand-gold' : 'border-gray-100 bg-gray-50 text-gray-400 hover:border-brand-gold/50'}">${f}</button>
                                 `).join('')}
                             </div>
