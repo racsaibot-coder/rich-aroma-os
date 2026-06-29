@@ -497,6 +497,8 @@
             let defaultFlavor = 'Vanilla Latte';
             if (flavorOptions.includes(selectedProduct.name)) {
                 defaultFlavor = selectedProduct.name;
+            } else if (selectedProduct.name.toLowerCase().includes('black') || selectedProduct.name.toLowerCase().includes('americano')) {
+                defaultFlavor = 'Classic Black';
             }
 
             // Initialize bottle selections
