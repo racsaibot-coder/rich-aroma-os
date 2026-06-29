@@ -58,11 +58,11 @@ const puppeteer = require('puppeteer');
             console.log('❌ Failure: The Ivy Residences is missing in production dropdown.');
         }
 
-        const fontanaOption = locations.find(o => o.text.includes('Kaiser Fontana (Sister'));
+        const fontanaOption = locations.find(o => o.text.includes('Kaiser Fontana'));
         if (fontanaOption) {
-            console.log('✅ Success! Kaiser Fontana (Sister\'s Office) is live in production!');
+            console.log('✅ Success! Kaiser Fontana is live in production!');
         } else {
-            console.log('❌ Failure: Kaiser Fontana (Sister\'s Office) is missing.');
+            console.log('❌ Failure: Kaiser Fontana is missing.');
         }
 
         // Find and click the "Classic Black Americano" card to customize
