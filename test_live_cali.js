@@ -113,7 +113,7 @@ const puppeteer = require('puppeteer');
         if (espressoButtons.length !== 3) {
             throw new Error(`Expected 3 espresso levels on live page, got ${espressoButtons.length}`);
         }
-        if (!espressoButtons.some(t => t.includes('Light 2 oz')) || !espressoButtons.some(t => t.includes('Standard 3 oz')) || !espressoButtons.some(t => t.includes('Extra 4 oz'))) {
+        if (!espressoButtons.some(t => t.toLowerCase().includes('light 2')) || !espressoButtons.some(t => t.toLowerCase().includes('standard 3')) || !espressoButtons.some(t => t.toLowerCase().includes('extra 4'))) {
             throw new Error('Espresso level button values are incorrect for Classic Black');
         }
         console.log('✅ Success! Espresso levels correctly display 2 oz, 3 oz, and 4 oz for Classic Black.');

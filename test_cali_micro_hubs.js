@@ -155,7 +155,7 @@ function startServer() {
         }
         
         // Check if one of them is "Standard"
-        if (!espressoButtons.some(t => t.includes('Standard'))) {
+        if (!espressoButtons.some(t => t.toLowerCase().includes('standard'))) {
             throw new Error('Espresso level buttons must include Standard');
         }
         console.log('✅ Success! Espresso strength levels are visible and customizable.');

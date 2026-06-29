@@ -487,6 +487,8 @@
             }).join('');
         }
 
+        let allocatedFlavors = {};
+
         function openStep2(id) {
             selectedProduct = allProducts.find(p => p.id === id);
             document.getElementById('conf-pack-name').innerText = selectedProduct.name;
@@ -501,16 +503,19 @@
                 defaultFlavor = 'Classic Black';
             }
 
-            // Initialize bottle selections
-            const numBottles = selectedProduct.bottles_per_pack || 1;
-            bottleSelections = [];
-            for(let i=0; i<numBottles; i++) {
-                bottleSelections.push({ flavor: defaultFlavor, milk: 'Regular', espresso: 'Standard' });
-            }
+            // Initialize allocatedFlavors map
+            flavorOptions.forEach(f => {
+                allocatedFlavors[f] = {
+                    qty: f === defaultFlavor ? selectedProduct.bottles_per_pack : 0,
+                    milk: 'Regular',
+                    espresso: 'Standard'
+                };
+            });
 
+            syncSelections();
             renderBottleConfigs();
             
-            document.getElementById('set-all-btn').classList.toggle('hidden', numBottles <= 1);
+            document.getElementById('set-all-btn').classList.add('hidden');
             document.getElementById('step-2').classList.remove('hidden');
             currentQty = 1;
             document.getElementById('qty-display').innerText = currentQty;
@@ -519,80 +524,165 @@
             scrollToElement('step-2');
         }
 
-        function renderBottleConfigs() {
-            const container = document.getElementById('bottle-config-container');
-            const numBottles = bottleSelections.length;
+        function syncSelections() {
+            bottleSelections = [];
+            for (const flavorName of ['Caramel Latte', 'French Vanilla', 'Oreo Supreme', 'Vanilla Latte', 'Dirty Chai', 'Classic Black']) {
+                const config = allocatedFlavors[flavorName];
+                if (config && config.qty > 0) {
+                    for (let i = 0; i < config.qty; i++) {
+                        bottleSelections.push({
+                            flavor: flavorName,
+                            milk: config.milk || 'Regular',
+                            espresso: config.espresso || 'Standard'
+                        });
+                    }
+                }
+            }
+        }
+
+        function adjustAllocation(flavor, delta) {
+            const currentTotal = Object.values(allocatedFlavors).reduce((sum, f) => sum + f.qty, 0);
+            const targetTotal = selectedProduct.bottles_per_pack;
             
-            container.innerHTML = bottleSelections.map((sel, idx) => `
-                <div class="space-y-6 pb-8 ${idx < numBottles - 1 ? 'border-b border-gray-100' : ''}">
-                    <div class="flex items-center gap-3">
-                        <span class="text-[10px] font-black bg-brand-brown/10 text-brand-brown w-5 h-5 rounded-full flex items-center justify-center">${idx + 1}</span>
-                        <h4 class="text-xs font-black uppercase tracking-widest text-gray-400">${numBottles > 1 ? `Bottle ${idx + 1} Selection` : 'Customize Your Bottle'}</h4>
-                    </div>
-                    
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
-                        <div class="space-y-3">
-                            <label class="block text-[8px] font-black uppercase text-gray-300 tracking-[0.2em] ml-1">Flavor Choice</label>
-                            <div class="grid grid-cols-2 gap-2">
-                                ${['Caramel Latte', 'French Vanilla', 'Oreo Supreme', 'Vanilla Latte', 'Dirty Chai', 'Classic Black'].map(f => `
-                                    <button onclick="selectBottleFlavor(${idx}, '${f}')" class="p-4 rounded-2xl border-2 text-[10px] font-bold text-left transition-all ${sel.flavor === f ? 'border-brand-gold bg-brand-gold/5 text-brand-gold' : 'border-gray-100 bg-gray-50 text-gray-400 hover:border-brand-gold/50'}">${f}</button>
-                                `).join('')}
-                            </div>
-                        </div>
-
-                        <div class="space-y-3">
-                            <label class="block text-[8px] font-black uppercase text-gray-300 tracking-[0.2em] ml-1">Milk Alternative</label>
-                            <div class="grid grid-cols-2 gap-2">
-                                ${['Regular', 'Oat Milk'].map(m => `
-                                    <button onclick="selectBottleMilk(${idx}, '${m}')" class="p-4 rounded-2xl border-2 text-[10px] font-bold text-left transition-all ${sel.milk === m ? 'border-brand-gold bg-brand-gold/5 text-brand-gold' : 'border-gray-100 bg-gray-50 text-gray-400 hover:border-brand-gold/50'}">${m}${m === 'Oat Milk' ? ' (+$1)' : ''}</button>
-                                `).join('')}
-                            </div>
-                        </div>
-
-                        <div class="space-y-3">
-                            <label class="block text-[8px] font-black uppercase text-gray-300 tracking-[0.2em] ml-1">Espresso Level</label>
-                            <div class="grid grid-cols-3 gap-2">
-                                ${['Light', 'Standard', 'Extra'].map(s => {
-                                    let ozText = "";
-                                    if (sel.flavor === 'Classic Black') {
-                                        if (s === 'Light') ozText = "2 oz";
-                                        else if (s === 'Standard') ozText = "3 oz";
-                                        else if (s === 'Extra') ozText = "4 oz";
-                                    } else {
-                                        if (s === 'Light') ozText = "1 oz";
-                                        else if (s === 'Standard') ozText = "2 oz";
-                                        else if (s === 'Extra') ozText = "3 oz";
-                                    }
-                                    const activeEspresso = sel.espresso || 'Standard';
-                                    const isActive = activeEspresso === s;
-                                    return `
-                                        <button onclick="selectBottleEspresso(${idx}, '${s}')" class="p-3 rounded-2xl border-2 text-[9px] font-black text-center transition-all flex flex-col items-center justify-center ${isActive ? 'border-brand-gold bg-brand-gold/5 text-brand-gold' : 'border-gray-100 bg-gray-50 text-gray-400 hover:border-brand-gold/50'}">
-                                            <span>${s}</span>
-                                            <span class="opacity-60 text-[8px] mt-0.5">${ozText}</span>
-                                        </button>
-                                    `;
-                                }).join('')}
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            `).join('');
-        }
-
-        function selectBottleFlavor(idx, f) {
-            bottleSelections[idx].flavor = f;
-            renderBottleConfigs();
-        }
-
-        function selectBottleMilk(idx, m) {
-            bottleSelections[idx].milk = m;
+            const currentQty = allocatedFlavors[flavor].qty;
+            const newQty = currentQty + delta;
+            
+            if (newQty < 0) return;
+            if (delta > 0 && currentTotal >= targetTotal) {
+                alert(`You have already allocated all ${targetTotal} drinks! Reduce another flavor first.`);
+                return;
+            }
+            
+            allocatedFlavors[flavor].qty = newQty;
+            
+            syncSelections();
             renderBottleConfigs();
             updateItemTotal();
         }
 
-        function selectBottleEspresso(idx, s) {
-            bottleSelections[idx].espresso = s;
+        function toggleOption(flavor, field, value) {
+            allocatedFlavors[flavor][field] = value;
+            syncSelections();
             renderBottleConfigs();
+            updateItemTotal();
+        }
+
+        function renderBottleConfigs() {
+            const container = document.getElementById('bottle-config-container');
+            const targetTotal = selectedProduct.bottles_per_pack;
+            const currentTotal = Object.values(allocatedFlavors).reduce((sum, f) => sum + f.qty, 0);
+            
+            // Add a progress bar at the top
+            const progressPercent = (currentTotal / targetTotal) * 100;
+            const progressColor = currentTotal === targetTotal ? 'bg-emerald-500' : 'bg-brand-gold';
+            
+            let html = `
+                <div class="bg-gray-50 border border-gray-100 rounded-[2rem] p-6 space-y-4 mb-6 shadow-sm">
+                    <div class="flex justify-between items-center text-xs font-black uppercase tracking-widest text-gray-500">
+                        <span>Allocation Progress</span>
+                        <span class="${currentTotal === targetTotal ? 'text-emerald-500' : 'text-brand-brown'} font-mono text-sm">${currentTotal} / ${targetTotal} Bottles</span>
+                    </div>
+                    <div class="w-full h-2.5 bg-gray-200 rounded-full overflow-hidden relative">
+                        <div class="h-full rounded-full transition-all duration-500 ${progressColor}" style="width: ${progressPercent}%;"></div>
+                    </div>
+                    ${currentTotal < targetTotal 
+                        ? `<p class="text-[10px] text-brand-brown font-bold italic"><i class="fas fa-info-circle mr-1"></i> Allocate ${targetTotal - currentTotal} more drink(s) to complete your bundle.</p>`
+                        : `<p class="text-[10px] text-emerald-500 font-bold italic"><i class="fas fa-check-circle mr-1"></i> Bundle complete! Ready to add to order.</p>`
+                    }
+                </div>
+                <div class="space-y-6">
+            `;
+            
+            const flavorInfo = {
+                'Caramel Latte': { desc: 'Buttery caramel blended with rich espresso and cold milk.', icon: 'fa-mug-hot' },
+                'French Vanilla': { desc: 'Smooth, aromatic vanilla bean infused into our cold brew latte.', icon: 'fa-leaf' },
+                'Oreo Supreme': { desc: 'Decadent chocolate cookies blended with creamy iced espresso.', icon: 'fa-cookie' },
+                'Vanilla Latte': { desc: 'Classic creamy espresso with house-made vanilla syrup.', icon: 'fa-coffee' },
+                'Dirty Chai': { desc: 'A spiced chai tea infusion kicked up with a double shot of espresso.', icon: 'fa-fire' },
+                'Classic Black': { desc: 'A smooth, rich double shot of our specialty dark roast blend.', icon: 'fa-coffee' }
+            };
+            
+            for (const flavor of ['Caramel Latte', 'French Vanilla', 'Oreo Supreme', 'Vanilla Latte', 'Dirty Chai', 'Classic Black']) {
+                const config = allocatedFlavors[flavor];
+                const info = flavorInfo[flavor];
+                const isSelected = config.qty > 0;
+                
+                html += `
+                    <div class="bg-white rounded-3xl p-6 border ${isSelected ? 'border-brand-gold shadow-md' : 'border-gray-100 shadow-sm'} transition-all duration-300 flex flex-col gap-5">
+                        <div class="flex items-center justify-between gap-4">
+                            <div class="flex items-center gap-4">
+                                <div class="w-12 h-12 rounded-2xl bg-brand-cream text-brand-brown flex items-center justify-center text-lg shadow-inner">
+                                    <i class="fas ${info.icon || 'fa-coffee'}"></i>
+                                </div>
+                                <div>
+                                    <h4 class="font-bold text-sm text-brand-dark">${flavor}</h4>
+                                    <p class="text-[10px] text-gray-400 font-medium leading-relaxed max-w-[200px] md:max-w-[280px]">${info.desc}</p>
+                                </div>
+                            </div>
+                            
+                            <!-- Counter buttons -->
+                            <div class="flex items-center gap-4 bg-gray-50 border border-gray-100 rounded-full p-1 shadow-inner shrink-0">
+                                <button onclick="adjustAllocation('${flavor}', -1)" class="w-8 h-8 rounded-full bg-white shadow-sm flex items-center justify-center text-xs text-gray-500 hover:text-red-500 transition-colors active:scale-90"><i class="fas fa-minus"></i></button>
+                                <span class="font-mono font-bold text-sm w-4 text-center">${config.qty}</span>
+                                <button onclick="adjustAllocation('${flavor}', 1)" class="w-8 h-8 rounded-full bg-brand-dark text-white shadow-md flex items-center justify-center text-xs hover:bg-brand-brown transition-colors active:scale-90"><i class="fas fa-plus"></i></button>
+                            </div>
+                        </div>
+                        
+                        <!-- Collapsible custom choices (only if allocated > 0) -->
+                        ${isSelected ? `
+                            <div class="pt-5 border-t border-gray-100 grid grid-cols-1 md:grid-cols-2 gap-6 animate-fade-in">
+                                ${flavor !== 'Classic Black' ? `
+                                    <div class="space-y-2">
+                                        <label class="block text-[8px] font-black uppercase text-gray-400 tracking-wider">Milk Alternative</label>
+                                        <div class="grid grid-cols-2 gap-2 bg-gray-50 p-1 rounded-2xl border border-gray-200">
+                                            <button onclick="toggleOption('${flavor}', 'milk', 'Regular')" class="py-2 rounded-xl text-[9px] font-bold uppercase transition-all ${config.milk === 'Regular' ? 'bg-white text-brand-dark shadow-sm border border-gray-100' : 'text-gray-400 hover:text-brand-dark'}">Regular</button>
+                                            <button onclick="toggleOption('${flavor}', 'milk', 'Oat Milk')" class="py-2 rounded-xl text-[9px] font-bold uppercase transition-all ${config.milk === 'Oat Milk' ? 'bg-white text-brand-dark shadow-sm border border-gray-100' : 'text-gray-400 hover:text-brand-dark'}">Oat Milk (+$1)</button>
+                                        </div>
+                                    </div>
+                                ` : ''}
+                                
+                                <div class="space-y-2 ${flavor === 'Classic Black' ? 'md:col-span-2' : ''}">
+                                    <label class="block text-[8px] font-black uppercase text-gray-400 tracking-wider">Espresso Level</label>
+                                    <div class="grid grid-cols-3 gap-2 bg-gray-50 p-1 rounded-2xl border border-gray-200">
+                                        ${['Light', 'Standard', 'Extra'].map(s => {
+                                            let oz = "";
+                                            if (flavor === 'Classic Black') {
+                                                oz = s === 'Light' ? '2oz' : (s === 'Extra' ? '4oz' : '3oz');
+                                            } else {
+                                                oz = s === 'Light' ? '1oz' : (s === 'Extra' ? '3oz' : '2oz');
+                                            }
+                                            const isActive = config.espresso === s;
+                                            return `
+                                                <button onclick="toggleOption('${flavor}', 'espresso', '${s}')" class="py-2 rounded-xl text-[9px] font-bold uppercase transition-all flex flex-col items-center justify-center ${isActive ? 'bg-white text-brand-dark shadow-sm border border-gray-100' : 'text-gray-400 hover:text-brand-dark'}">
+                                                    <span>${s}</span>
+                                                    <span class="text-[7px] opacity-60 font-medium lowercase tracking-normal mt-0.5">${oz}</span>
+                                                </button>
+                                            `;
+                                        }).join('')}
+                                    </div>
+                                </div>
+                            </div>
+                        ` : ''}
+                    </div>
+                `;
+            }
+            
+            html += `</div>`;
+            container.innerHTML = html;
+            
+            // Control Add to Cart button state based on completeness
+            const btn = document.querySelector('button[onclick="addToCart()"]');
+            if (btn) {
+                if (currentTotal === targetTotal) {
+                    btn.disabled = false;
+                    btn.innerText = "Add to My Order";
+                    btn.className = "w-full gold-shimmer text-brand-dark font-black py-6 rounded-2xl shadow-2xl hover:scale-[1.02] active:scale-95 transition-all uppercase tracking-[0.2em] text-xs";
+                } else {
+                    btn.disabled = true;
+                    btn.innerText = `Allocate ${targetTotal - currentTotal} more drinks`;
+                    btn.className = "w-full bg-gray-200 text-gray-400 font-bold py-6 rounded-2xl shadow-none cursor-not-allowed text-xs uppercase tracking-[0.15em]";
+                }
+            }
         }
 
         function getEspressoOz(flavor, strength) {
@@ -607,13 +697,6 @@
                 if (activeStrength === 'Extra') return "3oz Esp";
             }
             return "2oz Esp";
-        }
-
-        function setAllSame() {
-            const first = bottleSelections[0];
-            bottleSelections = bottleSelections.map(() => ({ ...first }));
-            renderBottleConfigs();
-            updateItemTotal();
         }
 
         function changeQty(delta) {
