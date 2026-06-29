@@ -543,17 +543,27 @@
         function adjustAllocation(flavor, delta) {
             const currentTotal = Object.values(allocatedFlavors).reduce((sum, f) => sum + f.qty, 0);
             const targetTotal = selectedProduct.bottles_per_pack;
-            
             const currentQty = allocatedFlavors[flavor].qty;
-            const newQty = currentQty + delta;
             
-            if (newQty < 0) return;
-            if (delta > 0 && currentTotal >= targetTotal) {
-                alert(`You have already allocated all ${targetTotal} drinks! Reduce another flavor first.`);
-                return;
+            if (delta < 0) {
+                if (currentQty <= 0) return;
+                allocatedFlavors[flavor].qty = currentQty - 1;
+            } else {
+                if (currentTotal >= targetTotal) {
+                    // Auto-decrement another allocated flavor to make room
+                    const otherFlavors = Object.keys(allocatedFlavors).filter(f => f !== flavor && allocatedFlavors[f].qty > 0);
+                    if (otherFlavors.length > 0) {
+                        otherFlavors.sort((a, b) => allocatedFlavors[b].qty - allocatedFlavors[a].qty);
+                        const targetToDecrement = otherFlavors[0];
+                        allocatedFlavors[targetToDecrement].qty -= 1;
+                        allocatedFlavors[flavor].qty = currentQty + 1;
+                    } else {
+                        return;
+                    }
+                } else {
+                    allocatedFlavors[flavor].qty = currentQty + 1;
+                }
             }
-            
-            allocatedFlavors[flavor].qty = newQty;
             
             syncSelections();
             renderBottleConfigs();
