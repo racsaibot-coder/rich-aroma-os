@@ -65,29 +65,39 @@ const puppeteer = require('puppeteer');
             console.log('❌ Failure: Kaiser Fontana (Sister\'s Office) is missing.');
         }
 
-        // Open customization for the first item to verify Classic Black is in options
-        console.log('Opening package configuration step...');
+        // Find and click the "Classic Black Americano" card to customize
+        console.log('Opening customization modal for Classic Black Americano...');
         await page.evaluate(() => {
-            const card = document.querySelector('div[onclick^="openStep2"]');
-            if (card) {
-                card.click();
+            const cards = Array.from(document.querySelectorAll('div[onclick^="openStep2"]'));
+            const blackCard = cards.find(c => c.innerText.toLowerCase().includes('black') || c.innerText.toLowerCase().includes('americano'));
+            if (blackCard) {
+                blackCard.click();
             } else {
-                console.error("Could not find any product card with onclick openStep2");
+                console.error("Could not find Classic Black Americano product card");
+                if (cards[0]) cards[0].click();
             }
         });
 
         await new Promise(r => setTimeout(r, 1000));
 
-        // Check if "Classic Black" is rendered as a button in flavor selector
-        const hasClassicBlackButton = await page.evaluate(() => {
+        // Check if "Classic Black" is rendered and selected by default
+        const hasClassicBlackSelection = await page.evaluate(() => {
             const buttons = Array.from(document.querySelectorAll('button'));
-            return buttons.some(b => b.innerText === 'Classic Black');
+            const blackBtn = buttons.find(b => b.innerText === 'Classic Black');
+            if (!blackBtn) return { present: false, active: false };
+            const isActive = blackBtn.classList.contains('border-brand-gold') && blackBtn.classList.contains('bg-brand-gold/5');
+            return { present: true, active: isActive };
         });
 
-        if (hasClassicBlackButton) {
-            console.log('✅ Success! Classic Black is available as a flavor selection option!');
+        if (hasClassicBlackSelection.present) {
+            console.log('✅ Success! Classic Black is available in the flavor selector.');
+            if (hasClassicBlackSelection.active) {
+                console.log('✅ Success! Classic Black is SELECTED by default for Classic Black Americano product!');
+            } else {
+                console.log('❌ Failure: Classic Black is not selected by default.');
+            }
         } else {
-            console.log('❌ Failure: Classic Black is not found in flavor selection buttons.');
+            console.log('❌ Failure: Classic Black option is missing.');
         }
 
     } catch (e) {
