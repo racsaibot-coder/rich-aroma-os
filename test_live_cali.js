@@ -122,6 +122,17 @@ const puppeteer = require('puppeteer');
         }
         console.log('✅ Success! Espresso levels correctly display 2 oz, 3 oz, and 4 oz for Classic Black.');
 
+        // Check if Event Catering card is present in the product grid
+        const hasCateringCard = await page.evaluate(() => {
+            const cards = Array.from(document.querySelectorAll('div[onclick^="openStep2"]'));
+            return cards.some(c => c.innerText.toLowerCase().includes('catering') || c.innerText.toLowerCase().includes('event'));
+        });
+        if (hasCateringCard) {
+            console.log('✅ Success! Event Catering card is present on the live production page!');
+        } else {
+            console.log('❌ Failure: Event Catering card is missing in production.');
+        }
+
     } catch (e) {
         console.error('❌ Test failed:', e);
     } finally {
