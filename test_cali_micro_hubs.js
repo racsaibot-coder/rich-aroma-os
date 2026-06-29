@@ -51,6 +51,12 @@ function startServer() {
         }
         console.log(`Found option for The Ivy: ID = ${ivyOption.value}`);
 
+        // Verify it is the first choice in select list (at index 1, right after placeholder at 0)
+        if (locationOptions[1].value !== ivyOption.value) {
+            throw new Error(`The Ivy is not the first option. First is: ${locationOptions[1].text}`);
+        }
+        console.log('✅ Success! The Ivy Residences is the first option in the dropdown list.');
+
         // Add 1 bundle of 5 to cart to ensure tracker card renders details
         console.log('Adding a bundle of 5 to cart...');
         // We evaluate a click on the Bundle of 5 package card (typically the third package) or mock cart update
@@ -93,6 +99,7 @@ function startServer() {
         // Retrieve notes field state and tracker details
         const uiState = await page.evaluate(() => {
             const notes = document.getElementById('cust-notes');
+            const tracker = document.getElementById('hub-tracker-card');
             const trackerTitle = document.getElementById('hub-tracker-title');
             const trackerProgress = document.getElementById('hub-tracker-progress-text');
             const trackerMsg = document.getElementById('hub-tracker-msg');
@@ -100,6 +107,7 @@ function startServer() {
             return {
                 notesVisible: notes && !notes.classList.contains('hidden'),
                 notesPlaceholder: notes ? notes.placeholder : '',
+                trackerVisible: tracker && !tracker.classList.contains('hidden'),
                 trackerTitle: trackerTitle ? trackerTitle.innerText : '',
                 trackerProgress: trackerProgress ? trackerProgress.innerText : '',
                 trackerMsg: trackerMsg ? trackerMsg.innerText : ''
@@ -113,9 +121,10 @@ function startServer() {
         if (uiState.notesPlaceholder !== 'Specify Ivy 1/2 + Apt #') {
             throw new Error(`Unexpected notes placeholder: ${uiState.notesPlaceholder}`);
         }
-        if (!uiState.trackerProgress.endsWith('/ 10')) {
-            throw new Error(`Threshold goal should be 10, got: ${uiState.trackerProgress}`);
+        if (uiState.trackerVisible) {
+            throw new Error('Collective tracker progress card should be hidden for Ivy Residences.');
         }
+        console.log('✅ Success! Tracker card is hidden for Ivy Residences (unrestricted free delivery).');
 
         console.log('✅ Automated test successfully completed without errors!');
     } catch (e) {
