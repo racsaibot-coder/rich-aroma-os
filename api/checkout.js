@@ -44,7 +44,16 @@ module.exports = async function handler(req, res) {
             totalBottles += (itemBottles * parseInt(item.qty));
 
             if (item.selections && Array.isArray(item.selections)) {
-                itemDescription = item.selections.map((s, i) => `#${i+1}: ${s.flavor} (${s.milk})`).join(', ');
+                itemDescription = item.selections.map((s, i) => {
+                    const espStr = s.espresso || 'Standard';
+                    let oz = "";
+                    if (s.flavor === 'Classic Black') {
+                        oz = espStr === 'Light' ? '2oz' : (espStr === 'Extra' ? '4oz' : '3oz');
+                    } else {
+                        oz = espStr === 'Light' ? '1oz' : (espStr === 'Extra' ? '3oz' : '2oz');
+                    }
+                    return `#${i+1}: ${s.flavor} (${s.milk}, ${oz} Esp)`;
+                }).join(', ');
             } else {
                 itemDescription = `Flavor: ${item.flavor || 'N/A'}, Milk: ${item.milk || 'N/A'}`;
             }

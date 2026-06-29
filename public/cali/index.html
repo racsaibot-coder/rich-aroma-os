@@ -505,7 +505,7 @@
             const numBottles = selectedProduct.bottles_per_pack || 1;
             bottleSelections = [];
             for(let i=0; i<numBottles; i++) {
-                bottleSelections.push({ flavor: defaultFlavor, milk: 'Regular' });
+                bottleSelections.push({ flavor: defaultFlavor, milk: 'Regular', espresso: 'Standard' });
             }
 
             renderBottleConfigs();
@@ -530,7 +530,7 @@
                         <h4 class="text-xs font-black uppercase tracking-widest text-gray-400">${numBottles > 1 ? `Bottle ${idx + 1} Selection` : 'Customize Your Bottle'}</h4>
                     </div>
                     
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
                         <div class="space-y-3">
                             <label class="block text-[8px] font-black uppercase text-gray-300 tracking-[0.2em] ml-1">Flavor Choice</label>
                             <div class="grid grid-cols-2 gap-2">
@@ -548,6 +548,32 @@
                                 `).join('')}
                             </div>
                         </div>
+
+                        <div class="space-y-3">
+                            <label class="block text-[8px] font-black uppercase text-gray-300 tracking-[0.2em] ml-1">Espresso Level</label>
+                            <div class="grid grid-cols-3 gap-2">
+                                ${['Light', 'Standard', 'Extra'].map(s => {
+                                    let ozText = "";
+                                    if (sel.flavor === 'Classic Black') {
+                                        if (s === 'Light') ozText = "2 oz";
+                                        else if (s === 'Standard') ozText = "3 oz";
+                                        else if (s === 'Extra') ozText = "4 oz";
+                                    } else {
+                                        if (s === 'Light') ozText = "1 oz";
+                                        else if (s === 'Standard') ozText = "2 oz";
+                                        else if (s === 'Extra') ozText = "3 oz";
+                                    }
+                                    const activeEspresso = sel.espresso || 'Standard';
+                                    const isActive = activeEspresso === s;
+                                    return `
+                                        <button onclick="selectBottleEspresso(${idx}, '${s}')" class="p-3 rounded-2xl border-2 text-[9px] font-black text-center transition-all flex flex-col items-center justify-center ${isActive ? 'border-brand-gold bg-brand-gold/5 text-brand-gold' : 'border-gray-100 bg-gray-50 text-gray-400 hover:border-brand-gold/50'}">
+                                            <span>${s}</span>
+                                            <span class="opacity-60 text-[8px] mt-0.5">${ozText}</span>
+                                        </button>
+                                    `;
+                                }).join('')}
+                            </div>
+                        </div>
                     </div>
                 </div>
             `).join('');
@@ -562,6 +588,25 @@
             bottleSelections[idx].milk = m;
             renderBottleConfigs();
             updateItemTotal();
+        }
+
+        function selectBottleEspresso(idx, s) {
+            bottleSelections[idx].espresso = s;
+            renderBottleConfigs();
+        }
+
+        function getEspressoOz(flavor, strength) {
+            const activeStrength = strength || 'Standard';
+            if (flavor === 'Classic Black') {
+                if (activeStrength === 'Light') return "2oz Esp";
+                if (activeStrength === 'Standard') return "3oz Esp";
+                if (activeStrength === 'Extra') return "4oz Esp";
+            } else {
+                if (activeStrength === 'Light') return "1oz Esp";
+                if (activeStrength === 'Standard') return "2oz Esp";
+                if (activeStrength === 'Extra') return "3oz Esp";
+            }
+            return "2oz Esp";
         }
 
         function setAllSame() {
@@ -623,9 +668,9 @@
             list.innerHTML = cart.map((item, index) => {
                 let details = "";
                 if (item.selections && item.selections.length > 1) {
-                    details = item.selections.map((s, i) => `<span class="block opacity-60 text-[8px] mt-1">#${i+1}: ${s.flavor} • ${s.milk}</span>`).join('');
+                    details = item.selections.map((s, i) => `<span class="block opacity-60 text-[8px] mt-1">#${i+1}: ${s.flavor} • ${s.milk} • ${getEspressoOz(s.flavor, s.espresso)}</span>`).join('');
                 } else if (item.selections && item.selections.length === 1) {
-                    details = `<span class="block opacity-60 text-[8px] mt-1">${item.selections[0].flavor} • ${item.selections[0].milk}</span>`;
+                    details = `<span class="block opacity-60 text-[8px] mt-1">${item.selections[0].flavor} • ${item.selections[0].milk} • ${getEspressoOz(item.selections[0].flavor, item.selections[0].espresso)}</span>`;
                 }
 
                 return `

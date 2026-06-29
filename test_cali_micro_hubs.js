@@ -126,6 +126,40 @@ function startServer() {
         }
         console.log('✅ Success! Tracker card is hidden for Ivy Residences (unrestricted free delivery).');
 
+        // Verify Espresso Selection elements
+        console.log('Opening package configuration modal in test...');
+        await page.evaluate(() => {
+            const cards = Array.from(document.querySelectorAll('div[onclick^="openStep2"]'));
+            if (cards.length > 0) {
+                cards[0].click();
+            } else {
+                console.error("No product cards found to open step 2.");
+            }
+        });
+        await new Promise(r => setTimeout(r, 1000));
+
+        // Get espresso button texts and active states
+        const espressoButtons = await page.evaluate(() => {
+            const label = Array.from(document.querySelectorAll('label')).find(l => l.innerText.includes('ESPRESSO LEVEL'));
+            if (!label) return [];
+            const container = label.nextElementSibling;
+            if (!container) return [];
+            const buttons = Array.from(container.querySelectorAll('button'));
+            return buttons.map(b => b.innerText.replace(/\n/g, ' '));
+        });
+        console.log('Rendered Espresso Level buttons:', espressoButtons);
+        
+        // Assert we have the standard 3 levels
+        if (espressoButtons.length !== 3) {
+            throw new Error(`Expected 3 espresso levels, got ${espressoButtons.length}`);
+        }
+        
+        // Check if one of them is "Standard"
+        if (!espressoButtons.some(t => t.includes('Standard'))) {
+            throw new Error('Espresso level buttons must include Standard');
+        }
+        console.log('✅ Success! Espresso strength levels are visible and customizable.');
+
         console.log('✅ Automated test successfully completed without errors!');
     } catch (e) {
         console.error('❌ Test failed:', e);
