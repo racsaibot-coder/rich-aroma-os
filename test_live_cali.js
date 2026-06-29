@@ -100,6 +100,24 @@ const puppeteer = require('puppeteer');
             console.log('❌ Failure: Classic Black option is missing.');
         }
 
+        // Check if espresso level buttons are rendered and correct for Classic Black (should be 2oz, 3oz, 4oz)
+        const espressoButtons = await page.evaluate(() => {
+            const label = Array.from(document.querySelectorAll('label')).find(l => l.innerText.includes('ESPRESSO LEVEL'));
+            if (!label) return [];
+            const container = label.nextElementSibling;
+            if (!container) return [];
+            return Array.from(container.querySelectorAll('button')).map(b => b.innerText.replace(/\n/g, ' '));
+        });
+        console.log('Production Espresso buttons for Classic Black:', espressoButtons);
+
+        if (espressoButtons.length !== 3) {
+            throw new Error(`Expected 3 espresso levels on live page, got ${espressoButtons.length}`);
+        }
+        if (!espressoButtons.some(t => t.includes('Light 2 oz')) || !espressoButtons.some(t => t.includes('Standard 3 oz')) || !espressoButtons.some(t => t.includes('Extra 4 oz'))) {
+            throw new Error('Espresso level button values are incorrect for Classic Black');
+        }
+        console.log('✅ Success! Espresso levels correctly display 2 oz, 3 oz, and 4 oz for Classic Black.');
+
     } catch (e) {
         console.error('❌ Test failed:', e);
     } finally {
