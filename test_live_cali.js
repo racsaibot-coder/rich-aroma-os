@@ -30,7 +30,11 @@ const puppeteer = require('puppeteer');
 
         const ivyOption = locationOptions.find(text => text.includes('The Ivy Residences'));
         if (ivyOption) {
-            console.log('✅ Success! The Ivy Residences is live in production!');
+            if (ivyOption.includes('Chino')) {
+                console.log('✅ Success! The Ivy Residences city is correctly listed as Chino!');
+            } else {
+                console.log(`❌ Failure: Ivy Residences city is wrong: ${ivyOption}`);
+            }
         } else {
             console.log('❌ Failure: The Ivy Residences is missing in production dropdown.');
         }
@@ -40,6 +44,31 @@ const puppeteer = require('puppeteer');
             console.log('✅ Success! Kaiser Fontana (Sister\'s Office) is live in production!');
         } else {
             console.log('❌ Failure: Kaiser Fontana (Sister\'s Office) is missing.');
+        }
+
+        // Open customization for the first item to verify Classic Black is in options
+        console.log('Opening package configuration step...');
+        await page.evaluate(() => {
+            const card = document.querySelector('div[onclick^="openStep2"]');
+            if (card) {
+                card.click();
+            } else {
+                console.error("Could not find any product card with onclick openStep2");
+            }
+        });
+
+        await new Promise(r => setTimeout(r, 1000));
+
+        // Check if "Classic Black" is rendered as a button in flavor selector
+        const hasClassicBlackButton = await page.evaluate(() => {
+            const buttons = Array.from(document.querySelectorAll('button'));
+            return buttons.some(b => b.innerText === 'Classic Black');
+        });
+
+        if (hasClassicBlackButton) {
+            console.log('✅ Success! Classic Black is available as a flavor selection option!');
+        } else {
+            console.log('❌ Failure: Classic Black is not found in flavor selection buttons.');
         }
 
     } catch (e) {
