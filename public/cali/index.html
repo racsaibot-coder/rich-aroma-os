@@ -242,6 +242,7 @@
                                     </select>
                                     <i class="fas fa-chevron-down absolute right-5 top-1/2 -translate-y-1/2 text-white/20 pointer-events-none"></i>
                                 </div>
+                                <input type="text" id="cust-notes" placeholder="Apt # / Desk # / Floor Details" class="hidden w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-3 text-white text-sm focus:border-brand-gold outline-none transition-colors">
                                 <div id="hub-tracker-card" class="hidden mt-4 bg-white/5 border border-white/10 rounded-2xl p-5 space-y-4 transition-all duration-500 transform scale-95 opacity-0">
                                     <div class="flex justify-between items-start">
                                         <div>
@@ -658,6 +659,9 @@
             const feeDisplay = document.getElementById('home-delivery-fee-display');
             const hubCard = document.getElementById('hub-tracker-card');
             const personalBottles = cart.reduce((sum, item) => sum + item.bottles, 0);
+            const notesInput = document.getElementById('cust-notes');
+
+            if (notesInput) notesInput.classList.add('hidden');
 
             if (locationVal === 'home') {
                 finalTotal += HOME_DELIVERY_FEE;
@@ -671,9 +675,20 @@
                 if (locationVal && locationVal !== '') {
                     const selectedLoc = allLocations.find(l => l.id === locationVal);
                     if (selectedLoc) {
+                        const isMicroHub = selectedLoc.distributor_name === 'Micro-Hub';
+                        
+                        if (notesInput) {
+                            notesInput.classList.remove('hidden');
+                            if (selectedLoc.name.toLowerCase().includes('ivy') || selectedLoc.name.toLowerCase().includes('apartment') || selectedLoc.name.toLowerCase().includes('residences')) {
+                                notesInput.placeholder = "Specify Ivy 1/2 + Apt #";
+                            } else {
+                                notesInput.placeholder = "Desk # / Floor / Suite Details";
+                            }
+                        }
+
                         const currentHubBottles = selectedLoc.current_bottles || 0;
                         const totalCombined = currentHubBottles + personalBottles;
-                        const target = HUB_DELIVERY_THRESHOLD;
+                        const target = isMicroHub ? 10 : HUB_DELIVERY_THRESHOLD;
                         const percent = Math.min((totalCombined / target) * 100, 100);
                         
                         document.getElementById('hub-tracker-title').innerText = `${selectedLoc.name} (${selectedLoc.city})`;
@@ -690,16 +705,22 @@
                             badge.innerText = "UNLOCKED";
                             
                             if (currentHubBottles >= target) {
-                                msg.innerHTML = `🎉 Hub goal reached by community! <strong>FREE DELIVERY</strong> unlocked for this drop location!`;
+                                msg.innerHTML = isMicroHub
+                                    ? `🎉 Delivery Goal Unlocked! <strong>FREE DELIVERY</strong> enabled for this location!`
+                                    : `🎉 Hub goal reached by community! <strong>FREE DELIVERY</strong> unlocked for this drop location!`;
                             } else {
-                                msg.innerHTML = `🎉 Your order pushes this Hub to ${totalCombined} bottles! <strong>FREE DELIVERY</strong> unlocked for everyone at this Hub!`;
+                                msg.innerHTML = isMicroHub
+                                    ? `🎉 Your order pushes this location to ${totalCombined} bottles! <strong>FREE DELIVERY</strong> unlocked!`
+                                    : `🎉 Your order pushes this Hub to ${totalCombined} bottles! <strong>FREE DELIVERY</strong> unlocked for everyone at this Hub!`;
                             }
                         } else {
                             badge.className = "text-[8px] font-black uppercase tracking-widest px-2.5 py-1 rounded-full bg-brand-gold/10 text-brand-gold border border-brand-gold/20";
                             badge.innerText = "ACTIVE";
                             
                             const remaining = target - totalCombined;
-                            msg.innerHTML = `🔥 This Hub has <strong>${currentHubBottles}</strong> bottles ordered. Your cart adds <strong>${personalBottles}</strong>, bringing the total to <strong>${totalCombined}</strong>. Need <strong>${remaining}</strong> more to unlock FREE delivery!`;
+                            msg.innerHTML = isMicroHub
+                                ? `🔥 This location has <strong>${currentHubBottles}</strong> bottles ordered. Your cart adds <strong>${personalBottles}</strong>, bringing the total to <strong>${totalCombined}</strong>. Need <strong>${remaining}</strong> more to unlock FREE delivery!`
+                                : `🔥 This Hub has <strong>${currentHubBottles}</strong> bottles ordered. Your cart adds <strong>${personalBottles}</strong>, bringing the total to <strong>${totalCombined}</strong>. Need <strong>${remaining}</strong> more to unlock FREE delivery!`;
                         }
                         
                         // Show tracker card with transition
@@ -768,15 +789,31 @@
             const email = document.getElementById('cust-email').value;
             const phone = document.getElementById('cust-phone').value;
             const loc = document.getElementById('cust-location').value;
+            const notesVal = document.getElementById('cust-notes') ? document.getElementById('cust-notes').value : "";
             const btn = document.getElementById('checkout-btn');
             const totalBottles = cart.reduce((sum, item) => sum + item.bottles, 0);
 
             if (!name || !email || !phone || !loc) return alert("Please fill in all details.");
             if (cart.length === 0) return;
 
+            const selectedLoc = allLocations.find(l => l.id === loc);
+            const isMicroHub = selectedLoc && selectedLoc.distributor_name === 'Micro-Hub';
+            const target = isMicroHub ? 10 : HUB_DELIVERY_THRESHOLD;
+
             // Enforce hub threshold if not home delivery
-            if (loc !== 'home' && totalBottles < HUB_DELIVERY_THRESHOLD) {
-                alert(`This Hub requires ${HUB_DELIVERY_THRESHOLD} bottles for delivery. Please add more items or coordinate with your team!`);
+            if (loc !== 'home' && totalBottles < target) {
+                if (isMicroHub) {
+                    alert(`This location requires a minimum of ${target} bottles collectively for delivery. Please coordinate with neighbors/coworkers or add more items!`);
+                } else {
+                    alert(`This Hub requires ${target} bottles for delivery. Please add more items or coordinate with your team!`);
+                }
+                return;
+            }
+
+            // Enforce notes for micro-hubs
+            if (isMicroHub && !notesVal.trim()) {
+                const placeholder = selectedLoc.name.toLowerCase().includes('ivy') ? "Ivy 1/2 + Apt #" : "Desk / Floor Details";
+                alert(`Please enter your delivery details (${placeholder}) in the input field.`);
                 return;
             }
 
@@ -793,10 +830,11 @@
                         phone, 
                         location_id: loc, 
                         items: cart, 
+                        notes: notesVal,
                         promo_code: validatedPromo,
                         is_subscription: isSubscription,
                         total_bottles: totalBottles, // Pass total bottles to backend for incentive logic
-                        delivery_fee_applied: (loc === 'home' || (loc !== 'home' && totalBottles < HUB_DELIVERY_THRESHOLD)) ? HOME_DELIVERY_FEE : 0
+                        delivery_fee_applied: (loc === 'home' || (loc !== 'home' && totalBottles < target)) ? HOME_DELIVERY_FEE : 0
                     })
                 });
                 const data = await res.json();
