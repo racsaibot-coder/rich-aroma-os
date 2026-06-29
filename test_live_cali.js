@@ -82,11 +82,15 @@ const puppeteer = require('puppeteer');
 
         // Check if "Classic Black" is rendered and selected by default
         const hasClassicBlackSelection = await page.evaluate(() => {
-            const buttons = Array.from(document.querySelectorAll('button'));
-            const blackBtn = buttons.find(b => b.innerText === 'Classic Black');
-            if (!blackBtn) return { present: false, active: false };
-            const isActive = blackBtn.classList.contains('border-brand-gold') && blackBtn.classList.contains('bg-brand-gold/5');
-            return { present: true, active: isActive };
+            const cards = Array.from(document.querySelectorAll('.rounded-3xl'));
+            const blackCard = cards.find(c => {
+                const h4 = c.querySelector('h4');
+                return h4 && h4.innerText === 'Classic Black';
+            });
+            if (!blackCard) return { present: false, active: false };
+            const span = blackCard.querySelector('span.font-mono');
+            const count = span ? parseInt(span.innerText) : 0;
+            return { present: true, active: count > 0 };
         });
 
         if (hasClassicBlackSelection.present) {
