@@ -22,24 +22,43 @@ const puppeteer = require('puppeteer');
         }, { timeout: 15000 });
 
         // Print loaded options
-        const locationOptions = await page.evaluate(() => {
+        const locations = await page.evaluate(() => {
             const select = document.getElementById('cust-location');
-            return Array.from(select.options).map(o => o.text);
+            return Array.from(select.options).map(o => ({ value: o.value, text: o.text }));
         });
-        console.log('Production dropdown locations:', locationOptions);
+        console.log('Production dropdown locations:', locations.map(o => o.text));
 
-        const ivyOption = locationOptions.find(text => text.includes('The Ivy Residences'));
+        const ivyOption = locations.find(o => o.text.includes('The Ivy Residences'));
         if (ivyOption) {
-            if (ivyOption.includes('Chino')) {
+            if (ivyOption.text.includes('Chino')) {
                 console.log('✅ Success! The Ivy Residences city is correctly listed as Chino!');
             } else {
-                console.log(`❌ Failure: Ivy Residences city is wrong: ${ivyOption}`);
+                console.log(`❌ Failure: Ivy Residences city is wrong: ${ivyOption.text}`);
+            }
+            if (locations[1].value === ivyOption.value) {
+                console.log('✅ Success! The Ivy Residences is sorted to the top (first option)!');
+            } else {
+                console.log(`❌ Failure: The Ivy is not the first option. First is: ${locations[1].text}`);
+            }
+            
+            // Check tracker visibility for Ivy
+            console.log('Selecting The Ivy option to verify tracker visibility...');
+            await page.select('#cust-location', ivyOption.value);
+            await new Promise(r => setTimeout(r, 1000));
+            const trackerVisible = await page.evaluate(() => {
+                const tracker = document.getElementById('hub-tracker-card');
+                return tracker && !tracker.classList.contains('hidden');
+            });
+            if (trackerVisible) {
+                console.log('❌ Failure: Tracker card should be hidden for Ivy Residences.');
+            } else {
+                console.log('✅ Success! Tracker card is correctly hidden for Ivy Residences (no limit).');
             }
         } else {
             console.log('❌ Failure: The Ivy Residences is missing in production dropdown.');
         }
 
-        const fontanaOption = locationOptions.find(text => text.includes('Kaiser Fontana (Sister'));
+        const fontanaOption = locations.find(o => o.text.includes('Kaiser Fontana (Sister'));
         if (fontanaOption) {
             console.log('✅ Success! Kaiser Fontana (Sister\'s Office) is live in production!');
         } else {
