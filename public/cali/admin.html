@@ -536,6 +536,37 @@
                         </select>
                     </div>
                 </div>
+
+                <div>
+                    <label class="block text-[9px] font-black uppercase tracking-[0.2em] text-gray-400 mb-2 ml-1">Canva Background Image (Optional)</label>
+                    <div class="flex gap-4 items-center">
+                        <input type="file" id="print-bg-file" accept="image/*" class="hidden" onchange="handleBgUpload(this)">
+                        <div onclick="document.getElementById('print-bg-file').click()" class="flex-1 bg-gray-50 border-2 border-dashed border-gray-200 rounded-2xl p-4 flex flex-col items-center justify-center cursor-pointer hover:border-brand-brown transition-all overflow-hidden relative min-h-[70px]">
+                            <div id="print-bg-preview-text" class="text-[8px] font-black uppercase text-gray-400 tracking-widest flex items-center gap-2">
+                                <i class="fas fa-image text-sm"></i> Upload Canva PNG/JPG
+                            </div>
+                            <img id="print-bg-preview-img" class="hidden absolute inset-0 w-full h-full object-contain bg-white/55">
+                        </div>
+                        <button onclick="clearBgUpload()" id="print-bg-clear-btn" class="hidden w-12 h-12 rounded-2xl bg-red-50 text-red-400 hover:bg-red-500 hover:text-white transition-all flex items-center justify-center shadow-sm">
+                            <i class="fas fa-trash-alt"></i>
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="grid grid-cols-3 gap-2">
+                    <div class="flex items-center gap-2 p-2 bg-gray-50 rounded-xl">
+                        <input type="checkbox" id="print-hide-header" class="w-4 h-4 rounded border-gray-300 text-brand-brown focus:ring-brand-brown">
+                        <span class="text-[8px] font-black uppercase text-gray-600 tracking-wider">Hide Logo</span>
+                    </div>
+                    <div class="flex items-center gap-2 p-2 bg-gray-50 rounded-xl">
+                        <input type="checkbox" id="print-hide-border" class="w-4 h-4 rounded border-gray-300 text-brand-brown focus:ring-brand-brown">
+                        <span class="text-[8px] font-black uppercase text-gray-600 tracking-wider">Hide Border</span>
+                    </div>
+                    <div class="flex items-center gap-2 p-2 bg-gray-50 rounded-xl">
+                        <input type="checkbox" id="print-hide-footer" class="w-4 h-4 rounded border-gray-300 text-brand-brown focus:ring-brand-brown">
+                        <span class="text-[8px] font-black uppercase text-gray-600 tracking-wider">Hide Footer</span>
+                    </div>
+                </div>
                 
                 <div id="print-single-verse-box" class="hidden">
                     <label class="block text-[9px] font-black uppercase tracking-[0.2em] text-gray-400 mb-2 ml-1">Select Bible Verse</label>
@@ -1353,6 +1384,34 @@
             { text: "Do not worry about tomorrow, for tomorrow will worry about itself.", ref: "Matthew 6:34" }
         ];
 
+        function handleBgUpload(input) {
+            const file = input.files[0];
+            if (!file) return;
+            const text = document.getElementById('print-bg-preview-text');
+            const img = document.getElementById('print-bg-preview-img');
+            const clearBtn = document.getElementById('print-bg-clear-btn');
+            
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                const base64 = reader.result;
+                localStorage.setItem('cali_label_bg', base64);
+                img.src = base64;
+                img.classList.remove('hidden');
+                text.classList.add('hidden');
+                clearBtn.classList.remove('hidden');
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function clearBgUpload() {
+            localStorage.removeItem('cali_label_bg');
+            document.getElementById('print-bg-file').value = '';
+            document.getElementById('print-bg-preview-img').src = '';
+            document.getElementById('print-bg-preview-img').classList.add('hidden');
+            document.getElementById('print-bg-preview-text').classList.remove('hidden');
+            document.getElementById('print-bg-clear-btn').classList.add('hidden');
+        }
+
         function openPrintLabelsModal() {
             // Set default date to today's date formatted as YYYY-MM-DD
             const today = new Date().toISOString().split('T')[0];
@@ -1363,6 +1422,27 @@
             verseSelect.innerHTML = CATERING_VERSES.map((v, i) => `
                 <option value="${i}">"${v.text}" — ${v.ref}</option>
             `).join('');
+            
+            // Load background image preview
+            const bgImage = localStorage.getItem('cali_label_bg');
+            const text = document.getElementById('print-bg-preview-text');
+            const img = document.getElementById('print-bg-preview-img');
+            const clearBtn = document.getElementById('print-bg-clear-btn');
+            if (bgImage) {
+                img.src = bgImage;
+                img.classList.remove('hidden');
+                text.classList.add('hidden');
+                clearBtn.classList.remove('hidden');
+            } else {
+                img.classList.add('hidden');
+                text.classList.remove('hidden');
+                clearBtn.classList.add('hidden');
+            }
+            
+            // Load checkbox preferences
+            document.getElementById('print-hide-header').checked = localStorage.getItem('cali_print_hide_header') === 'true';
+            document.getElementById('print-hide-border').checked = localStorage.getItem('cali_print_hide_border') === 'true';
+            document.getElementById('print-hide-footer').checked = localStorage.getItem('cali_print_hide_footer') === 'true';
             
             document.getElementById('print-labels-modal').classList.remove('hidden');
             toggleVerseOptions();
@@ -1391,6 +1471,15 @@
             const verseMode = document.getElementById('print-verse-mode').value;
             const singleVerseIdx = document.getElementById('print-selected-verse').value;
             const customTextVal = document.getElementById('print-custom-text').value;
+            
+            const hideHeader = document.getElementById('print-hide-header').checked;
+            const hideBorder = document.getElementById('print-hide-border').checked;
+            const hideFooter = document.getElementById('print-hide-footer').checked;
+            
+            // Save checkbox preferences
+            localStorage.setItem('cali_print_hide_header', hideHeader);
+            localStorage.setItem('cali_print_hide_border', hideBorder);
+            localStorage.setItem('cali_print_hide_footer', hideFooter);
             
             const activeOrders = (orders || []).filter(o => o.status === 'paid' || o.status === 'confirmed');
             const activeSubs = (subscriptions || []).filter(s => s.status === 'active');
@@ -1455,6 +1544,10 @@
                 document.head.appendChild(styleEl);
             }
             
+            const bgImage = localStorage.getItem('cali_label_bg');
+            const bgRule = bgImage ? `background-image: url('${bgImage}'); background-size: 100% 100%; background-repeat: no-repeat;` : '';
+            const borderRule = hideBorder ? 'border: none;' : (sizeVal === 'small' ? 'border: 1px solid black;' : (sizeVal === 'medium' ? 'border: 2px solid black;' : 'border: 3px solid black;'));
+            
             // Inject styling rules based on sticker size
             if (sizeVal === 'small') {
                 styleEl.innerHTML = `
@@ -1475,7 +1568,8 @@
                             font-family: 'Inter', sans-serif;
                             color: black;
                             background: white;
-                            border: 1px solid black;
+                            ${bgRule}
+                            ${borderRule}
                             margin: 0;
                         }
                         .label-title { font-size: 8px; font-weight: 900; letter-spacing: 0.1em; text-transform: uppercase; text-align: center; border-bottom: 1px solid black; padding-bottom: 2px; }
@@ -1504,7 +1598,8 @@
                             font-family: 'Inter', sans-serif;
                             color: black;
                             background: white;
-                            border: 2px solid black;
+                            ${bgRule}
+                            ${borderRule}
                             margin: 0;
                         }
                         .label-title { font-size: 10px; font-weight: 900; letter-spacing: 0.15em; text-transform: uppercase; text-align: center; border-bottom: 1.5px solid black; padding-bottom: 4px; }
@@ -1534,7 +1629,8 @@
                             font-family: 'Inter', sans-serif;
                             color: black;
                             background: white;
-                            border: 3px solid black;
+                            ${bgRule}
+                            ${borderRule}
                             margin: 0;
                         }
                         .label-title { font-size: 16px; font-weight: 900; letter-spacing: 0.2em; text-transform: uppercase; text-align: center; border-bottom: 2px solid black; padding-bottom: 8px; }
@@ -1564,16 +1660,21 @@
                 const espressoLabel = b.espresso === 'Light' ? 'Light Shot' : (b.espresso === 'Extra' ? 'Extra Shot' : 'Standard');
                 const formattedBrewDate = brewDateVal ? new Date(brewDateVal + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'Fresh Daily';
 
+                const headerHtml = hideHeader ? '' : `<div class="label-title">★ RICH AROMA COFFEE ★</div>`;
+                const footerHtml = hideFooter ? '' : `
+                    <div class="label-meta">
+                        <span>${b.milk} • ${espressoLabel}</span>
+                        <span>Brewed: ${formattedBrewDate}</span>
+                    </div>
+                `;
+
                 return `
                     <div class="thermal-label">
-                        <div class="label-title">★ RICH AROMA COFFEE ★</div>
-                        <div class="label-flavor">${b.flavor}</div>
+                        ${headerHtml}
+                        <div class="label-flavor" style="${hideHeader ? 'margin-top: auto;' : ''}">${b.flavor}</div>
                         <div class="label-recipient">FOR: ${b.customer} • ${b.location}</div>
                         ${verseText ? `<div class="label-verse">${verseText}</div>` : ''}
-                        <div class="label-meta">
-                            <span>${b.milk} • ${espressoLabel}</span>
-                            <span>Brewed: ${formattedBrewDate}</span>
-                        </div>
+                        ${footerHtml}
                     </div>
                 `;
             }).join('');
