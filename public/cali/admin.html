@@ -37,6 +37,9 @@
         .product-card:hover { transform: translateY(-4px); box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.05); }
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        @media screen {
+            #print-area { display: none !important; }
+        }
     </style>
 </head>
 <body class="bg-[#fdfbf7] text-gray-800 antialiased min-h-screen pb-20">
@@ -105,6 +108,9 @@
             <div class="flex justify-between items-center">
                 <h2 class="text-2xl font-serif font-bold">Recent Orders</h2>
                 <div class="flex items-center gap-3">
+                    <button onclick="openPrintLabelsModal()" class="bg-brand-brown text-white px-6 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-xl hover:bg-brand-dark transition flex items-center gap-2">
+                        <i class="fas fa-print"></i> Print Labels
+                    </button>
                     <button onclick="openManualOrderModal()" class="bg-brand-dark text-white px-6 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-xl hover:bg-brand-brown transition flex items-center gap-2">
                         <i class="fas fa-plus"></i> New Manual Order
                     </button>
@@ -171,6 +177,12 @@
 
         <!-- Prep & Yield View -->
         <div id="view-prep" class="hidden space-y-12 animate-fade-in">
+            <div class="flex justify-between items-center">
+                <h2 class="text-2xl font-serif font-bold text-brand-dark">Prep & Production</h2>
+                <button onclick="openPrintLabelsModal()" class="bg-brand-dark text-white px-6 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-xl hover:bg-brand-brown transition flex items-center gap-2">
+                    <i class="fas fa-print"></i> Print Thermal Labels
+                </button>
+            </div>
             <div class="grid md:grid-cols-2 gap-8">
                 <!-- Recipe Summary Card -->
                 <div class="bg-brand-dark rounded-[3rem] p-10 text-white shadow-2xl relative overflow-hidden">
@@ -484,6 +496,64 @@
 
             <div class="mt-10 pt-8 border-t border-gray-50">
                 <button onclick="saveManualOrder()" id="manual-save-btn" class="w-full bg-brand-dark text-white py-5 rounded-2xl font-black text-xs uppercase tracking-[0.2em] shadow-2xl hover:bg-brand-brown transition-all active:scale-95">Save Manual Order</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Print Labels Modal -->
+    <div id="print-labels-modal" class="hidden fixed inset-0 bg-brand-dark/80 backdrop-blur-sm flex items-center justify-center z-[100] p-4">
+        <div class="bg-white w-full max-w-lg p-10 rounded-[3rem] shadow-2xl relative border border-white/10">
+            <button onclick="closeModal('print-labels-modal')" class="absolute top-8 right-8 w-10 h-10 rounded-full bg-gray-100 text-gray-400 hover:text-gray-600 flex items-center justify-center transition-colors"><i class="fas fa-times"></i></button>
+            
+            <div class="mb-10">
+                <div class="inline-block px-3 py-1 rounded-full bg-brand-brown/5 border border-brand-brown/10 mb-2">
+                    <span class="text-brand-brown font-black tracking-[0.2em] uppercase text-[8px]">Thermal Printer</span>
+                </div>
+                <h2 class="text-3xl font-serif font-bold">Print Daily Bottle Labels</h2>
+            </div>
+
+            <div class="space-y-6">
+                <div>
+                    <label class="block text-[9px] font-black uppercase tracking-[0.2em] text-gray-400 mb-2 ml-1">Brewed On Date</label>
+                    <input type="date" id="print-brew-date" class="w-full bg-gray-50 border border-gray-100 rounded-2xl px-5 py-4 text-sm font-medium outline-none focus:border-brand-brown transition shadow-inner">
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-[9px] font-black uppercase tracking-[0.2em] text-gray-400 mb-2 ml-1">Label Sticker Size</label>
+                        <select id="print-label-size" class="w-full bg-gray-50 border border-gray-100 rounded-2xl px-5 py-4 text-sm font-bold outline-none focus:border-brand-brown shadow-inner appearance-none">
+                            <option value="small">Small (2.25" x 1.25")</option>
+                            <option value="medium" selected>Medium (3" x 2")</option>
+                            <option value="large">Large (4" x 6")</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-[9px] font-black uppercase tracking-[0.2em] text-gray-400 mb-2 ml-1">Daily Verse Option</label>
+                        <select id="print-verse-mode" onchange="toggleVerseOptions()" class="w-full bg-gray-50 border border-gray-100 rounded-2xl px-5 py-4 text-sm font-bold outline-none focus:border-brand-brown shadow-inner appearance-none">
+                            <option value="random">Randomize per Bottle</option>
+                            <option value="single">Single Selected Verse</option>
+                            <option value="custom">Custom Daily Greeting</option>
+                            <option value="none">No Verse / Clean</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div id="print-single-verse-box" class="hidden">
+                    <label class="block text-[9px] font-black uppercase tracking-[0.2em] text-gray-400 mb-2 ml-1">Select Bible Verse</label>
+                    <select id="print-selected-verse" class="w-full bg-gray-50 border border-gray-100 rounded-2xl px-5 py-4 text-sm font-medium outline-none focus:border-brand-brown shadow-inner appearance-none">
+                        <!-- Populated dynamically -->
+                    </select>
+                </div>
+
+                <div id="print-custom-text-box" class="hidden">
+                    <label class="block text-[9px] font-black uppercase tracking-[0.2em] text-gray-400 mb-2 ml-1">Custom Daily Message</label>
+                    <input type="text" id="print-custom-text" placeholder="e.g. Hope you have a productive Monday!" class="w-full bg-gray-50 border border-gray-100 rounded-2xl px-5 py-4 text-sm font-medium outline-none focus:border-brand-brown transition shadow-inner">
+                </div>
+            </div>
+
+            <div class="mt-10 pt-8 border-t border-gray-50 flex gap-4">
+                <button onclick="generateAndPrintLabels()" class="flex-1 bg-brand-dark text-white py-5 rounded-2xl font-black text-xs uppercase tracking-[0.2em] shadow-2xl hover:bg-brand-brown transition-all hover:scale-[1.02] active:scale-95 flex items-center justify-center gap-2">
+                    <i class="fas fa-print"></i> Generate & Print
+                </button>
             </div>
         </div>
     </div>
@@ -1266,6 +1336,252 @@
             }
         }
 
+        const CATERING_VERSES = [
+            { text: "Taste and see that the Lord is good.", ref: "Psalm 34:8" },
+            { text: "Commit your work to the Lord, and your plans will be established.", ref: "Proverbs 16:3" },
+            { text: "Let all that you do be done in love.", ref: "1 Corinthians 16:14" },
+            { text: "A joyful heart is good medicine.", ref: "Proverbs 17:22" },
+            { text: "A sweet friendship refreshes the soul.", ref: "Proverbs 27:9" },
+            { text: "This is the day the Lord has made; let us rejoice and be glad in it.", ref: "Psalm 118:24" },
+            { text: "The Lord is my strength and my shield.", ref: "Psalm 28:7" },
+            { text: "God is our refuge and strength, an ever-present help.", ref: "Psalm 46:1" },
+            { text: "For I know the plans I have for you, plans to prosper you.", ref: "Jeremiah 29:11" },
+            { text: "Give thanks to the Lord, for he is good; his love endures forever.", ref: "Psalm 107:1" },
+            { text: "Let your light shine before others.", ref: "Matthew 5:16" },
+            { text: "May the God of hope fill you with all joy and peace.", ref: "Romans 15:13" },
+            { text: "Walk by faith, not by sight.", ref: "2 Corinthians 5:7" },
+            { text: "Do not worry about tomorrow, for tomorrow will worry about itself.", ref: "Matthew 6:34" }
+        ];
+
+        function openPrintLabelsModal() {
+            // Set default date to today's date formatted as YYYY-MM-DD
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('print-brew-date').value = today;
+            
+            // Populate single verse select list options
+            const verseSelect = document.getElementById('print-selected-verse');
+            verseSelect.innerHTML = CATERING_VERSES.map((v, i) => `
+                <option value="${i}">"${v.text}" — ${v.ref}</option>
+            `).join('');
+            
+            document.getElementById('print-labels-modal').classList.remove('hidden');
+            toggleVerseOptions();
+        }
+
+        function toggleVerseOptions() {
+            const mode = document.getElementById('print-verse-mode').value;
+            const singleBox = document.getElementById('print-single-verse-box');
+            const customBox = document.getElementById('print-custom-text-box');
+            
+            if (mode === 'single') {
+                singleBox.classList.remove('hidden');
+                customBox.classList.add('hidden');
+            } else if (mode === 'custom') {
+                singleBox.classList.add('hidden');
+                customBox.classList.remove('hidden');
+            } else {
+                singleBox.classList.add('hidden');
+                customBox.classList.add('hidden');
+            }
+        }
+
+        function generateAndPrintLabels() {
+            const brewDateVal = document.getElementById('print-brew-date').value;
+            const sizeVal = document.getElementById('print-label-size').value;
+            const verseMode = document.getElementById('print-verse-mode').value;
+            const singleVerseIdx = document.getElementById('print-selected-verse').value;
+            const customTextVal = document.getElementById('print-custom-text').value;
+            
+            const activeOrders = (orders || []).filter(o => o.status === 'paid' || o.status === 'confirmed');
+            const activeSubs = (subscriptions || []).filter(s => s.status === 'active');
+            
+            let labelBottles = [];
+            
+            const processLabelItems = (cart, customerName, location) => {
+                cart.forEach(item => {
+                    const itemQty = parseInt(item.qty || 1);
+                    if (item.selections && Array.isArray(item.selections)) {
+                        for (let q = 0; q < itemQty; q++) {
+                            item.selections.forEach(sel => {
+                                labelBottles.push({
+                                    customer: customerName,
+                                    location: location?.name || 'Local Drop',
+                                    flavor: sel.flavor,
+                                    milk: sel.milk,
+                                    espresso: sel.espresso || 'Standard'
+                                });
+                            });
+                        }
+                    } else {
+                        // Fallback
+                        const bottlesPerPack = item.bottles || 1;
+                        for (let q = 0; q < itemQty; q++) {
+                            for (let b = 0; b < bottlesPerPack; b++) {
+                                labelBottles.push({
+                                    customer: customerName,
+                                    location: location?.name || 'Local Drop',
+                                    flavor: item.flavor || 'Vanilla Latte',
+                                    milk: item.milk || 'Regular',
+                                    espresso: 'Standard'
+                                });
+                            }
+                        }
+                    }
+                });
+            };
+            
+            // Collect all items
+            activeOrders.forEach(o => {
+                if (o.selections && o.selections.cart) {
+                    processLabelItems(o.selections.cart, o.customer_name, o.cali_locations);
+                }
+            });
+            activeSubs.forEach(s => {
+                if (s.selections && s.selections.cart) {
+                    processLabelItems(s.selections.cart, s.customer_name, s.cali_locations);
+                }
+            });
+            
+            if (labelBottles.length === 0) {
+                alert("No active paid/confirmed orders or subscriptions found to print.");
+                return;
+            }
+            
+            // Format dynamic stylesheet for page setup
+            let styleEl = document.getElementById('dynamic-print-style');
+            if (!styleEl) {
+                styleEl = document.createElement('style');
+                styleEl.id = 'dynamic-print-style';
+                document.head.appendChild(styleEl);
+            }
+            
+            // Inject styling rules based on sticker size
+            if (sizeVal === 'small') {
+                styleEl.innerHTML = `
+                    @media print {
+                        body * { visibility: hidden; }
+                        #print-area, #print-area * { visibility: visible; }
+                        #print-area { position: absolute; left: 0; top: 0; width: 100%; margin: 0; padding: 0; display: block !important; }
+                        @page { size: 2.25in 1.25in; margin: 0; }
+                        .thermal-label {
+                            width: 2.25in;
+                            height: 1.25in;
+                            box-sizing: border-box;
+                            padding: 0.08in;
+                            page-break-after: always;
+                            display: flex;
+                            flex-direction: column;
+                            justify-content: space-between;
+                            font-family: 'Inter', sans-serif;
+                            color: black;
+                            background: white;
+                            border: 1px solid black;
+                            margin: 0;
+                        }
+                        .label-title { font-size: 8px; font-weight: 900; letter-spacing: 0.1em; text-transform: uppercase; text-align: center; border-bottom: 1px solid black; padding-bottom: 2px; }
+                        .label-flavor { font-size: 11px; font-weight: 800; font-family: 'Inter', sans-serif; text-transform: uppercase; text-align: center; margin: 1px 0; }
+                        .label-meta { font-size: 6.5px; font-weight: 700; text-transform: uppercase; display: flex; justify-content: space-between; border-top: 1px dashed black; padding-top: 2px; }
+                        .label-recipient { font-size: 7px; font-weight: 800; text-align: center; }
+                        .label-verse { font-size: 6px; font-style: italic; font-family: 'Playfair Display', serif; text-align: center; line-height: 1.1; margin: 1px 0; overflow: hidden; max-height: 15px; }
+                    }
+                `;
+            } else if (sizeVal === 'medium') {
+                styleEl.innerHTML = `
+                    @media print {
+                        body * { visibility: hidden; }
+                        #print-area, #print-area * { visibility: visible; }
+                        #print-area { position: absolute; left: 0; top: 0; width: 100%; margin: 0; padding: 0; display: block !important; }
+                        @page { size: 3in 2in; margin: 0; }
+                        .thermal-label {
+                            width: 3in;
+                            height: 2in;
+                            box-sizing: border-box;
+                            padding: 0.15in;
+                            page-break-after: always;
+                            display: flex;
+                            flex-direction: column;
+                            justify-content: space-between;
+                            font-family: 'Inter', sans-serif;
+                            color: black;
+                            background: white;
+                            border: 2px solid black;
+                            margin: 0;
+                        }
+                        .label-title { font-size: 10px; font-weight: 900; letter-spacing: 0.15em; text-transform: uppercase; text-align: center; border-bottom: 1.5px solid black; padding-bottom: 4px; }
+                        .label-flavor { font-size: 14px; font-weight: 900; text-transform: uppercase; text-align: center; margin: 3px 0; }
+                        .label-meta { font-size: 8px; font-weight: 700; text-transform: uppercase; display: flex; justify-content: space-between; border-top: 1px dashed black; padding-top: 4px; }
+                        .label-recipient { font-size: 9px; font-weight: 800; text-align: center; }
+                        .label-verse { font-size: 7.5px; font-style: italic; font-family: 'Playfair Display', serif; text-align: center; line-height: 1.2; margin: 3px 0; }
+                    }
+                `;
+            } else {
+                // Large 4"x6" labels
+                styleEl.innerHTML = `
+                    @media print {
+                        body * { visibility: hidden; }
+                        #print-area, #print-area * { visibility: visible; }
+                        #print-area { position: absolute; left: 0; top: 0; width: 100%; margin: 0; padding: 0; display: block !important; }
+                        @page { size: 4in 6in; margin: 0; }
+                        .thermal-label {
+                            width: 4in;
+                            height: 6in;
+                            box-sizing: border-box;
+                            padding: 0.4in;
+                            page-break-after: always;
+                            display: flex;
+                            flex-direction: column;
+                            justify-content: space-between;
+                            font-family: 'Inter', sans-serif;
+                            color: black;
+                            background: white;
+                            border: 3px solid black;
+                            margin: 0;
+                        }
+                        .label-title { font-size: 16px; font-weight: 900; letter-spacing: 0.2em; text-transform: uppercase; text-align: center; border-bottom: 2px solid black; padding-bottom: 8px; }
+                        .label-flavor { font-size: 22px; font-weight: 900; text-transform: uppercase; text-align: center; margin: 10px 0; }
+                        .label-meta { font-size: 12px; font-weight: 700; text-transform: uppercase; display: flex; justify-content: space-between; border-top: 1.5px dashed black; padding-top: 8px; }
+                        .label-recipient { font-size: 13px; font-weight: 800; text-align: center; }
+                        .label-verse { font-size: 11px; font-style: italic; font-family: 'Playfair Display', serif; text-align: center; line-height: 1.4; margin: 10px 0; }
+                    }
+                `;
+            }
+            
+            // Build the labels print sheet
+            const printArea = document.getElementById('print-area');
+            printArea.innerHTML = labelBottles.map((b, idx) => {
+                // Get the verse or custom message
+                let verseText = "";
+                if (verseMode === 'random') {
+                    const verse = CATERING_VERSES[Math.floor(Math.random() * CATERING_VERSES.length)];
+                    verseText = `"${verse.text}" — ${verse.ref}`;
+                } else if (verseMode === 'single') {
+                    const verse = CATERING_VERSES[singleVerseIdx];
+                    verseText = `"${verse.text}" — ${verse.ref}`;
+                } else if (verseMode === 'custom') {
+                    verseText = customTextVal || "Thank you for supporting small batch coffee!";
+                }
+                
+                const espressoLabel = b.espresso === 'Light' ? 'Light Shot' : (b.espresso === 'Extra' ? 'Extra Shot' : 'Standard');
+                const formattedBrewDate = brewDateVal ? new Date(brewDateVal + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'Fresh Daily';
+
+                return `
+                    <div class="thermal-label">
+                        <div class="label-title">★ RICH AROMA COFFEE ★</div>
+                        <div class="label-flavor">${b.flavor}</div>
+                        <div class="label-recipient">FOR: ${b.customer} • ${b.location}</div>
+                        ${verseText ? `<div class="label-verse">${verseText}</div>` : ''}
+                        <div class="label-meta">
+                            <span>${b.milk} • ${espressoLabel}</span>
+                            <span>Brewed: ${formattedBrewDate}</span>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+            
+            // Open print window
+            window.print();
+        }
+
         function closeModal(id) { 
             document.getElementById(id).classList.add('hidden'); 
             window.pendingImageBase64 = null;
@@ -1297,5 +1613,8 @@
             }
         };
     </script>
+    
+    <!-- Print Area -->
+    <div id="print-area" class="hidden"></div>
 </body>
 </html>
