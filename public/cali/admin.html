@@ -523,7 +523,7 @@
                         <select id="print-label-size" class="w-full bg-gray-50 border border-gray-100 rounded-2xl px-5 py-4 text-sm font-bold outline-none focus:border-brand-brown shadow-inner appearance-none">
                             <option value="small">Small (2.25" x 1.25")</option>
                             <option value="medium" selected>Medium (3" x 2")</option>
-                            <option value="vertical">Vertical (2" x 4")</option>
+                            <option value="vertical">Canva Template (4" x 2")</option>
                             <option value="large">Large (4" x 6")</option>
                         </select>
                     </div>
@@ -1616,28 +1616,89 @@
                         body * { visibility: hidden; }
                         #print-area, #print-area * { visibility: visible; }
                         #print-area { position: absolute; left: 0; top: 0; width: 100%; margin: 0; padding: 0; display: block !important; }
-                        @page { size: 2in 4in; margin: 0; }
+                        @page { size: 4in 2in; margin: 0; }
                         .thermal-label {
-                            width: 2in;
-                            height: 4in;
+                            width: 4in;
+                            height: 2in;
                             box-sizing: border-box;
-                            padding: 0.15in;
+                            padding: 0.15in 0.25in;
                             page-break-after: always;
                             display: flex;
                             flex-direction: column;
-                            justify-content: space-between;
+                            justify-content: flex-start;
                             font-family: 'Inter', sans-serif;
                             color: black;
                             background: white;
                             ${bgRule}
                             ${borderRule}
                             margin: 0;
+                            position: relative;
                         }
-                        .label-title { font-size: 8px; font-weight: 900; letter-spacing: 0.12em; text-transform: uppercase; text-align: center; border-bottom: 1px solid black; padding-bottom: 4px; }
-                        .label-flavor { font-size: 13px; font-weight: 900; text-transform: uppercase; text-align: center; margin-top: 15px; }
-                        .label-recipient { font-size: 8px; font-weight: 800; text-align: center; margin-top: 8px; }
-                        .label-verse { font-size: 7.5px; font-style: italic; font-family: 'Playfair Display', serif; text-align: center; line-height: 1.25; margin-top: auto; margin-bottom: auto; padding: 5px 0; }
-                        .label-meta { font-size: 8px; font-weight: 700; text-transform: uppercase; display: flex; flex-direction: column; items: center; border-top: 1px dashed black; padding-top: 4px; gap: 2px; }
+                        .label-title { font-size: 8px; font-weight: 900; letter-spacing: 0.12em; text-transform: uppercase; text-align: center; border-bottom: 1px solid black; padding-bottom: 4px; display: none !important; }
+                        .label-flavor { 
+                            position: absolute; 
+                            left: 2.3in; 
+                            top: 0.18in; 
+                            display: flex;
+                            flex-direction: column;
+                            line-height: 1.05;
+                            text-align: left; 
+                        }
+                        .label-flavor-main {
+                            font-family: 'Playfair Display', serif; 
+                            font-size: 20px; 
+                            font-weight: 900; 
+                            text-transform: capitalize; 
+                            color: black; 
+                        }
+                        .label-flavor-sub {
+                            font-family: 'Inter', sans-serif; 
+                            font-size: 11px; 
+                            font-weight: 600; 
+                            text-transform: uppercase; 
+                            letter-spacing: 0.08em;
+                            color: black; 
+                        }
+                        .label-recipient { 
+                            position: absolute; 
+                            left: 2.3in; 
+                            top: 0.95in; 
+                            font-family: 'Inter', sans-serif; 
+                            font-size: 7.5px; 
+                            font-weight: 800; 
+                            text-transform: uppercase; 
+                            color: black; 
+                            text-align: left;
+                        }
+                        .label-verse { 
+                            position: absolute; 
+                            left: 2.3in; 
+                            top: 1.12in; 
+                            font-family: 'Playfair Display', serif; 
+                            font-style: italic; 
+                            font-size: 7px; 
+                            color: black; 
+                            text-align: left;
+                            max-width: 1.4in;
+                            line-height: 1.25;
+                        }
+                        .label-meta { 
+                            position: absolute; 
+                            left: 2.3in; 
+                            top: 1.45in; 
+                            font-family: 'Inter', sans-serif; 
+                            font-size: 6.5px; 
+                            font-weight: 700; 
+                            text-transform: uppercase; 
+                            color: black; 
+                            display: flex; 
+                            flex-direction: column;
+                            gap: 2px; 
+                            border-top: 1px dashed black; 
+                            padding-top: 3px;
+                            width: 1.4in;
+                            text-align: left;
+                        }
                     }
                 `;
             } else {
@@ -1693,17 +1754,39 @@
 
                 const isVertical = sizeVal === 'vertical';
                 const headerHtml = hideHeader ? '' : `<div class="label-title">★ RICH AROMA COFFEE ★</div>`;
-                const footerHtml = hideFooter ? '' : `
-                    <div class="label-meta" style="${isVertical ? 'flex-direction: column; align-items: center; border-top: 1px dashed black; padding-top: 4px; gap: 2px;' : ''}">
+                
+                const words = b.flavor.split(' ');
+                const mainFlavor = words[0] || '';
+                const subFlavor = words.slice(1).join(' ') || '';
+                
+                let flavorHtml = "";
+                if (isVertical) {
+                    flavorHtml = `
+                        <div class="label-flavor">
+                            <span class="label-flavor-main">${mainFlavor}</span>
+                            ${subFlavor ? `<span class="label-flavor-sub">${subFlavor}</span>` : ''}
+                        </div>
+                    `;
+                } else {
+                    flavorHtml = `<div class="label-flavor" style="${hideHeader ? 'margin-top: auto;' : ''}">${b.flavor}</div>`;
+                }
+
+                const footerHtml = hideFooter ? '' : (isVertical ? `
+                    <div class="label-meta">
                         <span>${b.milk} • ${espressoLabel}</span>
                         <span>Brewed: ${formattedBrewDate}</span>
                     </div>
-                `;
+                ` : `
+                    <div class="label-meta">
+                        <span>${b.milk} • ${espressoLabel}</span>
+                        <span>Brewed: ${formattedBrewDate}</span>
+                    </div>
+                `);
 
                 return `
                     <div class="thermal-label">
                         ${headerHtml}
-                        <div class="label-flavor" style="${hideHeader ? 'margin-top: auto;' : ''}">${b.flavor}</div>
+                        ${flavorHtml}
                         <div class="label-recipient">FOR: ${b.customer} • ${b.location}</div>
                         ${verseText ? `<div class="label-verse">${verseText}</div>` : ''}
                         ${footerHtml}
