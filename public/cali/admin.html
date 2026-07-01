@@ -1637,10 +1637,10 @@
                         .label-title { font-size: 8px; font-weight: 900; letter-spacing: 0.12em; text-transform: uppercase; text-align: center; border-bottom: 1px solid black; padding-bottom: 4px; display: none !important; }
                         .label-flavor { 
                             position: absolute; 
-                            left: 2.9in; 
+                            left: 0.85in; 
                             top: 0.15in; 
-                            width: 1.7in;
-                            height: 0.8in;
+                            width: 1.4in;
+                            height: 0.35in;
                             display: flex;
                             flex-direction: column;
                             justify-content: center;
@@ -1649,21 +1649,21 @@
                             text-align: center;
                             transform: rotate(-90deg);
                             transform-origin: top left;
-                            margin-top: 1.7in;
+                            margin-top: 1.4in;
                         }
                         .label-flavor-main {
                             font-family: 'Playfair Display', serif; 
-                            font-size: 26px; 
+                            font-size: 20px; 
                             font-weight: 900; 
                             text-transform: capitalize; 
                             color: black; 
                         }
                         .label-flavor-sub {
                             font-family: 'Inter', sans-serif; 
-                            font-size: 11px; 
+                            font-size: 9px; 
                             font-weight: 700; 
                             text-transform: uppercase; 
-                            letter-spacing: 0.12em;
+                            letter-spacing: 0.1em;
                             color: black; 
                             margin-top: 2px;
                         }
@@ -1695,50 +1695,29 @@
                             color: #444;
                             text-transform: uppercase;
                         }
-                        .label-milk-val {
+                        .label-selections-box {
                             position: absolute;
-                            left: 1.9in;
-                            top: 0.18in;
-                            width: 0.75in;
-                            font-family: 'Inter', sans-serif;
-                            font-size: 7.5px;
-                            font-weight: 700;
-                            text-transform: lowercase;
-                            color: black;
+                            left: 2.95in;
+                            top: 0.15in;
+                            width: 1.7in;
+                            height: 0.8in;
+                            display: flex;
+                            flex-direction: column;
+                            justify-content: center;
+                            align-items: center;
                             transform: rotate(-90deg);
                             transform-origin: top left;
-                            margin-top: 0.75in;
-                            text-align: left;
+                            margin-top: 1.7in;
+                            text-align: center;
+                            line-height: 1.35;
                         }
-                        .label-espresso-val {
-                            position: absolute;
-                            left: 1.65in;
-                            top: 0.18in;
-                            width: 0.75in;
+                        .label-selections-item {
                             font-family: 'Inter', sans-serif;
-                            font-size: 7.5px;
-                            font-weight: 700;
-                            text-transform: lowercase;
+                            font-size: 8px;
+                            font-weight: 800;
+                            text-transform: uppercase;
+                            letter-spacing: 0.08em;
                             color: black;
-                            transform: rotate(-90deg);
-                            transform-origin: top left;
-                            margin-top: 0.75in;
-                            text-align: left;
-                        }
-                        .label-syrup-val {
-                            position: absolute;
-                            left: 1.4in;
-                            top: 0.18in;
-                            width: 0.75in;
-                            font-family: 'Inter', sans-serif;
-                            font-size: 7.5px;
-                            font-weight: 700;
-                            text-transform: lowercase;
-                            color: black;
-                            transform: rotate(-90deg);
-                            transform-origin: top left;
-                            margin-top: 0.75in;
-                            text-align: left;
                         }
                         .label-recipient { display: none !important; }
                         .label-verse { 
@@ -1877,9 +1856,11 @@
                                 <div class="label-recipient-name">${b.customer}</div>
                                 <div class="label-recipient-loc">${b.location}</div>
                             </div>
-                            <div class="label-milk-val">${dynamicMilk}</div>
-                            <div class="label-espresso-val">${dynamicEspresso}</div>
-                            <div class="label-syrup-val">${syrupLabel}</div>
+                            <div class="label-selections-box">
+                                <div class="label-selections-item">${dynamicMilk}</div>
+                                <div class="label-selections-item">${dynamicEspresso}</div>
+                                <div class="label-selections-item">${syrupLabel}</div>
+                            </div>
                             <div class="label-brew-date">Brewed: ${formattedBrewDate}</div>
                         </div>
                     `;
