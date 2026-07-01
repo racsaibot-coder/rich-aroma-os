@@ -523,6 +523,7 @@
                         <select id="print-label-size" class="w-full bg-gray-50 border border-gray-100 rounded-2xl px-5 py-4 text-sm font-bold outline-none focus:border-brand-brown shadow-inner appearance-none">
                             <option value="small">Small (2.25" x 1.25")</option>
                             <option value="medium" selected>Medium (3" x 2")</option>
+                            <option value="vertical">Vertical (2" x 4")</option>
                             <option value="large">Large (4" x 6")</option>
                         </select>
                     </div>
@@ -1609,6 +1610,36 @@
                         .label-verse { font-size: 7.5px; font-style: italic; font-family: 'Playfair Display', serif; text-align: center; line-height: 1.2; margin: 3px 0; }
                     }
                 `;
+            } else if (sizeVal === 'vertical') {
+                styleEl.innerHTML = `
+                    @media print {
+                        body * { visibility: hidden; }
+                        #print-area, #print-area * { visibility: visible; }
+                        #print-area { position: absolute; left: 0; top: 0; width: 100%; margin: 0; padding: 0; display: block !important; }
+                        @page { size: 2in 4in; margin: 0; }
+                        .thermal-label {
+                            width: 2in;
+                            height: 4in;
+                            box-sizing: border-box;
+                            padding: 0.15in;
+                            page-break-after: always;
+                            display: flex;
+                            flex-direction: column;
+                            justify-content: space-between;
+                            font-family: 'Inter', sans-serif;
+                            color: black;
+                            background: white;
+                            ${bgRule}
+                            ${borderRule}
+                            margin: 0;
+                        }
+                        .label-title { font-size: 8px; font-weight: 900; letter-spacing: 0.12em; text-transform: uppercase; text-align: center; border-bottom: 1px solid black; padding-bottom: 4px; }
+                        .label-flavor { font-size: 13px; font-weight: 900; text-transform: uppercase; text-align: center; margin-top: 15px; }
+                        .label-recipient { font-size: 8px; font-weight: 800; text-align: center; margin-top: 8px; }
+                        .label-verse { font-size: 7.5px; font-style: italic; font-family: 'Playfair Display', serif; text-align: center; line-height: 1.25; margin-top: auto; margin-bottom: auto; padding: 5px 0; }
+                        .label-meta { font-size: 8px; font-weight: 700; text-transform: uppercase; display: flex; flex-direction: column; items: center; border-top: 1px dashed black; padding-top: 4px; gap: 2px; }
+                    }
+                `;
             } else {
                 // Large 4"x6" labels
                 styleEl.innerHTML = `
@@ -1660,9 +1691,10 @@
                 const espressoLabel = b.espresso === 'Light' ? 'Light Shot' : (b.espresso === 'Extra' ? 'Extra Shot' : 'Standard');
                 const formattedBrewDate = brewDateVal ? new Date(brewDateVal + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'Fresh Daily';
 
+                const isVertical = sizeVal === 'vertical';
                 const headerHtml = hideHeader ? '' : `<div class="label-title">★ RICH AROMA COFFEE ★</div>`;
                 const footerHtml = hideFooter ? '' : `
-                    <div class="label-meta">
+                    <div class="label-meta" style="${isVertical ? 'flex-direction: column; align-items: center; border-top: 1px dashed black; padding-top: 4px; gap: 2px;' : ''}">
                         <span>${b.milk} • ${espressoLabel}</span>
                         <span>Brewed: ${formattedBrewDate}</span>
                     </div>
