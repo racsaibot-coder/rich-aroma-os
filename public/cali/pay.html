@@ -4,7 +4,7 @@
     <link rel="icon" type="image/png" href="/favicon.png">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Rich Aroma | Self-Checkout Honors</title>
+    <title>Rich Aroma | Self-Checkout & Pre-Orders</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Inter:wght@300;400;500;600;700;900&display=swap" rel="stylesheet">
@@ -57,7 +57,7 @@
             </div>
             <div class="flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-50 text-emerald-600 text-[8px] font-black uppercase tracking-wider border border-emerald-100">
                 <span class="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-ping"></span>
-                Honors Fridge
+                Honors Portal
             </div>
         </div>
     </nav>
@@ -72,31 +72,55 @@
                 <div class="absolute bottom-0 right-0 w-32 h-32 bg-brand-brown rounded-full blur-2xl translate-x-1/2 translate-y-1/2"></div>
             </div>
             <div class="relative z-10">
-                <h1 class="text-3xl font-serif font-bold mb-2 tracking-tight text-brand-dark">Self-Checkout</h1>
-                <p class="text-xs text-gray-500 font-medium leading-relaxed italic">Select your drink, pay instantly, and enjoy your fresh brew.</p>
+                <h1 class="text-3xl font-serif font-bold mb-2 tracking-tight text-brand-dark" id="hero-title">Honors Checkout</h1>
+                <p class="text-xs text-gray-500 font-medium leading-relaxed italic" id="hero-desc">Select your drink, pay instantly, and enjoy your fresh brew.</p>
             </div>
         </div>
 
-        <!-- Details Box -->
+        <!-- 1. Location Details Box (Privacy-Protected) -->
         <div class="bg-white rounded-[2.5rem] p-6 border border-gray-100 shadow-sm space-y-4">
             <h3 class="text-sm font-serif font-bold text-brand-dark flex items-center gap-2">
-                <i class="fas fa-user-circle text-brand-brown text-sm"></i> 1. Who are you & where are you?
+                <i class="fas fa-map-marker-alt text-brand-brown text-sm"></i> 1. Who are you & where are you?
             </h3>
             
             <div class="space-y-3">
                 <input type="text" id="pay-name" placeholder="Full Name" class="w-full bg-gray-50 border border-gray-100 rounded-2xl px-4 py-3 text-sm focus:border-brand-brown focus:bg-white outline-none transition-all">
                 <input type="tel" id="pay-phone" placeholder="Phone Number" class="w-full bg-gray-50 border border-gray-100 rounded-2xl px-4 py-3 text-sm focus:border-brand-brown focus:bg-white outline-none transition-all">
                 
-                <div class="relative">
-                    <select id="pay-location" class="w-full bg-gray-50 border border-gray-100 rounded-2xl px-4 py-3 text-sm focus:border-brand-brown focus:bg-white outline-none appearance-none cursor-pointer">
-                        <option value="" disabled selected>-- Select Location --</option>
-                    </select>
-                    <i class="fas fa-chevron-down absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"></i>
+                <!-- Location Resolver Wrapper -->
+                <div id="location-resolver-wrapper" class="space-y-3">
+                    <div id="location-input-container" class="relative">
+                        <input type="text" id="pay-location-code" placeholder="Enter Workplace Code (e.g. ONT2)" class="w-full bg-gray-50 border border-gray-100 rounded-2xl px-4 py-3 text-sm focus:border-brand-brown focus:bg-white outline-none transition-all uppercase font-mono">
+                        <i class="fas fa-search absolute right-4 top-1/2 -translate-y-1/2 text-gray-400"></i>
+                    </div>
+                    
+                    <div id="location-locked-container" class="hidden bg-brand-cream border border-brand-brown/15 p-4 rounded-2xl flex items-center justify-between animate-fade-in">
+                        <div class="flex items-center gap-3">
+                            <span class="w-8 h-8 rounded-full bg-brand-brown/5 text-brand-brown flex items-center justify-center"><i class="fas fa-map-marker-alt text-xs"></i></span>
+                            <div>
+                                <h4 id="locked-loc-name" class="font-serif font-bold text-xs text-brand-dark">Workplace Location</h4>
+                                <p id="locked-loc-city" class="text-[9px] text-gray-400 uppercase tracking-wider font-semibold">City</p>
+                            </div>
+                        </div>
+                        <button type="button" onclick="unlockLocation()" id="unlock-loc-btn" class="hidden text-[8px] font-black uppercase tracking-widest text-brand-brown bg-brand-brown/5 px-3 py-1.5 rounded-full border border-brand-brown/10 hover:bg-brand-brown/10 transition-all">Change</button>
+                    </div>
                 </div>
             </div>
         </div>
 
-        <!-- Products List -->
+        <!-- 1.5 Select Option Toggle -->
+        <div class="bg-white rounded-[2.5rem] p-6 border border-gray-100 shadow-sm space-y-3">
+            <h3 class="text-sm font-serif font-bold text-brand-dark flex items-center gap-2">
+                <i class="fas fa-toggle-on text-brand-brown text-sm"></i> 1.5 Select Option
+            </h3>
+            <div class="grid grid-cols-2 gap-2 bg-gray-50 p-1 rounded-2xl border border-gray-100">
+                <button onclick="setOrderMode('grab')" id="mode-grab" class="py-2.5 rounded-xl text-[9px] font-black uppercase tracking-wider transition-all bg-brand-dark text-white shadow">Grab from Fridge</button>
+                <button onclick="setOrderMode('preorder')" id="mode-preorder" class="py-2.5 rounded-xl text-[9px] font-black uppercase tracking-wider transition-all text-gray-450 hover:text-brand-dark">Pre-order Monday</button>
+            </div>
+            <p id="mode-helper-text" class="text-[9px] text-gray-450 font-medium italic ml-1">Take your bottle directly from the honors fridge right now.</p>
+        </div>
+
+        <!-- 2. Products List -->
         <div class="bg-white rounded-[2.5rem] p-6 border border-gray-100 shadow-sm space-y-4">
             <h3 class="text-sm font-serif font-bold text-brand-dark flex items-center gap-2">
                 <i class="fas fa-coffee text-brand-brown text-sm"></i> 2. Choose Your Drink
@@ -104,7 +128,6 @@
             
             <!-- Flavor Grid -->
             <div id="product-list" class="grid grid-cols-2 gap-3">
-                <!-- Injected dynamically -->
                 <div class="col-span-full text-center py-6 text-gray-400 text-xs italic">Loading menu...</div>
             </div>
 
@@ -115,7 +138,7 @@
                     <label class="block text-[8px] font-black uppercase text-gray-400 tracking-wider">Milk Customization</label>
                     <div class="grid grid-cols-2 gap-2">
                         <button onclick="setMilkOption('Regular')" id="milk-reg" class="py-2 rounded-xl text-[9px] font-black uppercase tracking-wider transition-all border border-brand-dark bg-brand-dark text-white shadow">Regular Milk</button>
-                        <button onclick="setMilkOption('Oat Milk')" id="milk-oat" class="py-2 rounded-xl text-[9px] font-black uppercase tracking-wider transition-all border border-gray-200 text-gray-400 hover:bg-gray-50">Oat Milk (+$1.00)</button>
+                        <button onclick="setMilkOption('Oat Milk')" id="milk-oat" class="py-2 rounded-xl text-[9px] font-black uppercase tracking-wider transition-all border border-gray-200 text-gray-405 hover:bg-gray-50">Oat Milk (+$1.00)</button>
                     </div>
                 </div>
                 
@@ -123,15 +146,15 @@
                 <div class="space-y-2">
                     <label class="block text-[8px] font-black uppercase text-gray-400 tracking-wider">Espresso Strength</label>
                     <div class="grid grid-cols-3 gap-2">
-                        <button onclick="setEspressoOption('Light')" id="esp-light" class="py-2 rounded-xl text-[9px] font-black uppercase tracking-wider transition-all border border-gray-200 text-gray-400">Light</button>
+                        <button onclick="setEspressoOption('Light')" id="esp-light" class="py-2 rounded-xl text-[9px] font-black uppercase tracking-wider transition-all border border-gray-200 text-gray-405">Light</button>
                         <button onclick="setEspressoOption('Standard')" id="esp-std" class="py-2 rounded-xl text-[9px] font-black uppercase tracking-wider transition-all border border-brand-dark bg-brand-dark text-white shadow">Standard</button>
-                        <button onclick="setEspressoOption('Extra')" id="esp-extra" class="py-2 rounded-xl text-[9px] font-black uppercase tracking-wider transition-all border border-gray-200 text-gray-400">Extra</button>
+                        <button onclick="setEspressoOption('Extra')" id="esp-extra" class="py-2 rounded-xl text-[9px] font-black uppercase tracking-wider transition-all border border-gray-200 text-gray-405">Extra</button>
                     </div>
                 </div>
             </div>
         </div>
 
-        <!-- Checkout Card -->
+        <!-- 3. Checkout Card -->
         <div class="bg-brand-dark rounded-[2.5rem] p-6 text-white shadow-xl relative overflow-hidden border border-white/5">
             <div class="relative z-10 space-y-6">
                 
@@ -139,6 +162,39 @@
                 <div class="text-center pt-2">
                     <p class="text-[8px] font-black uppercase text-white/30 tracking-[0.2em] mb-1">Total to Pay</p>
                     <p class="text-4xl font-black font-mono text-brand-gold tracking-tight" id="pay-total-display">$0.00</p>
+                </div>
+
+                <!-- Pre-order Subscription Frequency Option -->
+                <div id="sub-frequency-container" class="hidden space-y-3 animate-fade-in">
+                    <label class="block text-[8px] font-black uppercase text-white/30 tracking-wider text-center">Delivery Frequency</label>
+                    <div class="grid grid-cols-2 gap-2 bg-white/5 p-1 rounded-2xl border border-white/10">
+                        <button type="button" onclick="setSubscription(false)" id="freq-once" class="py-2 rounded-xl text-[8px] font-black uppercase tracking-wider transition-all bg-white/10 text-white shadow">One-time</button>
+                        <button type="button" onclick="setSubscription(true)" id="freq-sub" class="py-2 rounded-xl text-[8px] font-black uppercase tracking-wider transition-all text-white/40">Weekly Club (-10%)</button>
+                    </div>
+                    <div id="sub-benefit" class="hidden text-[8px] font-bold text-brand-gold text-center italic animate-pulse">
+                        <i class="fas fa-gift mr-1"></i> Weekly Pre-Order Delivery • 10% OFF Applied
+                    </div>
+                </div>
+
+                <!-- Hub Progress Tracker -->
+                <div id="hub-tracker-card" class="hidden bg-white/5 border border-white/10 rounded-2xl p-4 space-y-3 transition-all duration-300">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <h4 id="hub-tracker-title" class="text-[9px] font-bold text-white tracking-wide">Hub Goal</h4>
+                            <p class="text-[8px] text-white/40 tracking-wider uppercase">Weekly Community Goal</p>
+                        </div>
+                        <span id="hub-tracker-status-badge" class="text-[8px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-brand-gold/10 text-brand-gold border border-brand-gold/20">Active</span>
+                    </div>
+                    <div class="space-y-1.5">
+                        <div class="flex justify-between text-[8px] font-mono">
+                            <span class="text-white/40">Current Weekly Bottles</span>
+                            <span id="hub-tracker-progress-text" class="text-brand-gold font-bold">0 / 20</span>
+                        </div>
+                        <div class="w-full h-2 bg-white/5 rounded-full overflow-hidden border border-white/5 relative">
+                            <div id="hub-tracker-progress-fill" class="h-full rounded-full transition-all duration-1000 ease-out gold-shimmer" style="width: 0%;"></div>
+                        </div>
+                    </div>
+                    <p id="hub-tracker-msg" class="text-[9px] text-white/60 leading-relaxed italic"></p>
                 </div>
 
                 <!-- Payment Tabs -->
@@ -223,7 +279,7 @@
                     <span id="receipt-time" class="font-bold text-brand-dark">Jul 2, 2026 10:16 AM</span>
                 </div>
                 <div class="flex justify-between text-[9px] font-mono text-gray-500">
-                    <span>Grab Product:</span>
+                    <span>Selected Drink:</span>
                     <span id="receipt-flavor" class="font-black text-brand-brown uppercase">Vanilla Latte</span>
                 </div>
             </div>
@@ -248,6 +304,10 @@
         let customMilk = "Regular";
         let customEspresso = "Standard";
 
+        let orderMode = "grab"; // "grab" or "preorder"
+        let isSubscription = false;
+        let currentDiscount = 0;
+
         // URL Prefills
         const urlParams = new URLSearchParams(window.location.search);
         const urlProduct = urlParams.get('flavor'); 
@@ -259,8 +319,9 @@
                 if (urlParams.get('success') === 'true') {
                     showReceiptSplash(
                         urlParams.get('order') || 'RA-STRIPE', 
-                        new Date().toLocaleString(), 
-                        'Stripe Paid Item'
+                        new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }), 
+                        urlParams.get('flavor') || 'Stripe Paid Item',
+                        urlParams.get('mode') || 'grab'
                     );
                 }
 
@@ -284,28 +345,161 @@
         }
 
         function populateLocations() {
-            const select = document.getElementById('pay-location');
-            select.innerHTML = '<option value="" disabled selected>-- Select Location --</option>';
-            
-            allLocations.forEach(l => {
-                const opt = document.createElement('option');
-                opt.value = l.id;
-                opt.textContent = `${l.name} (${l.city})`;
-                select.appendChild(opt);
-            });
-
-            // Handle prefill location if present
+            // Check if prefill location matches dynamically
             if (urlLocation) {
-                const match = allLocations.find(l => l.id.toLowerCase() === urlLocation.toLowerCase() || l.name.toLowerCase().includes(urlLocation.toLowerCase()));
+                const match = allLocations.find(l => 
+                    l.id.toLowerCase() === urlLocation.toLowerCase() || 
+                    l.name.toLowerCase().includes(urlLocation.toLowerCase()) ||
+                    (l.distributor_name && l.distributor_name.toLowerCase() === urlLocation.toLowerCase())
+                );
                 if (match) {
-                    select.value = match.id;
                     selectedLocationId = match.id;
+                    lockLocationUI(match);
                 }
             }
 
-            select.addEventListener('change', (e) => {
-                selectedLocationId = e.target.value;
-            });
+            // Bind listener to code entry input
+            const input = document.getElementById('pay-location-code');
+            if (input) {
+                input.addEventListener('input', (e) => {
+                    const val = e.target.value.trim().toLowerCase();
+                    if (val.length >= 2) {
+                        const match = allLocations.find(l => 
+                            l.id.toLowerCase() === val || 
+                            l.name.toLowerCase().includes(val) || 
+                            (l.distributor_name && l.distributor_name.toLowerCase() === val)
+                        );
+                        if (match) {
+                            selectedLocationId = match.id;
+                            lockLocationUI(match);
+                            showToast(`Location unlocked: ${match.name}!`, 'success');
+                        }
+                    }
+                });
+            }
+        }
+
+        function lockLocationUI(loc) {
+            document.getElementById('location-input-container').classList.add('hidden');
+            
+            document.getElementById('locked-loc-name').innerText = loc.name;
+            document.getElementById('locked-loc-city').innerText = loc.city || '';
+            document.getElementById('location-locked-container').classList.remove('hidden');
+            
+            // Allow change only if it wasn't pre-filled by QR code parameter
+            if (!urlLocation) {
+                document.getElementById('unlock-loc-btn').classList.remove('hidden');
+            } else {
+                document.getElementById('unlock-loc-btn').classList.add('hidden');
+            }
+
+            updateHubTracker();
+        }
+
+        function unlockLocation() {
+            selectedLocationId = "";
+            document.getElementById('location-locked-container').classList.add('hidden');
+            document.getElementById('location-input-container').classList.remove('hidden');
+            document.getElementById('pay-location-code').value = "";
+            updateHubTracker();
+        }
+
+        function setOrderMode(mode) {
+            orderMode = mode;
+            const btnGrab = document.getElementById('mode-grab');
+            const btnPre = document.getElementById('mode-preorder');
+            const helperText = document.getElementById('mode-helper-text');
+            const heroTitle = document.getElementById('hero-title');
+            const heroDesc = document.getElementById('hero-desc');
+            const subFreqContainer = document.getElementById('sub-frequency-container');
+
+            if (mode === 'grab') {
+                btnGrab.className = "py-2.5 rounded-xl text-[9px] font-black uppercase tracking-wider transition-all bg-brand-dark text-white shadow";
+                btnPre.className = "py-2.5 rounded-xl text-[9px] font-black uppercase tracking-wider transition-all text-gray-450 hover:text-brand-dark";
+                helperText.innerText = "Take your bottle directly from the honors fridge right now.";
+                heroTitle.innerText = "Honors Checkout";
+                heroDesc.innerText = "Select your drink, pay instantly, and enjoy your fresh brew.";
+                
+                subFreqContainer.classList.add('hidden');
+                setSubscription(false);
+            } else {
+                btnGrab.className = "py-2.5 rounded-xl text-[9px] font-black uppercase tracking-wider transition-all text-gray-450 hover:text-brand-dark";
+                btnPre.className = "py-2.5 rounded-xl text-[9px] font-black uppercase tracking-wider transition-all bg-brand-dark text-white shadow";
+                helperText.innerText = "Pre-order for Monday delivery. Captain Rico will drop your labeled bottle off at the location.";
+                heroTitle.innerText = "Monday Pre-Order";
+                heroDesc.innerText = "Order single bottles in advance for fresh Monday morning pickup.";
+                
+                subFreqContainer.classList.remove('hidden');
+            }
+
+            updateHubTracker();
+            updatePricing();
+        }
+
+        function setSubscription(val) {
+            isSubscription = val;
+            const btnOnce = document.getElementById('freq-once');
+            const btnSub = document.getElementById('freq-sub');
+            const benefit = document.getElementById('sub-benefit');
+
+            if (val) {
+                btnOnce.className = "py-2 rounded-xl text-[8px] font-black uppercase tracking-wider transition-all text-white/40 hover:bg-white/5";
+                btnSub.className = "py-2 rounded-xl text-[8px] font-black uppercase tracking-wider transition-all bg-white/10 text-white shadow";
+                benefit.classList.remove('hidden');
+                currentDiscount = 10;
+            } else {
+                btnOnce.className = "py-2 rounded-xl text-[8px] font-black uppercase tracking-wider transition-all bg-white/10 text-white shadow";
+                btnSub.className = "py-2 rounded-xl text-[8px] font-black uppercase tracking-wider transition-all text-white/40 hover:bg-white/5";
+                benefit.classList.add('hidden');
+                currentDiscount = 0;
+            }
+            updatePricing();
+        }
+
+        function updateHubTracker() {
+            const hubCard = document.getElementById('hub-tracker-card');
+            if (orderMode !== 'preorder' || !selectedLocationId) {
+                hubCard.classList.add('hidden');
+                return;
+            }
+
+            const selectedLoc = allLocations.find(l => l.id === selectedLocationId);
+            if (!selectedLoc) {
+                hubCard.classList.add('hidden');
+                return;
+            }
+
+            const isIvy = selectedLoc.name.toLowerCase().includes('ivy');
+            if (isIvy) {
+                hubCard.classList.add('hidden');
+                return;
+            }
+
+            const isMicroHub = selectedLoc.distributor_name === 'Micro-Hub';
+            const target = isMicroHub ? 10 : 20; 
+            const currentHubBottles = selectedLoc.current_bottles || 0;
+            const totalCombined = currentHubBottles + 1;
+            const percent = Math.min((totalCombined / target) * 100, 100);
+
+            document.getElementById('hub-tracker-title').innerText = `${selectedLoc.name} (${selectedLoc.city})`;
+            document.getElementById('hub-tracker-progress-text').innerText = `${totalCombined} / ${target}`;
+            document.getElementById('hub-tracker-progress-fill').style.width = `${percent}%`;
+
+            const badge = document.getElementById('hub-tracker-status-badge');
+            const msg = document.getElementById('hub-tracker-msg');
+
+            if (totalCombined >= target) {
+                badge.className = "text-[8px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20";
+                badge.innerText = "UNLOCKED";
+                msg.innerHTML = `🎉 Community Goal Reached! <strong>FREE DELIVERY</strong> is active for this location!`;
+            } else {
+                badge.className = "text-[8px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-brand-gold/10 text-brand-gold border border-brand-gold/20";
+                badge.innerText = "ACTIVE";
+                const remaining = target - totalCombined;
+                msg.innerHTML = `🔥 Location has <strong>${currentHubBottles}</strong> pre-orders. Your bottle makes it <strong>${totalCombined}</strong>. Need <strong>${remaining}</strong> more to unlock delivery!`;
+            }
+
+            hubCard.classList.remove('hidden');
         }
 
         function renderProducts() {
@@ -367,9 +561,9 @@
 
             if (opt === 'Regular') {
                 btnReg.className = "py-2 rounded-xl text-[9px] font-black uppercase tracking-wider transition-all border border-brand-dark bg-brand-dark text-white shadow";
-                btnOat.className = "py-2 rounded-xl text-[9px] font-black uppercase tracking-wider transition-all border border-gray-200 text-gray-400 hover:bg-gray-50";
+                btnOat.className = "py-2 rounded-xl text-[9px] font-black uppercase tracking-wider transition-all border border-gray-200 text-gray-405 hover:bg-gray-50";
             } else {
-                btnReg.className = "py-2 rounded-xl text-[9px] font-black uppercase tracking-wider transition-all border border-gray-200 text-gray-400 hover:bg-gray-50";
+                btnReg.className = "py-2 rounded-xl text-[9px] font-black uppercase tracking-wider transition-all border border-gray-200 text-gray-405 hover:bg-gray-50";
                 btnOat.className = "py-2 rounded-xl text-[9px] font-black uppercase tracking-wider transition-all border border-brand-dark bg-brand-dark text-white shadow";
             }
             updatePricing();
@@ -381,7 +575,7 @@
             const btnS = document.getElementById('esp-std');
             const btnE = document.getElementById('esp-extra');
 
-            const inactiveClass = "py-2 rounded-xl text-[9px] font-black uppercase tracking-wider transition-all border border-gray-200 text-gray-400 hover:bg-gray-50";
+            const inactiveClass = "py-2 rounded-xl text-[9px] font-black uppercase tracking-wider transition-all border border-gray-200 text-gray-405 hover:bg-gray-50";
             const activeClass = "py-2 rounded-xl text-[9px] font-black uppercase tracking-wider transition-all border border-brand-dark bg-brand-dark text-white shadow";
 
             btnL.className = opt === 'Light' ? activeClass : inactiveClass;
@@ -394,6 +588,9 @@
             let total = parseFloat(selectedProduct.price);
             if (customMilk === 'Oat Milk') {
                 total += 1.00;
+            }
+            if (isSubscription) {
+                total = total * 0.90; // 10% OFF
             }
             document.getElementById('pay-total-display').innerText = `$${total.toFixed(2)}`;
         }
@@ -420,12 +617,14 @@
                 return;
             }
             let total = parseFloat(selectedProduct.price) + (customMilk === 'Oat Milk' ? 1.00 : 0);
-            const note = `Rich Aroma Coffee - Self-Checkout ${selectedProduct.name} (${customMilk})`;
-            // Launch Venmo App link
+            if (isSubscription) total = total * 0.90;
+
+            const modeLabel = orderMode === 'preorder' ? 'Pre-Order' : 'Self-Checkout';
+            const note = `Rich Aroma Coffee - ${modeLabel} ${selectedProduct.name} (${customMilk})`;
+            
             const url = `venmo://paycharge?recipients=rich-aroma-coffee&amount=${total.toFixed(2)}&note=${encodeURIComponent(note)}`;
             window.location.href = url;
             
-            // Fallback warning alert if app fails to load
             setTimeout(() => {
                 showToast("If Venmo app didn't open, search @rich-aroma-coffee directly.", 'success');
             }, 1500);
@@ -456,7 +655,6 @@
             let basePrice = parseFloat(selectedProduct.price);
             let unitPrice = basePrice + (customMilk === 'Oat Milk' ? 1.00 : 0);
 
-            // Construct cart item format matching backend requirements
             const cartItems = [{
                 product_id: selectedProduct.id,
                 name: selectedProduct.name,
@@ -471,7 +669,13 @@
                 bottles: 1
             }];
 
-            const selfCheckoutNotes = `[SELF-CHECKOUT STRIPE CHECKOUT] Grabbed directly on honors system at Location. Selection Details: ${selectedProduct.name} (${customMilk}, ${customEspresso} strength).`;
+            const notesTag = orderMode === 'preorder' 
+                ? (isSubscription ? '[PRE-ORDER SUBSCRIPTION]' : '[PRE-ORDER]') 
+                : '[SELF-CHECKOUT]';
+                
+            const selfCheckoutNotes = `${notesTag} Stripe checkout at location. Details: ${selectedProduct.name} (${customMilk}, ${customEspresso} strength).`;
+
+            const baseUrl = window.location.origin;
 
             try {
                 const res = await fetch('/api/checkout', {
@@ -484,12 +688,14 @@
                         location_id: selectedLocationId, 
                         items: cartItems, 
                         notes: selfCheckoutNotes,
-                        is_subscription: false,
+                        is_subscription: isSubscription,
                         delivery_fee_applied: 0
                     })
                 });
                 const data = await res.json();
                 if (data.url) {
+                    // Update Stripe success callback URL to carry pre-selected metadata back
+                    const stripeUrl = new URL(data.url);
                     window.location.href = data.url;
                 } else {
                     throw new Error(data.error);
@@ -516,8 +722,13 @@
 
             let basePrice = parseFloat(selectedProduct.price);
             let totalVal = basePrice + (customMilk === 'Oat Milk' ? 1.00 : 0);
+            if (isSubscription) totalVal = totalVal * 0.90;
 
-            const selfCheckoutNotes = `[SELF-CHECKOUT ${method.toUpperCase()}] Paid via ${method}. Grabbed directly on honors system. Details: ${selectedProduct.name} (${customMilk}, ${customEspresso} strength).`;
+            const notesTag = orderMode === 'preorder'
+                ? (isSubscription ? `[PRE-ORDER SUBSCRIPTION PAY: ${method.toUpperCase()}]` : `[PRE-ORDER PAY: ${method.toUpperCase()}]`)
+                : `[SELF-CHECKOUT PAY: ${method.toUpperCase()}]`;
+
+            const selfCheckoutNotes = `${notesTag} Details: ${selectedProduct.name} (${customMilk}, ${customEspresso} strength).`;
 
             const cartItems = [{
                 product_id: selectedProduct.id,
@@ -542,7 +753,7 @@
                         customer_phone: phone,
                         location_id: selectedLocationId,
                         total: totalVal,
-                        selections: { cart: cartItems, payment_method: method.toLowerCase(), status: 'pending_verification' },
+                        selections: { cart: cartItems, payment_method: method.toLowerCase(), status: 'pending_verification', is_subscription: isSubscription },
                         notes: selfCheckoutNotes
                     })
                 });
@@ -552,7 +763,8 @@
                     showReceiptSplash(
                         data.id || 'RA-MANUAL',
                         new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-                        `${selectedProduct.name} (${customMilk})`
+                        `${selectedProduct.name} (${customMilk})`,
+                        orderMode
                     );
                 } else {
                     const err = await res.json();
@@ -563,10 +775,21 @@
             }
         }
 
-        function showReceiptSplash(code, time, flavor) {
+        function showReceiptSplash(code, time, flavor, mode = 'grab') {
             document.getElementById('receipt-code').innerText = code;
             document.getElementById('receipt-time').innerText = time;
             document.getElementById('receipt-flavor').innerText = flavor;
+            
+            const titleEl = document.querySelector('#success-modal h2');
+            const msgEl = document.querySelector('#success-modal p.italic');
+            
+            if (mode === 'preorder') {
+                titleEl.innerText = "Pre-Order Secured!";
+                msgEl.innerText = "Your bottle will be brewed fresh this Sunday and delivered Monday morning labeled with your name. Check you at the drop! ☕";
+            } else {
+                titleEl.innerText = "Payment Registered!";
+                msgEl.innerText = "Please grab your bottle from the fridge. Thank you for supporting Honduras small-batch coffee! ☕";
+            }
             
             document.getElementById('success-modal').classList.remove('hidden');
         }
