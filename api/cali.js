@@ -257,6 +257,32 @@ module.exports = async (req, res) => {
             return res.json(data);
         }
 
+        // 6d. CREATE SELF CHECKOUT ORDER (PUBLIC)
+        if (req.method === 'POST' && action === 'create_self_checkout_order') {
+            const { customer_name, customer_phone, location_id, total, selections, notes } = req.body;
+            
+            const { data, error } = await supabase.from('cali_orders').insert({
+                customer_name: customer_name || 'Guest',
+                customer_phone: customer_phone || '',
+                location_id: location_id === 'home' ? null : location_id,
+                total: parseFloat(total || 0),
+                status: 'pending',
+                selections: selections || {},
+                notes: notes || '[SELF-CHECKOUT ORDER]'
+            }).select().single();
+
+            if (error) throw error;
+
+            try {
+                const { notifyCaliOrder } = require('./lib/email-service');
+                await notifyCaliOrder(data, 'PENDING');
+            } catch (notifyErr) {
+                console.error("Self-checkout notification error:", notifyErr);
+            }
+
+            return res.json(data);
+        }
+
         // 6c. CHECK ORDER STATUS
         if (req.method === 'GET' && action === 'check_order_status') {
             if (!isAdmin) return res.status(401).json({ error: 'Unauthorized' });

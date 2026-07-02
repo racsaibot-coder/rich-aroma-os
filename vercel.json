@@ -339,6 +339,10 @@
       "dest": "/public/cali/pos.html"
     },
     {
+      "src": "/cali/pay",
+      "dest": "/public/cali/pay.html"
+    },
+    {
       "src": "/api/cali/(.*)",
       "dest": "/api/cali.js?action=$1"
     },
