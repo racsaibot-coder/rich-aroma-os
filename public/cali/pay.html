@@ -297,6 +297,9 @@
     <script>
         let allProducts = [];
         let allLocations = [];
+        window.allProducts = allProducts;
+        window.allLocations = allLocations;
+
         let selectedProduct = null;
         let selectedLocationId = "";
         let paymentTab = "stripe";
@@ -329,6 +332,7 @@
                 const lRes = await fetch('/api/cali?action=locations');
                 if (lRes.ok) {
                     allLocations = await lRes.json();
+                    window.allLocations = allLocations;
                     populateLocations();
                 }
 
@@ -336,6 +340,7 @@
                 const pRes = await fetch('/api/cali?action=products');
                 if (pRes.ok) {
                     allProducts = await pRes.json();
+                    window.allProducts = allProducts;
                     renderProducts();
                 }
             } catch (e) {
