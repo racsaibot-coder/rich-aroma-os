@@ -164,6 +164,16 @@
                     <p class="text-4xl font-black font-mono text-brand-gold tracking-tight" id="pay-total-display">$0.00</p>
                 </div>
 
+                <!-- Quantity Selector -->
+                <div class="flex items-center justify-between bg-white/5 p-3 rounded-2xl border border-white/10">
+                    <span class="text-[9px] font-black uppercase text-white/50 tracking-wider ml-1">Quantity</span>
+                    <div class="flex items-center gap-4">
+                        <button type="button" onclick="adjustQty(-1)" class="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center hover:bg-white/20 transition-all text-xs font-bold"><i class="fas fa-minus"></i></button>
+                        <span id="qty-display" class="font-mono font-black text-sm">1</span>
+                        <button type="button" onclick="adjustQty(1)" class="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center hover:bg-white/20 transition-all text-xs font-bold"><i class="fas fa-plus"></i></button>
+                    </div>
+                </div>
+
                 <!-- Pre-order Subscription Frequency Option -->
                 <div id="sub-frequency-container" class="hidden space-y-3 animate-fade-in">
                     <label class="block text-[8px] font-black uppercase text-white/30 tracking-wider text-center">Delivery Frequency</label>
@@ -310,6 +320,7 @@
         let orderMode = "grab"; // "grab" or "preorder"
         let isSubscription = false;
         let currentDiscount = 0;
+        let currentQty = 1;
 
         // URL Prefills
         const urlParams = new URLSearchParams(window.location.search);
@@ -498,7 +509,7 @@
             const isMicroHub = selectedLoc.distributor_name === 'Micro-Hub';
             const target = isMicroHub ? 10 : 20; 
             const currentHubBottles = selectedLoc.current_bottles || 0;
-            const totalCombined = currentHubBottles + 1;
+            const totalCombined = currentHubBottles + currentQty;
             const percent = Math.min((totalCombined / target) * 100, 100);
 
             document.getElementById('hub-tracker-title').innerText = `${selectedLoc.name} (${selectedLoc.city})`;
@@ -516,7 +527,7 @@
                 badge.className = "text-[8px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-brand-gold/10 text-brand-gold border border-brand-gold/20";
                 badge.innerText = "ACTIVE";
                 const remaining = target - totalCombined;
-                msg.innerHTML = `🔥 Location has <strong>${currentHubBottles}</strong> pre-orders. Your bottle makes it <strong>${totalCombined}</strong>. Need <strong>${remaining}</strong> more to unlock delivery!`;
+                msg.innerHTML = `🔥 Location has <strong>${currentHubBottles}</strong> pre-orders. Your order makes it <strong>${totalCombined}</strong>. Need <strong>${remaining}</strong> more to unlock delivery!`;
             }
 
             hubCard.classList.remove('hidden');
@@ -603,15 +614,22 @@
             btnE.className = opt === 'Extra' ? activeClass : inactiveClass;
         }
 
+        function adjustQty(delta) {
+            currentQty += delta;
+            if (currentQty < 1) currentQty = 1;
+            document.getElementById('qty-display').innerText = currentQty;
+            updatePricing();
+            updateHubTracker();
+        }
+
         function updatePricing() {
             if (!selectedProduct) return;
-            let total = parseFloat(selectedProduct.price);
-            if (customMilk === 'Oat Milk') {
-                total += 1.00;
-            }
+            let basePrice = parseFloat(selectedProduct.price);
+            let unitPrice = basePrice + (customMilk === 'Oat Milk' ? 1.00 : 0);
             if (isSubscription) {
-                total = total * 0.90; // 10% OFF
+                unitPrice = unitPrice * 0.90; // 10% OFF
             }
+            const total = unitPrice * currentQty;
             document.getElementById('pay-total-display').innerText = `$${total.toFixed(2)}`;
         }
 
@@ -638,11 +656,12 @@
             }
             let total = parseFloat(selectedProduct.price) + (customMilk === 'Oat Milk' ? 1.00 : 0);
             if (isSubscription) total = total * 0.90;
+            const finalTotal = total * currentQty;
 
             const modeLabel = orderMode === 'preorder' ? 'Pre-Order' : 'Self-Checkout';
-            const note = `Rich Aroma Coffee - ${modeLabel} ${selectedProduct.name} (${customMilk})`;
+            const note = `Rich Aroma Coffee - ${modeLabel} ${currentQty}x ${selectedProduct.name} (${customMilk})`;
             
-            const url = `venmo://paycharge?recipients=rich-aroma-coffee&amount=${total.toFixed(2)}&note=${encodeURIComponent(note)}`;
+            const url = `venmo://paycharge?recipients=rich-aroma-coffee&amount=${finalTotal.toFixed(2)}&note=${encodeURIComponent(note)}`;
             window.location.href = url;
             
             setTimeout(() => {
@@ -678,22 +697,22 @@
             const cartItems = [{
                 product_id: selectedProduct.id,
                 name: selectedProduct.name,
-                selections: [{
+                selections: Array(currentQty).fill().map(() => ({
                     flavor: selectedProduct.name,
                     milk: customMilk,
                     espresso: customEspresso
-                }],
-                qty: 1,
+                })),
+                qty: currentQty,
                 unitPrice: unitPrice,
-                total: unitPrice,
-                bottles: 1
+                total: unitPrice * currentQty,
+                bottles: currentQty
             }];
 
             const notesTag = orderMode === 'preorder' 
                 ? (isSubscription ? '[PRE-ORDER SUBSCRIPTION]' : '[PRE-ORDER]') 
                 : '[SELF-CHECKOUT]';
                 
-            const selfCheckoutNotes = `${notesTag} Stripe checkout at location. Details: ${selectedProduct.name} (${customMilk}, ${customEspresso} strength).`;
+            const selfCheckoutNotes = `${notesTag} Stripe checkout at location. Details: ${currentQty}x ${selectedProduct.name} (${customMilk}, ${customEspresso} strength).`;
 
             const baseUrl = window.location.origin;
 
@@ -741,27 +760,28 @@
             }
 
             let basePrice = parseFloat(selectedProduct.price);
-            let totalVal = basePrice + (customMilk === 'Oat Milk' ? 1.00 : 0);
-            if (isSubscription) totalVal = totalVal * 0.90;
+            let unitPrice = basePrice + (customMilk === 'Oat Milk' ? 1.00 : 0);
+            if (isSubscription) unitPrice = unitPrice * 0.90;
+            const totalVal = unitPrice * currentQty;
 
             const notesTag = orderMode === 'preorder'
                 ? (isSubscription ? `[PRE-ORDER SUBSCRIPTION PAY: ${method.toUpperCase()}]` : `[PRE-ORDER PAY: ${method.toUpperCase()}]`)
                 : `[SELF-CHECKOUT PAY: ${method.toUpperCase()}]`;
 
-            const selfCheckoutNotes = `${notesTag} Details: ${selectedProduct.name} (${customMilk}, ${customEspresso} strength).`;
+            const selfCheckoutNotes = `${notesTag} Details: ${currentQty}x ${selectedProduct.name} (${customMilk}, ${customEspresso} strength).`;
 
             const cartItems = [{
                 product_id: selectedProduct.id,
                 name: selectedProduct.name,
-                selections: [{
+                selections: Array(currentQty).fill().map(() => ({
                     flavor: selectedProduct.name,
                     milk: customMilk,
                     espresso: customEspresso
-                }],
-                qty: 1,
-                unitPrice: totalVal,
+                })),
+                qty: currentQty,
+                unitPrice: unitPrice,
                 total: totalVal,
-                bottles: 1
+                bottles: currentQty
             }];
 
             try {
@@ -783,7 +803,7 @@
                     showReceiptSplash(
                         data.id || 'RA-MANUAL',
                         new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-                        `${selectedProduct.name} (${customMilk})`,
+                        `${currentQty}x ${selectedProduct.name} (${customMilk})`,
                         orderMode
                     );
                 } else {
