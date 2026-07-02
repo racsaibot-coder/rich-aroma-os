@@ -117,10 +117,10 @@
                 <button onclick="setOrderMode('grab')" id="mode-grab" class="py-2.5 rounded-xl text-[9px] font-black uppercase tracking-wider transition-all bg-brand-dark text-white shadow">Grab from Fridge</button>
                 <button onclick="setOrderMode('preorder')" id="mode-preorder" class="py-2.5 rounded-xl text-[9px] font-black uppercase tracking-wider transition-all text-gray-450 hover:text-brand-dark">Pre-order Monday</button>
             </div>
-            <p id="mode-helper-text" class="text-[9px] text-gray-450 font-medium italic ml-1">Take your bottle directly from the honors fridge right now.</p>
+            <p id="mode-helper-text" class="text-[9px] text-gray-455 font-medium italic ml-1">Take your bottle directly from the honors fridge right now.</p>
         </div>
 
-        <!-- 2. Products List -->
+        <!-- 2. Choose Your Drink -->
         <div class="bg-white rounded-[2.5rem] p-6 border border-gray-100 shadow-sm space-y-4">
             <h3 class="text-sm font-serif font-bold text-brand-dark flex items-center gap-2">
                 <i class="fas fa-coffee text-brand-brown text-sm"></i> 2. Choose Your Drink
@@ -151,27 +151,37 @@
                         <button onclick="setEspressoOption('Extra')" id="esp-extra" class="py-2 rounded-xl text-[9px] font-black uppercase tracking-wider transition-all border border-gray-200 text-gray-405">Extra</button>
                     </div>
                 </div>
+
+                <!-- Add to Order Button -->
+                <div class="pt-2">
+                    <button type="button" onclick="addItemToOrder()" class="w-full bg-brand-brown text-white font-black py-4 rounded-xl shadow hover:bg-brand-dark transition-all uppercase tracking-wider text-[9px]">
+                        Add to My Order <i class="fas fa-plus ml-1"></i>
+                    </button>
+                </div>
             </div>
         </div>
 
-        <!-- 3. Checkout Card -->
-        <div class="bg-brand-dark rounded-[2.5rem] p-6 text-white shadow-xl relative overflow-hidden border border-white/5">
+        <!-- 3. Your Order Summary -->
+        <div id="cart-container" class="hidden bg-white rounded-[2.5rem] p-6 border border-gray-100 shadow-sm space-y-4 animate-fade-in">
+            <h3 class="text-sm font-serif font-bold text-brand-dark flex items-center justify-between">
+                <span class="flex items-center gap-2"><i class="fas fa-shopping-bag text-brand-brown text-sm"></i> 3. Your Order</span>
+                <button type="button" onclick="clearCart()" class="text-[8px] font-black uppercase text-red-500 hover:text-red-700 transition-colors">Clear All</button>
+            </h3>
+            
+            <!-- Cart Items List -->
+            <div id="cart-items-list" class="space-y-2 max-h-60 overflow-y-auto pr-1 no-scrollbar">
+                <!-- Injected dynamically -->
+            </div>
+        </div>
+
+        <!-- 4. Checkout Card -->
+        <div id="checkout-card" class="hidden bg-brand-dark rounded-[2.5rem] p-6 text-white shadow-xl relative overflow-hidden border border-white/5">
             <div class="relative z-10 space-y-6">
                 
                 <!-- Summary / Pricing -->
                 <div class="text-center pt-2">
                     <p class="text-[8px] font-black uppercase text-white/30 tracking-[0.2em] mb-1">Total to Pay</p>
                     <p class="text-4xl font-black font-mono text-brand-gold tracking-tight" id="pay-total-display">$0.00</p>
-                </div>
-
-                <!-- Quantity Selector -->
-                <div class="flex items-center justify-between bg-white/5 p-3 rounded-2xl border border-white/10">
-                    <span class="text-[9px] font-black uppercase text-white/50 tracking-wider ml-1">Quantity</span>
-                    <div class="flex items-center gap-4">
-                        <button type="button" onclick="adjustQty(-1)" class="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center hover:bg-white/20 transition-all text-xs font-bold"><i class="fas fa-minus"></i></button>
-                        <span id="qty-display" class="font-mono font-black text-sm">1</span>
-                        <button type="button" onclick="adjustQty(1)" class="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center hover:bg-white/20 transition-all text-xs font-bold"><i class="fas fa-plus"></i></button>
-                    </div>
                 </div>
 
                 <!-- Pre-order Subscription Frequency Option -->
@@ -320,7 +330,8 @@
         let orderMode = "grab"; // "grab" or "preorder"
         let isSubscription = false;
         let currentDiscount = 0;
-        let currentQty = 1;
+        let cart = [];
+        window.cart = cart;
 
         // URL Prefills
         const urlParams = new URLSearchParams(window.location.search);
@@ -446,7 +457,7 @@
 
             if (mode === 'grab') {
                 btnGrab.className = "py-2.5 rounded-xl text-[9px] font-black uppercase tracking-wider transition-all bg-brand-dark text-white shadow";
-                btnPre.className = "py-2.5 rounded-xl text-[9px] font-black uppercase tracking-wider transition-all text-gray-450 hover:text-brand-dark";
+                btnPre.className = "py-2.5 rounded-xl text-[9px] font-black uppercase tracking-wider transition-all text-gray-455 hover:text-brand-dark";
                 helperText.innerText = "Take your bottle directly from the honors fridge right now.";
                 heroTitle.innerText = "Honors Checkout";
                 heroDesc.innerText = "Select your drink, pay instantly, and enjoy your fresh brew.";
@@ -454,7 +465,7 @@
                 subFreqContainer.classList.add('hidden');
                 setSubscription(false);
             } else {
-                btnGrab.className = "py-2.5 rounded-xl text-[9px] font-black uppercase tracking-wider transition-all text-gray-450 hover:text-brand-dark";
+                btnGrab.className = "py-2.5 rounded-xl text-[9px] font-black uppercase tracking-wider transition-all text-gray-455 hover:text-brand-dark";
                 btnPre.className = "py-2.5 rounded-xl text-[9px] font-black uppercase tracking-wider transition-all bg-brand-dark text-white shadow";
                 helperText.innerText = "Pre-order for Monday delivery. Captain Rico will drop your labeled bottle off at the location.";
                 heroTitle.innerText = "Monday Pre-Order";
@@ -489,7 +500,9 @@
 
         function updateHubTracker() {
             const hubCard = document.getElementById('hub-tracker-card');
-            if (orderMode !== 'preorder' || !selectedLocationId) {
+            const totalBottles = cart.reduce((sum, item) => sum + item.bottles, 0);
+
+            if (orderMode !== 'preorder' || !selectedLocationId || totalBottles === 0) {
                 hubCard.classList.add('hidden');
                 return;
             }
@@ -509,7 +522,7 @@
             const isMicroHub = selectedLoc.distributor_name === 'Micro-Hub';
             const target = isMicroHub ? 10 : 20; 
             const currentHubBottles = selectedLoc.current_bottles || 0;
-            const totalCombined = currentHubBottles + currentQty;
+            const totalCombined = currentHubBottles + totalBottles;
             const percent = Math.min((totalCombined / target) * 100, 100);
 
             document.getElementById('hub-tracker-title').innerText = `${selectedLoc.name} (${selectedLoc.city})`;
@@ -614,22 +627,91 @@
             btnE.className = opt === 'Extra' ? activeClass : inactiveClass;
         }
 
-        function adjustQty(delta) {
-            currentQty += delta;
-            if (currentQty < 1) currentQty = 1;
-            document.getElementById('qty-display').innerText = currentQty;
+        function addItemToOrder() {
+            if (!selectedProduct) return;
+            
+            let basePrice = parseFloat(selectedProduct.price);
+            let unitPrice = basePrice + (customMilk === 'Oat Milk' ? 1.00 : 0);
+
+            // Add single bottle selection to cart
+            cart.push({
+                product_id: selectedProduct.id,
+                name: selectedProduct.name,
+                selections: [{
+                    flavor: selectedProduct.name,
+                    milk: customMilk,
+                    espresso: customEspresso
+                }],
+                qty: 1,
+                unitPrice: unitPrice,
+                total: unitPrice,
+                bottles: 1
+            });
+
+            showToast(`${selectedProduct.name} added to order!`, 'success');
+
+            // Reset selected drink UI
+            selectedProduct = null;
+            document.getElementById('flavor-customizer').classList.add('hidden');
+            allProducts.forEach(p => {
+                const card = document.getElementById(`prod-${p.id}`);
+                if (card) {
+                    card.className = "bg-gray-50 border border-gray-100 rounded-3xl p-4 text-center cursor-pointer hover:shadow-lg transition-all flex flex-col items-center justify-between group";
+                }
+            });
+
+            updateCartUI();
+        }
+
+        function updateCartUI() {
+            const container = document.getElementById('cart-container');
+            const list = document.getElementById('cart-items-list');
+            const checkCard = document.getElementById('checkout-card');
+
+            if (cart.length === 0) {
+                container.classList.add('hidden');
+                checkCard.classList.add('hidden');
+                updateHubTracker();
+                return;
+            }
+
+            list.innerHTML = cart.map((item, idx) => {
+                const sel = item.selections[0];
+                return `
+                <div class="bg-gray-50 border border-gray-100 p-4 rounded-2xl flex justify-between items-center animate-fade-in">
+                    <div>
+                        <h4 class="font-serif font-bold text-xs text-brand-dark">${item.name}</h4>
+                        <p class="text-[8px] text-gray-450 uppercase font-bold tracking-wider mt-0.5">${sel.milk} • ${sel.espresso} Strength</p>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <span class="font-mono font-black text-xs text-brand-brown">$${item.total.toFixed(2)}</span>
+                        <button type="button" onclick="removeItem(${idx})" class="w-6 h-6 rounded-full bg-red-50 text-red-500 flex items-center justify-center hover:bg-red-500 hover:text-white transition-all"><i class="fas fa-trash-alt text-[9px]"></i></button>
+                    </div>
+                </div>`;
+            }).join('');
+
+            container.classList.remove('hidden');
+            checkCard.classList.remove('hidden');
+
             updatePricing();
             updateHubTracker();
         }
 
+        function removeItem(idx) {
+            cart.splice(idx, 1);
+            updateCartUI();
+        }
+
+        function clearCart() {
+            cart = [];
+            updateCartUI();
+        }
+
         function updatePricing() {
-            if (!selectedProduct) return;
-            let basePrice = parseFloat(selectedProduct.price);
-            let unitPrice = basePrice + (customMilk === 'Oat Milk' ? 1.00 : 0);
+            let total = cart.reduce((sum, item) => sum + item.total, 0);
             if (isSubscription) {
-                unitPrice = unitPrice * 0.90; // 10% OFF
+                total = total * 0.90; // 10% OFF
             }
-            const total = unitPrice * currentQty;
             document.getElementById('pay-total-display').innerText = `$${total.toFixed(2)}`;
         }
 
@@ -650,18 +732,18 @@
         }
 
         function openVenmoApp() {
-            if (!selectedProduct) {
-                showToast("Please choose a drink first.");
+            if (cart.length === 0) {
+                showToast("Please add items to your order first.");
                 return;
             }
-            let total = parseFloat(selectedProduct.price) + (customMilk === 'Oat Milk' ? 1.00 : 0);
+            let total = cart.reduce((sum, item) => sum + item.total, 0);
             if (isSubscription) total = total * 0.90;
-            const finalTotal = total * currentQty;
 
             const modeLabel = orderMode === 'preorder' ? 'Pre-Order' : 'Self-Checkout';
-            const note = `Rich Aroma Coffee - ${modeLabel} ${currentQty}x ${selectedProduct.name} (${customMilk})`;
+            const itemsDesc = cart.map(item => `${item.qty}x ${item.name}`).join(', ');
+            const note = `Rich Aroma - ${modeLabel}: ${itemsDesc}`;
             
-            const url = `venmo://paycharge?recipients=rich-aroma-coffee&amount=${finalTotal.toFixed(2)}&note=${encodeURIComponent(note)}`;
+            const url = `venmo://paycharge?recipients=rich-aroma-coffee&amount=${total.toFixed(2)}&note=${encodeURIComponent(note)}`;
             window.location.href = url;
             
             setTimeout(() => {
@@ -679,42 +761,24 @@
             const phone = document.getElementById('pay-phone').value;
             const btn = document.getElementById('stripe-btn');
 
-            if (!selectedProduct) {
-                showToast("Please select a drink flavor first.");
+            if (cart.length === 0) {
+                showToast("Please add items to your order first.");
                 return;
             }
             if (!name || !phone || !selectedLocationId) {
-                showToast("Please enter your name, phone, and select a location.");
+                showToast("Please enter your name, phone, and select your location.");
                 return;
             }
 
             btn.disabled = true;
             btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-1.5"></i> Redirecting...';
 
-            let basePrice = parseFloat(selectedProduct.price);
-            let unitPrice = basePrice + (customMilk === 'Oat Milk' ? 1.00 : 0);
-
-            const cartItems = [{
-                product_id: selectedProduct.id,
-                name: selectedProduct.name,
-                selections: Array(currentQty).fill().map(() => ({
-                    flavor: selectedProduct.name,
-                    milk: customMilk,
-                    espresso: customEspresso
-                })),
-                qty: currentQty,
-                unitPrice: unitPrice,
-                total: unitPrice * currentQty,
-                bottles: currentQty
-            }];
-
             const notesTag = orderMode === 'preorder' 
                 ? (isSubscription ? '[PRE-ORDER SUBSCRIPTION]' : '[PRE-ORDER]') 
                 : '[SELF-CHECKOUT]';
                 
-            const selfCheckoutNotes = `${notesTag} Stripe checkout at location. Details: ${currentQty}x ${selectedProduct.name} (${customMilk}, ${customEspresso} strength).`;
-
-            const baseUrl = window.location.origin;
+            let desc = cart.map(item => `${item.qty}x ${item.name} (${item.selections[0].milk}, ${item.selections[0].espresso})`).join(', ');
+            const selfCheckoutNotes = `${notesTag} Stripe checkout. Items: ${desc}.`;
 
             try {
                 const res = await fetch('/api/checkout', {
@@ -725,7 +789,7 @@
                         email: "",
                         phone, 
                         location_id: selectedLocationId, 
-                        items: cartItems, 
+                        items: cart, 
                         notes: selfCheckoutNotes,
                         is_subscription: isSubscription,
                         delivery_fee_applied: 0
@@ -733,8 +797,6 @@
                 });
                 const data = await res.json();
                 if (data.url) {
-                    // Update Stripe success callback URL to carry pre-selected metadata back
-                    const stripeUrl = new URL(data.url);
                     window.location.href = data.url;
                 } else {
                     throw new Error(data.error);
@@ -750,8 +812,8 @@
             const name = document.getElementById('pay-name').value;
             const phone = document.getElementById('pay-phone').value;
 
-            if (!selectedProduct) {
-                showToast("Please select a drink flavor first.");
+            if (cart.length === 0) {
+                showToast("Please add items to your order first.");
                 return;
             }
             if (!name || !phone || !selectedLocationId) {
@@ -759,30 +821,15 @@
                 return;
             }
 
-            let basePrice = parseFloat(selectedProduct.price);
-            let unitPrice = basePrice + (customMilk === 'Oat Milk' ? 1.00 : 0);
-            if (isSubscription) unitPrice = unitPrice * 0.90;
-            const totalVal = unitPrice * currentQty;
+            let totalVal = cart.reduce((sum, item) => sum + item.total, 0);
+            if (isSubscription) totalVal = totalVal * 0.90;
 
             const notesTag = orderMode === 'preorder'
                 ? (isSubscription ? `[PRE-ORDER SUBSCRIPTION PAY: ${method.toUpperCase()}]` : `[PRE-ORDER PAY: ${method.toUpperCase()}]`)
                 : `[SELF-CHECKOUT PAY: ${method.toUpperCase()}]`;
 
-            const selfCheckoutNotes = `${notesTag} Details: ${currentQty}x ${selectedProduct.name} (${customMilk}, ${customEspresso} strength).`;
-
-            const cartItems = [{
-                product_id: selectedProduct.id,
-                name: selectedProduct.name,
-                selections: Array(currentQty).fill().map(() => ({
-                    flavor: selectedProduct.name,
-                    milk: customMilk,
-                    espresso: customEspresso
-                })),
-                qty: currentQty,
-                unitPrice: unitPrice,
-                total: totalVal,
-                bottles: currentQty
-            }];
+            let desc = cart.map(item => `${item.qty}x ${item.name} (${item.selections[0].milk}, ${item.selections[0].espresso})`).join(', ');
+            const selfCheckoutNotes = `${notesTag} Items: ${desc}.`;
 
             try {
                 const res = await fetch('/api/cali?action=create_self_checkout_order', {
@@ -793,17 +840,18 @@
                         customer_phone: phone,
                         location_id: selectedLocationId,
                         total: totalVal,
-                        selections: { cart: cartItems, payment_method: method.toLowerCase(), status: 'pending_verification', is_subscription: isSubscription },
+                        selections: { cart: cart, payment_method: method.toLowerCase(), status: 'pending_verification', is_subscription: isSubscription },
                         notes: selfCheckoutNotes
                     })
                 });
                 
                 if (res.ok) {
                     const data = await res.json();
+                    const itemsDesc = cart.map(item => `${item.qty}x ${item.name}`).join(' + ');
                     showReceiptSplash(
                         data.id || 'RA-MANUAL',
                         new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-                        `${currentQty}x ${selectedProduct.name} (${customMilk})`,
+                        itemsDesc,
                         orderMode
                     );
                 } else {
