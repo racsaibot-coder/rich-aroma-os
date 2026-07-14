@@ -627,6 +627,58 @@
             cursor: pointer;
             font-weight: 600;
         }
+
+        /* Connect Four Styles */
+        .c4-cell {
+            aspect-ratio: 1;
+            background: #18181b;
+            border-radius: 50%;
+            border: 2px solid rgba(255, 255, 255, 0.05);
+            box-shadow: inset 0 2px 8px rgba(0,0,0,0.8);
+            cursor: pointer;
+            position: relative;
+            transition: all 0.2s ease;
+        }
+        .c4-cell:hover {
+            background: rgba(255, 255, 255, 0.03);
+            border-color: rgba(99, 102, 241, 0.2);
+        }
+        .c4-token {
+            width: 85%;
+            height: 85%;
+            border-radius: 50%;
+            position: absolute;
+            top: 7.5%;
+            left: 7.5%;
+            transform: translateY(-200px);
+            opacity: 0;
+            transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.2s ease;
+        }
+        .c4-token.dropped {
+            transform: translateY(0);
+            opacity: 1;
+        }
+        .c4-token.red {
+            background: radial-gradient(circle at 35% 35%, #f43f5e, #be123c);
+            box-shadow: 0 0 15px rgba(244, 63, 94, 0.6);
+        }
+        .c4-token.yellow {
+            background: radial-gradient(circle at 35% 35%, #fbbf24, #d97706);
+            box-shadow: 0 0 15px rgba(251, 191, 36, 0.6);
+        }
+        .c4-token.winning {
+            animation: pulseGlow 1s infinite alternate;
+        }
+        @keyframes pulseGlow {
+            from {
+                transform: scale(1);
+                filter: brightness(1);
+            }
+            to {
+                transform: scale(1.1);
+                filter: brightness(1.3);
+            }
+        }
     </style>
 </head>
 <body>
@@ -734,6 +786,31 @@
                                 <button class="quest-btn" type="submit" id="chat-send-btn">Send ➡️</button>
                             </form>
                         </div>
+                    </div>
+                </div>
+            </div> <!-- End of dashboard-grid -->
+            
+            <!-- Connect Four Panel -->
+            <div class="glass-panel" id="connect-four-panel" style="margin-top: 30px;">
+                <h2 style="font-size: 20px; font-weight: 700; display: flex; align-items: center; gap: 8px; margin-bottom: 20px;">
+                    🔴 CONNECT FOUR WITH SPARKY
+                </h2>
+                <div style="display: flex; flex-direction: column; align-items: center; gap: 20px;">
+                    <div style="display: flex; justify-content: space-between; width: 100%; max-width: 450px; font-weight: 700; font-size: 14px; color: var(--text-muted);">
+                        <div>🔴 Player: <span id="c4-player-score" style="color:var(--danger);">0 Wins</span></div>
+                        <div>🟡 Sparky: <span id="c4-ai-score" style="color:var(--warning);">0 Wins</span></div>
+                        <button class="quest-btn" id="c4-mode-btn" onclick="toggleC4Mode()" style="background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border); padding: 4px 10px; font-size: 11px;">🤖 VS Sparky AI</button>
+                    </div>
+                    
+                    <div id="c4-status-text" style="color:var(--primary); font-weight: 600; font-size: 14px; text-align: center;">Your Turn! Click a column to drop a red coin.</div>
+                    
+                    <!-- Game Board Container -->
+                    <div id="c4-board" style="display: grid; grid-template-columns: repeat(7, 1fr); gap: 10px; background: rgba(255, 255, 255, 0.03); border: 2px solid var(--glass-border); padding: 16px; border-radius: 20px; max-width: 450px; width: 100%; position: relative; box-shadow: 0 4px 20px rgba(0,0,0,0.4);">
+                        <!-- Cells generated dynamically -->
+                    </div>
+
+                    <div>
+                        <button class="quest-btn" onclick="resetC4Game()">🔄 Restart Game</button>
                     </div>
                 </div>
             </div>
@@ -1447,11 +1524,268 @@
         }
     </script>
     <script>
+        // CONNECT FOUR GAME LOGIC
+        let c4Board = Array(6).fill(null).map(() => Array(7).fill(null));
+        let c4CurrentPlayer = 'R'; // 'R' (Red/User), 'Y' (Yellow/AI)
+        let c4GameActive = true;
+        let c4Mode = 'ai'; // 'ai' or 'pvp'
+        let c4PlayerWins = 0;
+        let c4AIWins = 0;
+
+        function initC4Game() {
+            const boardEl = document.getElementById('c4-board');
+            boardEl.innerHTML = '';
+            
+            // Create 42 cells (6 rows x 7 columns)
+            for (let r = 0; r < 6; r++) {
+                for (let c = 0; c < 7; c++) {
+                    const cell = document.createElement('div');
+                    cell.className = 'c4-cell';
+                    cell.dataset.row = r;
+                    cell.dataset.col = c;
+                    cell.onclick = () => handleC4Click(c);
+                    
+                    const token = document.createElement('div');
+                    token.className = 'c4-token';
+                    token.id = `c4-${r}-${c}`;
+                    
+                    cell.appendChild(token);
+                    boardEl.appendChild(cell);
+                }
+            }
+            resetC4BoardState();
+        }
+
+        function resetC4BoardState() {
+            c4Board = Array(6).fill(null).map(() => Array(7).fill(null));
+            c4CurrentPlayer = 'R';
+            c4GameActive = true;
+            
+            // Clear visual tokens
+            for (let r = 0; r < 6; r++) {
+                for (let c = 0; c < 7; c++) {
+                    const t = document.getElementById(`c4-${r}-${c}`);
+                    t.className = 'c4-token';
+                    t.style.animation = '';
+                }
+            }
+            
+            document.getElementById('c4-status-text').innerText = "Your Turn! Click a column to drop a red coin.";
+            document.getElementById('c4-status-text').style.color = 'var(--primary)';
+        }
+
+        function resetC4Game() {
+            resetC4BoardState();
+            showToast("Connect Four Reset!");
+        }
+
+        function toggleC4Mode() {
+            c4Mode = c4Mode === 'ai' ? 'pvp' : 'ai';
+            const btn = document.getElementById('c4-mode-btn');
+            btn.innerText = c4Mode === 'ai' ? '🤖 VS Sparky AI' : '👥 Local 2-Player';
+            
+            // Reset scores
+            c4PlayerWins = 0;
+            c4AIWins = 0;
+            document.getElementById('c4-player-score').innerText = '0 Wins';
+            document.getElementById('c4-ai-score').innerText = '0 Wins';
+            
+            resetC4BoardState();
+            showToast(`Game mode changed to ${c4Mode === 'ai' ? 'VS Sparky' : 'Local 2-Player'}`);
+        }
+
+        function handleC4Click(col) {
+            if (!c4GameActive) return;
+            if (c4CurrentPlayer === 'Y' && c4Mode === 'ai') return; // block clicks during AI turn
+            
+            const row = getLowestEmptyC4Row(col);
+            if (row === -1) {
+                showToast("Column is full!", true);
+                return;
+            }
+
+            dropC4Token(row, col, c4CurrentPlayer);
+        }
+
+        function getLowestEmptyC4Row(col) {
+            for (let r = 5; r >= 0; r--) {
+                if (c4Board[r][col] === null) return r;
+            }
+            return -1;
+        }
+
+        function dropC4Token(row, col, player) {
+            c4Board[row][col] = player;
+            
+            const token = document.getElementById(`c4-${row}-${col}`);
+            token.className = `c4-token dropped ${player === 'R' ? 'red' : 'yellow'}`;
+            
+            const winResult = checkC4Winner();
+            if (winResult) {
+                handleC4GameOver(winResult);
+                return;
+            }
+
+            // Switch turn
+            c4CurrentPlayer = c4CurrentPlayer === 'R' ? 'Y' : 'R';
+            
+            if (c4GameActive) {
+                if (c4Mode === 'ai' && c4CurrentPlayer === 'Y') {
+                    document.getElementById('c4-status-text').innerText = "Sparky is planning a move...";
+                    document.getElementById('c4-status-text').style.color = 'var(--warning)';
+                    setTimeout(executeAIMove, 600);
+                } else {
+                    document.getElementById('c4-status-text').innerText = c4CurrentPlayer === 'R' ? "Your Turn (Red)" : "Player 2's Turn (Yellow)";
+                    document.getElementById('c4-status-text').style.color = c4CurrentPlayer === 'R' ? 'var(--primary)' : 'var(--warning)';
+                }
+            }
+        }
+
+        function executeAIMove() {
+            if (!c4GameActive) return;
+            
+            const col = getC4AIMove();
+            const row = getLowestEmptyC4Row(col);
+            if (row !== -1) {
+                dropC4Token(row, col, 'Y');
+            }
+        }
+
+        function getC4AIMove() {
+            // 1. Can AI win on this turn?
+            for (let c = 0; c < 7; c++) {
+                let tempBoard = c4Board.map(row => [...row]);
+                let r = getLowestEmptyC4Row(c);
+                if (r !== -1) {
+                    tempBoard[r][c] = 'Y';
+                    if (checkC4WinnerState(tempBoard)?.winner === 'Y') return c;
+                }
+            }
+            // 2. Block player from winning on next turn
+            for (let c = 0; c < 7; c++) {
+                let tempBoard = c4Board.map(row => [...row]);
+                let r = getLowestEmptyC4Row(c);
+                if (r !== -1) {
+                    tempBoard[r][c] = 'R';
+                    if (checkC4WinnerState(tempBoard)?.winner === 'R') return c;
+                }
+            }
+            // 3. Prefer center columns
+            const cols = [3, 2, 4, 1, 5, 0, 6];
+            for (let c of cols) {
+                let r = getLowestEmptyC4Row(c);
+                if (r !== -1) return c;
+            }
+            return 0;
+        }
+
+        function checkC4Winner() {
+            return checkC4WinnerState(c4Board);
+        }
+
+        function checkC4WinnerState(board) {
+            // Horizontal
+            for (let r = 0; r < 6; r++) {
+                for (let c = 0; c < 4; c++) {
+                    if (board[r][c] && board[r][c] === board[r][c+1] && board[r][c] === board[r][c+2] && board[r][c] === board[r][c+3]) {
+                        return { winner: board[r][c], cells: [[r, c], [r, c+1], [r, c+2], [r, c+3]] };
+                    }
+                }
+            }
+            // Vertical
+            for (let r = 0; r < 3; r++) {
+                for (let c = 0; c < 7; c++) {
+                    if (board[r][c] && board[r][c] === board[r+1][c] && board[r][c] === board[r+2][c] && board[r][c] === board[r+3][c]) {
+                        return { winner: board[r][c], cells: [[r, c], [r+1, c], [r+2, c], [r+3, c]] };
+                    }
+                }
+            }
+            // Diagonal Down
+            for (let r = 0; r < 3; r++) {
+                for (let c = 0; c < 4; c++) {
+                    if (board[r][c] && board[r][c] === board[r+1][c+1] && board[r][c] === board[r+2][c+2] && board[r][c] === board[r+3][c+3]) {
+                        return { winner: board[r][c], cells: [[r, c], [r+1, c+1], [r+2, c+2], [r+3, c+3]] };
+                    }
+                }
+            }
+            // Diagonal Up
+            for (let r = 3; r < 6; r++) {
+                for (let c = 0; c < 4; c++) {
+                    if (board[r][c] && board[r][c] === board[r-1][c+1] && board[r][c] === board[r-2][c+2] && board[r][c] === board[r-3][c+3]) {
+                        return { winner: board[r][c], cells: [[r, c], [r-1, c+1], [r-2, c+2], [r-3, c+3]] };
+                    }
+                }
+            }
+            // Draw check
+            let isDraw = true;
+            for (let r = 0; r < 6; r++) {
+                for (let c = 0; c < 7; c++) {
+                    if (board[r][c] === null) isDraw = false;
+                }
+            }
+            if (isDraw) return { winner: 'draw', cells: [] };
+            
+            return null;
+        }
+
+        async function handleC4GameOver(result) {
+            c4GameActive = false;
+            
+            if (result.winner === 'draw') {
+                playFailSound();
+                document.getElementById('c4-status-text').innerText = "Game Draw! Play again.";
+                document.getElementById('c4-status-text').style.color = 'var(--text-muted)';
+                showToast("It's a draw!");
+                return;
+            }
+
+            // Highlight winning cells
+            result.cells.forEach(([r, c]) => {
+                const token = document.getElementById(`c4-${r}-${c}`);
+                token.className += ' winning';
+                token.style.color = result.winner === 'R' ? '#f43f5e' : '#fbbf24';
+            });
+
+            if (result.winner === 'R') {
+                playSuccessSound();
+                c4PlayerWins++;
+                document.getElementById('c4-player-score').innerText = `${c4PlayerWins} Wins`;
+                document.getElementById('c4-status-text').innerText = c4Mode === 'ai' ? "You Won! Great job! 🎉" : "Player 1 (Red) Wins! 🎉";
+                document.getElementById('c4-status-text').style.color = 'var(--success)';
+                
+                if (c4Mode === 'ai') {
+                    showToast("Victory! +10 XP rewarded! 🚀");
+                    // Reward 10 points in AI lab progress
+                    try {
+                        const r = await fetch('/api/academy?action=progress', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ subject: 'ai', pointsToAdd: 10 })
+                        });
+                        const res = await r.json();
+                        if (res.leveledUp) {
+                            showToast(`AI Lab Level Up! Level ${res.progress.level}! 🤖`);
+                        }
+                        loadAcademyData();
+                    } catch (e) {}
+                }
+            } else {
+                playFailSound();
+                c4AIWins++;
+                document.getElementById('c4-ai-score').innerText = `${c4AIWins} Wins`;
+                document.getElementById('c4-status-text').innerText = c4Mode === 'ai' ? "Sparky Wins! Try again!" : "Player 2 (Yellow) Wins!";
+                document.getElementById('c4-status-text').style.color = 'var(--danger)';
+                showToast(c4Mode === 'ai' ? "Sparky won this round! 🤖" : "Player 2 won!");
+            }
+        }
+    </script>
+    <script>
         // Initialize Dashboard
         window.onload = () => {
             loadAcademyData().then(() => {
                 generateMathPrompt();
                 initTypingPrompt();
+                initC4Game();
             });
         };
     </script>
