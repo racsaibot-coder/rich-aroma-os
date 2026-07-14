@@ -2101,7 +2101,9 @@
         function speakText(text) {
             try {
                 window.speechSynthesis.cancel(); // cancel any active speech
-                const utterance = new SpeechSynthesisUtterance(text);
+                // Strip emojis from spoken text to prevent "pig face", "sun", etc. from being read out loud
+                const cleanText = text.replace(/[\p{Emoji_Presentation}\p{Extended_Pictographic}]/gu, '');
+                const utterance = new SpeechSynthesisUtterance(cleanText);
                 utterance.rate = 0.85; // slightly slower for children
                 utterance.pitch = 1.1; // kid-friendly tone
                 window.speechSynthesis.speak(utterance);
@@ -2169,10 +2171,10 @@
         ];
         const phonicsSounds = {
             'A': 'ah', 'B': 'buh', 'C': 'cuh', 'D': 'duh', 'E': 'eh', 
-            'F': 'fuh', 'G': 'guh', 'H': 'huh', 'I': 'ih', 'J': 'juh', 
-            'K': 'kuh', 'L': 'uhl', 'M': 'muh', 'N': 'nnn', 'O': 'oah', 
+            'F': 'ff', 'G': 'guh', 'H': 'huh', 'I': 'ih', 'J': 'juh', 
+            'K': 'cuh', 'L': 'ull', 'M': 'mmm', 'N': 'nnn', 'O': 'ah', 
             'P': 'puh', 'Q': 'kwuh', 'R': 'err', 'S': 'sss', 'T': 'tuh', 
-            'U': 'uh', 'V': 'vuh', 'W': 'wuh', 'X': 'ks', 'Y': 'yuh', 'Z': 'zuh'
+            'U': 'uhh', 'V': 'vuh', 'W': 'wuh', 'X': 'ks', 'Y': 'yuh', 'Z': 'zuh'
         };
         let currentPhonicsWord = null;
 
