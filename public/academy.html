@@ -756,6 +756,32 @@
             from { transform: scale(1); }
             to { transform: scale(1.1) translateY(-6px); }
         }
+        .phonics-scramble-bubble {
+            width: 52px;
+            height: 52px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--glass-border);
+            color: #fff;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 22px;
+            font-weight: 700;
+            cursor: pointer;
+            user-select: none;
+            transition: all 0.2s;
+        }
+        .phonics-scramble-bubble:hover {
+            background: rgba(99, 102, 241, 0.15);
+            border-color: var(--primary);
+            transform: translateY(-2px);
+        }
+        .phonics-scramble-bubble.selected {
+            opacity: 0.25;
+            pointer-events: none;
+            transform: scale(0.9);
+        }
 
         /* Story Studio Styles */
         .story-book-card {
@@ -954,10 +980,17 @@
             <!-- 1. Phonics Panel -->
             <div class="glass-panel game-view-panel" id="game-phonics" style="margin-top: 30px;">
                 <h2 style="font-size: 20px; font-weight: 700; display: flex; align-items: center; gap: 8px; margin-bottom: 20px;">
-                    🗣️ SOUND IT OUT (PHONICS)
+                    🗣️ SOUND IT OUT & SPELL (PHONICS)
                 </h2>
+                
+                <!-- Toggle Mode Buttons -->
+                <div style="display: flex; gap: 10px; margin-bottom: 15px; justify-content: center;">
+                    <button class="nav-btn active" id="phonics-mode-sound-btn" onclick="setPhonicsMode('sound')" style="font-size: 13px; padding: 6px 16px;">🔊 Explore Sounds</button>
+                    <button class="nav-btn" id="phonics-mode-spell-btn" onclick="setPhonicsMode('spell')" style="font-size: 13px; padding: 6px 16px;">📝 Spelling Game</button>
+                </div>
+
                 <div style="display: flex; flex-direction: column; align-items: center; gap: 20px;">
-                    <div style="font-size: 14px; color: var(--text-muted); text-align: center; font-weight: 600;">
+                    <div id="phonics-instruction" style="font-size: 14px; color: var(--text-muted); text-align: center; font-weight: 600;">
                         Tap each letter block to hear its sound, then click read to blend them together!
                     </div>
                     
@@ -965,9 +998,20 @@
                         <!-- Letter blocks dynamically generated -->
                     </div>
 
+                    <!-- Spelling Scrambled Bubbles (Visible in Spell mode) -->
+                    <div id="phonics-scramble-container" style="display: none; width: 100%;">
+                        <div style="font-size: 13px; color: var(--text-muted); margin-bottom: 12px; font-weight: 700; text-align: center;">Click letters in order:</div>
+                        <div id="phonics-scramble-box" style="display: flex; gap: 12px; justify-content: center; flex-wrap: wrap;">
+                            <!-- Scrambled bubbles -->
+                        </div>
+                    </div>
+
                     <div style="display: flex; gap: 12px; justify-content: center; flex-wrap: wrap;">
-                        <button class="quest-btn" onclick="blendCurrentPhonics()" style="background: var(--success); font-size: 16px; padding: 10px 24px;">
+                        <button class="quest-btn" id="phonics-blend-btn" onclick="blendCurrentPhonics()" style="background: var(--success); font-size: 16px; padding: 10px 24px;">
                             🔊 Read Whole Word
+                        </button>
+                        <button class="quest-btn" id="phonics-reset-spell-btn" onclick="resetSpellingChallenge()" style="background: var(--danger); display: none;">
+                            🗑️ Clear Answer
                         </button>
                         <button class="quest-btn" onclick="nextPhonicsWord()">
                             ➡️ Next Word
@@ -2156,18 +2200,64 @@
             showToast(`Swapped game view: ${gameName.toUpperCase()}`);
         }
 
-        // SOUND IT OUT PHONICS GAME LOGIC (KINDER)
+        // SOUND IT OUT & SPELL PHONICS GAME LOGIC (KINDER)
         const phonicsWords = [
-            { word: "CAT", hint: "🐱 Meow!" },
-            { word: "SUN", hint: "☀️ Hot and bright!" },
-            { word: "DOG", hint: "🐶 Woof woof!" },
-            { word: "BUG", hint: "🪲 Crawly bug!" },
+            // Short A
+            { word: "CAT", hint: "🐱 Meow! A furry pet." },
+            { word: "BAT", hint: "🦇 Flaps in the night sky." },
             { word: "HAT", hint: "🎩 Put it on your head!" },
-            { word: "LOG", hint: "🪵 Wood from a tree!" },
-            { word: "NET", hint: "🕸️ Catch a fish!" },
-            { word: "PIG", hint: "🐷 Oink oink!" },
-            { word: "BED", hint: "🛏️ Sleep tight!" },
-            { word: "CUP", hint: "🥤 Drink juice!" }
+            { word: "MAT", hint: "🧘 Sit or step on the floor." },
+            { word: "RAT", hint: "🐀 A little squeaky rodent." },
+            { word: "CAP", hint: "🧢 A cool hat for baseball." },
+            { word: "MAP", hint: "🗺️ Helps you find treasure." },
+            { word: "TAP", hint: "🚰 Water flows from the faucet." },
+            { word: "VAN", hint: "🚐 A big car for family trips." },
+            { word: "PAN", hint: "🍳 Used to cook yummy food." },
+            { word: "BAG", hint: "🎒 Carry your books to school." },
+            // Short E
+            { word: "BED", hint: "🛏️ Sleep tight, good night." },
+            { word: "RED", hint: "🔴 The color of a ripe apple." },
+            { word: "NET", hint: "🕸️ Catch a fish or a butterfly." },
+            { word: "WET", hint: "💦 Dripping with water." },
+            { word: "JET", hint: "✈️ A super fast airplane." },
+            { word: "PET", hint: "🐕 An animal you love and feed." },
+            { word: "HEN", hint: "🐔 Lays fresh eggs on the farm." },
+            { word: "PEN", hint: "🖊️ Write on paper with ink." },
+            { word: "TEN", hint: "🔟 Two hands of fingers." },
+            { word: "LEG", hint: "🦵 Use it to walk and kick." },
+            // Short I
+            { word: "PIG", hint: "🐷 Oink oink, mud lover." },
+            { word: "WIG", hint: "💇 Dress up hair you can wear." },
+            { word: "BIG", hint: "🐘 Huge like an elephant." },
+            { word: "DIG", hint: "🪓 Dig a hole in the dirt." },
+            { word: "LIP", hint: "👄 Used to smile and speak." },
+            { word: "ZIP", hint: "🤐 Zip up your warm jacket." },
+            { word: "PIN", hint: "📍 A tiny sharp sewing needle." },
+            { word: "WIN", hint: "🏆 Get first place in the game." },
+            { word: "SIT", hint: "🪑 Sit down on a chair." },
+            { word: "FIT", hint: "💪 Strong and healthy body." },
+            // Short O
+            { word: "DOG", hint: "🐶 Woof woof! Man's best friend." },
+            { word: "LOG", hint: "🪵 Wood cut from a tree." },
+            { word: "HOT", hint: "🔥 Stay away, very warm." },
+            { word: "POT", hint: "🍲 Boil soup on the stove." },
+            { word: "COT", hint: "🛏️ A tiny folding camp bed." },
+            { word: "TOP", hint: "🪀 Spins round and round." },
+            { word: "MOP", hint: "🧹 Cleans wet kitchen floors." },
+            { word: "POP", hint: "🎈 Pop a round balloon." },
+            { word: "BOX", hint: "📦 Wrap up a nice gift." },
+            { word: "FOX", hint: "🦊 A smart orange forest animal." },
+            // Short U
+            { word: "BUG", hint: "🪲 A little crawly beetle." },
+            { word: "RUG", hint: "🛋️ Soft carpet on the floor." },
+            { word: "HUG", hint: "🫂 Wrap arms to show love." },
+            { word: "MUG", hint: "☕ Drink warm cocoa." },
+            { word: "SUN", hint: "☀️ Bright and hot in the sky." },
+            { word: "RUN", hint: "🏃 Race fast with your legs." },
+            { word: "CUP", hint: "🥤 Sip water or sweet juice." },
+            { word: "TUB", hint: "🛁 Splish splash, take a bath." },
+            { word: "BUS", hint: "🚌 Big yellow school ride." },
+            { word: "NUT", hint: "🥜 Squirrels gather them in trees." }
         ];
         const phonicsSounds = {
             'A': 'ah', 'B': 'buh', 'C': 'cuh', 'D': 'duh', 'E': 'eh', 
@@ -2177,11 +2267,54 @@
             'U': 'uhh', 'V': 'vuh', 'W': 'wuh', 'X': 'ks', 'Y': 'yuh', 'Z': 'zuh'
         };
         let currentPhonicsWord = null;
+        let phonicsGameMode = 'sound'; // 'sound' or 'spell'
+        let spellingCurrentInput = [];
+        let spellingScrambleIndices = [];
+
+        function setPhonicsMode(mode) {
+            phonicsGameMode = mode;
+            
+            // Toggle active classes on buttons
+            document.getElementById('phonics-mode-sound-btn').className = (mode === 'sound' ? 'nav-btn active' : 'nav-btn');
+            document.getElementById('phonics-mode-spell-btn').className = (mode === 'spell' ? 'nav-btn active' : 'nav-btn');
+            
+            const instructionEl = document.getElementById('phonics-instruction');
+            const scrambleContainer = document.getElementById('phonics-scramble-container');
+            const blendBtn = document.getElementById('phonics-blend-btn');
+            const resetBtn = document.getElementById('phonics-reset-spell-btn');
+
+            if (mode === 'sound') {
+                instructionEl.innerText = "Tap each letter block to hear its sound, then click read to blend them together!";
+                scrambleContainer.style.display = 'none';
+                blendBtn.style.display = 'block';
+                resetBtn.style.display = 'none';
+            } else {
+                instructionEl.innerText = "Listen to the word, then tap the bubbles below in the correct order to spell it!";
+                scrambleContainer.style.display = 'block';
+                blendBtn.style.display = 'none';
+                resetBtn.style.display = 'block';
+            }
+
+            initPhonicsWord();
+        }
 
         function initPhonicsWord() {
             currentPhonicsWord = phonicsWords[Math.floor(Math.random() * phonicsWords.length)];
-            renderPhonicsWord();
-            speakText("Sound it out! Tap the blocks.");
+            spellingCurrentInput = [];
+            spellingScrambleIndices = [];
+
+            if (phonicsGameMode === 'sound') {
+                renderPhonicsWord();
+                speakText("Sound it out! Tap the blocks.");
+            } else {
+                renderSpellingSlots();
+                renderSpellingScrambleBubbles();
+                
+                const word = currentPhonicsWord.word;
+                const letters = word.split('');
+                const letterSoundsText = letters.map(l => phonicsSounds[l.toUpperCase()] || l).join('... ');
+                speakText(`Can you spell ${word}? ${word} sounds like: ${letterSoundsText}.`);
+            }
         }
 
         function renderPhonicsWord() {
@@ -2197,6 +2330,112 @@
                 block.onclick = () => playPhonicsLetter(letter, i);
                 container.appendChild(block);
             });
+        }
+
+        function renderSpellingSlots() {
+            const container = document.getElementById('phonics-word-box');
+            container.innerHTML = '';
+            
+            const word = currentPhonicsWord.word;
+            word.split('').forEach((letter, i) => {
+                const block = document.createElement('div');
+                block.className = 'phonics-letter-block';
+                block.innerText = spellingCurrentInput[i] || '?';
+                block.id = `phonics-block-${i}`;
+                container.appendChild(block);
+            });
+        }
+
+        function renderSpellingScrambleBubbles() {
+            const container = document.getElementById('phonics-scramble-box');
+            container.innerHTML = '';
+            
+            const word = currentPhonicsWord.word;
+            const arr = word.split('').map((char, index) => ({ char, index }));
+            // Shuffle
+            for (let i = arr.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [arr[i], arr[j]] = [arr[j], arr[i]];
+            }
+
+            arr.forEach((item, i) => {
+                const bubble = document.createElement('div');
+                bubble.className = 'phonics-scramble-bubble';
+                bubble.innerText = item.char;
+                bubble.id = `phonics-scramble-bubble-${item.index}`;
+                
+                if (spellingScrambleIndices.includes(item.index)) {
+                    bubble.classList.add('selected');
+                }
+                
+                bubble.onclick = () => selectSpellingLetter(item.char, item.index);
+                container.appendChild(bubble);
+            });
+        }
+
+        function selectSpellingLetter(char, index) {
+            if (spellingScrambleIndices.includes(index)) return;
+            
+            speakText(phonicsSounds[char.toUpperCase()] || char);
+            
+            spellingScrambleIndices.push(index);
+            spellingCurrentInput.push(char);
+            
+            renderSpellingSlots();
+            const bubble = document.getElementById(`phonics-scramble-bubble-${index}`);
+            if (bubble) bubble.classList.add('selected');
+            
+            if (spellingCurrentInput.length === currentPhonicsWord.word.length) {
+                verifySpellingAnswer();
+            }
+        }
+
+        async function verifySpellingAnswer() {
+            const answer = spellingCurrentInput.join('');
+            const target = currentPhonicsWord.word;
+
+            if (answer === target) {
+                playSuccessSound();
+                showToast(`Perfect! You spelled ${target}! 📝`);
+                speakText(`Excellent! You spelled ${target} correctly! ${currentPhonicsWord.hint}`);
+                
+                const blocks = document.querySelectorAll('.phonics-letter-block');
+                blocks.forEach(b => {
+                    b.style.borderColor = 'var(--success)';
+                    b.style.color = 'var(--success)';
+                });
+
+                try {
+                    const r = await fetch('/api/academy?action=progress', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ subject: 'reading', pointsToAdd: 15 })
+                    });
+                    const res = await r.json();
+                    if (res.leveledUp) {
+                        showToast(`Reading Level Up! Level ${res.progress.level}! 📚`);
+                    }
+                    loadAcademyData();
+                } catch (e) {}
+
+                setTimeout(initPhonicsWord, 3000);
+            } else {
+                playFailSound();
+                showToast("Oops! Incorrect spelling.", true);
+                speakText(`Oops! That spells ${answer}. Let's try spelling ${target} again.`);
+                setTimeout(resetSpellingChallenge, 1500);
+            }
+        }
+
+        function resetSpellingChallenge() {
+            spellingCurrentInput = [];
+            spellingScrambleIndices = [];
+            renderSpellingSlots();
+            
+            const bubbles = document.querySelectorAll('.phonics-scramble-bubble');
+            bubbles.forEach(b => b.classList.remove('selected'));
+            
+            speakText("Board reset. Try again!");
         }
 
         function playPhonicsLetter(letter, index) {
