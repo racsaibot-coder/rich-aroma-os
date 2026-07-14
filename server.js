@@ -2,6 +2,7 @@ const { createClient } = require('@supabase/supabase-js');
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
+require('dotenv').config({ path: path.resolve(__dirname, '.env.local') });
 const multer = require('multer');
 const upload = multer({ dest: '/tmp/' });
 
@@ -90,10 +91,43 @@ app.all('/api/cali', async (req, res) => {
 const checkoutHandler = require('./api/checkout.js');
 app.all('/api/checkout', async (req, res) => { try { await checkoutHandler(req, res); } catch(e) { res.status(500).json({error: e.message}); } });
 
+const academyHandler = require('./api/academy.js');
+app.all('/api/academy', async (req, res) => { try { await academyHandler(req, res); } catch(e) { res.status(500).json({error: e.message}); } });
+
+const fs = require('fs');
+const { exec } = require('child_process');
+
+app.all('/api/chain-bot/:endpoint?', async (req, res) => {
+    try {
+        const handler = (await import('./api/chain-bot.js')).default;
+        req.query.endpoint = req.params.endpoint || req.query.endpoint || '';
+        await handler(req, res);
+    } catch (e) {
+        res.status(500).json({ error: e.message });
+    }
+});
+
 // Static files
 app.use(express.static(path.join(__dirname, 'public')));
 app.get('/pos-v2', (req, res) => res.sendFile(path.join(__dirname, 'public/pos-v2.html')));
 app.get('/cali/admin', (req, res) => res.sendFile(path.join(__dirname, 'public/cali/admin.html')));
 app.get('/cali/pos', (req, res) => res.sendFile(path.join(__dirname, 'public/cali/pos.html')));
+
+const PORT = process.env.PORT || 8083;
+if (require.main === module) {
+    app.listen(PORT, () => {
+        console.log(`
+╔═══════════════════════════════════════════════════════╗
+║                                                       ║
+║     ☕  RICH AROMA OS  ☕                             ║
+║                                                       ║
+║     Server running on http://localhost:\${PORT}          ║
+║     Connected to Supabase                             ║
+║     SECURITY: Middleware Enabled (Bearer Token)       ║
+║                                                       ║
+╚═══════════════════════════════════════════════════════╝
+        `);
+    });
+}
 
 module.exports = app;

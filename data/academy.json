@@ -1,0 +1,333 @@
+{
+  "attendance": {
+    "2026-07-14": {
+      "present": true,
+      "notes": "Learned math and spelling.",
+      "logged_at": "2026-07-14T04:51:29.961Z"
+    }
+  },
+  "progress": {
+    "math": {
+      "level": 3,
+      "points": 200,
+      "best_score": 10,
+      "history": [
+        {
+          "timestamp": "2026-07-14T04:55:41.722Z",
+          "points_added": 5,
+          "metrics": {
+            "score": 1
+          }
+        },
+        {
+          "timestamp": "2026-07-14T04:56:43.483Z",
+          "points_added": 5,
+          "metrics": {
+            "score": 2
+          }
+        },
+        {
+          "timestamp": "2026-07-14T04:57:47.749Z",
+          "points_added": 5,
+          "metrics": {
+            "score": 3
+          }
+        },
+        {
+          "timestamp": "2026-07-14T05:00:42.663Z",
+          "points_added": 5,
+          "metrics": {
+            "score": 1
+          }
+        },
+        {
+          "timestamp": "2026-07-14T05:01:54.774Z",
+          "points_added": 5,
+          "metrics": {
+            "score": 2
+          }
+        },
+        {
+          "timestamp": "2026-07-14T05:02:07.492Z",
+          "points_added": 5,
+          "metrics": {
+            "score": 3
+          }
+        },
+        {
+          "timestamp": "2026-07-14T05:02:08.771Z",
+          "points_added": 5,
+          "metrics": {
+            "score": 4
+          }
+        },
+        {
+          "timestamp": "2026-07-14T05:02:09.866Z",
+          "points_added": 5,
+          "metrics": {
+            "score": 5
+          }
+        },
+        {
+          "timestamp": "2026-07-14T05:02:10.986Z",
+          "points_added": 5,
+          "metrics": {
+            "score": 6
+          }
+        },
+        {
+          "timestamp": "2026-07-14T05:02:12.643Z",
+          "points_added": 5,
+          "metrics": {
+            "score": 7
+          }
+        },
+        {
+          "timestamp": "2026-07-14T05:02:13.618Z",
+          "points_added": 5,
+          "metrics": {
+            "score": 8
+          }
+        },
+        {
+          "timestamp": "2026-07-14T05:02:15.018Z",
+          "points_added": 5,
+          "metrics": {
+            "score": 9
+          }
+        },
+        {
+          "timestamp": "2026-07-14T05:02:16.306Z",
+          "points_added": 5,
+          "metrics": {
+            "score": 10
+          }
+        },
+        {
+          "timestamp": "2026-07-14T05:02:16.310Z",
+          "points_added": 20,
+          "quest_completed": "math_quest_1"
+        },
+        {
+          "timestamp": "2026-07-14T05:02:18.267Z",
+          "points_added": 5,
+          "metrics": {
+            "score": 1
+          }
+        },
+        {
+          "timestamp": "2026-07-14T05:02:21.049Z",
+          "points_added": 5,
+          "metrics": {
+            "score": 2
+          }
+        },
+        {
+          "timestamp": "2026-07-14T05:02:22.923Z",
+          "points_added": 5,
+          "metrics": {
+            "score": 3
+          }
+        },
+        {
+          "timestamp": "2026-07-14T05:02:25.587Z",
+          "points_added": 5,
+          "metrics": {
+            "score": 4
+          }
+        },
+        {
+          "timestamp": "2026-07-14T05:02:52.676Z",
+          "points_added": 5,
+          "metrics": {
+            "score": 5
+          }
+        },
+        {
+          "timestamp": "2026-07-14T05:02:56.497Z",
+          "points_added": 5,
+          "metrics": {
+            "score": 6
+          }
+        },
+        {
+          "timestamp": "2026-07-14T05:02:59.795Z",
+          "points_added": 5,
+          "metrics": {
+            "score": 7
+          }
+        },
+        {
+          "timestamp": "2026-07-14T05:03:03.891Z",
+          "points_added": 5,
+          "metrics": {
+            "score": 8
+          }
+        },
+        {
+          "timestamp": "2026-07-14T05:03:08.162Z",
+          "points_added": 5,
+          "metrics": {
+            "score": 9
+          }
+        },
+        {
+          "timestamp": "2026-07-14T05:03:12.516Z",
+          "points_added": 5,
+          "metrics": {
+            "score": 10
+          }
+        },
+        {
+          "timestamp": "2026-07-14T05:03:19.028Z",
+          "points_added": 5,
+          "metrics": {
+            "score": 1
+          }
+        },
+        {
+          "timestamp": "2026-07-14T05:03:27.269Z",
+          "points_added": 5,
+          "metrics": {
+            "score": 2
+          }
+        },
+        {
+          "timestamp": "2026-07-14T05:03:41.573Z",
+          "points_added": 5,
+          "metrics": {
+            "score": 3
+          }
+        },
+        {
+          "timestamp": "2026-07-14T05:04:09.294Z",
+          "points_added": 5,
+          "metrics": {
+            "score": 4
+          }
+        },
+        {
+          "timestamp": "2026-07-14T05:04:23.845Z",
+          "points_added": 5,
+          "metrics": {
+            "score": 5
+          }
+        },
+        {
+          "timestamp": "2026-07-14T05:04:50.428Z",
+          "points_added": 5,
+          "metrics": {
+            "score": 6
+          }
+        },
+        {
+          "timestamp": "2026-07-14T05:05:04.222Z",
+          "points_added": 5,
+          "metrics": {
+            "score": 7
+          }
+        },
+        {
+          "timestamp": "2026-07-14T05:05:16.140Z",
+          "points_added": 5,
+          "metrics": {
+            "score": 8
+          }
+        },
+        {
+          "timestamp": "2026-07-14T05:05:19.194Z",
+          "points_added": 5,
+          "metrics": {
+            "score": 9
+          }
+        },
+        {
+          "timestamp": "2026-07-14T05:05:26.636Z",
+          "points_added": 5,
+          "metrics": {
+            "score": 10
+          }
+        },
+        {
+          "timestamp": "2026-07-14T05:05:31.621Z",
+          "points_added": 5,
+          "metrics": {
+            "score": 1
+          }
+        },
+        {
+          "timestamp": "2026-07-14T05:05:34.626Z",
+          "points_added": 5,
+          "metrics": {
+            "score": 2
+          }
+        },
+        {
+          "timestamp": "2026-07-14T05:06:17.925Z",
+          "points_added": 5,
+          "metrics": {
+            "score": 1
+          }
+        }
+      ]
+    },
+    "reading": {
+      "level": 1,
+      "points": 0,
+      "history": []
+    },
+    "typing": {
+      "level": 1,
+      "points": 0,
+      "best_wpm": 0,
+      "history": []
+    },
+    "ai": {
+      "level": 1,
+      "points": 20,
+      "history": [
+        {
+          "timestamp": "2026-07-14T04:55:17.076Z",
+          "points_added": 20,
+          "quest_completed": "ai_quest_1"
+        }
+      ]
+    }
+  },
+  "quests": [
+    {
+      "id": "read_quest_1",
+      "title": "Alphabet Adventure",
+      "subject": "reading",
+      "points": 20,
+      "completed": false,
+      "description": "Read the vowels and find 3 words starting with each."
+    },
+    {
+      "id": "math_quest_1",
+      "title": "Addition Arena",
+      "subject": "math",
+      "points": 20,
+      "completed": true,
+      "description": "Complete 10 math addition cards in a row.",
+      "completed_at": "2026-07-14T05:02:16.310Z"
+    },
+    {
+      "id": "typing_quest_1",
+      "title": "First Keys",
+      "subject": "typing",
+      "points": 20,
+      "completed": false,
+      "description": "Type the home row keys (ASDF JKL;) at 15 WPM."
+    },
+    {
+      "id": "ai_quest_1",
+      "title": "Ask the Companion",
+      "subject": "ai",
+      "points": 20,
+      "completed": true,
+      "description": "Ask the AI Companion to write a story about a leopard coffee monkey.",
+      "completed_at": "2026-07-14T04:55:17.076Z"
+    }
+  ]
+}
