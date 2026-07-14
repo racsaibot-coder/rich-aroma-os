@@ -1,0 +1,1321 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>L2 Bot - Mobile Control</title>
+    <!-- Modern Premium Font -->
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #030712;
+            --panel-bg: rgba(17, 24, 39, 0.7);
+            --border: rgba(255, 255, 255, 0.08);
+            --primary: #10b981;
+            --primary-glow: rgba(16, 185, 129, 0.15);
+            --danger: #ef4444;
+            --danger-glow: rgba(239, 68, 68, 0.15);
+            --accent: #3b82f6;
+            --accent-glow: rgba(59, 130, 246, 0.15);
+            --text: #f3f4f6;
+            --text-muted: #9ca3af;
+            --nav-bg: rgba(17, 24, 39, 0.95);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Outfit', sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            background-color: var(--bg);
+            color: var(--text);
+            padding-bottom: 84px; /* Space for bottom nav */
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* Ambient Glow Backgrounds */
+        .ambient-glow {
+            position: fixed;
+            width: 300px;
+            height: 300px;
+            border-radius: 50%;
+            background: radial-gradient(circle, var(--accent-glow) 0%, transparent 70%);
+            top: -100px;
+            right: -100px;
+            z-index: -1;
+            pointer-events: none;
+        }
+        
+        .ambient-glow-bottom {
+            position: fixed;
+            width: 350px;
+            height: 350px;
+            border-radius: 50%;
+            background: radial-gradient(circle, var(--primary-glow) 0%, transparent 70%);
+            bottom: -150px;
+            left: -150px;
+            z-index: -1;
+            pointer-events: none;
+        }
+
+        header {
+            background: linear-gradient(180deg, rgba(3, 7, 18, 0.9) 0%, rgba(3, 7, 18, 0) 100%);
+            padding: 16px 20px;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid var(--border);
+        }
+
+        .header-logo {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .header-logo h1 {
+            font-size: 18px;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+            background: linear-gradient(to right, #10b981, #3b82f6);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .status-badge {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            background: rgba(255, 255, 255, 0.05);
+            padding: 4px 8px;
+            border-radius: 99px;
+            border: 1px solid var(--border);
+            font-size: 11px;
+            font-weight: 600;
+        }
+
+        .status-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background-color: var(--text-muted);
+        }
+
+        .status-dot.online {
+            background-color: var(--primary);
+            box-shadow: 0 0 8px var(--primary);
+        }
+
+        .refresh-btn {
+            background: rgba(59, 130, 246, 0.1);
+            border: 1px solid rgba(59, 130, 246, 0.3);
+            color: #60a5fa;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        /* Container & Tabs */
+        .tab-content {
+            display: none;
+            padding: 16px;
+            animation: fadeIn 0.3s ease-in-out;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(8px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Bottom Navigation Bar */
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 68px;
+            background: var(--nav-bg);
+            backdrop-filter: blur(20px);
+            border-top: 1px solid var(--border);
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            z-index: 100;
+            padding-bottom: constant(safe-area-inset-bottom); /* iOS support */
+            padding-bottom: env(safe-area-inset-bottom);
+        }
+
+        .nav-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+            color: var(--text-muted);
+            font-size: 10px;
+            font-weight: 600;
+            text-decoration: none;
+            width: 25%;
+            height: 100%;
+            cursor: pointer;
+            transition: color 0.2s;
+        }
+
+        .nav-item.active {
+            color: var(--accent);
+        }
+
+        .nav-item svg {
+            width: 20px;
+            height: 20px;
+            stroke: currentColor;
+            stroke-width: 2;
+            fill: none;
+        }
+
+        /* Cards & Glassmorphism */
+        .glass-card {
+            background: var(--panel-bg);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 16px;
+            margin-bottom: 16px;
+            backdrop-filter: blur(12px);
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 14px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+            padding-bottom: 8px;
+        }
+
+        .card-title {
+            font-size: 14px;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+            color: var(--text-muted);
+            text-transform: uppercase;
+        }
+
+        /* Stat Metrics styling */
+        .stat-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-bottom: 12px;
+        }
+
+        .stat-box {
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid rgba(255, 255, 255, 0.04);
+            border-radius: 10px;
+            padding: 10px;
+            text-align: center;
+        }
+
+        .stat-box-label {
+            font-size: 11px;
+            color: var(--text-muted);
+            margin-bottom: 4px;
+        }
+
+        .stat-box-val {
+            font-size: 16px;
+            font-weight: 700;
+        }
+
+        .portfolio-total {
+            text-align: center;
+            padding: 12px 0;
+        }
+
+        .portfolio-total-label {
+            font-size: 12px;
+            color: var(--text-muted);
+            margin-bottom: 4px;
+        }
+
+        .portfolio-total-val {
+            font-size: 28px;
+            font-weight: 700;
+            color: #fff;
+            text-shadow: 0 0 10px rgba(255, 255, 255, 0.1);
+        }
+
+        .pl-pill {
+            display: inline-flex;
+            align-items: center;
+            padding: 4px 10px;
+            border-radius: 99px;
+            font-size: 12px;
+            font-weight: 700;
+            margin-top: 6px;
+        }
+
+        .pl-pill.up {
+            background: var(--primary-glow);
+            color: var(--primary);
+            border: 1px solid rgba(16, 185, 129, 0.3);
+        }
+
+        .pl-pill.down {
+            background: var(--danger-glow);
+            color: var(--danger);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+        }
+
+        /* Position row styling */
+        .position-row {
+            display: flex;
+            flex-direction: column;
+            padding: 12px;
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid rgba(255, 255, 255, 0.04);
+            border-radius: 12px;
+            margin-bottom: 10px;
+        }
+
+        .position-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        .position-token {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+        }
+
+        .position-symbol {
+            font-weight: 700;
+            font-size: 15px;
+            color: #60a5fa;
+            text-decoration: underline;
+            text-underline-offset: 3px;
+        }
+
+        .position-name {
+            font-size: 11px;
+            color: var(--text-muted);
+        }
+
+        .position-pl {
+            font-weight: 700;
+            font-size: 14px;
+        }
+
+        .position-pl.up { color: var(--primary); }
+        .position-pl.down { color: var(--danger); }
+
+        .position-stats {
+            display: flex;
+            justify-content: space-between;
+            font-size: 12px;
+            color: var(--text-muted);
+            margin-bottom: 10px;
+        }
+
+        .position-stats span {
+            font-family: 'JetBrains Mono', monospace;
+            color: var(--text);
+        }
+
+        .position-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .action-btn {
+            flex: 1;
+            padding: 8px;
+            border-radius: 8px;
+            font-size: 12px;
+            font-weight: 700;
+            border: none;
+            cursor: pointer;
+            text-transform: uppercase;
+            text-align: center;
+            transition: all 0.2s;
+        }
+
+        .action-btn.sell {
+            background: var(--danger-glow);
+            color: var(--danger);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+        }
+
+        .action-btn.sell.confirming {
+            background: var(--danger);
+            color: #fff;
+            box-shadow: 0 0 10px rgba(239, 68, 68, 0.4);
+        }
+
+        /* Watchlist list styling */
+        .watchlist-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 12px;
+            background: rgba(255, 255, 255, 0.01);
+            border: 1px solid rgba(255, 255, 255, 0.03);
+            border-radius: 10px;
+            margin-bottom: 8px;
+        }
+
+        .watchlist-token-info {
+            display: flex;
+            flex-direction: column;
+            cursor: pointer;
+        }
+
+        .watchlist-symbol {
+            font-weight: 700;
+            font-size: 14px;
+            color: #60a5fa;
+            text-decoration: underline;
+        }
+
+        .watchlist-label {
+            font-size: 11px;
+            color: var(--text-muted);
+        }
+
+        .watchlist-delete {
+            background: none;
+            border: none;
+            color: var(--danger);
+            font-size: 14px;
+            padding: 4px 8px;
+            cursor: pointer;
+        }
+
+        /* Form styling */
+        .input-group {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 12px;
+        }
+
+        .mobile-input {
+            flex: 1;
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 10px 12px;
+            color: #fff;
+            font-size: 13px;
+            outline: none;
+        }
+
+        .mobile-input:focus {
+            border-color: var(--accent);
+        }
+
+        .submit-btn {
+            background: var(--accent);
+            color: #fff;
+            border: none;
+            padding: 10px 16px;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 700;
+            cursor: pointer;
+        }
+
+        /* Console log container */
+        .logs-box {
+            background: #02040a;
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 12px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 11px;
+            color: #4ade80;
+            height: calc(100vh - 200px);
+            overflow-y: auto;
+            white-space: pre-wrap;
+            box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.8);
+        }
+
+        /* Full screen chart drawer */
+        .chart-drawer {
+            position: fixed;
+            top: 100%;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: var(--bg);
+            z-index: 1000;
+            transition: transform 0.3s cubic-bezier(0.1, 0.76, 0.55, 0.94);
+            border-top: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            padding-bottom: env(safe-area-inset-bottom);
+        }
+
+        .chart-drawer.open {
+            transform: translateY(-100%);
+        }
+
+        .drawer-header {
+            padding: 12px 16px;
+            background: var(--nav-bg);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .drawer-title {
+            font-weight: 700;
+            font-size: 14px;
+        }
+
+        .close-drawer {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--border);
+            color: #fff;
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: 700;
+            cursor: pointer;
+        }
+
+        .iframe-container {
+            flex: 1;
+            position: relative;
+            background: #000;
+        }
+
+        .iframe-container iframe {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+
+        /* Toast notification */
+        .toast {
+            position: fixed;
+            top: 76px;
+            left: 50%;
+            transform: translateX(-50%) translateY(-20px);
+            background: rgba(59, 130, 246, 0.95);
+            color: #fff;
+            padding: 8px 16px;
+            border-radius: 8px;
+            font-size: 12px;
+            font-weight: 700;
+            z-index: 2000;
+            opacity: 0;
+            transition: all 0.3s;
+            pointer-events: none;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+            text-align: center;
+            min-width: 200px;
+        }
+
+        .toast.show {
+            opacity: 1;
+            transform: translateX(-50%) translateY(0);
+        }
+    </style>
+</head>
+<body>
+
+    <div class="ambient-glow"></div>
+    <div class="ambient-glow-bottom"></div>
+
+    <!-- Header bar -->
+    <header>
+        <div class="header-logo">
+            <h1>ROBINHOOD L2</h1>
+            <div class="status-badge">
+                <div class="status-dot" id="status-dot"></div>
+                <span id="status-text">...</span>
+            </div>
+        </div>
+        <button class="refresh-btn" onclick="refreshAllData()">🔄</button>
+    </header>
+
+    <!-- Global Toast Toast Box -->
+    <div class="toast" id="toast-box">Notification</div>
+
+    <!-- 1. OVERVIEW TAB -->
+    <div class="tab-content active" id="tab-overview">
+        <div class="glass-card">
+            <div class="portfolio-total">
+                <div class="portfolio-total-label">PORTFOLIO VALUATION</div>
+                <div class="portfolio-total-val" id="total-val">--</div>
+                <div id="unrealized-pl-pill" class="pl-pill">--%</div>
+            </div>
+        </div>
+
+        <div class="stat-grid">
+            <div class="stat-box">
+                <div class="stat-box-label">WETH Balance</div>
+                <div class="stat-box-val" id="weth-val">--</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-box-label">Gas ETH</div>
+                <div class="stat-box-val" id="gas-val">--</div>
+            </div>
+        </div>
+        
+        <div class="stat-grid" style="margin-bottom: 16px;">
+            <div class="stat-box">
+                <div class="stat-box-label">Realized Return</div>
+                <div class="stat-box-val" id="realized-val" style="font-size: 13px;">--</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-box-label">Win Rate</div>
+                <div class="stat-box-val" id="win-rate-val" style="font-size: 13px;">--</div>
+            </div>
+        </div>
+
+        <div class="glass-card" style="margin-bottom: 16px;">
+            <div class="card-header">
+                <div class="card-title">Win Rate By Timeframe</div>
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 6px;">
+                <div id="m-card-hour" style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,255,255,0.03); padding: 8px; border-radius: 6px; cursor: pointer; transition: all 0.2s;" onclick="selectMobileTimeframe('hour')">
+                    <span style="font-size: 13px; color: var(--text-muted);">1-Hour</span>
+                    <span id="mobile-winrate-hour" style="font-weight: 700; font-size: 13px;">0% (0W / 0L)</span>
+                </div>
+                <div id="m-card-day" style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,255,255,0.03); padding: 8px; border-radius: 6px; cursor: pointer; transition: all 0.2s;" onclick="selectMobileTimeframe('day')">
+                    <span style="font-size: 13px; color: var(--text-muted);">24-Hour</span>
+                    <span id="mobile-winrate-day" style="font-weight: 700; font-size: 13px;">0% (0W / 0L)</span>
+                </div>
+                <div id="m-card-week" style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,255,255,0.03); padding: 8px; border-radius: 6px; cursor: pointer; transition: all 0.2s;" onclick="selectMobileTimeframe('week')">
+                    <span style="font-size: 13px; color: var(--text-muted);">7-Day</span>
+                    <span id="mobile-winrate-week" style="font-weight: 700; font-size: 13px;">0% (0W / 0L)</span>
+                </div>
+                <div id="m-card-month" style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,255,255,0.03); padding: 8px; border-radius: 6px; cursor: pointer; transition: all 0.2s;" onclick="selectMobileTimeframe('month')">
+                    <span style="font-size: 13px; color: var(--text-muted);">30-Day</span>
+                    <span id="mobile-winrate-month" style="font-weight: 700; font-size: 13px;">0% (0W / 0L)</span>
+                </div>
+                <div id="m-card-historic" style="display: flex; justify-content: space-between; align-items: center; padding: 8px; border-radius: 6px; cursor: pointer; transition: all 0.2s;" onclick="selectMobileTimeframe('historic')">
+                    <span style="font-size: 13px; color: var(--text-muted);">Historic (Overall)</span>
+                    <span id="mobile-winrate-historic" style="font-weight: 700; font-size: 13px;">0% (0W / 0L)</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="glass-card">
+            <div class="card-header">
+                <div class="card-title">Active Positions</div>
+                <div id="active-count" class="status-badge" style="font-size:10px;">0 open</div>
+            </div>
+            <div id="active-list-container">
+                <div style="text-align: center; color: var(--text-muted); font-size: 13px; padding: 20px;">
+                    No active positions held.
+                </div>
+            </div>
+        </div>
+
+        <div class="glass-card" style="margin-top: 16px;">
+            <div class="card-header">
+                <div class="card-title">Completed Ledger</div>
+                <div id="m-ledger-filter" class="status-badge" style="font-size:10px; text-transform: uppercase;">Historic</div>
+            </div>
+            <div id="mobile-ledger-container" style="display: flex; flex-direction: column; gap: 10px;">
+                <div style="text-align: center; color: var(--text-muted); font-size: 13px; padding: 20px;">
+                    No closed trades found.
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 2. WATCHLIST TAB -->
+    <div class="tab-content" id="tab-watchlist">
+        <div class="glass-card">
+            <div class="card-header">
+                <div class="card-title">Add Watchlist Token</div>
+            </div>
+            <form id="add-watchlist-form">
+                <div class="input-group">
+                    <input type="text" class="mobile-input" id="watch-addr" placeholder="Contract address (0x...)" required>
+                </div>
+                <div class="input-group">
+                    <input type="text" class="mobile-input" id="watch-symbol" placeholder="Symbol (e.g. MEOW)">
+                    <button type="submit" class="submit-btn">Add Token</button>
+                </div>
+            </form>
+        </div>
+
+        <div class="glass-card">
+            <div class="card-header">
+                <div class="card-title">Dynamic Reclaims Watchlist</div>
+            </div>
+            <div id="watchlist-container">
+                <!-- Watchlist loaded here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- 3. TRENDING TAB -->
+    <div class="tab-content" id="tab-trending">
+        <div class="glass-card">
+            <div class="card-header">
+                <div class="card-title">L2 Market Trending Feeds</div>
+            </div>
+            <div id="trending-container">
+                <!-- Trending loaded here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- 4. LOGS TAB -->
+    <div class="tab-content" id="tab-logs">
+        <div class="logs-box" id="logs-box">Connecting log stream...</div>
+    </div>
+
+    <!-- Slide-Up Chart Drawer -->
+    <div class="chart-drawer" id="chart-drawer">
+        <div class="drawer-header">
+            <div class="drawer-title" id="drawer-title">DexScreener Chart</div>
+            <button class="close-drawer" onclick="closeChart()">Close</button>
+        </div>
+        <div class="iframe-container">
+            <iframe id="drawer-iframe" src=""></iframe>
+        </div>
+    </div>
+
+    <!-- Sticky Bottom Navigation Bar -->
+    <div class="bottom-nav">
+        <div class="nav-item active" onclick="switchTab('overview')">
+            <svg viewBox="0 0 24 24"><path d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
+            Overview
+        </div>
+        <div class="nav-item" onclick="switchTab('watchlist')">
+            <svg viewBox="0 0 24 24"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"/></svg>
+            Watchlist
+        </div>
+        <div class="nav-item" onclick="switchTab('trending')">
+            <svg viewBox="0 0 24 24"><path d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/></svg>
+            Trending
+        </div>
+        <div class="nav-item" onclick="switchTab('logs')">
+            <svg viewBox="0 0 24 24"><path d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+            Logs
+        </div>
+    </div>
+
+    <script>
+        // Global variables
+        let globalEthPrice = 1784.66;
+        let isConsoleAutoScroll = true;
+
+        // Switch bottom navigation tabs
+        function switchTab(tabId) {
+            // Remove active classes
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+
+            // Set active tab and button
+            document.getElementById(`tab-${tabId}`).classList.add('active');
+            
+            // Map click selection to nav items
+            const navItems = document.querySelectorAll('.nav-item');
+            if (tabId === 'overview') navItems[0].classList.add('active');
+            else if (tabId === 'watchlist') navItems[1].classList.add('active');
+            else if (tabId === 'trending') navItems[2].classList.add('active');
+            else if (tabId === 'logs') navItems[3].classList.add('active');
+
+            // Force refresh log console scroll
+            if (tabId === 'logs') {
+                const logsBox = document.getElementById('logs-box');
+                logsBox.scrollTop = logsBox.scrollHeight;
+            }
+        }
+
+        // Display toast message
+        function showToast(message) {
+            const box = document.getElementById('toast-box');
+            box.innerText = message;
+            box.classList.add('show');
+            setTimeout(() => {
+                box.classList.remove('show');
+            }, 2500);
+        }
+
+        // Open full screen chart drawer
+        function loadChart(addr, symbol) {
+            const drawer = document.getElementById('chart-drawer');
+            const iframe = document.getElementById('drawer-iframe');
+            const title = document.getElementById('drawer-title');
+
+            title.innerText = `${symbol.toUpperCase()} - DexScreener Live Frame`;
+            iframe.src = `https://dexscreener.com/robinhood/${addr}?embed=1&theme=dark&trades=0&info=0`;
+            drawer.classList.add('open');
+            showToast(`Loading ${symbol} Chart...`);
+        }
+
+        // Close chart drawer
+        function closeChart() {
+            const drawer = document.getElementById('chart-drawer');
+            const iframe = document.getElementById('drawer-iframe');
+            drawer.classList.remove('open');
+            setTimeout(() => { iframe.src = ''; }, 300);
+        }
+
+        // Fetch system stats
+        async function fetchStats() {
+            try {
+                const r = await fetch('/api/chain-bot/status');
+                const stats = await r.json();
+
+                const dot = document.getElementById('status-dot');
+                const txt = document.getElementById('status-text');
+                
+                if (stats.status === 'active') {
+                    dot.className = 'status-dot online';
+                    txt.innerText = 'Online';
+                } else {
+                    dot.className = 'status-dot';
+                    txt.innerText = 'Offline';
+                }
+
+                if (stats.balances) {
+                    document.getElementById('weth-val').innerText = `${stats.balances.weth.toFixed(5)} WETH`;
+                    document.getElementById('gas-val').innerText = `${stats.balances.native_eth.toFixed(4)} ETH`;
+                    window.lastWethBal = parseFloat(stats.balances.weth) || 0;
+                    window.lastEthBal = parseFloat(stats.balances.native_eth) || 0;
+                    globalEthPrice = stats.eth_price_usd || 1784.66;
+                    window.globalEthPrice = globalEthPrice;
+                }
+            } catch (err) {
+                console.error("Failed to query stats:", err);
+            }
+        }
+
+        // Fetch active positions held by the bot
+        async function fetchActiveTrades() {
+            // Skip redrawing if user is currently confirming a sell action
+            if (document.querySelector('.action-btn.sell.confirming')) {
+                return;
+            }
+            try {
+                const response = await fetch('/api/chain-bot/positions');
+                const positions = await response.json();
+
+                const container = document.getElementById('active-list-container');
+                const countBadge = document.getElementById('active-count');
+                const keys = Object.keys(positions);
+                
+                countBadge.innerText = `${keys.length} open`;
+                
+                if (keys.length === 0) {
+                    container.innerHTML = `
+                        <div style="text-align: center; color: var(--text-muted); font-size: 13px; padding: 20px;">
+                            No active positions held.
+                        </div>
+                    `;
+                    const windowEthPrice = window.globalEthPrice || 1784.66;
+                    const weth = window.lastWethBal || 0;
+                    const eth = window.lastEthBal || 0;
+                    const totalHoldingUsd = (weth + eth) * windowEthPrice;
+                    document.getElementById('total-val').innerText = `$${totalHoldingUsd.toFixed(2)} USD`;
+                    const pill = document.getElementById('unrealized-pl-pill');
+                    pill.innerText = '+0.00%';
+                    pill.className = 'pl-pill up';
+                    return;
+                }
+
+                let html = '';
+                let totalWethUnrealized = 0;
+                let totalCostBasis = 0;
+                const windowEthPrice = window.globalEthPrice || 1784.66;
+
+                keys.forEach(addr => {
+                    const pos = positions[addr];
+                    const entryPrice = parseFloat(pos.entry_price) || 0;
+                    const prices = pos.prices || [];
+                    const currentPrice = prices.length > 0 ? parseFloat(prices[prices.length - 1]) : entryPrice;
+                    
+                    const ratio = entryPrice > 0 ? currentPrice / entryPrice : 1.0;
+                    const changePct = (ratio - 1) * 100.0;
+                    
+                    const costBasis = parseFloat(pos.entry_size_eth) || 0.005;
+                    const wethUnrealized = costBasis * (changePct / 100.0);
+                    
+                    totalCostBasis += costBasis;
+                    totalWethUnrealized += wethUnrealized;
+
+                    const changeClass = changePct >= 0 ? 'up' : 'down';
+                    const entryEth = entryPrice / windowEthPrice;
+                    const entryFormatted = `${entryPrice < 0.01 ? `$${entryPrice.toFixed(6)}` : `$${entryPrice.toFixed(2)}`} (${entryEth.toFixed(6)} ETH)`;
+                    
+                    const currentEth = currentPrice / windowEthPrice;
+                    const currentFormatted = `${currentEth.toFixed(6)} ETH`;
+                    
+                    const plUsd = wethUnrealized * windowEthPrice;
+                    const plUsdFormatted = `${changePct >= 0 ? '+' : ''}$${plUsd.toFixed(2)}`;
+                    
+                    // Support floor details
+                    const bottom = pos.local_bottom || entryPrice;
+                    const stopPrice = bottom * 0.95;
+                    const stopFormatted = stopPrice < 0.01 ? `$${stopPrice.toFixed(6)}` : `$${stopPrice.toFixed(2)}`;
+
+                    html += `
+                        <div class="position-row">
+                            <div class="position-header">
+                                <div class="position-token" onclick="loadChart('${addr}', '${pos.symbol}')">
+                                    <span class="position-symbol">${pos.symbol} 📈</span>
+                                    <span class="position-name">${pos.is_derisked ? 'Moonbag' : 'Target'}</span>
+                                </div>
+                                <div class="position-pl ${changeClass}">
+                                    ${changePct >= 0 ? '+' : ''}${changePct.toFixed(2)}% (${plUsdFormatted})
+                                </div>
+                            </div>
+                            <div class="position-stats">
+                                <div>Entry: <span>${entryFormatted}</span></div>
+                                <div>Price: <span>${currentFormatted}</span></div>
+                            </div>
+                            <div class="position-stats" style="margin-bottom: 12px; font-size: 11px;">
+                                <div>Stop Floor: <span style="color:var(--danger);">${stopFormatted}</span></div>
+                                <div>Cost: <span>${costBasis.toFixed(4)} WETH</span></div>
+                            </div>
+                            <div class="position-actions">
+                                <button class="action-btn sell" onclick="triggerSell(this, '${addr}', '${pos.symbol}')">Quick Sell</button>
+                            </div>
+                        </div>
+                    `;
+                });
+
+                container.innerHTML = html;
+
+                // Update Overview Metrics
+                const windowEthPrice = window.globalEthPrice || 1784.66;
+                const weth = window.lastWethBal || 0;
+                const eth = window.lastEthBal || 0;
+                const openValWeth = totalCostBasis + totalWethUnrealized;
+                const totalHoldingUsd = (weth + eth + openValWeth) * windowEthPrice;
+                document.getElementById('total-val').innerText = `$${totalHoldingUsd.toFixed(2)} USD`;
+                
+                const weightedPlPct = totalCostBasis > 0 ? (totalWethUnrealized / totalCostBasis) * 100.0 : 0.0;
+                const pill = document.getElementById('unrealized-pl-pill');
+                pill.innerText = `${weightedPlPct >= 0 ? '+' : ''}${weightedPlPct.toFixed(2)}% Unrealized`;
+                pill.className = `pl-pill ${weightedPlPct >= 0 ? 'up' : 'down'}`;
+
+            } catch (err) {
+                console.error("Failed to query active positions:", err);
+            }
+        }
+
+        // Sell position trigger with 2-tap confirmation
+        async function triggerSell(btn, addr, symbol) {
+            if (!btn.classList.contains('confirming')) {
+                // First tap: Set confirming state
+                btn.classList.add('confirming');
+                btn.innerText = 'TAP AGAIN TO SELL';
+                setTimeout(() => {
+                    btn.classList.remove('confirming');
+                    btn.innerText = 'Quick Sell';
+                }, 4000);
+            } else {
+                // Second tap: Execute swap sell
+                btn.classList.remove('confirming');
+                btn.innerText = 'Swapping...';
+                showToast(`Sending manual sell order for ${symbol}...`);
+                try {
+                    const response = await fetch('/api/chain-bot/sell', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ tokenAddress: addr })
+                    });
+                    const result = await response.json();
+                    if (result.success) {
+                        showToast(`Sell order broadcasted successfully!`);
+                        fetchActiveTrades();
+                    } else {
+                        showToast(`Failed: ${result.error}`);
+                    }
+                } catch (e) {
+                    showToast('Connection failed trying to execute swap.');
+                }
+            }
+        }
+
+        // Fetch completed trade history
+        let activeMobileTimeframeFilter = 'historic';
+
+        function selectMobileTimeframe(filter) {
+            activeMobileTimeframeFilter = filter;
+            
+            // Highlight the selected card row and unhighlight others
+            const timeframes = ['hour', 'day', 'week', 'month', 'historic'];
+            timeframes.forEach(f => {
+                const card = document.getElementById(`m-card-${f}`);
+                if (card) {
+                    if (f === filter) {
+                        card.style.background = 'rgba(16, 185, 129, 0.08)';
+                        card.style.borderLeft = '4px solid var(--primary)';
+                    } else {
+                        card.style.background = '';
+                        card.style.borderLeft = '';
+                    }
+                }
+            });
+            
+            // Update filter status badge text
+            const filterBadge = document.getElementById('m-ledger-filter');
+            if (filterBadge) {
+                filterBadge.innerText = filter === 'historic' ? 'Historic' : `${filter}`;
+            }
+
+            fetchHistory();
+        }
+
+        async function fetchHistory() {
+            try {
+                const response = await fetch('/api/chain-bot/history');
+                const list = await response.json();
+
+                const ledgerContainer = document.getElementById('mobile-ledger-container');
+                if (!list || !Array.isArray(list) || list.length === 0) {
+                    document.getElementById('realized-val').innerText = '--';
+                    document.getElementById('win-rate-val').innerText = '--';
+                    if (ledgerContainer) {
+                        ledgerContainer.innerHTML = `
+                            <div style="text-align: center; color: var(--text-muted); font-size: 13px; padding: 20px;">
+                                No closed trades found.
+                            </div>
+                        `;
+                    }
+                    return;
+                }
+
+                // Filter based on selected timeframe
+                const now = Date.now() / 1000;
+                let filteredList = list;
+                if (activeMobileTimeframeFilter === 'hour') {
+                    filteredList = list.filter(t => now - t.timestamp <= 3600);
+                } else if (activeMobileTimeframeFilter === 'day') {
+                    filteredList = list.filter(t => now - t.timestamp <= 86400);
+                } else if (activeMobileTimeframeFilter === 'week') {
+                    filteredList = list.filter(t => now - t.timestamp <= 604800);
+                } else if (activeMobileTimeframeFilter === 'month') {
+                    filteredList = list.filter(t => now - t.timestamp <= 2592000);
+                }
+
+                if (filteredList.length === 0) {
+                    if (ledgerContainer) {
+                        ledgerContainer.innerHTML = `
+                            <div style="text-align: center; color: var(--text-muted); font-size: 13px; padding: 20px;">
+                                No closed trades in this timeframe.
+                            </div>
+                        `;
+                    }
+                    document.getElementById('realized-val').innerText = '--';
+                    document.getElementById('win-rate-val').innerText = '--';
+                    return;
+                }
+
+                let html = '';
+                let totalWethRealized = 0;
+                let totalCostBasis = 0;
+                let wins = 0;
+                let totalClosed = filteredList.length;
+
+                filteredList.forEach(trade => {
+                    const changeVal = parseFloat(trade.p_l_pct) || 0.0;
+                    const size = parseFloat(trade.entry_size_eth) || 0.005;
+                    const netWeth = size * (changeVal / 100.0);
+                    totalWethRealized += netWeth;
+                    totalCostBasis += size;
+                    if (changeVal >= 0) {
+                        wins++;
+                    }
+
+                    const changeClass = changeVal >= 0 ? 'up' : 'down';
+                    const changeText = changeVal >= 0 ? `+${changeVal.toFixed(2)}%` : `${changeVal.toFixed(2)}%`;
+                    
+                    const entryPriceVal = parseFloat(trade.entry_price) || 0;
+                    const entryPriceFormatted = entryPriceVal < 0.01 ? `$${entryPriceVal.toFixed(6)}` : `$${entryPriceVal.toFixed(2)}`;
+                    
+                    const exitPriceVal = parseFloat(trade.exit_price) || 0;
+                    const exitPriceFormatted = exitPriceVal < 0.01 ? `$${exitPriceVal.toFixed(6)}` : `$${exitPriceVal.toFixed(2)}`;
+
+                    const netWethFormatted = (netWeth >= 0 ? '+' : '') + netWeth.toFixed(5);
+                    const netUsd = netWeth * (window.globalEthPrice || 1784.66);
+                    const netUsdFormatted = (netUsd >= 0 ? '+' : '') + `$${netUsd.toFixed(2)}`;
+
+                    const reasonFormatted = trade.exit_reason.replace(/_/g, ' ').toUpperCase();
+
+                    html += `
+                        <div class="position-row">
+                            <div class="position-header">
+                                <div class="position-token" onclick="loadChart('${trade.address}', '${trade.symbol}')">
+                                    <span class="position-symbol">${trade.symbol} 📈</span>
+                                    <span class="position-name" style="font-size: 10px;">${reasonFormatted}</span>
+                                </div>
+                                <div class="position-pl ${changeClass}">
+                                    ${changeText}
+                                </div>
+                            </div>
+                            <div class="position-stats" style="margin-bottom: 6px;">
+                                <div>Buy: <span style="font-family: monospace;">${entryPriceFormatted}</span></div>
+                                <div>Sell: <span style="font-family: monospace;">${exitPriceFormatted}</span></div>
+                            </div>
+                            <div class="position-stats" style="margin-bottom: 0;">
+                                <div style="width: 100%; display: flex; justify-content: space-between;">
+                                    <span>Gain/Loss:</span>
+                                    <span style="color: ${changeVal >= 0 ? 'var(--primary)' : 'var(--danger)'}; font-family: monospace; font-weight: 700;">
+                                        ${netWethFormatted} WETH (${netUsdFormatted})
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                });
+
+                if (ledgerContainer) {
+                    ledgerContainer.innerHTML = html;
+                }
+
+                const weightedPLPct = totalCostBasis > 0 ? (totalWethRealized / totalCostBasis) * 100.0 : 0.0;
+                const realizedSign = totalWethRealized >= 0 ? '+' : '';
+                
+                document.getElementById('realized-val').innerText = `${realizedSign}${weightedPLPct.toFixed(1)}% (${realizedSign}${totalWethRealized.toFixed(4)} WETH)`;
+                document.getElementById('realized-val').style.color = totalWethRealized >= 0 ? 'var(--primary)' : 'var(--danger)';
+
+                const winRatePct = totalClosed > 0 ? ((wins / totalClosed) * 100).toFixed(0) : 0;
+                document.getElementById('win-rate-val').innerText = `${winRatePct}% (${wins}/${totalClosed} wins)`;
+            } catch (e) {
+                console.error("Error fetching trade history:", e);
+            }
+        }
+
+        // Fetch and populate segmented win rates
+        async function fetchPerformance() {
+            try {
+                const response = await fetch('/api/chain-bot/performance');
+                const data = await response.json();
+                
+                const ethPrice = window.globalEthPrice || 1784.66;
+                
+                const updateFrame = (id, stats) => {
+                    const el = document.getElementById(id);
+                    if (!el) return;
+                    
+                    const rate = parseFloat(stats.winRate).toFixed(0);
+                    const netRet = parseFloat(stats.netReturn);
+                    const netRetUsd = netRet * ethPrice;
+                    const sign = netRet >= 0 ? '+' : '';
+                    
+                    el.innerText = `${rate}% (${stats.wins}W / ${stats.losses}L)`;
+                    el.style.color = rate >= 60 ? 'var(--primary)' : (rate >= 40 ? 'var(--text)' : 'var(--danger)');
+                };
+                
+                updateFrame('mobile-winrate-hour', data.hour);
+                updateFrame('mobile-winrate-day', data.day);
+                updateFrame('mobile-winrate-week', data.week);
+                updateFrame('mobile-winrate-month', data.month);
+                updateFrame('mobile-winrate-historic', data.historic);
+            } catch (e) {
+                console.error("Error fetching performance stats:", e);
+            }
+        }
+
+        // Fetch watchlist tokens
+        async function fetchWatchlist() {
+            try {
+                const response = await fetch('/api/chain-bot/watchlist');
+                const watchlist = await response.json();
+
+                const container = document.getElementById('watchlist-container');
+                const keys = Object.keys(watchlist);
+                
+                if (keys.length === 0) {
+                    container.innerHTML = `
+                        <div style="text-align: center; color: var(--text-muted); font-size: 13px; padding: 20px;">
+                            No tokens on watchlist.
+                        </div>
+                    `;
+                    return;
+                }
+
+                let html = '';
+                keys.forEach(addr => {
+                    const token = watchlist[addr];
+                    const bottom = parseFloat(token.last_bottom_price) || 0;
+                    const bottomFormatted = bottom < 0.01 ? `$${bottom.toFixed(6)}` : `$${bottom.toFixed(2)}`;
+                    
+                    html += `
+                        <div class="watchlist-item">
+                            <div class="watchlist-token-info" onclick="loadChart('${addr}', '${token.symbol}')">
+                                <span class="watchlist-symbol">${token.symbol} 📈</span>
+                                <span class="watchlist-label">Last bottom: ${bottomFormatted}</span>
+                            </div>
+                            <button class="watchlist-delete" onclick="deleteFromWatchlist('${addr}')">🗑️</button>
+                        </div>
+                    `;
+                });
+
+                container.innerHTML = html;
+            } catch (err) {
+                console.error("Failed to query watchlist:", err);
+            }
+        }
+
+        // Delete token from watchlist
+        async function deleteFromWatchlist(addr) {
+            showToast('Deleting token from watchlist...');
+            try {
+                const response = await fetch(`/api/chain-bot/watchlist?tokenAddress=${addr}`, {
+                    method: 'DELETE'
+                });
+                const result = await response.json();
+                if (result.success) {
+                    showToast('Successfully deleted.');
+                    fetchWatchlist();
+                } else {
+                    showToast(`Error: ${result.error}`);
+                }
+            } catch (err) {
+                showToast('Failed to connect to delete.');
+            }
+        }
+
+        // Fetch trending feed
+        async function fetchTrending() {
+            try {
+                const response = await fetch('/api/chain-bot/trending');
+                const list = await response.json();
+
+                const container = document.getElementById('trending-container');
+                if (list.length === 0) {
+                    container.innerHTML = `<div style="text-align:center; padding: 20px; color: var(--text-muted);">No trending tokens.</div>`;
+                    return;
+                }
+
+                let html = '';
+                list.forEach(token => {
+                    const price = parseFloat(token.price) || 0.0;
+                    const change = parseFloat(token.change) || 0.0;
+                    const changeClass = change >= 0 ? 'up' : 'down';
+                    
+                    html += `
+                        <div class="watchlist-item">
+                            <div class="watchlist-token-info" onclick="loadChart('${token.address}', '${token.symbol}')">
+                                <span class="watchlist-symbol">${token.symbol} 📈</span>
+                                <span class="watchlist-label">${price < 0.01 ? '$' + price.toFixed(6) : '$' + price.toFixed(2)} | Vol: $${parseFloat(token.volume).toLocaleString(undefined, {maximumFractionDigits:0})}</span>
+                            </div>
+                            <span class="change-pill ${changeClass}">${change >= 0 ? '+' : ''}${change.toFixed(1)}%</span>
+                        </div>
+                    `;
+                });
+
+                container.innerHTML = html;
+            } catch (err) {
+                console.error("Error fetching trending:", err);
+            }
+        }
+
+        // Add to watchlist form submission
+        document.getElementById('add-watchlist-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const addr = document.getElementById('watch-addr').value.trim();
+            const symbol = document.getElementById('watch-symbol').value.trim();
+
+            if (!addr.startsWith('0x') || addr.length !== 42) {
+                showToast("Invalid contract address format!");
+                return;
+            }
+
+            showToast("Adding token...");
+            try {
+                const response = await fetch('/api/chain-bot/watchlist', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        tokenAddress: addr,
+                        symbol: symbol || 'UNKNOWN',
+                        name: 'Manual Entry',
+                        targetReclaimPrice: 0.0
+                    })
+                });
+                const result = await response.json();
+                if (result.success) {
+                    showToast(`Successfully added ${symbol || 'token'}!`);
+                    document.getElementById('watch-addr').value = '';
+                    document.getElementById('watch-symbol').value = '';
+                    fetchWatchlist();
+                } else {
+                    showToast(`Error: ${result.error}`);
+                }
+            } catch (err) {
+                showToast("Network error trying to add token.");
+            }
+        });
+
+        // Fetch log stream
+        const logsBox = document.getElementById('logs-box');
+        async function fetchLogs() {
+            try {
+                const response = await fetch('/api/chain-bot/logs');
+                const data = await response.json();
+                logsBox.innerText = data.logs || 'No logs found.';
+
+                if (isConsoleAutoScroll) {
+                    logsBox.scrollTop = logsBox.scrollHeight;
+                }
+            } catch (e) {
+                logsBox.innerText = 'Failed to fetch log stream.';
+            }
+        }
+
+        // Global refresh action
+        function refreshAllData() {
+            showToast("Force refreshing all metrics...");
+            fetchStats();
+            fetchActiveTrades();
+            fetchTrending();
+            fetchWatchlist();
+            fetchHistory();
+            fetchLogs();
+            fetchPerformance();
+        }
+
+        // Initial loading sequence
+        selectMobileTimeframe('historic');
+        refreshAllData();
+
+        // Background polling intervals
+        setInterval(fetchStats, 3000);
+        setInterval(fetchActiveTrades, 3000);
+        setInterval(fetchTrending, 5000);
+        setInterval(fetchWatchlist, 4000);
+        setInterval(fetchHistory, 5000);
+        setInterval(fetchLogs, 4000);
+        setInterval(fetchPerformance, 5000);
+    </script>
+</body>
+</html>
