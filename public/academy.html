@@ -679,6 +679,119 @@
                 filter: brightness(1.3);
             }
         }
+        
+        /* Word Scramble Styles */
+        .scramble-letter-container {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 12px;
+            margin: 20px 0;
+        }
+        .scramble-bubble {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--glass-border);
+            color: #fff;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 20px;
+            font-weight: 700;
+            cursor: pointer;
+            user-select: none;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .scramble-bubble:hover {
+            background: rgba(99, 102, 241, 0.1);
+            border-color: var(--primary);
+            transform: translateY(-2px);
+        }
+        .scramble-bubble.selected {
+            opacity: 0.2;
+            pointer-events: none;
+            transform: scale(0.9);
+        }
+        .scramble-input-display {
+            background: rgba(255,255,255,0.02);
+            border: 2px solid var(--glass-border);
+            border-radius: 16px;
+            font-size: 28px;
+            padding: 10px;
+            min-height: 58px;
+            letter-spacing: 4px;
+            font-weight: 800;
+            color: #fff;
+            width: 280px;
+            text-align: center;
+            margin: 0 auto 16px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        /* Code Quest Styles */
+        .cq-board {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 6px;
+            background: rgba(255, 255, 255, 0.02);
+            border: 2px solid var(--glass-border);
+            padding: 10px;
+            border-radius: 16px;
+            max-width: 280px;
+            width: 100%;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+        }
+        .cq-cell {
+            aspect-ratio: 1;
+            background: #18181b;
+            border-radius: 8px;
+            border: 1px solid rgba(255,255,255,0.03);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 24px;
+            position: relative;
+            user-select: none;
+        }
+        .cq-command-tape {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            min-height: 46px;
+            background: rgba(255,255,255,0.01);
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+            padding: 8px;
+            width: 100%;
+            max-width: 450px;
+            align-items: center;
+            overflow-y: auto;
+        }
+        .cq-cmd-block {
+            background: rgba(99, 102, 241, 0.15);
+            color: #a5b4fc;
+            border: 1px solid rgba(99, 102, 241, 0.3);
+            padding: 4px 8px;
+            border-radius: 6px;
+            font-size: 11px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            animation: popIn 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        @keyframes popIn {
+            from { transform: scale(0.8); opacity: 0; }
+            to { transform: scale(1); opacity: 1; }
+        }
+        .cq-arrow {
+            font-size: 12px;
+            color: var(--primary);
+        }
     </style>
 </head>
 <body>
@@ -811,6 +924,73 @@
 
                     <div>
                         <button class="quest-btn" onclick="resetC4Game()">🔄 Restart Game</button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Games Arena Row -->
+            <div class="dashboard-grid" style="margin-top: 30px;">
+                <!-- Word Scramble Game -->
+                <div class="glass-panel" id="scramble-panel" style="margin-bottom: 0;">
+                    <h2 style="font-size: 20px; font-weight: 700; display: flex; align-items: center; gap: 8px; margin-bottom: 20px;">
+                        🔠 WORD SCRAMBLE CHALLENGE
+                    </h2>
+                    <div style="display: flex; flex-direction: column; align-items: center; gap: 16px;">
+                        <div id="scramble-hint" style="font-size: 14px; color: var(--text-muted); text-align: center; font-style: italic; min-height: 20px;">
+                            Hint: loading...
+                        </div>
+                        
+                        <!-- Compiled Word Display -->
+                        <div class="scramble-input-display" id="scramble-output"></div>
+                        
+                        <!-- Scrambled Letter Nodes -->
+                        <div class="scramble-letter-container" id="scramble-letters-box">
+                            <!-- Circular letters generated dynamically -->
+                        </div>
+                        
+                        <div style="display: flex; gap: 10px;">
+                            <button class="quest-btn" onclick="backspaceScramble()" style="background: var(--danger); border: none;">◀ Backspace</button>
+                            <button class="quest-btn" onclick="shuffleScramble()" style="background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border);">🔀 Shuffle</button>
+                            <button class="quest-btn" onclick="resetScrambleWord()">🔄 Reset</button>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Code Quest Game -->
+                <div class="glass-panel" id="codequest-panel" style="margin-bottom: 0;">
+                    <h2 style="font-size: 20px; font-weight: 700; display: flex; align-items: center; gap: 8px; margin-bottom: 20px;">
+                        🐒 CAPTAIN RICO'S CODE QUEST
+                    </h2>
+                    <div style="display: flex; flex-direction: column; align-items: center; gap: 16px;">
+                        <div style="display: flex; justify-content: space-between; width: 100%; font-size: 13px; color: var(--text-muted); font-weight: 700;">
+                            <span id="cq-level-title">Level 1 / 3</span>
+                            <span style="color:var(--success);">Goal: Guide 🐒 to ☕</span>
+                        </div>
+                        
+                        <!-- 5x5 Maze Board -->
+                        <div class="cq-board" id="cq-maze-board">
+                            <!-- 25 Cells generated dynamically -->
+                        </div>
+                        
+                        <!-- Visual Program/Command Queue Tape -->
+                        <div class="cq-command-tape" id="cq-command-list">
+                            <span style="color: var(--text-muted); font-size: 12px; font-style: italic;" id="cq-empty-tape-msg">Program empty. Add moves below...</span>
+                        </div>
+                        
+                        <!-- Move Command Controls -->
+                        <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; width: 100%;">
+                            <button class="nav-btn" onclick="addCQCommand('up')" style="padding: 8px; justify-content: center; font-size: 12px;">⬆️ UP</button>
+                            <button class="nav-btn" onclick="addCQCommand('down')" style="padding: 8px; justify-content: center; font-size: 12px;">⬇️ DOWN</button>
+                            <button class="nav-btn" onclick="addCQCommand('left')" style="padding: 8px; justify-content: center; font-size: 12px;">⬅️ LEFT</button>
+                            <button class="nav-btn" onclick="addCQCommand('right')" style="padding: 8px; justify-content: center; font-size: 12px;">➡️ RIGHT</button>
+                        </div>
+                        
+                        <!-- Run / Clear Controls -->
+                        <div style="display: flex; gap: 10px; width: 100%;">
+                            <button class="quest-btn" id="cq-run-btn" onclick="runCQProgram()" style="flex: 2; background: var(--success);">Run Program 🚀</button>
+                            <button class="quest-btn" onclick="clearCQProgram()" style="flex: 1; background: var(--danger);">Clear 🗑️</button>
+                            <button class="quest-btn" onclick="resetCQLevel()" style="background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border);">🔄 Reset</button>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -1778,6 +1958,354 @@
                 showToast(c4Mode === 'ai' ? "Sparky won this round! 🤖" : "Player 2 won!");
             }
         }
+
+        // WORD SCRAMBLE GAME LOGIC
+        const scrambleWords = [
+            { word: "ASTRONAUT", hint: "A person who travels into outer space 🚀" },
+            { word: "SOURDOUGH", hint: "Tangy bread baked without commercial yeast 🥖" },
+            { word: "GRAVITY", hint: "The force that pulls objects toward Earth 🌍" },
+            { word: "DOLPHIN", hint: "A highly intelligent marine mammal 🐬" },
+            { word: "DINOSAUR", hint: "Prehistoric reptile that ruled the Earth 🦖" },
+            { word: "ROBOT", hint: "A programmable mechanical machine 🤖" },
+            { word: "VOLCANO", hint: "A mountain that erupts with hot lava 🌋" },
+            { word: "TELESCOPE", hint: "Tool used to look at stars and planets 🔭" },
+            { word: "SATELLITE", hint: "Object orbiting a planet to transmit data 📡" },
+            { word: "RAINFOREST", hint: "Dense tropical forest with heavy rainfall 🌧️" }
+        ];
+        let currentScramble = null;
+        let scrambleInput = "";
+        let scrambleLetters = [];
+        let selectedScrambleIndices = [];
+
+        function initScrambleGame() {
+            currentScramble = scrambleWords[Math.floor(Math.random() * scrambleWords.length)];
+            document.getElementById('scramble-hint').innerText = `Hint: ${currentScramble.hint}`;
+            
+            scrambleLetters = currentScramble.word.split('').map((char, index) => ({ char, index }));
+            shuffleArray(scrambleLetters);
+            
+            scrambleInput = "";
+            selectedScrambleIndices = [];
+            
+            renderScrambleLetters();
+            updateScrambleDisplay();
+        }
+
+        function shuffleArray(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+        }
+
+        function renderScrambleLetters() {
+            const container = document.getElementById('scramble-letters-box');
+            container.innerHTML = '';
+            
+            scrambleLetters.forEach(item => {
+                const bubble = document.createElement('div');
+                bubble.className = 'scramble-bubble';
+                bubble.innerText = item.char;
+                bubble.id = `scramble-bubble-${item.index}`;
+                
+                if (selectedScrambleIndices.includes(item.index)) {
+                    bubble.className += ' selected';
+                }
+                
+                bubble.onclick = () => selectScrambleLetter(item.char, item.index);
+                container.appendChild(bubble);
+            });
+        }
+
+        function selectScrambleLetter(char, index) {
+            if (selectedScrambleIndices.includes(index)) return;
+            
+            selectedScrambleIndices.push(index);
+            scrambleInput += char;
+            
+            document.getElementById(`scramble-bubble-${index}`).className = 'scramble-bubble selected';
+            updateScrambleDisplay();
+            
+            if (scrambleInput.length === currentScramble.word.length) {
+                verifyScramble();
+            }
+        }
+
+        function updateScrambleDisplay() {
+            document.getElementById('scramble-output').innerText = scrambleInput;
+        }
+
+        function backspaceScramble() {
+            if (selectedScrambleIndices.length === 0) return;
+            
+            const lastIndex = selectedScrambleIndices.pop();
+            scrambleInput = scrambleInput.slice(0, -1);
+            
+            const lastBubble = document.getElementById(`scramble-bubble-${lastIndex}`);
+            if (lastBubble) {
+                lastBubble.className = 'scramble-bubble';
+            }
+            updateScrambleDisplay();
+        }
+
+        function shuffleScramble() {
+            const unselected = scrambleLetters.filter(item => !selectedScrambleIndices.includes(item.index));
+            shuffleArray(unselected);
+            
+            let unselectedIdx = 0;
+            scrambleLetters = scrambleLetters.map(item => {
+                if (selectedScrambleIndices.includes(item.index)) return item;
+                return unselected[unselectedIdx++];
+            });
+            
+            renderScrambleLetters();
+        }
+
+        function resetScrambleWord() {
+            scrambleInput = "";
+            selectedScrambleIndices = [];
+            renderScrambleLetters();
+            updateScrambleDisplay();
+        }
+
+        async function verifyScramble() {
+            if (scrambleInput === currentScramble.word) {
+                playSuccessSound();
+                showToast("Perfect! Spelling correct! 🔠");
+                
+                try {
+                    const r = await fetch('/api/academy?action=progress', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ subject: 'reading', pointsToAdd: 10 })
+                    });
+                    const res = await r.json();
+                    if (res.leveledUp) {
+                        showToast(`Reading Level Up! Level ${res.progress.level}! 📚`);
+                    }
+                    loadAcademyData();
+                } catch (e) {}
+                
+                setTimeout(initScrambleGame, 2000);
+            } else {
+                playFailSound();
+                showToast("Oops, incorrect spelling! Try again.", true);
+                resetScrambleWord();
+            }
+        }
+
+        // CAPTAIN RICO'S CODE QUEST LOGIC
+        const cqLevels = [
+            {
+                obstacles: [[1, 1], [1, 2], [3, 3]],
+                start: [0, 0],
+                goal: [4, 4]
+            },
+            {
+                obstacles: [[2, 0], [2, 1], [2, 2], [2, 3]],
+                start: [0, 2],
+                goal: [4, 2]
+            },
+            {
+                obstacles: [[0, 3], [1, 1], [2, 1], [2, 2], [2, 3], [3, 1], [4, 3]],
+                start: [0, 0],
+                goal: [4, 4]
+            }
+        ];
+        let cqCurrentLevelIndex = 0;
+        let cqPlayerPos = [0, 0];
+        let cqCommands = [];
+        let cqIsRunning = false;
+
+        function initCQGame() {
+            document.getElementById('cq-level-title').innerText = `Level ${cqCurrentLevelIndex + 1} / 3`;
+            const board = document.getElementById('cq-maze-board');
+            board.innerHTML = '';
+            
+            const level = cqLevels[cqCurrentLevelIndex];
+            cqPlayerPos = [...level.start];
+            
+            for (let r = 0; r < 5; r++) {
+                for (let c = 0; c < 5; c++) {
+                    const cell = document.createElement('div');
+                    cell.className = 'cq-cell';
+                    cell.id = `cq-cell-${r}-${c}`;
+                    
+                    const isObstacle = level.obstacles.some(([or, oc]) => or === r && oc === c);
+                    if (isObstacle) {
+                        cell.innerText = '🌿';
+                    }
+                    if (level.goal[0] === r && level.goal[1] === c) {
+                        cell.innerText = '☕';
+                    }
+                    if (cqPlayerPos[0] === r && cqPlayerPos[1] === c) {
+                        cell.innerText = '🐒';
+                    }
+                    
+                    board.appendChild(cell);
+                }
+            }
+        }
+
+        function addCQCommand(dir) {
+            if (cqIsRunning) return;
+            if (cqCommands.length >= 10) {
+                showToast("Maximum of 10 commands reached!", true);
+                return;
+            }
+            cqCommands.push(dir);
+            renderCQCommands();
+        }
+
+        function renderCQCommands() {
+            const list = document.getElementById('cq-command-list');
+            if (cqCommands.length === 0) {
+                list.innerHTML = `<span style="color: var(--text-muted); font-size: 12px; font-style: italic;" id="cq-empty-tape-msg">Program empty. Add moves below...</span>`;
+                return;
+            }
+            
+            const arrows = {
+                up: '⬆️ UP',
+                down: '⬇️ DOWN',
+                left: '⬅️ LEFT',
+                right: '➡️ RIGHT'
+            };
+            
+            list.innerHTML = cqCommands.map((dir, i) => `
+                <div class="cq-cmd-block">
+                    <span>${arrows[dir]}</span>
+                    ${i < cqCommands.length - 1 ? '<span class="cq-arrow">➔</span>' : ''}
+                </div>
+            `).join('');
+        }
+
+        function clearCQProgram() {
+            if (cqIsRunning) return;
+            cqCommands = [];
+            renderCQCommands();
+        }
+
+        function resetCQLevel() {
+            if (cqIsRunning) return;
+            cqCommands = [];
+            renderCQCommands();
+            initCQGame();
+        }
+
+        async function runCQProgram() {
+            if (cqIsRunning) return;
+            if (cqCommands.length === 0) {
+                showToast("Add some commands first!", true);
+                return;
+            }
+            
+            cqIsRunning = true;
+            document.getElementById('cq-run-btn').disabled = true;
+            document.getElementById('cq-run-btn').innerText = "Running... ⚙️";
+            
+            let step = 0;
+            const level = cqLevels[cqCurrentLevelIndex];
+            
+            cqPlayerPos = [...level.start];
+            redrawCQGrid();
+
+            function executeStep() {
+                if (step >= cqCommands.length) {
+                    cqGameOverCheck(false, "Program finished but Rico didn't reach the coffee.");
+                    return;
+                }
+
+                const dir = cqCommands[step];
+                let nextRow = cqPlayerPos[0];
+                let nextCol = cqPlayerPos[1];
+
+                if (dir === 'up') nextRow--;
+                else if (dir === 'down') nextRow++;
+                else if (dir === 'left') nextCol--;
+                else if (dir === 'right') nextCol++;
+
+                if (nextRow < 0 || nextRow > 4 || nextCol < 0 || nextCol > 4) {
+                    cqGameOverCheck(false, "Rico crashed out of bounds! 💥");
+                    return;
+                }
+
+                const hitObstacle = level.obstacles.some(([or, oc]) => or === nextRow && oc === nextCol);
+                if (hitObstacle) {
+                    cqGameOverCheck(false, "Rico hit a bush! 🌿💥");
+                    return;
+                }
+
+                cqPlayerPos = [nextRow, nextCol];
+                redrawCQGrid();
+
+                if (level.goal[0] === nextRow && level.goal[1] === nextCol) {
+                    cqGameOverCheck(true, "Yum! Rico got his Coffee! ☕🎉");
+                    return;
+                }
+
+                step++;
+                setTimeout(executeStep, 500);
+            }
+
+            executeStep();
+        }
+
+        function redrawCQGrid() {
+            const level = cqLevels[cqCurrentLevelIndex];
+            for (let r = 0; r < 5; r++) {
+                for (let c = 0; c < 5; c++) {
+                    const cell = document.getElementById(`cq-cell-${r}-${c}`);
+                    
+                    const isObstacle = level.obstacles.some(([or, oc]) => or === r && oc === c);
+                    const isGoal = level.goal[0] === r && level.goal[1] === c;
+                    
+                    if (cqPlayerPos[0] === r && cqPlayerPos[1] === c) {
+                        cell.innerText = '🐒';
+                    } else if (isObstacle) {
+                        cell.innerText = '🌿';
+                    } else if (isGoal) {
+                        cell.innerText = '☕';
+                    } else {
+                        cell.innerText = '';
+                    }
+                }
+            }
+        }
+
+        async function cqGameOverCheck(success, message) {
+            cqIsRunning = false;
+            document.getElementById('cq-run-btn').disabled = false;
+            document.getElementById('cq-run-btn').innerText = "Run Program 🚀";
+
+            if (success) {
+                playSuccessSound();
+                showToast(message);
+                
+                try {
+                    const r = await fetch('/api/academy?action=progress', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ subject: 'ai', pointsToAdd: 15 })
+                    });
+                    const res = await r.json();
+                    if (res.leveledUp) {
+                        showToast(`AI Lab Level Up! Level ${res.progress.level}! 🤖`);
+                    }
+                    loadAcademyData();
+                } catch (e) {}
+
+                cqCurrentLevelIndex = (cqCurrentLevelIndex + 1) % cqLevels.length;
+                cqCommands = [];
+                renderCQCommands();
+                setTimeout(initCQGame, 1500);
+            } else {
+                playFailSound();
+                showToast(message, true);
+                const level = cqLevels[cqCurrentLevelIndex];
+                cqPlayerPos = [...level.start];
+                redrawCQGrid();
+            }
+        }
     </script>
     <script>
         // Initialize Dashboard
@@ -1786,6 +2314,8 @@
                 generateMathPrompt();
                 initTypingPrompt();
                 initC4Game();
+                initScrambleGame();
+                initCQGame();
             });
         };
     </script>
