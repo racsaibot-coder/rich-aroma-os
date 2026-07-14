@@ -597,7 +597,7 @@
                             <tr style="border-bottom: 1px solid var(--border-color); color: var(--text-muted); font-weight: 600;">
                                 <th style="padding: 10px 8px;">TOKEN</th>
                                 <th style="padding: 10px 8px;">ENTRY PRICE</th>
-                                <th style="padding: 10px 8px;">LIVE PRICE (ETH)</th>
+                                <th style="padding: 10px 8px;">LIVE PRICE</th>
                                 <th style="padding: 10px 8px;">UNREALIZED P/L</th>
                                 <th style="padding: 10px 8px;">ACTION</th>
                             </tr>
@@ -1249,15 +1249,31 @@
                     totalWethUnrealized += wethUnrealized;
 
                     const ethPrice = window.globalEthPrice || 1784.66;
-                    const entryEth = entry / ethPrice;
-                    const entryPriceFormatted = `${entry < 0.01 ? `$${entry.toFixed(6)}` : `$${entry.toFixed(2)}`} (${entryEth.toFixed(6)} ETH)`;
+                    const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
                     
-                    const currentEth = currentPriceVal / ethPrice;
-                    const currentPriceFormatted = `${currentEth.toFixed(6)} ETH`;
+                    // Update table header based on isLocal
+                    const livePriceHeader = document.querySelector('#active-trades-table th:nth-child(3)');
+                    if (livePriceHeader) {
+                        livePriceHeader.innerText = isLocal ? 'LIVE PRICE (ETH)' : 'LIVE PRICE';
+                    }
+
+                    let entryPriceFormatted = '';
+                    let currentPriceFormatted = '';
+                    let changeText = '';
                     
-                    const plUsd = wethUnrealized * ethPrice;
-                    const changeClass = changeVal >= 0 ? 'up' : 'down';
-                    const changeText = `${changeVal >= 0 ? '+' : ''}${changeVal.toFixed(2)}% (${changeVal >= 0 ? '+' : ''}$${plUsd.toFixed(2)})`;
+                    if (isLocal) {
+                        const entryEth = entry / ethPrice;
+                        entryPriceFormatted = `${entry < 0.01 ? `$${entry.toFixed(6)}` : `$${entry.toFixed(2)}`} (${entryEth.toFixed(6)} ETH)`;
+                        
+                        const currentEth = currentPriceVal / ethPrice;
+                        currentPriceFormatted = `${currentEth.toFixed(6)} ETH`;
+                        
+                        changeText = `${changeVal >= 0 ? '+' : ''}${changeVal.toFixed(2)}% (${changeVal >= 0 ? '+' : ''}$${plUsd.toFixed(2)})`;
+                    } else {
+                        entryPriceFormatted = entry < 0.01 ? `$${entry.toFixed(6)}` : `$${entry.toFixed(2)}`;
+                        currentPriceFormatted = currentPriceVal < 0.01 ? `$${currentPriceVal.toFixed(6)}` : `$${currentPriceVal.toFixed(2)}`;
+                        changeText = changeVal >= 0 ? `+${changeVal.toFixed(2)}%` : `${changeVal.toFixed(2)}%`;
+                    }
 
                     const isConfirming = window.confirmingSells && window.confirmingSells[addr];
                     const btnStyle = isConfirming ? "background:var(--danger); color:#fff;" : "";

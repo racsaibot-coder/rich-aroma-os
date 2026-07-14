@@ -869,14 +869,26 @@
                     totalWethUnrealized += wethUnrealized;
 
                     const changeClass = changePct >= 0 ? 'up' : 'down';
-                    const entryEth = entryPrice / windowEthPrice;
-                    const entryFormatted = `${entryPrice < 0.01 ? `$${entryPrice.toFixed(6)}` : `$${entryPrice.toFixed(2)}`} (${entryEth.toFixed(6)} ETH)`;
+                    const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
                     
-                    const currentEth = currentPrice / windowEthPrice;
-                    const currentFormatted = `${currentEth.toFixed(6)} ETH`;
+                    let entryFormatted = '';
+                    let currentFormatted = '';
+                    let plUsdFormatted = '';
                     
-                    const plUsd = wethUnrealized * windowEthPrice;
-                    const plUsdFormatted = `${changePct >= 0 ? '+' : ''}$${plUsd.toFixed(2)}`;
+                    if (isLocal) {
+                        const entryEth = entryPrice / windowEthPrice;
+                        entryFormatted = `${entryPrice < 0.01 ? `$${entryPrice.toFixed(6)}` : `$${entryPrice.toFixed(2)}`} (${entryEth.toFixed(6)} ETH)`;
+                        
+                        const currentEth = currentPrice / windowEthPrice;
+                        currentFormatted = `${currentEth.toFixed(6)} ETH`;
+                        
+                        const plUsd = wethUnrealized * windowEthPrice;
+                        plUsdFormatted = ` (${changePct >= 0 ? '+' : ''}$${plUsd.toFixed(2)})`;
+                    } else {
+                        entryFormatted = entryPrice < 0.01 ? `$${entryPrice.toFixed(6)}` : `$${entryPrice.toFixed(2)}`;
+                        currentFormatted = currentPrice < 0.01 ? `$${currentPrice.toFixed(6)}` : `$${currentPrice.toFixed(2)}`;
+                        plUsdFormatted = '';
+                    }
                     
                     // Support floor details
                     const bottom = pos.local_bottom || entryPrice;
@@ -891,7 +903,7 @@
                                     <span class="position-name">${pos.is_derisked ? 'Moonbag' : 'Target'}</span>
                                 </div>
                                 <div class="position-pl ${changeClass}">
-                                    ${changePct >= 0 ? '+' : ''}${changePct.toFixed(2)}% (${plUsdFormatted})
+                                    ${changePct >= 0 ? '+' : ''}${changePct.toFixed(2)}%${plUsdFormatted}
                                 </div>
                             </div>
                             <div class="position-stats">
@@ -912,7 +924,6 @@
                 container.innerHTML = html;
 
                 // Update Overview Metrics
-                const windowEthPrice = window.globalEthPrice || 1784.66;
                 const weth = window.lastWethBal || 0;
                 const eth = window.lastEthBal || 0;
                 const openValWeth = totalCostBasis + totalWethUnrealized;
