@@ -936,8 +936,13 @@
                         🔠 WORD SCRAMBLE CHALLENGE
                     </h2>
                     <div style="display: flex; flex-direction: column; align-items: center; gap: 16px;">
-                        <div id="scramble-hint" style="font-size: 14px; color: var(--text-muted); text-align: center; font-style: italic; min-height: 20px;">
-                            Hint: loading...
+                        <div style="display: flex; align-items: center; justify-content: center; gap: 8px; flex-wrap: wrap;">
+                            <div id="scramble-hint" style="font-size: 14px; color: var(--text-muted); text-align: center; font-style: italic;">
+                                Hint: loading...
+                            </div>
+                            <button class="quest-btn" onclick="speakCurrentScrambleHint()" style="padding: 4px 8px; font-size: 11px; background: rgba(99, 102, 241, 0.15); border: 1px solid rgba(99, 102, 241, 0.3); border-radius: 8px; display: flex; align-items: center; gap: 4px;">
+                                🔊 Hear
+                            </button>
                         </div>
                         
                         <!-- Compiled Word Display -->
@@ -1961,21 +1966,39 @@
 
         // WORD SCRAMBLE GAME LOGIC
         const scrambleWords = [
-            { word: "ASTRONAUT", hint: "A person who travels into outer space 🚀" },
-            { word: "SOURDOUGH", hint: "Tangy bread baked without commercial yeast 🥖" },
-            { word: "GRAVITY", hint: "The force that pulls objects toward Earth 🌍" },
-            { word: "DOLPHIN", hint: "A highly intelligent marine mammal 🐬" },
-            { word: "DINOSAUR", hint: "Prehistoric reptile that ruled the Earth 🦖" },
-            { word: "ROBOT", hint: "A programmable mechanical machine 🤖" },
-            { word: "VOLCANO", hint: "A mountain that erupts with hot lava 🌋" },
-            { word: "TELESCOPE", hint: "Tool used to look at stars and planets 🔭" },
-            { word: "SATELLITE", hint: "Object orbiting a planet to transmit data 📡" },
-            { word: "RAINFOREST", hint: "Dense tropical forest with heavy rainfall 🌧️" }
+            { word: "ASTRONAUT", hint: "A person who travels into outer space 🚀", voiceHint: "Spell Astronaut. A person who travels into outer space." },
+            { word: "SOURDOUGH", hint: "Tangy bread baked without commercial yeast 🥖", voiceHint: "Spell Sourdough. Tangy bread baked without commercial yeast." },
+            { word: "GRAVITY", hint: "The force that pulls objects toward Earth 🌍", voiceHint: "Spell Gravity. The force that pulls objects toward Earth." },
+            { word: "DOLPHIN", hint: "A highly intelligent marine mammal 🐬", voiceHint: "Spell Dolphin. A highly intelligent marine mammal." },
+            { word: "DINOSAUR", hint: "Prehistoric reptile that ruled the Earth 🦖", voiceHint: "Spell Dinosaur. Prehistoric reptile that ruled the Earth." },
+            { word: "ROBOT", hint: "A programmable mechanical machine 🤖", voiceHint: "Spell Robot. A programmable mechanical machine." },
+            { word: "VOLCANO", hint: "A mountain that erupts with hot lava 🌋", voiceHint: "Spell Volcano. A mountain that erupts with hot lava." },
+            { word: "TELESCOPE", hint: "Tool used to look at stars and planets 🔭", voiceHint: "Spell Telescope. Tool used to look at stars and planets." },
+            { word: "SATELLITE", hint: "Object orbiting a planet to transmit data 📡", voiceHint: "Spell Satellite. Object orbiting a planet to transmit data." },
+            { word: "RAINFOREST", hint: "Dense tropical forest with heavy rainfall 🌧️", voiceHint: "Spell Rainforest. Dense tropical forest with heavy rainfall." }
         ];
         let currentScramble = null;
         let scrambleInput = "";
         let scrambleLetters = [];
         let selectedScrambleIndices = [];
+
+        function speakText(text) {
+            try {
+                window.speechSynthesis.cancel(); // cancel any active speech
+                const utterance = new SpeechSynthesisUtterance(text);
+                utterance.rate = 0.85; // slightly slower for children
+                utterance.pitch = 1.1; // kid-friendly tone
+                window.speechSynthesis.speak(utterance);
+            } catch (e) {
+                console.error("Speech Synthesis Error:", e);
+            }
+        }
+
+        function speakCurrentScrambleHint() {
+            if (currentScramble) {
+                speakText(currentScramble.voiceHint || currentScramble.hint);
+            }
+        }
 
         function initScrambleGame() {
             currentScramble = scrambleWords[Math.floor(Math.random() * scrambleWords.length)];
@@ -1989,6 +2012,9 @@
             
             renderScrambleLetters();
             updateScrambleDisplay();
+            
+            // Speak hint on load
+            setTimeout(speakCurrentScrambleHint, 500);
         }
 
         function shuffleArray(array) {
@@ -2020,6 +2046,9 @@
         function selectScrambleLetter(char, index) {
             if (selectedScrambleIndices.includes(index)) return;
             
+            // Speak the letter
+            speakText(char.toLowerCase());
+
             selectedScrambleIndices.push(index);
             scrambleInput += char;
             
@@ -2046,6 +2075,7 @@
                 lastBubble.className = 'scramble-bubble';
             }
             updateScrambleDisplay();
+            speakText("backspace");
         }
 
         function shuffleScramble() {
@@ -2059,6 +2089,7 @@
             });
             
             renderScrambleLetters();
+            speakText("shuffle");
         }
 
         function resetScrambleWord() {
@@ -2066,12 +2097,14 @@
             selectedScrambleIndices = [];
             renderScrambleLetters();
             updateScrambleDisplay();
+            speakText("reset");
         }
 
         async function verifyScramble() {
             if (scrambleInput === currentScramble.word) {
                 playSuccessSound();
                 showToast("Perfect! Spelling correct! 🔠");
+                speakText(`Excellent! You spelled ${currentScramble.word} correctly!`);
                 
                 try {
                     const r = await fetch('/api/academy?action=progress', {
@@ -2086,10 +2119,11 @@
                     loadAcademyData();
                 } catch (e) {}
                 
-                setTimeout(initScrambleGame, 2000);
+                setTimeout(initScrambleGame, 3000);
             } else {
                 playFailSound();
                 showToast("Oops, incorrect spelling! Try again.", true);
+                speakText("Oops! Let's try spelling that word again.");
                 resetScrambleWord();
             }
         }
@@ -2110,6 +2144,21 @@
                 obstacles: [[0, 3], [1, 1], [2, 1], [2, 2], [2, 3], [3, 1], [4, 3]],
                 start: [0, 0],
                 goal: [4, 4]
+            },
+            {
+                obstacles: [[0, 1], [1, 1], [2, 1], [3, 1], [4, 1], [4, 2], [4, 3], [4, 4], [2, 3], [2, 4]],
+                start: [0, 0],
+                goal: [1, 3]
+            },
+            {
+                obstacles: [[0, 4], [1, 3], [2, 2], [3, 1], [4, 0], [1, 0], [3, 4]],
+                start: [0, 0],
+                goal: [4, 4]
+            },
+            {
+                obstacles: [[0, 2], [1, 0], [1, 4], [2, 2], [3, 0], [3, 4], [4, 2]],
+                start: [0, 0],
+                goal: [4, 4]
             }
         ];
         let cqCurrentLevelIndex = 0;
@@ -2118,7 +2167,7 @@
         let cqIsRunning = false;
 
         function initCQGame() {
-            document.getElementById('cq-level-title').innerText = `Level ${cqCurrentLevelIndex + 1} / 3`;
+            document.getElementById('cq-level-title').innerText = `Level ${cqCurrentLevelIndex + 1} / ${cqLevels.length}`;
             const board = document.getElementById('cq-maze-board');
             board.innerHTML = '';
             
