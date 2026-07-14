@@ -680,56 +680,98 @@
             }
         }
         
-        /* Word Scramble Styles */
-        .scramble-letter-container {
-            display: flex;
-            flex-wrap: wrap;
-            justify-content: center;
-            gap: 12px;
-            margin: 20px 0;
-        }
-        .scramble-bubble {
-            width: 48px;
-            height: 48px;
-            border-radius: 50%;
-            background: rgba(255, 255, 255, 0.05);
-            border: 1px solid var(--glass-border);
-            color: #fff;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            font-size: 20px;
-            font-weight: 700;
-            cursor: pointer;
-            user-select: none;
-            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-        .scramble-bubble:hover {
-            background: rgba(99, 102, 241, 0.1);
-            border-color: var(--primary);
-            transform: translateY(-2px);
-        }
-        .scramble-bubble.selected {
-            opacity: 0.2;
-            pointer-events: none;
-            transform: scale(0.9);
-        }
-        .scramble-input-display {
+        /* Tic-Tac-Toe Styles */
+        .ttt-board {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
             background: rgba(255,255,255,0.02);
             border: 2px solid var(--glass-border);
-            border-radius: 16px;
-            font-size: 28px;
-            padding: 10px;
-            min-height: 58px;
-            letter-spacing: 4px;
-            font-weight: 800;
-            color: #fff;
-            width: 280px;
-            text-align: center;
-            margin: 0 auto 16px;
+            padding: 12px;
+            border-radius: 20px;
+            max-width: 300px;
+            width: 100%;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+        }
+        .ttt-cell {
+            aspect-ratio: 1;
+            background: #18181b;
+            border-radius: 12px;
+            border: 1px solid rgba(255,255,255,0.05);
             display: flex;
             justify-content: center;
             align-items: center;
+            font-size: 42px;
+            font-weight: 800;
+            cursor: pointer;
+            user-select: none;
+            transition: all 0.2s;
+        }
+        .ttt-cell:hover {
+            background: rgba(255,255,255,0.05);
+        }
+        .ttt-cell.x {
+            color: var(--primary);
+        }
+        .ttt-cell.o {
+            color: var(--warning);
+        }
+
+        /* Phonics Styles */
+        .phonics-word-container {
+            display: flex;
+            justify-content: center;
+            gap: 16px;
+            margin: 20px 0;
+        }
+        .phonics-letter-block {
+            width: 80px;
+            height: 80px;
+            background: linear-gradient(135deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0.01) 100%);
+            border: 2px solid var(--glass-border);
+            border-radius: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 38px;
+            font-weight: 800;
+            color: #fff;
+            cursor: pointer;
+            user-select: none;
+            box-shadow: 0 6px 12px rgba(0,0,0,0.2), inset 0 2px 4px rgba(255,255,255,0.1);
+            transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        .phonics-letter-block:hover {
+            transform: translateY(-4px) scale(1.05);
+            border-color: var(--primary);
+            box-shadow: 0 10px 20px rgba(99, 102, 241, 0.25);
+        }
+        .phonics-letter-block.playing {
+            animation: bouncePulse 0.4s ease alternate infinite;
+            background: rgba(99, 102, 241, 0.2);
+            border-color: var(--primary);
+            color: var(--primary);
+        }
+        @keyframes bouncePulse {
+            from { transform: scale(1); }
+            to { transform: scale(1.1) translateY(-6px); }
+        }
+
+        /* Story Studio Styles */
+        .story-book-card {
+            background: rgba(255,255,255,0.02);
+            border: 1px solid var(--glass-border);
+            border-radius: 24px;
+            padding: 30px;
+            width: 100%;
+            max-width: 600px;
+            min-height: 250px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+            position: relative;
+            margin: 20px 0;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
         }
 
         /* Code Quest Styles */
@@ -843,9 +885,9 @@
 
             <!-- Dashboard Grid -->
             <div class="dashboard-grid">
-                <!-- Left: Quest Board & Math Arena -->
+                <!-- Left: Quest Board & AI Tutor Chat (Moved together to keep companion logs handy) -->
                 <div>
-                    <div class="glass-panel" style="min-height: 250px;">
+                    <div class="glass-panel" style="min-height: 200px; margin-bottom: 20px;">
                         <h2 style="font-size: 20px; font-weight: 700; display: flex; align-items: center; gap: 8px;">
                             🚀 ACTIVE LEARNING QUESTS
                         </h2>
@@ -856,42 +898,12 @@
 
                     <div class="glass-panel">
                         <h2 style="font-size: 20px; font-weight: 700; display: flex; align-items: center; gap: 8px; margin-bottom: 20px;">
-                            🧮 MATH CHALLENGE ARENA
-                        </h2>
-                        <div class="math-arena-panel">
-                            <div style="font-size: 14px; color: var(--text-muted); text-transform: uppercase; font-weight: 700; letter-spacing: 0.5px;">Solve the card!</div>
-                            <div class="math-card" id="math-prompt">5 + 7</div>
-                            <input class="math-input" type="number" id="math-answer" placeholder="?" autocomplete="off" onkeydown="handleMathSubmit(event)">
-                            <div style="margin-top: 20px; font-size: 13px; color: var(--success); font-weight: 600;" id="math-streak-txt">Streak: 0 / 10</div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Right: Typing Game & AI Tutor -->
-                <div>
-                    <div class="glass-panel">
-                        <h2 style="font-size: 20px; font-weight: 700; display: flex; align-items: center; gap: 8px; margin-bottom: 20px;">
-                            ⌨️ TYPING SPEED ARENA
-                        </h2>
-                        <div class="typing-panel">
-                            <div class="typing-prompt" id="typing-prompt">Loading paragraph...</div>
-                            <textarea class="typing-textarea" id="typing-input" placeholder="Start typing the text above..." oninput="handleTypingInput()"></textarea>
-                            <div style="display: flex; justify-content: space-between; margin-top: 12px; font-size: 13px; font-weight: 600;">
-                                <div id="typing-wpm">Speed: 0 WPM</div>
-                                <div id="typing-accuracy">Accuracy: 100%</div>
-                                <button class="quest-btn" onclick="resetTypingGame()" style="background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border); padding: 4px 10px; font-size: 11px;">🔄 RESET</button>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="glass-panel">
-                        <h2 style="font-size: 20px; font-weight: 700; display: flex; align-items: center; gap: 8px; margin-bottom: 20px;">
                             🤖 CHAT WITH SPARKY (AI COMPANION)
                         </h2>
                         <div class="chat-panel">
                             <div class="chat-history" id="chat-history-container">
                                 <div class="chat-bubble assistant">
-                                    ¡Hola! Soy Sparky, tu compañero de aprendizaje. 🚀 ¿Qué te gustaría aprender o crear hoy?
+                                    ¡Hola! Soy Sparky, tu companion de aprendizaje. 🚀 ¿Qué te gustaría aprender today?
                                 </div>
                             </div>
                             <form class="chat-input-area" onsubmit="handleChatSubmit(event)">
@@ -901,10 +913,110 @@
                         </div>
                     </div>
                 </div>
+
+                <!-- Right: Unified Game Catalog Selector -->
+                <div>
+                    <div class="glass-panel">
+                        <h2 style="font-size: 20px; font-weight: 800; margin-bottom: 20px; display: flex; align-items: center; gap: 8px;">
+                            🎮 STUDENT GAME CATALOG
+                        </h2>
+                        <div style="display: grid; grid-template-columns: 1fr; gap: 10px;">
+                            <button class="nav-btn active" id="cat-phonics" onclick="selectGame('phonics')" style="padding: 14px; justify-content: flex-start; gap: 12px; font-size: 14px; width: 100%;">
+                                <span>🗣️</span> <b>Sound It Out (Phonics)</b>
+                            </button>
+                            <button class="nav-btn" id="cat-story" onclick="selectGame('story')" style="padding: 14px; justify-content: flex-start; gap: 12px; font-size: 14px; width: 100%;">
+                                <span>📖</span> <b>My Story Studio (AI)</b>
+                            </button>
+                            <button class="nav-btn" id="cat-coding" onclick="selectGame('coding')" style="padding: 14px; justify-content: flex-start; gap: 12px; font-size: 14px; width: 100%;">
+                                <span>🐒</span> <b>Code Quest (Logic)</b>
+                            </button>
+                            <button class="nav-btn" id="cat-connect4" onclick="selectGame('connect4')" style="padding: 14px; justify-content: flex-start; gap: 12px; font-size: 14px; width: 100%;">
+                                <span>🔴</span> <b>Connect Four</b>
+                            </button>
+                            <button class="nav-btn" id="cat-tictactoe" onclick="selectGame('tictactoe')" style="padding: 14px; justify-content: flex-start; gap: 12px; font-size: 14px; width: 100%;">
+                                <span>❌</span> <b>Tic-Tac-Toe</b>
+                            </button>
+                            <button class="nav-btn" id="cat-math" onclick="selectGame('math')" style="padding: 14px; justify-content: flex-start; gap: 12px; font-size: 14px; width: 100%;">
+                                <span>🧮</span> <b>Math Arena</b>
+                            </button>
+                            <button class="nav-btn" id="cat-typing" onclick="selectGame('typing')" style="padding: 14px; justify-content: flex-start; gap: 12px; font-size: 14px; width: 100%;">
+                                <span>⌨️</span> <b>Typing Arena</b>
+                            </button>
+                        </div>
+                    </div>
+                </div>
             </div> <!-- End of dashboard-grid -->
-            
-            <!-- Connect Four Panel -->
-            <div class="glass-panel" id="connect-four-panel" style="margin-top: 30px;">
+
+            <!-- ==================================================== -->
+            <!-- DYNAMIC GAME VIEW PANELS BELOW -->
+            <!-- ==================================================== -->
+
+            <!-- 1. Phonics Panel -->
+            <div class="glass-panel game-view-panel" id="game-phonics" style="margin-top: 30px;">
+                <h2 style="font-size: 20px; font-weight: 700; display: flex; align-items: center; gap: 8px; margin-bottom: 20px;">
+                    🗣️ SOUND IT OUT (PHONICS)
+                </h2>
+                <div style="display: flex; flex-direction: column; align-items: center; gap: 20px;">
+                    <div style="font-size: 14px; color: var(--text-muted); text-align: center; font-weight: 600;">
+                        Tap each letter block to hear its sound, then click read to blend them together!
+                    </div>
+                    
+                    <div class="phonics-word-container" id="phonics-word-box">
+                        <!-- Letter blocks dynamically generated -->
+                    </div>
+
+                    <div style="display: flex; gap: 12px; justify-content: center; flex-wrap: wrap;">
+                        <button class="quest-btn" onclick="blendCurrentPhonics()" style="background: var(--success); font-size: 16px; padding: 10px 24px;">
+                            🔊 Read Whole Word
+                        </button>
+                        <button class="quest-btn" onclick="nextPhonicsWord()">
+                            ➡️ Next Word
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 2. My Story Studio Panel -->
+            <div class="glass-panel game-view-panel" id="game-story" style="margin-top: 30px; display: none;">
+                <h2 style="font-size: 20px; font-weight: 700; display: flex; align-items: center; gap: 8px; margin-bottom: 20px;">
+                    📖 MY STORY STUDIO
+                </h2>
+                <div style="display: flex; flex-direction: column; align-items: center; gap: 20px;">
+                    <div style="font-size: 14px; color: var(--text-muted); text-align: center; font-weight: 600;">
+                        Prompt Sparky AI to write a customized children's book! Click a preset or type your own.
+                    </div>
+                    
+                    <div style="display: flex; gap: 10px; flex-wrap: wrap; justify-content: center;" id="story-suggestions">
+                        <button class="nav-btn" onclick="selectStoryPrompt('A magical puppy on Mars 🐕🚀')">🐶 Space Puppy</button>
+                        <button class="nav-btn" onclick="selectStoryPrompt('A brave little sailboat in a storm ⛵')">⛵ Brave Boat</button>
+                        <button class="nav-btn" onclick="selectStoryPrompt('A secret castle made of sweet candy 🏰🍭')">🍭 Candy Castle</button>
+                        <button class="nav-btn" onclick="selectStoryPrompt('A friendly dragon who loves making warm cookies 🐉🍪')">🐉 Cookie Dragon</button>
+                    </div>
+                    
+                    <div style="display: flex; gap: 12px; width: 100%; max-width: 500px; margin-top: 10px;">
+                        <input class="chat-input" type="text" id="story-prompt-input" placeholder="Type a story idea here (e.g. a flying cat)...">
+                        <button class="quest-btn" onclick="generateAIStory()" id="story-gen-btn">Write Story 🪄</button>
+                    </div>
+
+                    <div class="story-book-card" id="story-display-card" style="display: none;">
+                        <h3 id="story-title-el" style="font-size: 20px; text-align: center; margin-bottom: 20px; color: var(--primary);">Story Title</h3>
+                        <p id="story-text-el" style="font-size: 18px; line-height: 1.6; text-align: center; color: #fff; font-family: 'Poppins', sans-serif;">Story text...</p>
+                        
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 30px;">
+                            <button class="nav-btn" onclick="prevStoryPage()" id="story-prev-btn">◀ Prev</button>
+                            <span id="story-page-number" style="font-size: 14px; font-weight: 700; color: var(--text-muted);">Page 1 / 3</span>
+                            <button class="nav-btn" onclick="nextStoryPage()" id="story-next-btn">Next ▶</button>
+                        </div>
+                        
+                        <button class="quest-btn" onclick="speakCurrentStoryPage()" style="margin: 20px auto 0; font-size: 12px; padding: 6px 12px; background: rgba(99, 102, 241, 0.15); border: 1px solid rgba(99, 102, 241, 0.3);">
+                            🔊 Listen Again
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 3. Connect Four Panel -->
+            <div class="glass-panel game-view-panel" id="game-connect4" style="margin-top: 30px; display: none;">
                 <h2 style="font-size: 20px; font-weight: 700; display: flex; align-items: center; gap: 8px; margin-bottom: 20px;">
                     🔴 CONNECT FOUR WITH SPARKY
                 </h2>
@@ -917,7 +1029,6 @@
                     
                     <div id="c4-status-text" style="color:var(--primary); font-weight: 600; font-size: 14px; text-align: center;">Your Turn! Click a column to drop a red coin.</div>
                     
-                    <!-- Game Board Container -->
                     <div id="c4-board" style="display: grid; grid-template-columns: repeat(7, 1fr); gap: 10px; background: rgba(255, 255, 255, 0.03); border: 2px solid var(--glass-border); padding: 16px; border-radius: 20px; max-width: 450px; width: 100%; position: relative; box-shadow: 0 4px 20px rgba(0,0,0,0.4);">
                         <!-- Cells generated dynamically -->
                     </div>
@@ -927,75 +1038,97 @@
                     </div>
                 </div>
             </div>
-            
-            <!-- Games Arena Row -->
-            <div class="dashboard-grid" style="margin-top: 30px;">
-                <!-- Word Scramble Game -->
-                <div class="glass-panel" id="scramble-panel" style="margin-bottom: 0;">
-                    <h2 style="font-size: 20px; font-weight: 700; display: flex; align-items: center; gap: 8px; margin-bottom: 20px;">
-                        🔠 WORD SCRAMBLE CHALLENGE
-                    </h2>
-                    <div style="display: flex; flex-direction: column; align-items: center; gap: 16px;">
-                        <div style="display: flex; align-items: center; justify-content: center; gap: 8px; flex-wrap: wrap;">
-                            <div id="scramble-hint" style="font-size: 14px; color: var(--text-muted); text-align: center; font-style: italic;">
-                                Hint: loading...
-                            </div>
-                            <button class="quest-btn" onclick="speakCurrentScrambleHint()" style="padding: 4px 8px; font-size: 11px; background: rgba(99, 102, 241, 0.15); border: 1px solid rgba(99, 102, 241, 0.3); border-radius: 8px; display: flex; align-items: center; gap: 4px;">
-                                🔊 Hear
-                            </button>
-                        </div>
-                        
-                        <!-- Compiled Word Display -->
-                        <div class="scramble-input-display" id="scramble-output"></div>
-                        
-                        <!-- Scrambled Letter Nodes -->
-                        <div class="scramble-letter-container" id="scramble-letters-box">
-                            <!-- Circular letters generated dynamically -->
-                        </div>
-                        
-                        <div style="display: flex; gap: 10px;">
-                            <button class="quest-btn" onclick="backspaceScramble()" style="background: var(--danger); border: none;">◀ Backspace</button>
-                            <button class="quest-btn" onclick="shuffleScramble()" style="background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border);">🔀 Shuffle</button>
-                            <button class="quest-btn" onclick="resetScrambleWord()">🔄 Reset</button>
-                        </div>
+
+            <!-- 4. Code Quest Panel -->
+            <div class="glass-panel game-view-panel" id="game-coding" style="margin-top: 30px; display: none;">
+                <h2 style="font-size: 20px; font-weight: 700; display: flex; align-items: center; gap: 8px; margin-bottom: 20px;">
+                    🐒 CAPTAIN RICO'S CODE QUEST
+                </h2>
+                <div style="display: flex; flex-direction: column; align-items: center; gap: 16px;">
+                    <div style="display: flex; justify-content: space-between; width: 100%; font-size: 13px; color: var(--text-muted); font-weight: 700;">
+                        <span id="cq-level-title">Level 1 / 3</span>
+                        <span style="color:var(--success);">Goal: Guide 🐒 to ☕</span>
+                    </div>
+                    
+                    <div class="cq-board" id="cq-maze-board">
+                        <!-- 25 Cells generated dynamically -->
+                    </div>
+                    
+                    <div class="cq-command-tape" id="cq-command-list">
+                        <span style="color: var(--text-muted); font-size: 12px; font-style: italic;" id="cq-empty-tape-msg">Program empty. Add moves below...</span>
+                    </div>
+                    
+                    <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; width: 100%;">
+                        <button class="nav-btn" onclick="addCQCommand('up')" style="padding: 8px; justify-content: center; font-size: 12px;">⬆️ UP</button>
+                        <button class="nav-btn" onclick="addCQCommand('down')" style="padding: 8px; justify-content: center; font-size: 12px;">⬇️ DOWN</button>
+                        <button class="nav-btn" onclick="addCQCommand('left')" style="padding: 8px; justify-content: center; font-size: 12px;">⬅️ LEFT</button>
+                        <button class="nav-btn" onclick="addCQCommand('right')" style="padding: 8px; justify-content: center; font-size: 12px;">➡️ RIGHT</button>
+                    </div>
+                    
+                    <div style="display: flex; gap: 10px; width: 100%;">
+                        <button class="quest-btn" id="cq-run-btn" onclick="runCQProgram()" style="flex: 2; background: var(--success);">Run Program 🚀</button>
+                        <button class="quest-btn" onclick="clearCQProgram()" style="flex: 1; background: var(--danger);">Clear 🗑️</button>
+                        <button class="quest-btn" onclick="resetCQLevel()" style="background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border);">🔄 Reset</button>
                     </div>
                 </div>
-                
-                <!-- Code Quest Game -->
-                <div class="glass-panel" id="codequest-panel" style="margin-bottom: 0;">
-                    <h2 style="font-size: 20px; font-weight: 700; display: flex; align-items: center; gap: 8px; margin-bottom: 20px;">
-                        🐒 CAPTAIN RICO'S CODE QUEST
-                    </h2>
-                    <div style="display: flex; flex-direction: column; align-items: center; gap: 16px;">
-                        <div style="display: flex; justify-content: space-between; width: 100%; font-size: 13px; color: var(--text-muted); font-weight: 700;">
-                            <span id="cq-level-title">Level 1 / 3</span>
-                            <span style="color:var(--success);">Goal: Guide 🐒 to ☕</span>
-                        </div>
-                        
-                        <!-- 5x5 Maze Board -->
-                        <div class="cq-board" id="cq-maze-board">
-                            <!-- 25 Cells generated dynamically -->
-                        </div>
-                        
-                        <!-- Visual Program/Command Queue Tape -->
-                        <div class="cq-command-tape" id="cq-command-list">
-                            <span style="color: var(--text-muted); font-size: 12px; font-style: italic;" id="cq-empty-tape-msg">Program empty. Add moves below...</span>
-                        </div>
-                        
-                        <!-- Move Command Controls -->
-                        <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; width: 100%;">
-                            <button class="nav-btn" onclick="addCQCommand('up')" style="padding: 8px; justify-content: center; font-size: 12px;">⬆️ UP</button>
-                            <button class="nav-btn" onclick="addCQCommand('down')" style="padding: 8px; justify-content: center; font-size: 12px;">⬇️ DOWN</button>
-                            <button class="nav-btn" onclick="addCQCommand('left')" style="padding: 8px; justify-content: center; font-size: 12px;">⬅️ LEFT</button>
-                            <button class="nav-btn" onclick="addCQCommand('right')" style="padding: 8px; justify-content: center; font-size: 12px;">➡️ RIGHT</button>
-                        </div>
-                        
-                        <!-- Run / Clear Controls -->
-                        <div style="display: flex; gap: 10px; width: 100%;">
-                            <button class="quest-btn" id="cq-run-btn" onclick="runCQProgram()" style="flex: 2; background: var(--success);">Run Program 🚀</button>
-                            <button class="quest-btn" onclick="clearCQProgram()" style="flex: 1; background: var(--danger);">Clear 🗑️</button>
-                            <button class="quest-btn" onclick="resetCQLevel()" style="background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border);">🔄 Reset</button>
-                        </div>
+            </div>
+
+            <!-- 5. Tic Tac Toe Panel -->
+            <div class="glass-panel game-view-panel" id="game-tictactoe" style="margin-top: 30px; display: none;">
+                <h2 style="font-size: 20px; font-weight: 700; display: flex; align-items: center; gap: 8px; margin-bottom: 20px;">
+                    ❌ TIC-TAC-TOE WITH SPARKY
+                </h2>
+                <div style="display: flex; flex-direction: column; align-items: center; gap: 20px;">
+                    <div style="display: flex; justify-content: space-between; width: 100%; max-width: 300px; font-weight: 700; font-size: 14px; color: var(--text-muted);">
+                        <div>🔴 Player (X): <span id="ttt-player-score" style="color:var(--primary);">0 Wins</span></div>
+                        <div>🟡 Sparky (O): <span id="ttt-ai-score" style="color:var(--warning);">0 Wins</span></div>
+                    </div>
+                    
+                    <div id="ttt-status-text" style="color:var(--primary); font-weight: 600; font-size: 14px; text-align: center;">Your Turn! Click an empty box.</div>
+                    
+                    <div class="ttt-board" id="ttt-board-grid">
+                        <div class="ttt-cell" onclick="handleTTTClick(0)"></div>
+                        <div class="ttt-cell" onclick="handleTTTClick(1)"></div>
+                        <div class="ttt-cell" onclick="handleTTTClick(2)"></div>
+                        <div class="ttt-cell" onclick="handleTTTClick(3)"></div>
+                        <div class="ttt-cell" onclick="handleTTTClick(4)"></div>
+                        <div class="ttt-cell" onclick="handleTTTClick(5)"></div>
+                        <div class="ttt-cell" onclick="handleTTTClick(6)"></div>
+                        <div class="ttt-cell" onclick="handleTTTClick(7)"></div>
+                        <div class="ttt-cell" onclick="handleTTTClick(8)"></div>
+                    </div>
+
+                    <div>
+                        <button class="quest-btn" onclick="resetTTTGame()">🔄 Reset Board</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 6. Math Arena Panel -->
+            <div class="glass-panel game-view-panel" id="game-math" style="margin-top: 30px; display: none;">
+                <h2 style="font-size: 20px; font-weight: 700; display: flex; align-items: center; gap: 8px; margin-bottom: 20px;">
+                    🧮 MATH CHALLENGE ARENA
+                </h2>
+                <div class="math-arena-panel">
+                    <div style="font-size: 14px; color: var(--text-muted); text-transform: uppercase; font-weight: 700; letter-spacing: 0.5px;">Solve the card!</div>
+                    <div class="math-card" id="math-prompt">5 + 7</div>
+                    <input class="math-input" type="number" id="math-answer" placeholder="?" autocomplete="off" onkeydown="handleMathSubmit(event)">
+                    <div style="margin-top: 20px; font-size: 13px; color: var(--success); font-weight: 600;" id="math-streak-txt">Streak: 0 / 10</div>
+                </div>
+            </div>
+
+            <!-- 7. Typing Arena Panel -->
+            <div class="glass-panel game-view-panel" id="game-typing" style="margin-top: 30px; display: none;">
+                <h2 style="font-size: 20px; font-weight: 700; display: flex; align-items: center; gap: 8px; margin-bottom: 20px;">
+                    ⌨️ TYPING SPEED ARENA
+                </h2>
+                <div class="typing-panel">
+                    <div class="typing-prompt" id="typing-prompt">Loading paragraph...</div>
+                    <textarea class="typing-textarea" id="typing-input" placeholder="Start typing the text above..." oninput="handleTypingInput()"></textarea>
+                    <div style="display: flex; justify-content: space-between; margin-top: 12px; font-size: 13px; font-weight: 600;">
+                        <div id="typing-wpm">Speed: 0 WPM</div>
+                        <div id="typing-accuracy">Accuracy: 100%</div>
+                        <button class="quest-btn" onclick="resetTypingGame()" style="background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border); padding: 4px 10px; font-size: 11px;">🔄 RESET</button>
                     </div>
                 </div>
             </div>
@@ -1964,24 +2097,7 @@
             }
         }
 
-        // WORD SCRAMBLE GAME LOGIC
-        const scrambleWords = [
-            { word: "ASTRONAUT", hint: "A person who travels into outer space 🚀", voiceHint: "Spell Astronaut. A person who travels into outer space." },
-            { word: "SOURDOUGH", hint: "Tangy bread baked without commercial yeast 🥖", voiceHint: "Spell Sourdough. Tangy bread baked without commercial yeast." },
-            { word: "GRAVITY", hint: "The force that pulls objects toward Earth 🌍", voiceHint: "Spell Gravity. The force that pulls objects toward Earth." },
-            { word: "DOLPHIN", hint: "A highly intelligent marine mammal 🐬", voiceHint: "Spell Dolphin. A highly intelligent marine mammal." },
-            { word: "DINOSAUR", hint: "Prehistoric reptile that ruled the Earth 🦖", voiceHint: "Spell Dinosaur. Prehistoric reptile that ruled the Earth." },
-            { word: "ROBOT", hint: "A programmable mechanical machine 🤖", voiceHint: "Spell Robot. A programmable mechanical machine." },
-            { word: "VOLCANO", hint: "A mountain that erupts with hot lava 🌋", voiceHint: "Spell Volcano. A mountain that erupts with hot lava." },
-            { word: "TELESCOPE", hint: "Tool used to look at stars and planets 🔭", voiceHint: "Spell Telescope. Tool used to look at stars and planets." },
-            { word: "SATELLITE", hint: "Object orbiting a planet to transmit data 📡", voiceHint: "Spell Satellite. Object orbiting a planet to transmit data." },
-            { word: "RAINFOREST", hint: "Dense tropical forest with heavy rainfall 🌧️", voiceHint: "Spell Rainforest. Dense tropical forest with heavy rainfall." }
-        ];
-        let currentScramble = null;
-        let scrambleInput = "";
-        let scrambleLetters = [];
-        let selectedScrambleIndices = [];
-
+        // SPEECH SYNTHESIS HELPER
         function speakText(text) {
             try {
                 window.speechSynthesis.cancel(); // cancel any active speech
@@ -1994,137 +2110,399 @@
             }
         }
 
-        function speakCurrentScrambleHint() {
-            if (currentScramble) {
-                speakText(currentScramble.voiceHint || currentScramble.hint);
+        // GAME CATALOG NAVIGATION
+        let activeGameId = 'phonics';
+        function selectGame(gameName) {
+            activeGameId = gameName;
+            
+            // Hide all game view panels
+            const panels = document.querySelectorAll('.game-view-panel');
+            panels.forEach(p => p.style.display = 'none');
+            
+            // Show selected game view panel
+            const activePanel = document.getElementById(`game-${gameName}`);
+            if (activePanel) {
+                activePanel.style.display = 'block';
             }
-        }
-
-        function initScrambleGame() {
-            currentScramble = scrambleWords[Math.floor(Math.random() * scrambleWords.length)];
-            document.getElementById('scramble-hint').innerText = `Hint: ${currentScramble.hint}`;
             
-            scrambleLetters = currentScramble.word.split('').map((char, index) => ({ char, index }));
-            shuffleArray(scrambleLetters);
+            // Update active status on selector buttons
+            const btns = document.querySelectorAll('.dashboard-grid .nav-btn');
+            btns.forEach(b => b.classList.remove('active'));
             
-            scrambleInput = "";
-            selectedScrambleIndices = [];
-            
-            renderScrambleLetters();
-            updateScrambleDisplay();
-            
-            // Speak hint on load
-            setTimeout(speakCurrentScrambleHint, 500);
-        }
-
-        function shuffleArray(array) {
-            for (let i = array.length - 1; i > 0; i--) {
-                const j = Math.floor(Math.random() * (i + 1));
-                [array[i], array[j]] = [array[j], array[i]];
+            const activeBtn = document.getElementById(`cat-${gameName}`);
+            if (activeBtn) {
+                activeBtn.classList.add('active');
             }
+            
+            // Setup game states
+            if (gameName === 'phonics') {
+                initPhonicsWord();
+            } else if (gameName === 'story') {
+                resetStoryStudio();
+            } else if (gameName === 'tictactoe') {
+                resetTTTGame();
+            } else if (gameName === 'coding') {
+                initCQGame();
+            } else if (gameName === 'connect4') {
+                initC4Game();
+            } else if (gameName === 'math') {
+                generateMathPrompt();
+            } else if (gameName === 'typing') {
+                initTypingPrompt();
+            }
+            
+            showToast(`Swapped game view: ${gameName.toUpperCase()}`);
         }
 
-        function renderScrambleLetters() {
-            const container = document.getElementById('scramble-letters-box');
+        // SOUND IT OUT PHONICS GAME LOGIC (KINDER)
+        const phonicsWords = [
+            { word: "CAT", hint: "🐱 Meow!" },
+            { word: "SUN", hint: "☀️ Hot and bright!" },
+            { word: "DOG", hint: "🐶 Woof woof!" },
+            { word: "BUG", hint: "🪲 Crawly bug!" },
+            { word: "HAT", hint: "🎩 Put it on your head!" },
+            { word: "LOG", hint: "🪵 Wood from a tree!" },
+            { word: "NET", hint: "🕸️ Catch a fish!" },
+            { word: "PIG", hint: "🐷 Oink oink!" },
+            { word: "BED", hint: "🛏️ Sleep tight!" },
+            { word: "CUP", hint: "🥤 Drink juice!" }
+        ];
+        const phonicsSounds = {
+            'A': 'ah', 'B': 'buh', 'C': 'cuh', 'D': 'duh', 'E': 'eh', 
+            'F': 'fuh', 'G': 'guh', 'H': 'huh', 'I': 'ih', 'J': 'juh', 
+            'K': 'kuh', 'L': 'uhl', 'M': 'muh', 'N': 'nnn', 'O': 'oah', 
+            'P': 'puh', 'Q': 'kwuh', 'R': 'err', 'S': 'sss', 'T': 'tuh', 
+            'U': 'uh', 'V': 'vuh', 'W': 'wuh', 'X': 'ks', 'Y': 'yuh', 'Z': 'zuh'
+        };
+        let currentPhonicsWord = null;
+
+        function initPhonicsWord() {
+            currentPhonicsWord = phonicsWords[Math.floor(Math.random() * phonicsWords.length)];
+            renderPhonicsWord();
+            speakText("Sound it out! Tap the blocks.");
+        }
+
+        function renderPhonicsWord() {
+            const container = document.getElementById('phonics-word-box');
             container.innerHTML = '';
             
-            scrambleLetters.forEach(item => {
-                const bubble = document.createElement('div');
-                bubble.className = 'scramble-bubble';
-                bubble.innerText = item.char;
-                bubble.id = `scramble-bubble-${item.index}`;
-                
-                if (selectedScrambleIndices.includes(item.index)) {
-                    bubble.className += ' selected';
+            const word = currentPhonicsWord.word;
+            word.split('').forEach((letter, i) => {
+                const block = document.createElement('div');
+                block.className = 'phonics-letter-block';
+                block.innerText = letter;
+                block.id = `phonics-block-${i}`;
+                block.onclick = () => playPhonicsLetter(letter, i);
+                container.appendChild(block);
+            });
+        }
+
+        function playPhonicsLetter(letter, index) {
+            const block = document.getElementById(`phonics-block-${index}`);
+            block.classList.add('playing');
+            
+            speakText(phonicsSounds[letter.toUpperCase()] || letter);
+            
+            setTimeout(() => {
+                block.classList.remove('playing');
+            }, 500);
+        }
+
+        function highlightPhonicsBlock(index) {
+            clearPhonicsHighlights();
+            const block = document.getElementById(`phonics-block-${index}`);
+            if (block) block.classList.add('playing');
+        }
+
+        function clearPhonicsHighlights() {
+            const blocks = document.querySelectorAll('.phonics-letter-block');
+            blocks.forEach(b => b.classList.remove('playing'));
+        }
+
+        function blendCurrentPhonics() {
+            const word = currentPhonicsWord.word;
+            const letters = word.split('');
+            let idx = 0;
+            
+            function speakNext() {
+                if (idx < letters.length) {
+                    highlightPhonicsBlock(idx);
+                    speakText(phonicsSounds[letters[idx].toUpperCase()]);
+                    idx++;
+                    setTimeout(speakNext, 1000);
+                } else {
+                    clearPhonicsHighlights();
+                    setTimeout(() => {
+                        speakText(`That spells: ${word}! ${currentPhonicsWord.hint}`);
+                        playSuccessSound();
+                        rewardPhonicsXP();
+                    }, 500);
                 }
-                
-                bubble.onclick = () => selectScrambleLetter(item.char, item.index);
-                container.appendChild(bubble);
-            });
-        }
-
-        function selectScrambleLetter(char, index) {
-            if (selectedScrambleIndices.includes(index)) return;
-            
-            // Speak the letter
-            speakText(char.toLowerCase());
-
-            selectedScrambleIndices.push(index);
-            scrambleInput += char;
-            
-            document.getElementById(`scramble-bubble-${index}`).className = 'scramble-bubble selected';
-            updateScrambleDisplay();
-            
-            if (scrambleInput.length === currentScramble.word.length) {
-                verifyScramble();
             }
+            speakNext();
         }
 
-        function updateScrambleDisplay() {
-            document.getElementById('scramble-output').innerText = scrambleInput;
+        async function rewardPhonicsXP() {
+            try {
+                const r = await fetch('/api/academy?action=progress', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ subject: 'reading', pointsToAdd: 10 })
+                });
+                const res = await r.json();
+                if (res.leveledUp) {
+                    showToast(`Reading Level Up! Level ${res.progress.level}! 📚`);
+                }
+                loadAcademyData();
+            } catch (e) {}
         }
 
-        function backspaceScramble() {
-            if (selectedScrambleIndices.length === 0) return;
-            
-            const lastIndex = selectedScrambleIndices.pop();
-            scrambleInput = scrambleInput.slice(0, -1);
-            
-            const lastBubble = document.getElementById(`scramble-bubble-${lastIndex}`);
-            if (lastBubble) {
-                lastBubble.className = 'scramble-bubble';
+        function nextPhonicsWord() {
+            initPhonicsWord();
+        }
+
+        // MY STORY STUDIO GAME LOGIC
+        let activeStory = null; // { title, pages: [] }
+        let currentStoryPage = 0;
+
+        function selectStoryPrompt(text) {
+            document.getElementById('story-prompt-input').value = text;
+        }
+
+        function resetStoryStudio() {
+            document.getElementById('story-display-card').style.display = 'none';
+            document.getElementById('story-prompt-input').value = '';
+            activeStory = null;
+        }
+
+        async function generateAIStory() {
+            const promptInput = document.getElementById('story-prompt-input');
+            const promptText = promptInput.value.trim();
+            if (!promptText) {
+                showToast("Please enter or select a story idea first!", true);
+                return;
             }
-            updateScrambleDisplay();
-            speakText("backspace");
-        }
 
-        function shuffleScramble() {
-            const unselected = scrambleLetters.filter(item => !selectedScrambleIndices.includes(item.index));
-            shuffleArray(unselected);
-            
-            let unselectedIdx = 0;
-            scrambleLetters = scrambleLetters.map(item => {
-                if (selectedScrambleIndices.includes(item.index)) return item;
-                return unselected[unselectedIdx++];
-            });
-            
-            renderScrambleLetters();
-            speakText("shuffle");
-        }
+            const btn = document.getElementById('story-gen-btn');
+            btn.disabled = true;
+            btn.innerText = "Writing... 🪄";
+            showToast("Sparky is writing your story...");
 
-        function resetScrambleWord() {
-            scrambleInput = "";
-            selectedScrambleIndices = [];
-            renderScrambleLetters();
-            updateScrambleDisplay();
-            speakText("reset");
-        }
-
-        async function verifyScramble() {
-            if (scrambleInput === currentScramble.word) {
-                playSuccessSound();
-                showToast("Perfect! Spelling correct! 🔠");
-                speakText(`Excellent! You spelled ${currentScramble.word} correctly!`);
+            try {
+                const response = await fetch('/api/academy?action=story', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ promptText })
+                });
+                const data = await response.json();
                 
-                try {
-                    const r = await fetch('/api/academy?action=progress', {
+                if (data.pages && data.pages.length > 0) {
+                    playSuccessSound();
+                    activeStory = data;
+                    currentStoryPage = 0;
+                    
+                    document.getElementById('story-display-card').style.display = 'flex';
+                    renderStoryPage();
+                    
+                    // Reward XP
+                    await fetch('/api/academy?action=progress', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ subject: 'reading', pointsToAdd: 10 })
+                        body: JSON.stringify({ subject: 'ai', pointsToAdd: 15 })
                     });
-                    const res = await r.json();
-                    if (res.leveledUp) {
-                        showToast(`Reading Level Up! Level ${res.progress.level}! 📚`);
-                    }
                     loadAcademyData();
-                } catch (e) {}
+                } else {
+                    showToast(data.error || "Sparky fell asleep. Try again!", true);
+                }
+            } catch (err) {
+                showToast("Failed to connect to AI Story Studio", true);
+            } finally {
+                btn.disabled = false;
+                btn.innerText = "Write Story 🪄";
+            }
+        }
+
+        function renderStoryPage() {
+            if (!activeStory) return;
+            
+            document.getElementById('story-title-el').innerText = activeStory.title;
+            document.getElementById('story-text-el').innerText = activeStory.pages[currentStoryPage];
+            document.getElementById('story-page-number').innerText = `Page ${currentStoryPage + 1} / ${activeStory.pages.length}`;
+            
+            document.getElementById('story-prev-btn').disabled = currentStoryPage === 0;
+            document.getElementById('story-next-btn').disabled = currentStoryPage === activeStory.pages.length - 1;
+            
+            speakCurrentStoryPage();
+        }
+
+        function prevStoryPage() {
+            if (currentStoryPage > 0) {
+                currentStoryPage--;
+                renderStoryPage();
+            }
+        }
+
+        function nextStoryPage() {
+            if (activeStory && currentStoryPage < activeStory.pages.length - 1) {
+                currentStoryPage++;
+                renderStoryPage();
+            }
+        }
+
+        function speakCurrentStoryPage() {
+            if (activeStory) {
+                speakText(activeStory.pages[currentStoryPage]);
+            }
+        }
+
+        // TIC-TAC-TOE GAME LOGIC
+        let tttBoard = Array(9).fill(null);
+        let tttGameActive = true;
+        let tttPlayerWins = 0;
+        let tttAIWins = 0;
+
+        function resetTTTGame() {
+            tttBoard = Array(9).fill(null);
+            tttGameActive = true;
+            
+            const cells = document.querySelectorAll('#ttt-board-grid .ttt-cell');
+            cells.forEach(c => {
+                c.innerText = '';
+                c.className = 'ttt-cell';
+            });
+            
+            document.getElementById('ttt-status-text').innerText = "Your Turn! Click an empty box.";
+            document.getElementById('ttt-status-text').style.color = 'var(--primary)';
+        }
+
+        function handleTTTClick(index) {
+            if (!tttGameActive) return;
+            if (tttBoard[index] !== null) return;
+            
+            tttBoard[index] = 'X';
+            const cell = document.querySelectorAll('#ttt-board-grid .ttt-cell')[index];
+            cell.innerText = '❌';
+            cell.classList.add('x');
+            speakText("X");
+            
+            let result = checkTTTWinner(tttBoard);
+            if (result) {
+                handleTTTGameOver(result);
+                return;
+            }
+            
+            document.getElementById('ttt-status-text').innerText = "Sparky is planning a move...";
+            document.getElementById('ttt-status-text').style.color = 'var(--warning)';
+            tttGameActive = false; 
+            
+            setTimeout(() => {
+                executeTTTAIMove();
+            }, 500);
+        }
+
+        function executeTTTAIMove() {
+            const bestMove = getTTTAIMove();
+            if (bestMove !== -1) {
+                tttBoard[bestMove] = 'O';
+                const cell = document.querySelectorAll('#ttt-board-grid .ttt-cell')[bestMove];
+                cell.innerText = '⭕';
+                cell.classList.add('o');
+                speakText("O");
+            }
+            
+            tttGameActive = true;
+            
+            let result = checkTTTWinner(tttBoard);
+            if (result) {
+                handleTTTGameOver(result);
+            } else {
+                document.getElementById('ttt-status-text').innerText = "Your Turn (X)!";
+                document.getElementById('ttt-status-text').style.color = 'var(--primary)';
+            }
+        }
+
+        function getTTTAIMove() {
+            for (let i = 0; i < 9; i++) {
+                if (tttBoard[i] === null) {
+                    let temp = [...tttBoard];
+                    temp[i] = 'O';
+                    if (checkTTTWinner(temp)?.winner === 'O') return i;
+                }
+            }
+            for (let i = 0; i < 9; i++) {
+                if (tttBoard[i] === null) {
+                    let temp = [...tttBoard];
+                    temp[i] = 'X';
+                    if (checkTTTWinner(temp)?.winner === 'X') return i;
+                }
+            }
+            if (tttBoard[4] === null) return 4;
+            const corners = [0, 2, 6, 8];
+            const emptyCorners = corners.filter(i => tttBoard[i] === null);
+            if (emptyCorners.length > 0) return emptyCorners[Math.floor(Math.random() * emptyCorners.length)];
+            const empties = [];
+            for (let i = 0; i < 9; i++) {
+                if (tttBoard[i] === null) empties.push(i);
+            }
+            return empties.length > 0 ? empties[Math.floor(Math.random() * empties.length)] : -1;
+        }
+
+        function checkTTTWinner(board) {
+            const winPaths = [
+                [0, 1, 2], [3, 4, 5], [6, 7, 8], 
+                [0, 3, 6], [1, 4, 7], [2, 5, 8], 
+                [0, 4, 8], [2, 4, 6]             
+            ];
+            
+            for (let path of winPaths) {
+                const [a, b, c] = path;
+                if (board[a] && board[a] === board[b] && board[a] === board[c]) {
+                    return { winner: board[a], path };
+                }
+            }
+            
+            if (board.every(cell => cell !== null)) {
+                return { winner: 'draw' };
+            }
+            return null;
+        }
+
+        async function handleTTTGameOver(result) {
+            tttGameActive = false;
+            if (result.winner === 'draw') {
+                playFailSound();
+                document.getElementById('ttt-status-text').innerText = "Game Draw! Reset board.";
+                document.getElementById('ttt-status-text').style.color = 'var(--text-muted)';
+                speakText("It is a draw!");
+                showToast("It's a draw!");
+                return;
+            }
+            
+            if (result.winner === 'X') {
+                playSuccessSound();
+                tttPlayerWins++;
+                document.getElementById('ttt-player-score').innerText = `${tttPlayerWins} Wins`;
+                document.getElementById('ttt-status-text').innerText = "You Won against Sparky! 🎉";
+                document.getElementById('ttt-status-text').style.color = 'var(--success)';
+                speakText("Congratulations! You won!");
                 
-                setTimeout(initScrambleGame, 3000);
+                try {
+                    await fetch('/api/academy?action=progress', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ subject: 'ai', pointsToAdd: 10 })
+                    });
+                    loadAcademyData();
+                } catch(e) {}
+                showToast("Victory! +10 XP rewarded!");
             } else {
                 playFailSound();
-                showToast("Oops, incorrect spelling! Try again.", true);
-                speakText("Oops! Let's try spelling that word again.");
-                resetScrambleWord();
+                tttAIWins++;
+                document.getElementById('ttt-ai-score').innerText = `${tttAIWins} Wins`;
+                document.getElementById('ttt-status-text').innerText = "Sparky Wins! Try again.";
+                document.getElementById('ttt-status-text').style.color = 'var(--danger)';
+                speakText("Sparky won this round.");
+                showToast("Sparky won!");
             }
         }
 
@@ -2360,11 +2738,7 @@
         // Initialize Dashboard
         window.onload = () => {
             loadAcademyData().then(() => {
-                generateMathPrompt();
-                initTypingPrompt();
-                initC4Game();
-                initScrambleGame();
-                initCQGame();
+                selectGame('phonics');
             });
         };
     </script>

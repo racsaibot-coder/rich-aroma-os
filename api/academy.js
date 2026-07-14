@@ -232,8 +232,62 @@ module.exports = async (req, res) => {
 
             const geminiData = await response.json();
             const replyText = geminiData.candidates?.[0]?.content?.parts?.[0]?.text || "¡Hola! Soy Sparky. ¿Qué te gustaría aprender hoy?";
-
             return res.json({ reply: replyText.trim() });
+        }
+
+        // 6. GENERATE AI STORY
+        if (req.method === 'POST' && action === 'story') {
+            const { promptText } = req.body;
+            if (!promptText) return res.status(400).json({ error: 'Prompt is required' });
+
+            const geminiApiKey = process.env.GEMINI_API_KEY;
+            if (!geminiApiKey) {
+                return res.status(500).json({ error: 'Gemini API key is not configured' });
+            }
+
+            const storyInstruction = 
+                "Write a short, engaging story for a 6-year old child based on their idea: \"" + promptText + "\". " +
+                "The story must be exactly 3 to 4 pages long. Each page must be a short paragraph of 2-3 simple, clean sentences using easy words for a first grader to practice reading. " +
+                "Format the output strictly as a JSON object with: " +
+                "{\n  \"title\": \"Story Title\",\n  \"pages\": [\n    \"Page 1 text...\",\n    \"Page 2 text...\",\n    \"Page 3 text...\"\n  ]\n}";
+
+            const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${geminiApiKey}`;
+
+            const response = await fetch(geminiUrl, {
+                method: 'POST',
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'Accept-Encoding': 'identity'
+                },
+                body: JSON.stringify({
+                    contents: [{
+                        role: 'user',
+                        parts: [{ text: storyInstruction }]
+                    }],
+                    generationConfig: {
+                        responseMimeType: "application/json",
+                        maxOutputTokens: 500,
+                        temperature: 0.8
+                    }
+                })
+            });
+
+            if (!response.ok) {
+                const errorText = await response.text();
+                console.error("[Academy API] Gemini Story API Error:", errorText);
+                return res.status(502).json({ error: 'Failed to generate story' });
+            }
+
+            const geminiData = await response.json();
+            const textResponse = geminiData.candidates?.[0]?.content?.parts?.[0]?.text;
+            
+            try {
+                const parsed = JSON.parse(textResponse);
+                return res.json(parsed);
+            } catch (err) {
+                console.error("[Academy API] Story JSON Parse Error:", textResponse);
+                return res.status(500).json({ error: 'Generated story was not in correct JSON format' });
+            }
         }
 
         return res.status(404).json({ error: 'Action not found' });
