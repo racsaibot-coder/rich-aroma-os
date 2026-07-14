@@ -646,8 +646,15 @@ class TelegramBot:
                 if len(data['volumes']) > 10:
                     data['volumes'] = data['volumes'][-10:]
                 
-                # Update multiplier and ATH
-                mult = price / data['entry_price'] if data['entry_price'] > 0 else 1.0
+                # Update multiplier and ATH (factor in round-trip gas fee)
+                raw_mult = price / data['entry_price'] if data['entry_price'] > 0 else 1.0
+                entry_size_eth = float(data.get('entry_size_eth', config.TRADE_AMOUNT_ETH))
+                if entry_size_eth <= 0.0:
+                    entry_size_eth = 0.005
+                buy_gas_eth = float(data.get('buy_gas_eth', 0.0001))
+                total_gas_eth = 2.0 * buy_gas_eth
+                mult = max(0.01, raw_mult - (total_gas_eth / entry_size_eth))
+
                 if mult > data['max_mult']:
                     data['max_mult'] = mult
                 data['ath_price'] = max(data['ath_price'], price)
@@ -1679,7 +1686,9 @@ class TelegramBot:
                         'dex_version': dex_version,
                         'buy_success': True,
                         'conviction_tier': 2,
-                        'de_risk_target': 2.0
+                        'de_risk_target': 2.0,
+                        'entry_size_eth': float(sizing_eth),
+                        'buy_gas_eth': float(self.trader.last_gas_used_eth)
                     }
                     self.save_active_positions()
                     self.send_alert(f"✅ *SUCCESSFULLY BOUGHT {symbol}!* Live tracking active.")

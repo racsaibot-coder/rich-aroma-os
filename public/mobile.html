@@ -851,6 +851,7 @@
                 let html = '';
                 let totalWethUnrealized = 0;
                 let totalCostBasis = 0;
+                let totalGasSpent = 0;
                 const windowEthPrice = window.globalEthPrice || 1784.66;
 
                 keys.forEach(addr => {
@@ -865,15 +866,21 @@
                     const costBasis = parseFloat(pos.entry_size_eth) || 0.005;
                     const wethUnrealized = costBasis * (changePct / 100.0);
                     
+                    const buyGas = parseFloat(pos.buy_gas_eth) || 0.0001;
+                    const totalGas = buyGas * 2.0; // round-trip buy + sell estimate
+                    const netUnrealized = wethUnrealized - totalGas;
+                    const netChangePct = (netUnrealized / costBasis) * 100.0;
+
                     totalCostBasis += costBasis;
                     totalWethUnrealized += wethUnrealized;
+                    totalGasSpent += totalGas;
 
                     const changeClass = changePct >= 0 ? 'up' : 'down';
+                    const netChangeClass = netChangePct >= 0 ? 'up' : 'down';
                     const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
                     
                     let entryFormatted = '';
                     let currentFormatted = '';
-                    let plUsdFormatted = '';
                     
                     if (isLocal) {
                         const entryEth = entryPrice / windowEthPrice;
@@ -881,19 +888,18 @@
                         
                         const currentEth = currentPrice / windowEthPrice;
                         currentFormatted = `${currentEth.toFixed(6)} ETH`;
-                        
-                        const plUsd = wethUnrealized * windowEthPrice;
-                        plUsdFormatted = ` (${changePct >= 0 ? '+' : ''}$${plUsd.toFixed(2)})`;
                     } else {
                         entryFormatted = entryPrice < 0.01 ? `$${entryPrice.toFixed(6)}` : `$${entryPrice.toFixed(2)}`;
                         currentFormatted = currentPrice < 0.01 ? `$${currentPrice.toFixed(6)}` : `$${currentPrice.toFixed(2)}`;
-                        plUsdFormatted = '';
                     }
                     
                     // Support floor details
                     const bottom = pos.local_bottom || entryPrice;
                     const stopPrice = bottom * 0.95;
                     const stopFormatted = stopPrice < 0.01 ? `$${stopPrice.toFixed(6)}` : `$${stopPrice.toFixed(2)}`;
+
+                    const plUsd = netUnrealized * windowEthPrice;
+                    const plUsdSign = plUsd >= 0 ? '+' : '';
 
                     html += `
                         <div class="position-row">
@@ -902,8 +908,13 @@
                                     <span class="position-symbol">${pos.symbol} 📈</span>
                                     <span class="position-name">${pos.is_derisked ? 'Moonbag' : 'Target'}</span>
                                 </div>
-                                <div class="position-pl ${changeClass}">
-                                    ${changePct >= 0 ? '+' : ''}${changePct.toFixed(2)}%${plUsdFormatted}
+                                <div style="text-align: right;">
+                                    <div class="position-pl ${changeClass}" style="font-size: 14px; margin-bottom: 2px;">
+                                        Raw: ${changePct >= 0 ? '+' : ''}${changePct.toFixed(2)}%
+                                    </div>
+                                    <div style="font-size: 11px; font-weight: 700;">
+                                        Net: <span class="${netChangeClass}">${plUsdSign}$${plUsd.toFixed(2)} (${netChangePct >= 0 ? '+' : ''}${netChangePct.toFixed(1)}%)</span>
+                                    </div>
                                 </div>
                             </div>
                             <div class="position-stats">
@@ -930,9 +941,10 @@
                 const totalHoldingUsd = (weth + eth + openValWeth) * windowEthPrice;
                 document.getElementById('total-val').innerText = `$${totalHoldingUsd.toFixed(2)} USD`;
                 
-                const weightedPlPct = totalCostBasis > 0 ? (totalWethUnrealized / totalCostBasis) * 100.0 : 0.0;
+                const totalNetUnrealized = totalWethUnrealized - totalGasSpent;
+                const weightedPlPct = totalCostBasis > 0 ? (totalNetUnrealized / totalCostBasis) * 100.0 : 0.0;
                 const pill = document.getElementById('unrealized-pl-pill');
-                pill.innerText = `${weightedPlPct >= 0 ? '+' : ''}${weightedPlPct.toFixed(2)}% Unrealized`;
+                pill.innerText = `${weightedPlPct >= 0 ? '+' : ''}${weightedPlPct.toFixed(2)}% Net P/L`;
                 pill.className = `pl-pill ${weightedPlPct >= 0 ? 'up' : 'down'}`;
 
             } catch (err) {
