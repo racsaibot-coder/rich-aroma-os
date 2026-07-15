@@ -1422,6 +1422,26 @@ class TelegramBot:
             if exit_reason == "partial_take_profit" or data.get("is_derisked", False):
                 entry_size = entry_size / 2.0
 
+            buy_gas = data.get("buy_gas_eth")
+            if buy_gas is None:
+                buy_gas = 0.0000055
+                
+            sell_gas = getattr(self.trader, "last_gas_used_eth", 0.0)
+            if sell_gas <= 0.0:
+                sell_gas = 0.0000072
+                
+            total_gas_eth = buy_gas + sell_gas
+            
+            eth_price = 1868.79
+            try:
+                eth_pair = self.tracker.fetch_dex_stats("0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2")
+                if eth_pair:
+                    eth_price = float(eth_pair.get("priceUsd", 1868.79))
+            except:
+                pass
+                
+            total_gas_usd = total_gas_eth * eth_price
+
             record = {
                 "symbol": data["symbol"],
                 "address": token_addr,
@@ -1431,7 +1451,11 @@ class TelegramBot:
                 "max_mult": data["max_mult"],
                 "exit_reason": exit_reason,
                 "timestamp": time.time(),
-                "entry_size_eth": entry_size
+                "entry_size_eth": entry_size,
+                "buy_gas_eth": buy_gas,
+                "sell_gas_eth": sell_gas,
+                "total_gas_eth": total_gas_eth,
+                "total_gas_usd": total_gas_usd
             }
             
             history.insert(0, record)
