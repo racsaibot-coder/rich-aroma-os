@@ -744,20 +744,24 @@ class TelegramBot:
                     continue
  
                 # C. Stop Loss Check (Pre-derisk, trailing stop logic)
-                local_bottom = data.get('local_bottom', 0.0)
-                default_stop_mult = config.STOP_LOSS_MULTIPLIER
-                if local_bottom > 0.0:
-                    support_stop_mult = (local_bottom * 0.95) / data['entry_price']
-                    if support_stop_mult < default_stop_mult:
-                        stop_loss_mult = default_stop_mult
-                        stop_loss_reason = f"Cut losses. Capped max drawdown at {(1 - default_stop_mult)*100:.0f}% of entry (support floor was too deep at -{(1 - support_stop_mult)*100:.1f}%)."
-                    else:
-                        stop_loss_mult = support_stop_mult
-                        stop_loss_price = local_bottom * 0.95
-                        stop_loss_reason = f"Cut losses. Price broke below support floor invalidation level of ${stop_loss_price:.8f} (-5% off support bottom)."
+                if data.get('tp_level', 0) >= 1:
+                    stop_loss_mult = 1.00
+                    stop_loss_reason = "Break-Even Stop: Safeguarding remaining capital at entry cost basis after TP1 realized."
                 else:
-                    stop_loss_mult = default_stop_mult
-                    stop_loss_reason = f"Cut losses. Price dropped below {default_stop_mult * 100}% of entry."
+                    local_bottom = data.get('local_bottom', 0.0)
+                    default_stop_mult = config.STOP_LOSS_MULTIPLIER
+                    if local_bottom > 0.0:
+                        support_stop_mult = (local_bottom * 0.95) / data['entry_price']
+                        if support_stop_mult < default_stop_mult:
+                            stop_loss_mult = default_stop_mult
+                            stop_loss_reason = f"Cut losses. Capped max drawdown at {(1 - default_stop_mult)*100:.0f}% of entry (support floor was too deep at -{(1 - support_stop_mult)*100:.1f}%)."
+                        else:
+                            stop_loss_mult = support_stop_mult
+                            stop_loss_price = local_bottom * 0.95
+                            stop_loss_reason = f"Cut losses. Price broke below support floor invalidation level of ${stop_loss_price:.8f} (-5% off support bottom)."
+                    else:
+                        stop_loss_mult = default_stop_mult
+                        stop_loss_reason = f"Cut losses. Price dropped below {default_stop_mult * 100}% of entry."
                 
                 # Dynamic pre-de-risk profit trailing locks and break-even stops
                 if not data['is_derisked']:
@@ -770,13 +774,6 @@ class TelegramBot:
                     elif data['max_mult'] >= 1.15:
                         stop_loss_mult = 1.05  # Lock in +5% profit
                         stop_loss_reason = "Trailing Stop: Locked in +5% profit as token dropped from its +15% peak."
-                    elif data['max_mult'] >= 1.10:
-                        stop_loss_mult = 1.00  # Lock in break-even (0% profit)
-                        stop_loss_reason = "Trailing Stop: Locked in break-even (0% profit) to safeguard capital as token dropped from its +10% peak."
-                    elif data['max_mult'] >= 1.05:
-                        # Trail exactly 4% below the peak ATH (e.g. peak of +7% exits at +3% profit)
-                        stop_loss_mult = data['max_mult'] - 0.04
-                        stop_loss_reason = f"Trailing Stop: Exited at -4% from peak (Locked in {stop_loss_mult*100-100:.1f}% profit)."
  
                 if not data['is_derisked'] and mult <= stop_loss_mult:
                     token_bal = self.trader.get_token_balance(token_addr)
@@ -984,16 +981,16 @@ class TelegramBot:
                         abi=self.scanner.erc20_abi
                     )
                     weth_bal = float(w3.from_wei(weth_contract.functions.balanceOf(self.trader.address).call(), 'ether'))
-                    if weth_bal < 0.0005:
-                        print(f"[Watchlist] Insufficient WETH balance ({weth_bal:.6f} ETH) to execute buyback for {data['symbol']}. Skipping.")
+                    min_bal = getattr(config, "MIN_TRADING_BALANCE_ETH", 0.005)
+                    if weth_bal < min_bal:
+                        print(f"[Watchlist] WETH balance ({weth_bal:.6f} ETH) is below the capital protection floor of {min_bal:.6f} ETH. Skipping buyback for {data['symbol']}.")
                         continue
                     
-                    # Dynamic survival sizing: 20% of balance, clamped between 0.0015 and available balance
-                    sizing_eth = weth_bal * 0.20
-                    if sizing_eth < 0.0015:
-                        sizing_eth = min(weth_bal * 0.85, 0.0015)
-                    sizing_eth = min(sizing_eth, weth_bal * 0.95)
-                    
+                    # Fixed sizing to prevent gas fees eating up micro trades
+                    sizing_eth = config.TRADE_AMOUNT_ETH
+                    if sizing_eth > weth_bal * 0.95:
+                        sizing_eth = weth_bal * 0.95
+                        
                     if sizing_eth < 0.0005:
                         print(f"[Watchlist] Sizing {sizing_eth:.6f} ETH is below absolute minimum of 0.0005. Skipping.")
                         continue
@@ -1002,7 +999,7 @@ class TelegramBot:
                     buy_success = False
  
                     if config.TRADE_EXECUTION_ENABLED:
-                        print(f"[Trader] Executing automated buyback swap for {data['symbol']} (Compound Sizing: {sizing_eth:.6f} ETH)...")
+                        print(f"[Trader] Executing automated buyback swap for {data['symbol']} (Fixed Sizing: {sizing_eth:.6f} ETH)...")
  
                         min_out = self.calculate_slippage_limit(token_addr_lower, amount_in_wei, is_buy=True, pair_data=pair_data)
                         buy_success = self.trader.execute_swap(

@@ -25,7 +25,8 @@ DISCORD_WEBHOOK_URL = os.getenv("DISCORD_WEBHOOK_URL", "YOUR_DISCORD_WEBHOOK_HER
 # Automated Trading Settings
 TRADE_EXECUTION_ENABLED = os.getenv("TRADE_EXECUTION_ENABLED", "false").lower() == "true"
 TRADE_PRIVATE_KEY = os.getenv("TRADE_PRIVATE_KEY", "")
-TRADE_AMOUNT_ETH = float(os.getenv("TRADE_AMOUNT_ETH", "0.005"))
+TRADE_AMOUNT_ETH = float(os.getenv("TRADE_AMOUNT_ETH", "0.0015"))
+MIN_TRADING_BALANCE_ETH = 0.005  # Pause trading if WETH drops below this floor to prevent gas bleed
 
 # Moonbag Strategy Parameters
 TAKE_PROFIT_MULTIPLIER = 1.30   # Legacy parameter
