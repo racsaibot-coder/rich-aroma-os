@@ -1154,8 +1154,9 @@
                                 <div>Buy: <span style="font-family: monospace;">${entryPriceFormatted}</span></div>
                                 <div>Sell: <span style="font-family: monospace;">${exitPriceFormatted}</span></div>
                             </div>
-                            <div class="position-stats" style="margin-bottom: 6px; font-size: 11px;">
+                            <div class="position-stats" style="margin-bottom: 4px; font-size: 11px;">
                                 <div>Cost: <span>${size.toFixed(4)} WETH</span></div>
+                                <div>Gas: <span>${parseFloat(trade.total_gas_eth || 0.0000127).toFixed(6)} ETH ($${parseFloat(trade.total_gas_usd || 0.0237).toFixed(2)})</span></div>
                             </div>
                             <div class="position-stats" style="margin-bottom: 0;">
                                 <div style="width: 100%; display: flex; justify-content: space-between;">

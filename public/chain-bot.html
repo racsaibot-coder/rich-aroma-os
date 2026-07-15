@@ -1137,6 +1137,9 @@
                                 <span style="font-size: 10px; color: ${changeVal >= 0 ? 'var(--primary)' : 'var(--danger)'}; display: block; font-family: monospace; font-weight: 600; margin-top: 2px;">
                                     ${netWethFormatted} WETH (${netUsdFormatted})
                                 </span>
+                                <span style="font-size: 9px; color: var(--text-muted); display: block; font-family: monospace; font-weight: 500; margin-top: 1px;">
+                                    Gas: ${parseFloat(trade.total_gas_eth || 0.0000127).toFixed(6)} ETH ($${parseFloat(trade.total_gas_usd || 0.0237).toFixed(2)})
+                                </span>
                             </td>
                             <td style="padding: 12px 8px; font-size: 11px; font-weight: 600; color: ${changeVal >= 0 ? 'var(--primary)' : 'var(--danger)'};">
                                 ${reasonFormatted}
