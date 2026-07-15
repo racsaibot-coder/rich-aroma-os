@@ -559,6 +559,10 @@ class TelegramBot:
             try:
                 w3 = self.scanner.w3
                 
+                # Backward compatibility: initialize missing timestamp
+                if 'timestamp' not in data:
+                    data['timestamp'] = int(time.time())
+                
                 # Check current balance of the token in the wallet
                 try:
                     token_contract = w3.eth.contract(
@@ -800,6 +804,35 @@ class TelegramBot:
                     del self.active_monitors[token_addr]
                     continue
  
+                # Time Stop Exit check
+                elapsed = time.time() - data.get('timestamp', time.time())
+                time_limit = getattr(config, 'TIME_STOP_SECONDS', 900)
+                if elapsed > time_limit:
+                    token_bal = self.trader.get_token_balance(token_addr)
+                    print(f"[Trader] Time Stop Triggered: Exiting entire position for {data['symbol']} (Held {elapsed/60:.1f}m)...")
+                    min_out = self.calculate_slippage_limit(token_addr, token_bal, is_buy=False, pair_data=pair_data)
+                    self.trader.execute_swap(
+                        token_in=token_addr,
+                        token_out=data['base_addr'],
+                        amount_in=token_bal,
+                        pool_fee=data['pool_fee'],
+                        amount_out_minimum=min_out,
+                        dex_version=data.get('dex_version', 'v3')
+                    )
+                    
+                    p_l_pct = (mult - 1) * 100
+                    p_l_sign = "+" if p_l_pct >= 0 else ""
+                    self.send_alert(
+                        f"⏱️ *TIME STOP TRIGGERED: EXITED {data['symbol']}*\n"
+                        f"-----------------------------------------\n"
+                        f"• Auto-exited position after holding for {elapsed/60:.1f} minutes to keep capital liquid.\n"
+                        f"• Exit Price: ${price:.8f} (Net P/L: {p_l_sign}{p_l_pct:.2f}%)"
+                    )
+                    self.log_closed_position(token_addr, price, "time_stop_triggered")
+                    self.db.update_metrics(token_addr, True, False, data['max_mult'], "time_stop_triggered")
+                    del self.active_monitors[token_addr]
+                    continue
+
                 # 1. Check Momentum
                 if pair_data:
                     roc = self.tracker.calculate_volume_roc(data['volumes'])
@@ -1014,7 +1047,8 @@ class TelegramBot:
                             'conviction_tier': 2,
                             'de_risk_target': 1.3,
                             'local_bottom': local_bottom,
-                            'entry_size_eth': sizing_eth
+                            'entry_size_eth': sizing_eth,
+                            'timestamp': int(time.time())
                         }
                         self.save_active_positions()
                         self.watchlist[token_addr]['last_bottom_price'] = price
@@ -1688,7 +1722,8 @@ class TelegramBot:
                         'conviction_tier': 2,
                         'de_risk_target': 2.0,
                         'entry_size_eth': float(sizing_eth),
-                        'buy_gas_eth': float(self.trader.last_gas_used_eth)
+                        'buy_gas_eth': float(self.trader.last_gas_used_eth),
+                        'timestamp': int(time.time())
                     }
                     self.save_active_positions()
                     self.send_alert(f"✅ *SUCCESSFULLY BOUGHT {symbol}!* Live tracking active.")

@@ -29,10 +29,11 @@ TRADE_AMOUNT_ETH = float(os.getenv("TRADE_AMOUNT_ETH", "0.005"))
 
 # Moonbag Strategy Parameters
 TAKE_PROFIT_MULTIPLIER = 1.30   # Legacy parameter
-TAKE_PROFIT_1_MULTIPLIER = 1.25 # Sell 40% portion at 1.25x price
-TAKE_PROFIT_2_MULTIPLIER = 1.60 # Sell 30% portion at 1.60x price (leaving 30% moonbag)
+TAKE_PROFIT_1_MULTIPLIER = 1.12 # Sell 40% portion at 1.12x price
+TAKE_PROFIT_2_MULTIPLIER = 1.30 # Sell 30% portion at 1.30x price (leaving 30% moonbag)
 TRAILING_STOP_THRESHOLD = 0.85  # Exit moonbag if price drops 15% from its ATH
 STOP_LOSS_MULTIPLIER = 0.8     # Stop loss triggers if price falls below 80% of entry
+TIME_STOP_SECONDS = 900        # 15 minutes maximum hold time
 MAX_BUY_SELL_RATIO = 3.0       # Max buys/sells ratio in h1 to check for honeypots
 MIN_BUYBACK_LIQUIDITY_USD = 10000.0  # Min liquidity required to buyback a watchlisted token
 CIRCUIT_BREAKER_DAILY_LOSS_PCT = 15.0  # Max daily loss percentage allowed before circuit breaker triggers
