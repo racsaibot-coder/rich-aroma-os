@@ -932,8 +932,9 @@
                                     ¡Hola! Soy Sparky, tu companion de aprendizaje. 🚀 ¿Qué te gustaría aprender today?
                                 </div>
                             </div>
-                            <form class="chat-input-area" onsubmit="handleChatSubmit(event)">
-                                <input class="chat-input" type="text" id="chat-user-input" placeholder="Type a message or ask Sparky a question..." autocomplete="off">
+                            <form class="chat-input-area" onsubmit="handleChatSubmit(event)" style="display: flex; gap: 8px;">
+                                <button class="quest-btn" type="button" id="chat-mic-btn" onclick="toggleSpeechInput()" style="background: var(--primary); padding: 10px; font-size: 16px; border-radius: 8px; border: none; display: flex; align-items: center; justify-content: center; cursor: pointer;">🎤</button>
+                                <input class="chat-input" type="text" id="chat-user-input" placeholder="Type or talk to Sparky..." autocomplete="off" style="flex: 1;">
                                 <button class="quest-btn" type="submit" id="chat-send-btn">Send ➡️</button>
                             </form>
                         </div>
@@ -952,6 +953,12 @@
                             </button>
                             <button class="nav-btn" id="cat-story" onclick="selectGame('story')" style="padding: 14px; justify-content: flex-start; gap: 12px; font-size: 14px; width: 100%;">
                                 <span>📖</span> <b>My Story Studio (AI)</b>
+                            </button>
+                            <button class="nav-btn" id="cat-sightwords" onclick="selectGame('sightwords')" style="padding: 14px; justify-content: flex-start; gap: 12px; font-size: 14px; width: 100%;">
+                                <span>👁️</span> <b>Sight Words Arena</b>
+                            </button>
+                            <button class="nav-btn" id="cat-science" onclick="selectGame('science')" style="padding: 14px; justify-content: flex-start; gap: 12px; font-size: 14px; width: 100%;">
+                                <span>🐻</span> <b>Science & Maps</b>
                             </button>
                             <button class="nav-btn" id="cat-coding" onclick="selectGame('coding')" style="padding: 14px; justify-content: flex-start; gap: 12px; font-size: 14px; width: 100%;">
                                 <span>🐒</span> <b>Code Quest (Logic)</b>
@@ -1153,11 +1160,64 @@
                 <h2 style="font-size: 20px; font-weight: 700; display: flex; align-items: center; gap: 8px; margin-bottom: 20px;">
                     🧮 MATH CHALLENGE ARENA
                 </h2>
-                <div class="math-arena-panel">
+                
+                <div style="display: flex; gap: 10px; margin-bottom: 20px; justify-content: center;">
+                    <button class="nav-btn active" id="math-mode-calc-btn" onclick="setMathMode('calc')" style="font-size: 13px; padding: 6px 16px;">🧮 Addition/Subtraction</button>
+                    <button class="nav-btn" id="math-mode-coins-btn" onclick="setMathMode('coins')" style="font-size: 13px; padding: 6px 16px;">🪙 Piggy Bank Coins</button>
+                    <button class="nav-btn" id="math-mode-patterns-btn" onclick="setMathMode('patterns')" style="font-size: 13px; padding: 6px 16px;">📐 Pattern Builder</button>
+                </div>
+
+                <div class="math-arena-panel" id="math-calc-view">
                     <div style="font-size: 14px; color: var(--text-muted); text-transform: uppercase; font-weight: 700; letter-spacing: 0.5px;">Solve the card!</div>
                     <div class="math-card" id="math-prompt">5 + 7</div>
                     <input class="math-input" type="number" id="math-answer" placeholder="?" autocomplete="off" onkeydown="handleMathSubmit(event)">
                     <div style="margin-top: 20px; font-size: 13px; color: var(--success); font-weight: 600;" id="math-streak-txt">Streak: 0 / 10</div>
+                </div>
+
+                <div id="math-coins-view" style="display: none; flex-direction: column; align-items: center; gap: 20px; text-align: center;">
+                    <div id="math-coins-instruction" style="font-size: 16px; color: var(--text-muted); font-weight: 700;">
+                        Put exactly 12¢ inside Sparky's piggy bank!
+                    </div>
+                    
+                    <div style="display: flex; gap: 30px; align-items: center; justify-content: center; flex-wrap: wrap; width: 100%;">
+                        <div class="glass-panel" style="padding: 20px; min-width: 200px; display: flex; flex-direction: column; align-items: center; border: 1px solid var(--glass-border);">
+                            <div style="font-size: 64px;">🐷</div>
+                            <div style="font-size: 18px; font-weight: 800; margin-top: 10px; color: var(--primary);">
+                                Cents Added: <span id="piggy-cents" style="color:var(--success);">0</span>¢
+                            </div>
+                        </div>
+
+                        <div style="display: flex; flex-direction: column; gap: 10px; min-width: 150px;">
+                            <button class="quest-btn" onclick="addCoin(1)" style="background: #b58253; color: white; display: flex; align-items: center; gap: 8px; justify-content: center; padding: 12px 20px;">
+                                🟤 Penny (1¢)
+                            </button>
+                            <button class="quest-btn" onclick="addCoin(5)" style="background: #9fa8a3; color: black; display: flex; align-items: center; gap: 8px; justify-content: center; padding: 12px 20px;">
+                                ⚪ Nickel (5¢)
+                            </button>
+                            <button class="quest-btn" onclick="addCoin(10)" style="background: #7d8480; color: white; display: flex; align-items: center; gap: 8px; justify-content: center; padding: 12px 20px;">
+                                🪙 Dime (10¢)
+                            </button>
+                        </div>
+                    </div>
+
+                    <div style="display: flex; gap: 12px; margin-top: 15px;">
+                        <button class="quest-btn" onclick="clearPiggyBank()" style="background: var(--danger);">Empty Bank ❌</button>
+                        <button class="quest-btn" onclick="verifyPiggyBank()" style="background: var(--success);">Verify Cents ✅</button>
+                    </div>
+                </div>
+
+                <div id="math-patterns-view" style="display: none; flex-direction: column; align-items: center; gap: 20px;">
+                    <div id="math-patterns-instruction" style="font-size: 16px; color: var(--text-muted); font-weight: 700; text-align: center;">
+                        What shape comes next to complete the pattern?
+                    </div>
+
+                    <div style="display: flex; gap: 15px; justify-content: center; font-size: 32px; background: rgba(0,0,0,0.1); padding: 15px 30px; border-radius: 12px; min-height: 70px; align-items: center;" id="pattern-display-box">
+                        <!-- Rendered dynamically -->
+                    </div>
+
+                    <div style="display: flex; gap: 15px; justify-content: center; flex-wrap: wrap;" id="pattern-options-box">
+                        <!-- Options rendered dynamically -->
+                    </div>
                 </div>
             </div>
 
@@ -1173,6 +1233,106 @@
                         <div id="typing-wpm">Speed: 0 WPM</div>
                         <div id="typing-accuracy">Accuracy: 100%</div>
                         <button class="quest-btn" onclick="resetTypingGame()" style="background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border); padding: 4px 10px; font-size: 11px;">🔄 RESET</button>
+                </div>
+            </div>
+
+            <!-- Sight Words Panel -->
+            <div class="glass-panel game-view-panel" id="game-sightwords" style="margin-top: 30px; display: none;">
+                <h2 style="font-size: 20px; font-weight: 700; display: flex; align-items: center; gap: 8px; margin-bottom: 20px;">
+                    👁️ SIGHT WORDS ARENA
+                </h2>
+                <div style="display: flex; flex-direction: column; align-items: center; gap: 20px;">
+                    <div id="sightwords-instruction" style="font-size: 15px; color: var(--text-muted); text-align: center; font-weight: 700;">
+                        Listen to Sparky, then click letters in order to spell the word!
+                    </div>
+
+                    <div style="display: flex; gap: 15px; justify-content: center; align-items: center;">
+                        <button class="quest-btn" onclick="speakCurrentSightWord()" style="background: var(--primary); font-size: 16px; padding: 10px 20px; border-radius: 10px; display: flex; align-items: center; gap: 8px; border: none; cursor: pointer;">
+                            🔊 Listen to Word
+                        </button>
+                    </div>
+
+                    <div class="phonics-word-container" id="sightwords-word-box" style="min-height: 80px; display: flex; gap: 10px; justify-content: center;">
+                        <!-- Placeholders -->
+                    </div>
+
+                    <div id="sightwords-scramble-container" style="width: 100%;">
+                        <div style="font-size: 13px; color: var(--text-muted); margin-bottom: 12px; font-weight: 700; text-align: center;">Click letters in order:</div>
+                        <div id="sightwords-scramble-box" style="display: flex; gap: 12px; justify-content: center; flex-wrap: wrap;">
+                            <!-- Letter bubbles -->
+                        </div>
+                    </div>
+
+                    <div style="display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; margin-top: 15px;">
+                        <button class="quest-btn" onclick="resetSightWordChallenge()" style="background: var(--danger);">Reset Board ❌</button>
+                        <button class="quest-btn" onclick="nextSightWord()" style="background: var(--success);">Next Word ➡️</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Science & Maps Panel -->
+            <div class="glass-panel game-view-panel" id="game-science" style="margin-top: 30px; display: none;">
+                <h2 style="font-size: 20px; font-weight: 700; display: flex; align-items: center; gap: 8px; margin-bottom: 20px;">
+                    🐻 SCIENCE & MAPS EXPLORER
+                </h2>
+                
+                <div style="display: flex; gap: 10px; margin-bottom: 20px; justify-content: center;">
+                    <button class="nav-btn active" id="science-mode-map-btn" onclick="setScienceMode('map')" style="font-size: 13px; padding: 6px 16px;">🗺️ Continent Quest</button>
+                    <button class="nav-btn" id="science-mode-habitat-btn" onclick="setScienceMode('habitat')" style="font-size: 13px; padding: 6px 16px;">🐾 Habitat Matchmaker</button>
+                </div>
+
+                <div id="science-map-view" style="display: flex; flex-direction: column; align-items: center; gap: 20px;">
+                    <div id="science-map-instruction" style="font-size: 15px; color: var(--text-muted); text-align: center; font-weight: 700;">
+                        Tap a continent to explore and learn with Sparky!
+                    </div>
+                    
+                    <div style="width: 100%; max-width: 600px; background: rgba(0,0,0,0.1); border-radius: 12px; padding: 10px;">
+                        <svg viewBox="0 0 800 400" width="100%" height="auto" style="border-radius: 8px;">
+                            <rect width="800" height="400" fill="#1b2a4a" rx="8"></rect>
+                            <path d="M100,50 L250,50 L280,180 L180,240 L100,180 Z" fill="#2e7d32" opacity="0.8" style="cursor: pointer;" onclick="clickContinent('North America')"></path>
+                            <text x="180" y="120" fill="white" font-weight="bold" font-size="14" style="pointer-events: none;">North America</text>
+                            <path d="M190,250 L250,230 L270,300 L230,390 L180,300 Z" fill="#f57f17" opacity="0.8" style="cursor: pointer;" onclick="clickContinent('South America')"></path>
+                            <text x="210" y="300" fill="white" font-weight="bold" font-size="14" style="pointer-events: none;">South America</text>
+                            <path d="M380,50 L480,50 L480,130 L380,130 Z" fill="#0288d1" opacity="0.8" style="cursor: pointer;" onclick="clickContinent('Europe')"></path>
+                            <text x="410" y="90" fill="white" font-weight="bold" font-size="14" style="pointer-events: none;">Europe</text>
+                            <path d="M490,50 L750,50 L750,220 L580,250 L490,150 Z" fill="#d32f2f" opacity="0.8" style="cursor: pointer;" onclick="clickContinent('Asia')"></path>
+                            <text x="610" y="120" fill="white" font-weight="bold" font-size="14" style="pointer-events: none;">Asia</text>
+                            <path d="M360,160 L460,140 L500,240 L450,330 L360,250 Z" fill="#ef6c00" opacity="0.8" style="cursor: pointer;" onclick="clickContinent('Africa')"></path>
+                            <text x="410" y="220" fill="white" font-weight="bold" font-size="14" style="pointer-events: none;">Africa</text>
+                            <path d="M620,270 L720,270 L720,350 L620,350 Z" fill="#7b1fa2" opacity="0.8" style="cursor: pointer;" onclick="clickContinent('Australia')"></path>
+                            <text x="645" y="310" fill="white" font-weight="bold" font-size="14" style="pointer-events: none;">Australia</text>
+                        </svg>
+                    </div>
+                </div>
+
+                <div id="science-habitat-view" style="display: none; flex-direction: column; align-items: center; gap: 20px;">
+                    <div id="science-habitat-instruction" style="font-size: 15px; color: var(--text-muted); text-align: center; font-weight: 700;">
+                        Drag or click an animal to match its home!
+                    </div>
+
+                    <div style="display: flex; gap: 20px; width: 100%; justify-content: center; flex-wrap: wrap;">
+                        <div class="glass-panel" style="flex: 1; min-width: 250px; text-align: center;">
+                            <h3 style="font-size: 16px; font-weight: 700; margin-bottom: 12px;">🐾 Animal</h3>
+                            <div id="habitat-animal-card" style="font-size: 32px; background: rgba(255,255,255,0.05); padding: 20px; border-radius: 12px; border: 1px solid var(--glass-border); margin: 10px auto; width: 120px; height: 120px; display: flex; flex-direction: column; justify-content: center; align-items: center; font-weight: bold;">
+                                🐪
+                                <span id="habitat-animal-name" style="font-size: 14px; margin-top: 8px;">Camel</span>
+                            </div>
+                        </div>
+
+                        <div style="flex: 1.5; min-width: 280px; display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                            <button class="nav-btn" onclick="matchHabitat('Desert')" style="padding: 20px; flex-direction: column; gap: 8px; font-size: 15px;">
+                                🌵 <b>Desert</b>
+                            </button>
+                            <button class="nav-btn" onclick="matchHabitat('Ocean')" style="padding: 20px; flex-direction: column; gap: 8px; font-size: 15px;">
+                                🌊 <b>Ocean</b>
+                            </button>
+                            <button class="nav-btn" onclick="matchHabitat('Forest')" style="padding: 20px; flex-direction: column; gap: 8px; font-size: 15px;">
+                                🌲 <b>Forest</b>
+                            </button>
+                            <button class="nav-btn" onclick="matchHabitat('Arctic')" style="padding: 20px; flex-direction: column; gap: 8px; font-size: 15px;">
+                                ❄️ <b>Arctic</b>
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -1650,15 +1810,10 @@
 
             try {
                 const response = await fetch('/api/academy?action=chat', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ message, history: conversationHistory })
-                });
-                const data = await response.json();
-                
-                if (data.reply) {
+                                     if (data.reply) {
                     playSuccessSound();
                     appendChatBubble(data.reply, 'assistant');
+                    speakText(data.reply);
                     
                     // Record in history
                     conversationHistory.push({ role: 'user', text: message });
@@ -1685,6 +1840,82 @@
             } finally {
                 btn.disabled = false;
                 btn.innerText = "Send ➡️";
+            }
+        }
+
+        // Voice Recognition (Speech-to-Text) & Synthesis (Text-to-Speech)
+        let recognition = null;
+        let isRecording = false;
+        function toggleSpeechInput() {
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            if (!SpeechRecognition) {
+                showToast("Speech recognition is not supported in this browser. Please try Chrome or Safari.", true);
+                return;
+            }
+            
+            const micBtn = document.getElementById('chat-mic-btn');
+            if (isRecording) {
+                if (recognition) recognition.stop();
+                return;
+            }
+            
+            recognition = new SpeechRecognition();
+            recognition.continuous = false;
+            recognition.interimResults = false;
+            recognition.lang = 'en-US';
+            
+            recognition.onstart = () => {
+                isRecording = true;
+                micBtn.innerText = "🛑";
+                micBtn.style.background = "var(--danger)";
+                showToast("Listening... Speak now!");
+            };
+            
+            recognition.onerror = (e) => {
+                console.error("Speech Error:", e);
+                cleanupSpeech();
+            };
+            
+            recognition.onend = () => {
+                cleanupSpeech();
+            };
+            
+            recognition.onresult = (event) => {
+                const text = event.results[0][0].transcript;
+                const input = document.getElementById('chat-user-input');
+                input.value = text;
+                showToast(`Heard: "${text}"`);
+                
+                // Auto-submit the form
+                const mockEvent = { preventDefault: () => {} };
+                handleChatSubmit(mockEvent);
+            };
+            
+            recognition.start();
+        }
+        
+        function cleanupSpeech() {
+            isRecording = false;
+            const micBtn = document.getElementById('chat-mic-btn');
+            if (micBtn) {
+                micBtn.innerText = "🎤";
+                micBtn.style.background = "var(--primary)";
+            }
+        }
+
+        function speakText(text) {
+            if ('speechSynthesis' in window) {
+                window.speechSynthesis.cancel();
+                const utterance = new SpeechSynthesisUtterance(text);
+                utterance.pitch = 1.3; 
+                utterance.rate = 0.95;
+                
+                const voices = window.speechSynthesis.getVoices();
+                const friendlyVoice = voices.find(v => v.lang.startsWith('en') && (v.name.includes('Google') || v.name.includes('Natural') || v.name.includes('Samantha') || v.name.includes('Zira')));
+                if (friendlyVoice) {
+                    utterance.voice = friendlyVoice;
+                }
+                window.speechSynthesis.speak(utterance);
             }
         }
 
@@ -2185,6 +2416,10 @@
                 initPhonicsWord();
             } else if (gameName === 'story') {
                 resetStoryStudio();
+            } else if (gameName === 'sightwords') {
+                initSightWord();
+            } else if (gameName === 'science') {
+                initScienceGame();
             } else if (gameName === 'tictactoe') {
                 resetTTTGame();
             } else if (gameName === 'coding') {
@@ -2192,7 +2427,7 @@
             } else if (gameName === 'connect4') {
                 initC4Game();
             } else if (gameName === 'math') {
-                generateMathPrompt();
+                setMathMode('calc');
             } else if (gameName === 'typing') {
                 initTypingPrompt();
             }
@@ -2973,6 +3208,378 @@
                 cqPlayerPos = [...level.start];
                 redrawCQGrid();
             }
+        }
+
+        // ELA SIGHT WORDS GAME LOGIC (K-1)
+        const sightWords = [
+            "the", "and", "look", "play", "little", "with", "come", "down", "have", "here", 
+            "help", "find", "make", "said", "where", "good", "they", "want", "what", "like",
+            "away", "blue", "funny", "jump", "yellow", "three"
+        ];
+        let currentSightWord = "";
+        let sightWordInputLetters = [];
+        
+        function initSightWord() {
+            currentSightWord = sightWords[Math.floor(Math.random() * sightWords.length)].toUpperCase();
+            sightWordInputLetters = [];
+            renderSightWord();
+            speakCurrentSightWord();
+        }
+        
+        function speakCurrentSightWord() {
+            speakText(`Can you spell the word: ${currentSightWord.toLowerCase()}?`);
+        }
+        
+        function renderSightWord() {
+            const wordBox = document.getElementById('sightwords-word-box');
+            if (!wordBox) return;
+            wordBox.innerHTML = '';
+            
+            for (let i = 0; i < currentSightWord.length; i++) {
+                const block = document.createElement('div');
+                block.className = 'phonics-letter-block';
+                block.id = `sightword-block-${i}`;
+                if (i < sightWordInputLetters.length) {
+                    block.innerText = sightWordInputLetters[i];
+                    block.classList.add('playing');
+                } else {
+                    block.innerText = '?';
+                }
+                wordBox.appendChild(block);
+            }
+            
+            const scrambleBox = document.getElementById('sightwords-scramble-box');
+            if (!scrambleBox) return;
+            scrambleBox.innerHTML = '';
+            
+            let scrambled = currentSightWord.split('');
+            scrambled.sort(() => Math.random() - 0.5);
+            
+            scrambled.forEach((letter, index) => {
+                const btn = document.createElement('button');
+                btn.className = 'phonics-scramble-bubble';
+                btn.innerText = letter;
+                btn.onclick = () => selectSightWordLetter(letter, btn);
+                scrambleBox.appendChild(btn);
+            });
+        }
+        
+        async function selectSightWordLetter(letter, btnEl) {
+            const expectedLetter = currentSightWord[sightWordInputLetters.length];
+            if (letter === expectedLetter) {
+                playSuccessSound();
+                sightWordInputLetters.push(letter);
+                btnEl.classList.add('selected');
+                btnEl.disabled = true;
+                
+                speakText(letter.toLowerCase());
+                renderSightWord();
+                
+                if (sightWordInputLetters.length === currentSightWord.length) {
+                    speakText(`Great job! You spelled ${currentSightWord.toLowerCase()}!`);
+                    showToast(`Correct! +10 ELA XP 🎉`);
+                    
+                    try {
+                        const r = await fetch('/api/academy?action=progress', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ subject: 'reading', pointsToAdd: 10 })
+                        });
+                        const res = await r.json();
+                        if (res.leveledUp) {
+                            showToast(`Leveled Up to Lvl ${res.progress.level}! 🚀`);
+                        }
+                        loadAcademyData();
+                    } catch (e) {}
+                    
+                    setTimeout(initSightWord, 3000);
+                }
+            } else {
+                playFailSound();
+                btnEl.style.transform = 'scale(0.85)';
+                setTimeout(() => btnEl.style.transform = '', 300);
+                showToast("Try again! Listen to the sound.", true);
+                speakText(`Try again. Sparky is looking for ${expectedLetter.toLowerCase()}`);
+            }
+        }
+        
+        function resetSightWordChallenge() {
+            sightWordInputLetters = [];
+            renderSightWord();
+            speakText(`Board reset. Can you spell ${currentSightWord.toLowerCase()}?`);
+        }
+        
+        function nextSightWord() {
+            initSightWord();
+        }
+
+        // MATH ARENA MODES (Calculations, Coins, Patterns)
+        let mathMode = 'calc';
+        let coinTarget = 0;
+        let coinAccumulated = 0;
+        let currentPattern = null;
+        
+        function setMathMode(mode) {
+            mathMode = mode;
+            document.getElementById('math-mode-calc-btn').className = (mode === 'calc' ? 'nav-btn active' : 'nav-btn');
+            document.getElementById('math-mode-coins-btn').className = (mode === 'coins' ? 'nav-btn active' : 'nav-btn');
+            document.getElementById('math-mode-patterns-btn').className = (mode === 'patterns' ? 'nav-btn active' : 'nav-btn');
+            
+            document.getElementById('math-calc-view').style.display = (mode === 'calc' ? 'block' : 'none');
+            document.getElementById('math-coins-view').style.display = (mode === 'coins' ? 'flex' : 'none');
+            document.getElementById('math-patterns-view').style.display = (mode === 'patterns' ? 'flex' : 'none');
+            
+            if (mode === 'calc') {
+                generateMathPrompt();
+            } else if (mode === 'coins') {
+                initCoinsGame();
+            } else if (mode === 'patterns') {
+                initPatternsGame();
+            }
+        }
+        
+        function initCoinsGame() {
+            coinTarget = Math.floor(Math.random() * 20) + 5;
+            coinAccumulated = 0;
+            document.getElementById('piggy-cents').innerText = coinAccumulated;
+            document.getElementById('math-coins-instruction').innerText = `Put exactly ${coinTarget}¢ inside Sparky's piggy bank!`;
+            speakText(`Put exactly ${coinTarget} cents inside Sparky's piggy bank.`);
+        }
+        
+        function addCoin(val) {
+            playSuccessSound();
+            coinAccumulated += val;
+            document.getElementById('piggy-cents').innerText = coinAccumulated;
+            speakText(`Added ${val} cents. Total is now ${coinAccumulated} cents.`);
+        }
+        
+        function clearPiggyBank() {
+            playFailSound();
+            coinAccumulated = 0;
+            document.getElementById('piggy-cents').innerText = coinAccumulated;
+            speakText("Piggy bank is empty now.");
+        }
+        
+        async function verifyPiggyBank() {
+            if (coinAccumulated === coinTarget) {
+                playSuccessSound();
+                speakText(`Hooray! That is exactly ${coinTarget} cents! Great job!`);
+                showToast(`Correct! +10 Math XP 🎉`);
+                
+                try {
+                    const r = await fetch('/api/academy?action=progress', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ subject: 'math', pointsToAdd: 10 })
+                    });
+                    const res = await r.json();
+                    if (res.leveledUp) {
+                        showToast(`Leveled Up to Lvl ${res.progress.level}! 🚀`);
+                    }
+                    loadAcademyData();
+                } catch (e) {}
+                
+                setTimeout(initCoinsGame, 3000);
+            } else {
+                playFailSound();
+                if (coinAccumulated > coinTarget) {
+                    speakText(`Oops, that is ${coinAccumulated} cents, which is too much! Try again.`);
+                    showToast(`Too much cents! Target is ${coinTarget}¢`, true);
+                } else {
+                    speakText(`Oops, that is only ${coinAccumulated} cents, which is not enough! Try again.`);
+                    showToast(`Not enough cents! Target is ${coinTarget}¢`, true);
+                }
+            }
+        }
+        
+        const shapePatterns = [
+            { sequence: ["🔴", "🟦", "🔴", "🟦"], options: ["🔴", "🟦"], answer: "🔴" },
+            { sequence: ["🟢", "🟢", "🟡", "🟢", "🟢"], options: ["🟢", "🟡"], answer: "🟡" },
+            { sequence: ["🔺", "🔸", "🔺", "🔸"], options: ["🔺", "🔸"], answer: "🔺" },
+            { sequence: ["⭐", "🌙", "⭐", "🌙"], options: ["⭐", "🌙"], answer: "⭐" }
+        ];
+        
+        function initPatternsGame() {
+            currentPattern = shapePatterns[Math.floor(Math.random() * shapePatterns.length)];
+            
+            const displayBox = document.getElementById('pattern-display-box');
+            if (!displayBox) return;
+            displayBox.innerHTML = '';
+            
+            currentPattern.sequence.forEach(symbol => {
+                const item = document.createElement('span');
+                item.innerText = symbol;
+                displayBox.appendChild(item);
+            });
+            
+            const blankItem = document.createElement('span');
+            blankItem.innerText = '❓';
+            blankItem.style.border = '2px dashed var(--glass-border)';
+            blankItem.style.padding = '5px 12px';
+            blankItem.style.borderRadius = '8px';
+            displayBox.appendChild(blankItem);
+            
+            const optionsBox = document.getElementById('pattern-options-box');
+            if (!optionsBox) return;
+            optionsBox.innerHTML = '';
+            
+            currentPattern.options.forEach(symbol => {
+                const btn = document.createElement('button');
+                btn.className = 'nav-btn';
+                btn.style.padding = '15px 25px';
+                btn.style.fontSize = '24px';
+                btn.innerText = symbol;
+                btn.onclick = () => verifyPattern(symbol);
+                optionsBox.appendChild(btn);
+            });
+            
+            speakText("Complete the pattern! What shape comes next?");
+        }
+        
+        async function verifyPattern(symbol) {
+            if (symbol === currentPattern.answer) {
+                playSuccessSound();
+                speakText("That is correct! You completed the pattern!");
+                showToast(`Correct! +10 Math XP 🎉`);
+                
+                const displayBox = document.getElementById('pattern-display-box');
+                if (displayBox && displayBox.lastChild) {
+                    const lastSpan = displayBox.lastChild;
+                    lastSpan.innerText = symbol;
+                    lastSpan.style.border = 'none';
+                    lastSpan.style.background = 'rgba(255,255,255,0.05)';
+                }
+                
+                try {
+                    const r = await fetch('/api/academy?action=progress', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ subject: 'math', pointsToAdd: 10 })
+                    });
+                    const res = await r.json();
+                    if (res.leveledUp) {
+                        showToast(`Leveled Up to Lvl ${res.progress.level}! 🚀`);
+                    }
+                    loadAcademyData();
+                } catch (e) {}
+                
+                setTimeout(initPatternsGame, 3000);
+            } else {
+                playFailSound();
+                speakText("Oops! That shape doesn't match the pattern. Try again.");
+                showToast("Try again!", true);
+            }
+        }
+
+        // SCIENCE & GEOGRAPHY GAMES
+        let scienceMode = 'map';
+        
+        function setScienceMode(mode) {
+            scienceMode = mode;
+            document.getElementById('science-mode-map-btn').className = (mode === 'map' ? 'nav-btn active' : 'nav-btn');
+            document.getElementById('science-mode-habitat-btn').className = (mode === 'habitat' ? 'nav-btn active' : 'nav-btn');
+            
+            document.getElementById('science-map-view').style.display = (mode === 'map' ? 'flex' : 'none');
+            document.getElementById('science-habitat-view').style.display = (mode === 'habitat' ? 'flex' : 'none');
+            
+            if (mode === 'map') {
+                initMapGame();
+            } else if (mode === 'habitat') {
+                initHabitatGame();
+            }
+        }
+        
+        const continentFacts = {
+            "North America": "North America is home to grizzly bears, bald eagles, and the grand canyon!",
+            "South America": "South America contains the amazon rainforest, home to jaguars and colorful macaws!",
+            "Europe": "Europe is where castles stand, and home to wolves, deer, and red foxes!",
+            "Asia": "Asia is the largest continent. Giant pandas and tigers live here!",
+            "Africa": "Africa has vast savannas with lions, elephants, giraffes, and zebras!",
+            "Australia": "Australia is surrounded by water. Kangaroos and koalas jump around here!"
+        };
+        let targetContinent = "";
+        
+        function initMapGame() {
+            const keys = Object.keys(continentFacts);
+            targetContinent = keys[Math.floor(Math.random() * keys.length)];
+            document.getElementById('science-map-instruction').innerText = `Sparky: "Can you tap on ${targetContinent}?"`;
+            speakText(`Can you tap on ${targetContinent}?`);
+        }
+        
+        async function clickContinent(name) {
+            if (name === targetContinent) {
+                playSuccessSound();
+                speakText(`Great! You found ${name}! Did you know? ${continentFacts[name]}`);
+                showToast(`Found ${name}! +10 Science XP 🎉`);
+                
+                try {
+                    const r = await fetch('/api/academy?action=progress', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ subject: 'ai', pointsToAdd: 10 })
+                    });
+                    const res = await r.json();
+                    if (res.leveledUp) {
+                        showToast(`Leveled Up to Lvl ${res.progress.level}! 🚀`);
+                    }
+                    loadAcademyData();
+                } catch (e) {}
+                
+                setTimeout(initMapGame, 6000);
+            } else {
+                playFailSound();
+                speakText(`Oops, that is not ${targetContinent}. Keep searching!`);
+                showToast(`That is ${name}! Find ${targetContinent}`, true);
+            }
+        }
+        
+        const animalHabitats = [
+            { emoji: "🐪", name: "Camel", habitat: "Desert", facts: "Camels store fat in their humps and can walk across hot deserts without water!" },
+            { emoji: "🐠", name: "Clownfish", habitat: "Ocean", facts: "Clownfish hide in anemones in warm oceans to stay safe from big fish!" },
+            { emoji: "🐻‍❄️", name: "Polar Bear", habitat: "Arctic", facts: "Polar bears have thick white fur to stay warm in the freezing cold arctic!" },
+            { emoji: "🐿️", name: "Squirrel", habitat: "Forest", facts: "Squirrels gather nuts in green forests to eat during winter!" }
+        ];
+        let currentAnimal = null;
+        
+        function initHabitatGame() {
+            currentAnimal = animalHabitats[Math.floor(Math.random() * animalHabitats.length)];
+            const card = document.getElementById('habitat-animal-card');
+            if (card) {
+                card.innerHTML = `${currentAnimal.emoji}<span id="habitat-animal-name" style="font-size: 14px; margin-top: 8px;">${currentAnimal.name}</span>`;
+            }
+            document.getElementById('science-habitat-instruction').innerText = `Sparky: "Where does the ${currentAnimal.name} live?"`;
+            speakText(`Where does the ${currentAnimal.name} live?`);
+        }
+        
+        async function matchHabitat(name) {
+            if (name === currentAnimal.habitat) {
+                playSuccessSound();
+                speakText(`Wonderful! The ${currentAnimal.name} lives in the ${name}. Did you know? ${currentAnimal.facts}`);
+                showToast(`Correct habitat match! +10 Science XP 🎉`);
+                
+                try {
+                    const r = await fetch('/api/academy?action=progress', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ subject: 'ai', pointsToAdd: 10 })
+                    });
+                    const res = await r.json();
+                    if (res.leveledUp) {
+                        showToast(`Leveled Up to Lvl ${res.progress.level}! 🚀`);
+                    }
+                    loadAcademyData();
+                } catch (e) {}
+                
+                setTimeout(initHabitatGame, 6000);
+            } else {
+                playFailSound();
+                speakText(`Oops, the ${currentAnimal.name} does not live in the ${name}. Try another home!`);
+                showToast(`Wrong habitat! Match the ${currentAnimal.name}`, true);
+            }
+        }
+        
+        function initScienceGame() {
+            setScienceMode(scienceMode);
         }
     </script>
     <script>
